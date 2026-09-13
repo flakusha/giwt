@@ -137,12 +137,12 @@ export async function commitWt(
   const output = verify.stdout.toString();
 
   if (output.includes("Good signature")) {
-    raw(`\n✓ Commit created:`);
+    raw(`\nCommit created:`);
     // Extract short hash from the first line
     const firstLine = output.split("\n")[0];
     raw(`  ${firstLine}`);
   } else {
-    raw(`\n⚠ Commit created but signature verification unclear`);
+    raw(`\nCommit created but signature verification unclear`);
     raw(output);
   }
   // Outcome dispatch: the generic auto-append in index.ts recorded the

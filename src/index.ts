@@ -19,7 +19,15 @@
 export { main } from "./cli";
 
 // Unified logger
-export { colorize, log, raw, section, setLogLevel } from "./utils/output";
+export {
+  colorize,
+  log,
+  type OutputFormat,
+  raw,
+  section,
+  setLogLevel,
+  setOutputFormat,
+} from "./utils/output";
 export type { LogLevel } from "./utils/output";
 
 // Layered settings (defaults < ~/.config/giwt/config.toml < giwt.toml < env)

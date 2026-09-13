@@ -24,11 +24,11 @@ interface CheckReport {
 function formatStatus(status: string): string {
   switch (status) {
     case "passed":
-      return colorize("✓ passed", "green");
+      return colorize("passed", "green");
     case "failed":
-      return colorize("✗ failed", "red");
+      return colorize("failed", "red");
     case "skipped":
-      return colorize("~ skipped", "yellow");
+      return colorize("skipped", "yellow");
     default:
       return colorize(`? ${status}`, "gray");
   }

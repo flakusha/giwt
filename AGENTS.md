@@ -6,7 +6,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 
 ## Architecture & Data Flow
 
-1. **Settings** (`src/utils/settings.ts`): layered TOML — defaults < `~/.config/giwt/config.toml` < `<repo>/giwt.toml` < env. Schema v1 (`[branches]`, `[paths]`, `[commands]`, `[runlog]`); unknown keys warn + are ignored; wrong types hard-error.
+1. **Settings** (`src/utils/settings.ts`): layered TOML — defaults < `~/.config/giwt/config.toml` < `<repo>/giwt.toml` < env. Schema v1 (`[branches]`, `[paths]`, `[commands]`, `[runlog]`, `[output]`); unknown keys warn + are ignored; wrong types hard-error.
 2. **Config** (`src/utils/config.ts`): `loadConfig()` resolves `repoRoot` (`REPO_ROOT` env ?? `findRepoRoot()` via `git rev-parse --git-common-dir`) and `treeDir` (`TREE_DIR` env ?? `repoRoot` + `settings.paths.tree`), plus agent GPG identity from `.credentials.env` (walks up from repo root). Throws outside a git repo — by design.
 3. **Dispatch** (`src/cli.ts` → `main()`): parse → root-only guard (`ROOT_ONLY_COMMANDS`) → say-flag strip (`extractSayArgs`) → run-record announce + ledger append (skipped for `LEDGER_SILENT_COMMANDS`) → `handler.action(cleanArgs, config)` → `runRec.finish(0|1)`; thrown errors → `log("error")` + exit 1.
 4. **Optique passthrough dispatch**: one `command(name, object({ action: constant(handler), args: withDefault(passThrough({ format: "greedy" }), []) }))` per subcommand. Handlers keep parsing their own raw `string[]` args; `or()` accepts ≤15 branches → `buildParser()` nests groups of 15. Per-command `--help`/`-h` bodies live in the `USAGE: Record<string, string>` table in `src/cli.ts` — **update it when changing a command's flags**.
@@ -73,7 +73,7 @@ Pre-commit hook: `git config core.hooksPath .githooks && chmod +x .githooks/pre-
 
 - **Bun ≥ 1.2, ESM** (`"type": "module"`); only runtime deps are `@optique/core` + `@optique/run` (^1.2.6); devDeps: `typescript`, `@types/bun`, `dprint`, `oxlint`, `markdownlint-cli2` (+ system `shfmt`/`shellcheck` for `lint:sh`). Lockfile: `bun.lock` — use `bun add`, never npm/yarn.
 - No tsconfig emit, no build step for dev (`bun` runs TS directly); `build:bin` produces a standalone binary for distribution.
-- Env overrides: `REPO_ROOT`, `TREE_DIR`, `GIWT_LOG`, `NO_COLOR` (via `src/utils/colors.ts`).
+- Env overrides: `REPO_ROOT`, `TREE_DIR`, `GIWT_LOG`, `GIWT_OUTPUT` (log format: simple|pretty|json|jsonl|toml; invalid → warn once, falls back to simple), `NO_COLOR` (via `src/utils/colors.ts`).
 
 ## Testing & QA
 

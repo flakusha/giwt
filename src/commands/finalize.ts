@@ -8,7 +8,7 @@ import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { getRootBranch, gitSync, gitSyncQuiet, isProtected } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { appendGripe, printRecentLedger } from "../utils/ledger";
-import { colorize, log, raw, section } from "../utils/output";
+import { log, raw, section } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import { DEV_IN_PROGRESS_HEADS, FINALIZE_STASH_PREFIX } from "./abort";
 
@@ -952,17 +952,12 @@ async function runFinalize(
       if (ffOk) { /* restored above */ }
     }
   } else if (mergeStrategy === "direct") {
-    // Direct merge warning
-    raw("");
-    raw(colorize("╔════════════════════════════════════════════════════════════╗", "yellow"));
-    raw(colorize("║  ⚠ WARNING: Direct merge strategy                        ║", "yellow"));
-    raw(colorize("║                                                          ║", "yellow"));
-    raw(colorize(`║  Conflicts will be resolved on ${targetBranch.padEnd(35)}║`, "yellow"));
-    raw(colorize(`║  This can leave ${targetBranch.padEnd(35)} in a broken state.║`, "yellow"));
-    raw(colorize("║                                                          ║", "yellow"));
-    raw(colorize("║  Consider: --merge-strategy rebase                        ║", "yellow"));
-    raw(colorize("╚════════════════════════════════════════════════════════════╝", "yellow"));
-    raw("");
+    // Direct merge warning — logger channel: the old hand-drawn box was
+    // decorative output leaked onto the raw data channel.
+    log(
+      "warn",
+      `Direct merge strategy: conflicts will be resolved on ${targetBranch} — this can leave ${targetBranch} in a broken state. Consider --merge-strategy rebase.`,
+    );
 
     if (!force) {
       log("error", "Aborted. Use --force to proceed with direct merge");

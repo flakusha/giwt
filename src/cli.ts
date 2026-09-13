@@ -61,7 +61,7 @@ import { isNoColor } from "./utils/colors";
 import { loadConfig, type WorktreeConfig } from "./utils/config";
 import { assertNotInWorktree } from "./utils/git";
 import { appendLedger, extractSayArgs, LEDGER_SILENT_COMMANDS } from "./utils/ledger";
-import { log, raw } from "./utils/output";
+import { log, raw, setOutputFormat } from "./utils/output";
 import { beginRun } from "./utils/runlog";
 
 interface CommandHandler {
@@ -349,6 +349,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   const config = await loadConfig();
+  // Logger format from settings ([output].format; env GIWT_OUTPUT wins at
+  // module load). Applied before any command output, including run records.
+  setOutputFormat(config.settings.output.format);
 
   if (ROOT_ONLY_COMMANDS[cmdName]) {
     assertNotInWorktree(cmdName);

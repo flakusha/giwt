@@ -114,7 +114,7 @@ export function assertNotInWorktree(command: string): void {
     log(
       "error",
       String(
-        `✘ command '${command}' must be run from the repo root, not inside a worktree (tree/*)`,
+        `command '${command}' must be run from the repo root, not inside a worktree (tree/*)`,
       ).replace(/\n$/, ""),
     );
     raw("  cd to the repo root and re-run: giwt " + command);

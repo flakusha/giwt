@@ -26,6 +26,8 @@
  *   test  = "bun run test:unit"
  *   [runlog]
  *   max_runs = 200
+ *   [output]
+ *   format = "simple"        # simple|pretty|json|jsonl|toml
  *
  * NOTE: commands.check / commands.test are arbitrary shell words executed
  * by `giwt finalize` in the managed repo. That is by design — the config
@@ -45,6 +47,7 @@ export interface GiwtSettings {
   paths: { tree: string; tickets: string; runlog: string; checkReport: string; };
   commands: { check: string; test: string; };
   runlog: { maxRuns: number; };
+  output: { format: string; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -57,6 +60,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   },
   commands: { check: "bun run check", test: "bun run test:unit" },
   runlog: { maxRuns: 200 },
+  output: { format: "simple" },
 };
 
 /** snake_case TOML keys → camelCase settings keys, per section. */
@@ -65,6 +69,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   paths: { tree: "tree", tickets: "tickets", runlog: "runlog", check_report: "checkReport" },
   commands: { check: "check", test: "test" },
   runlog: { max_runs: "maxRuns" },
+  output: { format: "format" },
 };
 
 const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" | "number">> = {
@@ -72,6 +77,7 @@ const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" 
   paths: { tree: "string", tickets: "string", runlog: "string", checkReport: "string" },
   commands: { check: "string", test: "string" },
   runlog: { maxRuns: "number" },
+  output: { format: "string" },
 };
 
 type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };

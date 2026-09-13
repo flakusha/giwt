@@ -196,14 +196,14 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       if (!isLockStale(lockPath)) {
         log(
           "error",
-          String(`\n✘ Another index sync is in progress (lock: ${lockPath}).`).replace(/\n$/, ""),
+          String(`Another index sync is in progress (lock: ${lockPath}).`).replace(/\n$/, ""),
         );
         return false;
       }
       rmSync(lockPath, { recursive: true, force: true });
       log(
         "warn",
-        String("⚠ Removed stale index-sync lock left by a dead process").replace(/\n$/, ""),
+        String("Removed stale index-sync lock left by a dead process").replace(/\n$/, ""),
       );
     }
     mkdirSync(lockPath);
@@ -647,7 +647,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     // With the issue registry unreadable, every non-commit hash looks like a
     // placeholder — --fix would mass-create issues. Refuse instead.
     if (!gitIssuesAvailable) {
-      log("error", String(`\n✘ git issue CLI unavailable — refusing to --fix.`).replace(/\n$/, ""));
+      log("error", String(`git issue CLI unavailable — refusing to --fix.`).replace(/\n$/, ""));
       log(
         "error",
         String("  Fix mode cannot distinguish a missing tool from stale hashes.").replace(
@@ -680,10 +680,10 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       // Never leak the lock on a failed fix run.
       releaseFixLock(LOCK_PATH);
     }
-    raw(`✅ Wrote ${INDEX_PATH}`);
+    raw(`Wrote ${INDEX_PATH}`);
 
     if (report.fixesApplied.length > 0) {
-      raw(`\n📝 Changes:`);
+      raw(`\nChanges:`);
       report.fixesApplied.forEach((f) => raw(`   ${f}`));
     }
 
@@ -701,10 +701,10 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       + postReport.orphanGitIssues.length;
 
     if (postTotal === 0) {
-      raw(`✅ Index is in sync${postAdvisory > 0 ? ` (${postAdvisory} advisory remaining)` : ""}`);
+      raw(`Index is in sync${postAdvisory > 0 ? ` (${postAdvisory} advisory remaining)` : ""}`);
     } else {
       raw(
-        `⚠️  ${postTotal} actionable issue(s) remain${
+        `${postTotal} actionable issue(s) remain${
           postAdvisory > 0 ? `, ${postAdvisory} advisory` : ""
         }`,
       );
@@ -719,10 +719,10 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   }
 
   if (totalIssues === 0) {
-    raw(`✅ Index is in sync${advisoryCount > 0 ? ` (${advisoryCount} advisory)` : ""}`);
+    raw(`Index is in sync${advisoryCount > 0 ? ` (${advisoryCount} advisory)` : ""}`);
   } else {
     raw(
-      `⚠️  ${totalIssues} actionable issue(s) found${
+      `${totalIssues} actionable issue(s) found${
         advisoryCount > 0 ? `, ${advisoryCount} advisory` : ""
       }`,
     );
