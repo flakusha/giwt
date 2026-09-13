@@ -1,0 +1,94 @@
+#!/bin/sh
+# Pre-commit hook for giwt — typecheck + full test gate.
+#
+# The project gate is `bun run check` (= `tsc --noEmit && bun test`).
+# tsc is project-wide by design (no per-file tsconfig mode) and the
+# suite runs in ~2s, so there is no staged-files-only fast path — the
+# full gate IS the fast path. Staged-file detection only decides
+# whether the gate needs to run at all.
+#
+# Install: git config core.hooksPath .githooks && chmod +x .githooks/pre-commit
+
+set -u
+
+failures=0
+
+red() { printf '\033[31m%s\033[0m\n' "$*"; }
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
+
+REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null) || exit 1
+cd "$REPO_TOP" || exit 1
+
+echo ""
+echo "=== giwt pre-commit ==="
+echo ""
+
+# ── Get staged files (decides IF the gate runs, not WHAT it checks) ──
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.tsx?$' || true)
+STAGED_CFG=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(json|toml|md)$' || true)
+STAGED_SH=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)\.?githooks/' || true)
+
+if [ -z "$STAGED_TS" ] && [ -z "$STAGED_CFG" ] && [ -z "$STAGED_SH" ]; then
+  yellow "No staged TS/config/md/shell files to check — skipping"
+  exit 0
+fi
+
+echo "Staged files:"
+[ -n "$STAGED_TS" ] && echo "  TS: $(echo "$STAGED_TS" | wc -l | tr -d ' ')"
+[ -n "$STAGED_CFG" ] && echo "  config: $(echo "$STAGED_CFG" | wc -l | tr -d ' ')"
+echo ""
+
+# ── Step 1: Project gate — strict typecheck + full test suite ──
+echo "--- Step 1: bun run check (fmt + lint + tsc --noEmit + bun test) ---"
+if bun run check; then
+  green "PASS: typecheck + tests"
+else
+  red "FAIL: typecheck or tests"
+  failures=$((failures + 1))
+fi
+
+# ── Step 2: SPDX headers on staged TS files (non-blocking) ──
+echo ""
+echo "--- Step 2: SPDX headers (warn-only) ---"
+if [ -n "$STAGED_TS" ]; then
+  MISSING_SPDX=$(echo "$STAGED_TS" | xargs grep -L 'SPDX-License-Identifier' 2>/dev/null || true)
+  if [ -z "$MISSING_SPDX" ]; then
+    green "  SPDX headers OK"
+  else
+    yellow "  missing SPDX-License-Identifier:"
+    echo "$MISSING_SPDX" | sed 's/^/    /'
+  fi
+fi
+
+# ── Step 3: Check-report freshness (non-blocking) ──
+echo ""
+echo "--- Step 3: Check-report freshness ---"
+REPORT_FILE="$REPO_TOP/.tmp/check-report.json"
+if [ -f "$REPORT_FILE" ]; then
+  REPORT_HEAD=$(grep -o '"gitHead"[[:space:]]*:[[:space:]]*"[^"]*"' "$REPORT_FILE" 2>/dev/null | head -1 | sed 's/.*"gitHead"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+  CURRENT_HEAD=$(git rev-parse --short HEAD 2>/dev/null || true)
+  if [ -n "$REPORT_HEAD" ] && [ -n "$CURRENT_HEAD" ]; then
+    if [ "$REPORT_HEAD" != "$CURRENT_HEAD" ]; then
+      yellow "  check report stale: @ $REPORT_HEAD, HEAD @ $CURRENT_HEAD — run 'bun run check'"
+    else
+      green "  check report current ($CURRENT_HEAD)"
+    fi
+  else
+    yellow "  check report has no gitHead — run 'bun run check' to refresh"
+  fi
+else
+  yellow "  no check report — run 'bun run check' to generate one"
+fi
+
+# ── Final result ──
+echo ""
+if [ "$failures" -gt 0 ]; then
+  red "=== $failures check(s) failed — commit blocked ==="
+  red "To commit without checks: git commit --no-verify"
+  exit 1
+fi
+
+green "=== Staged files OK ==="
+echo ""
+exit 0

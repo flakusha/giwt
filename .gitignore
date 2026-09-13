@@ -111,3 +111,17 @@ dist
 
 # TernJS port file
 .tern-port
+
+# compiled standalone binary
+bin/
+
+# giwt working state (managed repos create these; never commit)
+tree/
+.credentials.env
+.worktree-finalize.lock
+.plan/tickets/.index-sync.lock
+
+# hooks ship with the repo (override the global .*/ ignore)
+!.githooks/
+.githooks/*
+!.githooks/pre-commit

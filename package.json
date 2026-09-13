@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/package.json",
+  "name": "giwt",
+  "version": "0.1.0",
+  "description": "git worktree / commit / GPG / git-issue management CLI (bun-only)",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "giwt": "src/cli.ts"
+  },
+  "engines": {
+    "bun": ">=1.2"
+  },
+  "scripts": {
+    "test": "bun test",
+    "giwt": "bun run src/cli.ts",
+    "build:bin": "bun build --compile src/cli.ts --outfile bin/giwt",
+    "fmt": "dprint fmt",
+    "fmt:check": "dprint check",
+    "lint": "oxlint src",
+    "lint:md": "markdownlint-cli2",
+    "lint:sh": "shfmt -ln posix -i 2 -d .githooks && shellcheck -x .githooks/pre-commit",
+    "check": "bun run fmt:check && bun run lint && bun run lint:md && bun run lint:sh && tsc --noEmit && bun test"
+  },
+  "dependencies": {
+    "@optique/core": "^1.2.6",
+    "@optique/run": "^1.2.6"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "dprint": "^0.57.4",
+    "markdownlint-cli2": "^0.23.2",
+    "oxlint": "^1.82.0",
+    "typescript": "^7.0.2"
+  }
+}
