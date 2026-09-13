@@ -5,7 +5,7 @@
  * Run records — per-invocation evidence trail under the repo scratchpad.
  *
  * Every dispatched (non-silent) command gets a pre-set, announced run dir:
- *   <repoRoot>/<paths.runlog>/runs/<YYYYMMDD-HHMMSS>-<pid>-<cmd>/
+ *   <worktreeRoot>/<paths.runlog>/runs/<YYYYMMDD-HHMMSS>-<pid>-<cmd>/
  *
  * Layout per run:
  *   meta.json     structured run summary (written at begin, updated at
@@ -66,7 +66,7 @@ export interface RunRecorder {
 }
 
 function runsRoot(config: WorktreeConfig): string {
-  return resolve(config.repoRoot, config.settings.paths.runlog, "runs");
+  return resolve(config.worktreeRoot, config.settings.paths.runlog, "runs");
 }
 
 function runId(cmd: string): string {
@@ -116,7 +116,7 @@ export function beginRun(
     said,
     pid: process.pid,
     repoRoot: config.repoRoot,
-    branch: gitSyncQuiet(config.repoRoot, "branch", "--show-current"),
+    branch: gitSyncQuiet(config.worktreeRoot, "branch", "--show-current"),
     start: new Date().toISOString(),
   };
   writeMeta(dir, meta);

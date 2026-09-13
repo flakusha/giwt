@@ -30,6 +30,7 @@ function makeConfig(maxRuns = 200): { config: Parameters<typeof beginRun>[0]; ro
     root,
     config: {
       repoRoot: root,
+      worktreeRoot: root,
       treeDir: join(root, "tree"),
       settings: {
         ...DEFAULT_SETTINGS,

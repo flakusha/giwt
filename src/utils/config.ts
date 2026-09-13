@@ -7,12 +7,16 @@
 
 import { existsSync, symlinkSync } from "fs";
 import { dirname, resolve } from "path";
-import { findRepoRoot, gitSync } from "./git";
+import { findRepoRoot, getWorktreeRoot, gitSync } from "./git";
 import { log } from "./output";
 import { type GiwtSettings, loadSettings } from "./settings";
 
 export interface WorktreeConfig {
   repoRoot: string;
+  /** Per-invocation checkout root: worktree root when invoked inside
+   *  tree/<branch>, otherwise identical to repoRoot. Run records and
+   *  plan-file sync land here, not in the main checkout. */
+  worktreeRoot: string;
   treeDir: string;
   /** Effective layered settings (defaults < global < local file). */
   settings: GiwtSettings;
@@ -52,6 +56,10 @@ export async function loadConfig(): Promise<WorktreeConfig> {
   // invoked from inside a linked worktree (tree/<branch>). REPO_ROOT remains
   // an opt-in escape hatch for CI / non-standard layouts.
   const repoRoot = process.env.REPO_ROOT ?? findRepoRoot();
+  // REPO_ROOT (CI escape hatch) pins the invocation root to the same root;
+  // otherwise resolve the checkout actually running so worktree invocations
+  // keep their run records and plan files local.
+  const worktreeRoot = process.env.REPO_ROOT ? repoRoot : getWorktreeRoot();
   const settings = loadSettings(repoRoot);
   const treeDir = process.env.TREE_DIR ?? resolve(repoRoot, settings.paths.tree);
 
@@ -77,6 +85,7 @@ export async function loadConfig(): Promise<WorktreeConfig> {
 
   return {
     repoRoot,
+    worktreeRoot,
     treeDir,
     settings,
     ...(agentGpgKeyId !== undefined && { agentGpgKeyId }),

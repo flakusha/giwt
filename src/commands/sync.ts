@@ -25,7 +25,7 @@ export async function sync(
   }
 
   log("info", "Syncing ticket index...");
-  const exitCode = runSync(config.repoRoot, {
+  const exitCode = runSync(config.worktreeRoot, {
     fix: hasFix,
     verbose: hasVerbose,
     ticketsPath: config.settings.paths.tickets,

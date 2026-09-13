@@ -25,7 +25,10 @@ import { DEFAULT_SETTINGS } from "./utils/settings";
 
 function makeConfig(): { config: WorktreeConfig; dir: string; } {
   const dir = mkdtempSync(join(tmpdir(), "giwt-gripe-"));
-  return { config: { repoRoot: dir, treeDir: dir, settings: DEFAULT_SETTINGS }, dir };
+  return {
+    config: { repoRoot: dir, worktreeRoot: dir, treeDir: dir, settings: DEFAULT_SETTINGS },
+    dir,
+  };
 }
 
 function mockExit(): { calls: number[]; restore: () => void; } {

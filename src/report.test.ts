@@ -36,7 +36,7 @@ function makeReportConfig(): WorktreeConfig {
   );
   writeFileSync(join(corruptReportDir, "check-report.json"), "{not valid json");
   writeFileSync(join(noGatesReportDir, "check-report.json"), "{ \"branch\": \"x\" }");
-  return { repoRoot: root, treeDir, settings: DEFAULT_SETTINGS };
+  return { repoRoot: root, worktreeRoot: root, treeDir, settings: DEFAULT_SETTINGS };
 }
 
 async function captureOutput(config: WorktreeConfig): Promise<string> {
