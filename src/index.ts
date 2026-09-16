@@ -62,3 +62,31 @@ export type { RunEvent, RunMeta, RunRecorder } from "./utils/runlog";
 export { runSync } from "./tickets/sync-index";
 export type { SyncOptions } from "./tickets/sync-index";
 export type { SyncReport } from "./tickets/sync-ticket";
+
+// Plan tooling (.plan/ validation, code-map, backlog-sync, docs, links)
+export {
+  applyFixes as applyBacklogFixes,
+  reconcile as reconcileBacklog,
+} from "./plan/backlog-sync";
+export type { FileMapRow, FixReport, SyncResult as BacklogSyncResult } from "./plan/backlog-sync";
+export { checkFile, collectLinks, resolveTarget, runLinkCheck } from "./plan/check-links";
+export type { BrokenLink, LinkCheckResult, OrphanTaskRef } from "./plan/check-links";
+export { buildMap, findOwners, findStale, readMap, verifyFresh, writeMap } from "./plan/code-map";
+export type { CodeMap, RefEntry, ScanSource } from "./plan/code-map";
+export { collectEpics, genDocs, generateIndex, parseEpic } from "./plan/gen-docs";
+export type { Epic } from "./plan/gen-docs";
+export {
+  extractComments,
+  extractDocRefs,
+  extractSrcRefs,
+  stripMarkdownCode,
+} from "./plan/src-refs";
+export type { DocRef, SrcRef } from "./plan/src-refs";
+export { ALL_GATES, FIXABLE_GATES, runValidate } from "./plan/validate";
+export type {
+  Finding,
+  GateName,
+  GateResult,
+  ValidateOptions,
+  ValidateResult,
+} from "./plan/validate";

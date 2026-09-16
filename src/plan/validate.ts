@@ -1,0 +1,626 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+/**
+ * Comprehensive .plan/ validator — runs multiple checks in one pass.
+ *
+ * Gates (selectable via --gates flag):
+ *   format     — ticket + epic format compliance
+ *   linkage    — epic↔ticket cross-link validation
+ *   backlog    — backlog index sync (orphans/phantoms)
+ *   tickets    — ticket index sync (delegates to runSync)
+ *   code-map   — code map freshness
+ *   links      — markdown internal link check
+ *   spdx       — SPDX header compliance
+ *   naming     — ticket filename convention
+ *   epics-doc  — epics-index.md freshness
+ *   all        — run every gate (default)
+ *
+ * Each gate returns a GateResult with pass/fail + findings.
+ * Pure logic — no process.exit / console.log. Caller handles reporting.
+ */
+
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
+import { runLinkCheck } from "./check-links";
+import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
+import { collectEpics, genDocs, generateIndex } from "./gen-docs";
+
+// ── Gate types ──────────────────────────────────────────────────
+
+export type GateName =
+  | "format"
+  | "linkage"
+  | "backlog"
+  | "tickets"
+  | "code-map"
+  | "links"
+  | "spdx"
+  | "naming"
+  | "epics-doc"
+  | "all";
+
+export const ALL_GATES: GateName[] = [
+  "format",
+  "linkage",
+  "backlog",
+  "tickets",
+  "code-map",
+  "links",
+  "spdx",
+  "naming",
+  "epics-doc",
+];
+
+/** Gates that can be auto-fixed when --fix is passed. */
+export const FIXABLE_GATES: GateName[] = ["backlog", "tickets", "code-map", "epics-doc"];
+
+export interface Finding {
+  gate: GateName;
+  level: "error" | "warn";
+  message: string;
+}
+
+export interface GateResult {
+  gate: GateName;
+  pass: boolean;
+  findings: Finding[];
+  fixes?: string[];
+}
+
+export interface ValidateResult {
+  results: GateResult[];
+  pass: boolean;
+  issueCount: number;
+  fixedCount: number;
+}
+
+// ── Format gate ─────────────────────────────────────────────────
+
+const TICKET_REQUIRED_SECTIONS = [
+  "Status",
+  "Priority",
+  "Effort",
+  "Summary",
+  "Context",
+  "Acceptance Criteria",
+];
+
+const EPIC_REQUIRED_SECTIONS = [
+  "Status",
+  "Priority",
+  "Effort",
+  "Type",
+  "Tags",
+  "Overview",
+];
+
+function checkTicketFormat(ticketsDir: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(ticketsDir)) {
+    findings.push({
+      gate: "format",
+      level: "warn",
+      message: `tickets dir not found: ${ticketsDir}`,
+    });
+    return findings;
+  }
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    const raw = readFileSync(join(ticketsDir, f), "utf8");
+    for (const section of TICKET_REQUIRED_SECTIONS) {
+      const re = new RegExp(`\\*\\*${section}:\\*\\*`, "i");
+      if (!re.test(raw)) {
+        findings.push({
+          gate: "format",
+          level: "error",
+          message: `${f}: missing required section **${section}:**`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
+function checkEpicFormat(epicsDir: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(epicsDir)) {
+    findings.push({
+      gate: "format",
+      level: "warn",
+      message: `epics dir not found: ${epicsDir}`,
+    });
+    return findings;
+  }
+  for (const f of readdirSync(epicsDir)) {
+    if (!f.startsWith("epic-") || !f.endsWith(".md")) continue;
+    const raw = readFileSync(join(epicsDir, f), "utf8");
+    for (const section of EPIC_REQUIRED_SECTIONS) {
+      const re = new RegExp(`\\*\\*${section}:\\*\\*`, "i");
+      if (!re.test(raw)) {
+        findings.push({
+          gate: "format",
+          level: "error",
+          message: `${f}: missing required section **${section}:**`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
+// ── Linkage gate ────────────────────────────────────────────────
+
+function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
+  const findings: Finding[] = [];
+
+  if (!existsSync(ticketsDir) || !existsSync(epicsDir)) {
+    return findings;
+  }
+
+  // Collect epic file names
+  const epicFiles = new Set(
+    readdirSync(epicsDir).filter((f) => f.startsWith("epic-") && f.endsWith(".md")),
+  );
+
+  // Check ticket → epic linkage
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    const raw = readFileSync(join(ticketsDir, f), "utf8");
+    const epicMatch = raw.match(/\*\*Epic:\*\*\s*(.+)/);
+    if (!epicMatch) continue;
+    const epicRef = epicMatch[1]!.trim();
+    // Epic ref can be a filename like "epic-auth-flow.md" or a title
+    const isFilename = epicRef.endsWith(".md");
+    if (isFilename && !epicFiles.has(epicRef)) {
+      findings.push({
+        gate: "linkage",
+        level: "error",
+        message: `${f}: **Epic:** references non-existent file ${epicRef}`,
+      });
+    }
+  }
+
+  // Check epic → ticket linkage
+  for (const f of epicFiles) {
+    const raw = readFileSync(join(epicsDir, f), "utf8");
+    const tasksSection = raw.match(/## Linked Tasks\s*\n([\s\S]*?)(?=\n##|$)/);
+    if (!tasksSection) continue;
+    const taskLinks = tasksSection[1]!.match(/\[([^\]]+)\]\(([^)]+)\)/g) ?? [];
+    for (const link of taskLinks) {
+      const m = link.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      if (!m) continue;
+      const target = m[2]!;
+      if (target.startsWith("./") || target.includes("/")) {
+        const resolved = join(epicsDir, target);
+        if (!existsSync(resolved)) {
+          findings.push({
+            gate: "linkage",
+            level: "error",
+            message: `${f}: Linked Tasks references missing file: ${target}`,
+          });
+        }
+      }
+    }
+  }
+
+  return findings;
+}
+
+// ── Backlog gate ────────────────────────────────────────────────
+
+function checkBacklog(backlogDir: string, indexFiles: string[]): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(backlogDir)) {
+    findings.push({
+      gate: "backlog",
+      level: "warn",
+      message: `backlog dir not found: ${backlogDir}`,
+    });
+    return findings;
+  }
+  const result = reconcileBacklog(backlogDir, indexFiles);
+  for (const f of result.orphans) {
+    findings.push({
+      gate: "backlog",
+      level: "error",
+      message: `orphan: ${f} (not listed in any index file map)`,
+    });
+  }
+  for (const p of result.phantoms) {
+    findings.push({
+      gate: "backlog",
+      level: "error",
+      message: `phantom: ${p.index}:${p.row.line} → ${p.row.file} (file missing)`,
+    });
+  }
+  for (const o of result.outside) {
+    findings.push({
+      gate: "backlog",
+      level: "warn",
+      message: `outside: ${o.index}:${o.row.line} → ${o.row.target} (targets outside backlog/)`,
+    });
+  }
+  return findings;
+}
+
+// ── Code-map gate ───────────────────────────────────────────────
+
+function checkCodeMap(
+  projectRoot: string,
+  mapPath: string,
+  scanDirs: Array<{ dir: string; kind: string; }>,
+): Finding[] {
+  const findings: Finding[] = [];
+  const fresh = buildMap(projectRoot, scanDirs);
+  if (!existsSync(mapPath)) {
+    findings.push({
+      gate: "code-map",
+      level: "error",
+      message: `code-map.json missing — run \`giwt plan code-map\` to generate`,
+    });
+    return findings;
+  }
+  if (!verifyFresh(mapPath, fresh)) {
+    findings.push({
+      gate: "code-map",
+      level: "error",
+      message: `code-map.json is stale — run \`giwt plan code-map\` to regenerate`,
+    });
+  }
+  return findings;
+}
+
+// ── Links gate ──────────────────────────────────────────────────
+
+function checkLinks(
+  projectRoot: string,
+  scanDirs: string[],
+  ticketsDir: string,
+  srcDir: string,
+): Finding[] {
+  const findings: Finding[] = [];
+  const result = runLinkCheck(projectRoot, scanDirs, ticketsDir, srcDir);
+  for (const b of result.broken) {
+    findings.push({
+      gate: "links",
+      level: "error",
+      message: `${b.file}: broken link → ${b.target} (resolved ${b.resolved})`,
+    });
+  }
+  for (const o of result.orphanRefs) {
+    findings.push({
+      gate: "links",
+      level: "error",
+      message: `${o.file}: orphan TASK ref ${o.ref} — line: ${o.line}`,
+    });
+  }
+  for (const c of result.brokenComments) {
+    findings.push({
+      gate: "links",
+      level: "error",
+      message: `${c.file}: broken comment citation → ${c.path} (resolved ${c.resolved})`,
+    });
+  }
+  return findings;
+}
+
+// ── SPDX gate ───────────────────────────────────────────────────
+
+function checkSpdx(planDir: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(planDir)) return findings;
+
+  const mdFiles = collectMdFiles(planDir, "");
+  for (const f of mdFiles) {
+    const raw = readFileSync(f, "utf8");
+    if (!raw.includes("SPDX-License-Identifier:")) {
+      findings.push({
+        gate: "spdx",
+        level: "error",
+        message: `${f.slice(planDir.length + 1)}: missing SPDX-License-Identifier`,
+      });
+    }
+  }
+  return findings;
+}
+
+// ── Naming gate ─────────────────────────────────────────────────
+
+function checkNaming(ticketsDir: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(ticketsDir)) return findings;
+
+  const pattern = /^[A-Z]+-[\w-]+\.md$/;
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    if (!pattern.test(f)) {
+      findings.push({
+        gate: "naming",
+        level: "error",
+        message: `${f}: does not match TYPE-kebab-case-title.md convention`,
+      });
+    }
+  }
+  return findings;
+}
+
+// ── Epics-doc gate ──────────────────────────────────────────────
+
+function checkEpicsDoc(epicsDir: string, outPath: string, backlogPath: string): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(outPath)) {
+    findings.push({
+      gate: "epics-doc",
+      level: "error",
+      message: `epics-index.md missing — run \`giwt plan gen-docs\` to generate`,
+    });
+    return findings;
+  }
+  const epics = collectEpics(epicsDir);
+  const fresh = generateIndex(epics, backlogPath);
+  const existing = readFileSync(outPath, "utf8");
+  if (fresh !== existing) {
+    findings.push({
+      gate: "epics-doc",
+      level: "error",
+      message: `epics-index.md is stale — run \`giwt plan gen-docs\` to regenerate`,
+    });
+  }
+  return findings;
+}
+
+// ── Ticket index gate (delegates to sync-index) ─────────────────
+
+// Imported lazily to avoid circular deps; validate caller provides the
+// runSync function. This keeps validate pure of CLI-side imports.
+export type TicketSyncFn = (
+  root: string,
+  opts: { fix: boolean; verbose: boolean; ticketsPath: string; },
+) => number;
+
+function checkTicketIndex(
+  worktreeRoot: string,
+  ticketsPath: string,
+  runSync: TicketSyncFn,
+): Finding[] {
+  const findings: Finding[] = [];
+  const exitCode = runSync(worktreeRoot, {
+    fix: false,
+    verbose: false,
+    ticketsPath,
+  });
+  if (exitCode !== 0) {
+    findings.push({
+      gate: "tickets",
+      level: "error",
+      message: `ticket index out of sync — run \`giwt sync\` to reconcile`,
+    });
+  }
+  return findings;
+}
+
+// ── Fix functions (--fix mode) ──────────────────────────────────
+
+/** Apply backlog fixes (orphans → index, phantoms → dropped). */
+function fixBacklogGate(backlogDir: string, indexFiles: string[]): string[] {
+  const result = reconcileBacklog(backlogDir, indexFiles);
+  const report = applyFixes(backlogDir, result);
+  return [...report.added, ...report.dropped];
+}
+
+/** Regenerate code-map.json from scratch. */
+function fixCodeMapGate(
+  projectRoot: string,
+  mapPath: string,
+  sources: Array<{ dir: string; kind: string; }>,
+): string[] {
+  const map = buildMap(projectRoot, sources);
+  writeMap(mapPath, map);
+  return [`regenerated code-map.json (${Object.keys(map).length} src paths)`];
+}
+
+/** Regenerate epics-index.md from scratch. */
+function fixEpicsDocGate(epicsDir: string, outPath: string, backlogPath: string): string[] {
+  const { output } = genDocs(epicsDir, outPath, backlogPath);
+  return [`regenerated epics-index.md (${output.length} bytes)`];
+}
+
+/** Run ticket index sync with fix=true. */
+function fixTicketIndexGate(
+  worktreeRoot: string,
+  ticketsPath: string,
+  runSyncFn: TicketSyncFn,
+): string[] {
+  runSyncFn(worktreeRoot, { fix: true, verbose: false, ticketsPath });
+  return [`synced ticket index (index.json ↔ .md ↔ git issues)`];
+}
+
+// ── Main validate dispatcher ────────────────────────────────────
+
+export interface ValidateOptions {
+  projectRoot: string;
+  worktreeRoot: string;
+  ticketsDir: string;
+  epicsDir: string;
+  backlogDir: string;
+  planDir: string;
+  srcDir: string;
+  codeMapPath: string;
+  epicsIndexPath: string;
+  mapSources: Array<{ dir: string; kind: string; }>;
+  linkScanDirs: string[];
+  backlogIndexFiles: string[];
+  gates: GateName[];
+  runSync: TicketSyncFn;
+  fix?: boolean;
+}
+
+export function runValidate(opts: ValidateOptions): ValidateResult {
+  const gates = opts.gates.includes("all") ? ALL_GATES : opts.gates;
+  const unknown = gates.filter((g) => !ALL_GATES.includes(g));
+  if (unknown.length > 0) {
+    throw new Error(
+      `validate: unknown gate(s) ${unknown.join(", ")} — valid: all, ${ALL_GATES.join(", ")}`,
+    );
+  }
+  const results: GateResult[] = [];
+  const backlogPath = join(opts.planDir, "backlog", "open.md");
+
+  for (const gate of gates) {
+    switch (gate) {
+      case "format": {
+        const findings = [
+          ...checkTicketFormat(opts.ticketsDir),
+          ...checkEpicFormat(opts.epicsDir),
+        ];
+        results.push({
+          gate,
+          pass: findings.filter((f) => f.level === "error").length === 0,
+          findings,
+        });
+        break;
+      }
+      case "linkage": {
+        const findings = checkLinkage(opts.ticketsDir, opts.epicsDir);
+        results.push({
+          gate,
+          pass: findings.filter((f) => f.level === "error").length === 0,
+          findings,
+        });
+        break;
+      }
+      case "backlog": {
+        const findings = checkBacklog(opts.backlogDir, opts.backlogIndexFiles);
+        const hasErrors = findings.some((f) => f.level === "error");
+        let pass = !hasErrors;
+        let fixMsgs: string[] = [];
+        if (opts.fix && hasErrors) {
+          fixMsgs = fixBacklogGate(opts.backlogDir, opts.backlogIndexFiles);
+          if (fixMsgs.length > 0) {
+            // Re-check: applyFixes handles orphans/phantoms but "outside"
+            // entries (warn level) remain — so error-level findings should
+            // be gone after fix.
+            const rechecked = checkBacklog(opts.backlogDir, opts.backlogIndexFiles);
+            pass = !rechecked.some((f) => f.level === "error");
+          }
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
+      case "tickets": {
+        const findings = checkTicketIndex(
+          opts.worktreeRoot,
+          opts.ticketsDir,
+          opts.runSync,
+        );
+        let pass = findings.length === 0;
+        let fixMsgs: string[] = [];
+        if (opts.fix && !pass) {
+          // Don't re-check — runSync is expensive (calls git issue CLI).
+          // Trust the fix; user can re-run validate to confirm.
+          fixMsgs = fixTicketIndexGate(opts.worktreeRoot, opts.ticketsDir, opts.runSync);
+          if (fixMsgs.length > 0) pass = true;
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
+      case "code-map": {
+        const findings = checkCodeMap(opts.projectRoot, opts.codeMapPath, opts.mapSources);
+        let pass = findings.length === 0;
+        let fixMsgs: string[] = [];
+        if (opts.fix && !pass) {
+          fixMsgs = fixCodeMapGate(opts.projectRoot, opts.codeMapPath, opts.mapSources);
+          if (fixMsgs.length > 0) {
+            const rechecked = checkCodeMap(opts.projectRoot, opts.codeMapPath, opts.mapSources);
+            pass = rechecked.length === 0;
+          }
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
+      case "links": {
+        const findings = checkLinks(
+          opts.projectRoot,
+          opts.linkScanDirs,
+          opts.ticketsDir,
+          opts.srcDir,
+        );
+        results.push({
+          gate,
+          pass: findings.length === 0,
+          findings,
+        });
+        break;
+      }
+      case "spdx": {
+        const findings = checkSpdx(opts.planDir);
+        results.push({
+          gate,
+          pass: findings.length === 0,
+          findings,
+        });
+        break;
+      }
+      case "naming": {
+        const findings = checkNaming(opts.ticketsDir);
+        results.push({
+          gate,
+          pass: findings.length === 0,
+          findings,
+        });
+        break;
+      }
+      case "epics-doc": {
+        const findings = checkEpicsDoc(opts.epicsDir, opts.epicsIndexPath, backlogPath);
+        let pass = findings.length === 0;
+        let fixMsgs: string[] = [];
+        if (opts.fix && !pass) {
+          fixMsgs = fixEpicsDocGate(opts.epicsDir, opts.epicsIndexPath, backlogPath);
+          if (fixMsgs.length > 0) {
+            const rechecked = checkEpicsDoc(opts.epicsDir, opts.epicsIndexPath, backlogPath);
+            pass = rechecked.length === 0;
+          }
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
+    }
+  }
+
+  const issueCount = results.reduce(
+    (sum, r) => sum + r.findings.filter((f) => f.level === "error").length,
+    0,
+  );
+  const fixedCount = results.reduce(
+    (sum, r) => sum + (r.fixes?.length ?? 0),
+    0,
+  );
+  return {
+    results,
+    pass: issueCount === 0,
+    issueCount,
+    fixedCount,
+  };
+}

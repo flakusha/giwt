@@ -47,6 +47,7 @@ export const LEDGER_SILENT_COMMANDS: Record<string, true> = {
   gripe: true,
   help: true,
   ledger: true,
+  plan: true,
   runs: true,
 };
 

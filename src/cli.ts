@@ -44,6 +44,7 @@ import { ledger } from "./commands/ledger";
 import { listWorktrees } from "./commands/list";
 import { merge } from "./commands/merge";
 import { execute as newBranchCmd } from "./commands/new-branch";
+import { plan } from "./commands/plan";
 import { execute as prsCmd } from "./commands/prs";
 import { rebase } from "./commands/rebase";
 import { execute as removeCmd } from "./commands/remove";
@@ -94,7 +95,7 @@ const USAGE: Record<string, string> = {
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
-    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)",
+    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge",
   "gi": "<git-issue args...>\n  forwarded verbatim to git issue",
   "gpg-unlock": "",
   "gripe":
@@ -108,6 +109,8 @@ const USAGE: Record<string, string> = {
     "<branch> <source>\n  <branch>   target worktree branch\n  <source>   branch merged into it",
   "new":
     "<branch> [base]\n  <branch>   new branch name\n  [base]     base ref (default: root branch)",
+  "plan":
+    "<subcommand> [flags]\n  backlog-sync  sync .plan/backlog/ index ↔ tier files (--fix, --verbose)\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix)\n  status        show .plan/ health summary",
   "prs": "",
   "rebase":
     "<branch> [onto]\n  <branch>   worktree branch\n  [onto]     target ref (default: root branch)",
@@ -212,6 +215,10 @@ const commands: Record<string, CommandHandler> = {
   "new": {
     description: "Create new branch + worktree",
     run: newBranchCmd,
+  },
+  "plan": {
+    description: "Plan tooling — backlog sync, code map, docs, link check, validate",
+    run: plan,
   },
   "prs": {
     description: "Create worktrees for open PRs",

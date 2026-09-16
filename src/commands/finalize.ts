@@ -3,7 +3,10 @@
 
 import { existsSync } from "fs";
 import { closeSync, openSync, readFileSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
-import { resolve } from "path";
+import { join, resolve } from "path";
+import { ALL_GATES, runValidate } from "../plan/validate";
+import type { GateName } from "../plan/validate";
+import { runSync } from "../tickets/sync-index";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { getRootBranch, gitSync, gitSyncQuiet, isProtected } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
@@ -563,12 +566,14 @@ export function parseFinalizeArgs(args: string[]): {
   force: boolean;
   gatesFilter: string;
   skipGatesFilter: string;
+  planGatesFilter: string;
 } {
   const nonFlagArgs: string[] = [];
   let mergeStrategy = "rebase";
   let force = false;
   let gatesFilter = "";
   let skipGatesFilter = "";
+  let planGatesFilter = "";
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === undefined) break;
@@ -581,6 +586,8 @@ export function parseFinalizeArgs(args: string[]): {
       gatesFilter = args[++i] || "";
     } else if (arg === "--skip-gates") {
       skipGatesFilter = args[++i] || "";
+    } else if (arg === "--plan-gates") {
+      planGatesFilter = args[++i] || "";
     } else {
       nonFlagArgs.push(arg);
     }
@@ -595,6 +602,7 @@ export function parseFinalizeArgs(args: string[]): {
     force,
     gatesFilter,
     skipGatesFilter,
+    planGatesFilter,
   };
 }
 
@@ -700,12 +708,14 @@ export async function finalize(
   let force = false;
   let gatesFilter = "";
   let skipGatesFilter = "";
+  let planGatesFilter = "";
   const parsed = parseFinalizeArgs(args);
   branch = parsed.branch;
   mergeStrategy = parsed.mergeStrategy;
   force = parsed.force;
   gatesFilter = parsed.gatesFilter;
   skipGatesFilter = parsed.skipGatesFilter;
+  planGatesFilter = parsed.planGatesFilter;
   gripeBranch = branch;
 
   if (!["rebase", "squash", "direct"].includes(mergeStrategy)) {
@@ -777,6 +787,7 @@ export async function finalize(
         force,
         gatesFilter,
         skipGatesFilter,
+        planGatesFilter,
         config,
         wtPath,
         targetBranch,
@@ -800,6 +811,7 @@ async function runFinalize(
   force: boolean,
   gatesFilter: string,
   skipGatesFilter: string,
+  planGatesFilter: string,
   config: WorktreeConfig,
   wtPath: string,
   targetBranch: string,
@@ -824,6 +836,65 @@ async function runFinalize(
     process.exit(1);
   }
   log("success", "Worktree clean");
+
+  // Plan validation gate (if --plan-gates specified)
+  if (planGatesFilter) {
+    log("info", `Plan validation (--plan-gates ${planGatesFilter})...`);
+    if (force) {
+      log("warn", "Skipped: --force flag set");
+    } else {
+      const planDirName = config.settings.paths.planDir;
+      const planDir = join(wtPath, planDirName);
+      const gateNames = planGatesFilter === "all"
+        ? [...ALL_GATES]
+        : planGatesFilter.split(",").map((g) => g.trim()).filter(Boolean);
+      const planResult = runValidate({
+        projectRoot: wtPath,
+        worktreeRoot: wtPath,
+        ticketsDir: join(planDir, "tickets"),
+        epicsDir: join(planDir, "epics"),
+        backlogDir: join(planDir, "backlog"),
+        planDir,
+        srcDir: "src",
+        codeMapPath: join(planDir, "code-map.json"),
+        epicsIndexPath: join(planDir, "epics-index.md"),
+        mapSources: [
+          { dir: `${planDirName}/tickets`, kind: "ticket" },
+          { dir: `${planDirName}/epics`, kind: "epic" },
+          { dir: "docs/spec", kind: "spec" },
+          { dir: "docs/frontend", kind: "frontend" },
+        ],
+        linkScanDirs: ["docs", planDirName],
+        backlogIndexFiles: ["priority.md", "open.md"],
+        gates: gateNames as GateName[],
+        runSync: (root, opts) =>
+          runSync(root, {
+            fix: opts.fix,
+            verbose: opts.verbose,
+            ticketsPath: opts.ticketsPath,
+          }),
+      });
+      if (planResult.pass) {
+        log("success", `Plan validation passed (${planResult.results.length} gates)`);
+      } else {
+        log(
+          "error",
+          `Plan validation failed — ${planResult.issueCount} issue(s) found (or use --force)`,
+        );
+        for (const r of planResult.results) {
+          if (!r.pass) {
+            raw(`  ✗ ${r.gate}`);
+            for (const f of r.findings) {
+              if (f.level === "error") {
+                raw(`    ${f.message}`);
+              }
+            }
+          }
+        }
+        process.exit(1);
+      }
+    }
+  }
 
   // Step 2: Run checks
   log("info", `Step 2: Running checks (${config.settings.commands.check})...`);

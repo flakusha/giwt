@@ -19,6 +19,7 @@
  *   [paths]
  *   tree         = "tree"
  *   tickets      = ".plan/tickets"
+ *   plan         = ".plan"          # plan root dir (epics, backlog, tickets)
  *   runlog       = ".tmp/giwt"
  *   check_report = ".tmp/check-report.json"
  *   [commands]
@@ -44,7 +45,7 @@ import { log } from "./output";
 
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
-  paths: { tree: string; tickets: string; runlog: string; checkReport: string; };
+  paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
   commands: { check: string; test: string; };
   runlog: { maxRuns: number; };
   output: { format: string; };
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   paths: {
     tree: "tree",
     tickets: ".plan/tickets",
+    planDir: ".plan",
     runlog: ".tmp/giwt",
     checkReport: ".tmp/check-report.json",
   },
@@ -66,7 +68,13 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
 /** snake_case TOML keys → camelCase settings keys, per section. */
 const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   branches: { protected: "protected", root: "root" },
-  paths: { tree: "tree", tickets: "tickets", runlog: "runlog", check_report: "checkReport" },
+  paths: {
+    tree: "tree",
+    tickets: "tickets",
+    plan: "planDir",
+    runlog: "runlog",
+    check_report: "checkReport",
+  },
   commands: { check: "check", test: "test" },
   runlog: { max_runs: "maxRuns" },
   output: { format: "format" },
@@ -74,7 +82,13 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
 
 const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" | "number">> = {
   branches: { protected: "string[]", root: "string" },
-  paths: { tree: "string", tickets: "string", runlog: "string", checkReport: "string" },
+  paths: {
+    tree: "string",
+    tickets: "string",
+    planDir: "string",
+    runlog: "string",
+    checkReport: "string",
+  },
   commands: { check: "string", test: "string" },
   runlog: { maxRuns: "number" },
   output: { format: "string" },
