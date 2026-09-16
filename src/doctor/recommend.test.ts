@@ -1,0 +1,362 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+/**
+ * Tests for `recommend()` — pure function, no FS I/O.
+ * Four scenarios: bare TS, TS+biome, non-TS, rust-only.
+ * Assertions check tool ids in `add`/`skip` buckets of RecommendResult.
+ */
+
+import { describe, expect, it } from "bun:test";
+
+import type { ExistingTooling, GitHygiene, ProjectReport } from "./detect.ts";
+import { recommend } from "./recommend.ts";
+import type { RecommendResult } from "./recommend.ts";
+
+const NO_TOOLING = (): ExistingTooling => ({
+  oxlint: false,
+  biome: false,
+  eslint: false,
+  knip: false,
+  jscpd: false,
+  dprint: false,
+  stylelint: false,
+  markuplint: false,
+  markdownlint: false,
+  typeCoverage: false,
+  giwt: false,
+  preCommit: false,
+  postCommit: false,
+  prePush: false,
+  husky: false,
+  lefthook: false,
+  linearHistory: false,
+  pushProtection: false,
+});
+
+const NO_GIT = (): GitHygiene => ({
+  isGitRepo: false,
+  hooksPath: null,
+  protectedBranches: [],
+  agentEmail: null,
+  hasLinearHistoryConfig: false,
+});
+
+const bareTsReport = (): ProjectReport => ({
+  root: "/fake/bare-ts",
+  languages: ["typescript"],
+  packageManager: "npm",
+  runtimes: ["node"],
+  hasFrontend: false,
+  hasBackend: false,
+  hasNative: false,
+  existing: NO_TOOLING(),
+  git: NO_GIT(),
+  license: "unknown",
+  pkgName: null,
+  pkgType: null,
+});
+
+const tsWithBiomeReport = (): ProjectReport => ({
+  ...bareTsReport(),
+  existing: { ...NO_TOOLING(), biome: true },
+});
+
+const nonTsReport = (): ProjectReport => ({
+  root: "/fake/non-ts",
+  languages: ["html", "markdown"],
+  packageManager: null,
+  runtimes: [],
+  hasFrontend: false,
+  hasBackend: false,
+  hasNative: false,
+  existing: NO_TOOLING(),
+  git: NO_GIT(),
+  license: "unknown",
+  pkgName: null,
+  pkgType: null,
+});
+
+const rustOnlyReport = (): ProjectReport => ({
+  root: "/fake/rust-only",
+  languages: ["rust"],
+  packageManager: null,
+  runtimes: [],
+  hasFrontend: false,
+  hasBackend: false,
+  hasNative: true,
+  existing: NO_TOOLING(),
+  git: NO_GIT(),
+  license: "AGPL-3.0-or-later",
+  pkgName: null,
+  pkgType: null,
+});
+
+const idsByStatus = (
+  result: RecommendResult,
+  status: "add" | "skip" | "already-present",
+): string[] =>
+  result.recommendations
+    .filter((r) => r.status === status)
+    .map((r) => r.id)
+    .sort();
+
+describe("recommend()", () => {
+  describe("bare TypeScript project", () => {
+    const r = recommend(bareTsReport());
+    const adds = idsByStatus(r, "add");
+    const skips = idsByStatus(r, "skip");
+
+    it("oxlint in add bucket (no existing config)", () => {
+      expect(adds).toContain("oxlint");
+    });
+
+    it("prettier in add bucket (no formatter configured)", () => {
+      expect(adds).toContain("prettier");
+    });
+
+    it("dprint in add bucket (no formatter configured)", () => {
+      expect(adds).toContain("dprint");
+    });
+
+    it("eslint in skip bucket (oxlint + biome cover common rules)", () => {
+      expect(skips).toContain("eslint");
+    });
+
+    it("quality tools: knip/jscpd/typeCoverage/madge in add bucket", () => {
+      expect(adds).toContain("knip");
+      expect(adds).toContain("jscpd");
+      expect(adds).toContain("typeCoverage");
+      expect(adds).toContain("madge");
+    });
+
+    it("depcheck/tsPrune in skip bucket (knip supersedes both)", () => {
+      expect(skips).toContain("depcheck");
+      expect(skips).toContain("tsPrune");
+    });
+
+    it("vitest in add bucket (npm runtime, not bun)", () => {
+      expect(adds).toContain("vitest");
+    });
+
+    it("git-hygiene skips: husky/lefthook/postCommit/prePush/pushProtection", () => {
+      for (
+        const id of [
+          "husky",
+          "lefthook",
+          "postCommit",
+          "prePush",
+          "pushProtection",
+        ]
+      ) {
+        expect(skips).toContain(id);
+      }
+    });
+
+    it("preCommit in add bucket (status is gated on existing only, not git repo)", () => {
+      expect(adds).toContain("preCommit");
+      expect(r.toWrite.find((t) => t.id === "preCommit")).toBeUndefined();
+    });
+
+    it("commitlint in add bucket", () => {
+      expect(adds).toContain("commitlint");
+    });
+
+    it("gitignore/editorconfig in add bucket", () => {
+      expect(adds).toContain("gitignore");
+      expect(adds).toContain("editorconfig");
+    });
+
+    it("release tools: changesets/releasePlease/semanticRelease in add bucket", () => {
+      expect(adds).toContain("changesets");
+      expect(adds).toContain("releasePlease");
+      expect(adds).toContain("semanticRelease");
+    });
+
+    it("codecov in add bucket (TS project)", () => {
+      expect(adds).toContain("codecov");
+    });
+
+    it("linearHistory recommended but not writable (no git repo)", () => {
+      expect(adds).toContain("linearHistory");
+      expect(r.toWrite.find((t) => t.id === "linearHistory")).toBeUndefined();
+    });
+
+    it("renovate/dependabot/actionlint absent (not a git repo)", () => {
+      for (const id of ["renovate", "dependabot", "actionlint"]) {
+        expect(r.recommendations.find((rec) => rec.id === id)).toBeUndefined();
+      }
+    });
+
+    it("toWrite only contains 'add' status entries", () => {
+      for (const t of r.toWrite) {
+        expect(t.status).toBe("add");
+      }
+    });
+
+    it("skipped and toWrite are mutually exclusive", () => {
+      const skippedIds: Record<string, true> = {};
+      for (const t of r.skipped) {
+        skippedIds[t.id] = true;
+      }
+      for (const t of r.toWrite) {
+        expect(skippedIds[t.id]).toBeUndefined();
+      }
+    });
+  });
+
+  describe("TypeScript project with biome present", () => {
+    const r = recommend(tsWithBiomeReport());
+
+    it("biome NOT in recommendations (gated on hasFrontend which is false)", () => {
+      expect(r.recommendations.find((rec) => rec.id === "biome")).toBeUndefined();
+    });
+
+    it("prettier in skip bucket (biome already formats)", () => {
+      expect(idsByStatus(r, "skip")).toContain("prettier");
+    });
+
+    it("dprint in skip bucket (biome already formats)", () => {
+      expect(idsByStatus(r, "skip")).toContain("dprint");
+    });
+
+    it("oxlint in add bucket (biome does not replace it)", () => {
+      expect(idsByStatus(r, "add")).toContain("oxlint");
+    });
+
+    it("quality tools still in add bucket (knip/jscpd/typeCoverage/madge)", () => {
+      expect(idsByStatus(r, "add")).toContain("knip");
+      expect(idsByStatus(r, "add")).toContain("jscpd");
+      expect(idsByStatus(r, "add")).toContain("typeCoverage");
+      expect(idsByStatus(r, "add")).toContain("madge");
+    });
+
+    it("vitest still in add bucket", () => {
+      expect(idsByStatus(r, "add")).toContain("vitest");
+    });
+  });
+
+  describe("non-TS project (HTML + markdown, no git)", () => {
+    const r = recommend(nonTsReport());
+    const adds = idsByStatus(r, "add");
+    const skips = idsByStatus(r, "skip");
+
+    it("no TS-only tools in add: oxlint/eslint/prettier/dprint/biome", () => {
+      for (const id of ["oxlint", "eslint", "prettier", "dprint", "biome"]) {
+        expect(adds).not.toContain(id);
+      }
+    });
+
+    it("markuplint in add bucket (HTML detected)", () => {
+      expect(adds).toContain("markuplint");
+    });
+
+    it("markdownlint in add bucket (markdown detected)", () => {
+      expect(adds).toContain("markdownlint");
+    });
+
+    it("commitlint/gitignore/editorconfig in add bucket", () => {
+      expect(adds).toContain("commitlint");
+      expect(adds).toContain("gitignore");
+      expect(adds).toContain("editorconfig");
+    });
+
+    it("git-hygiene skips: husky/lefthook/postCommit/prePush/pushProtection", () => {
+      for (
+        const id of [
+          "husky",
+          "lefthook",
+          "postCommit",
+          "prePush",
+          "pushProtection",
+        ]
+      ) {
+        expect(skips).toContain(id);
+      }
+    });
+
+    it("preCommit in add bucket (status is gated on existing only, not git repo)", () => {
+      expect(adds).toContain("preCommit");
+      expect(r.toWrite.find((t) => t.id === "preCommit")).toBeUndefined();
+    });
+
+    it("TS-only tools absent from any bucket (knip/jscpd/vitest/codecov/changesets)", () => {
+      for (
+        const id of [
+          "knip",
+          "jscpd",
+          "typeCoverage",
+          "vitest",
+          "codecov",
+          "changesets",
+          "releasePlease",
+          "semanticRelease",
+          "typedoc",
+        ]
+      ) {
+        expect(r.recommendations.find((rec) => rec.id === id)).toBeUndefined();
+      }
+    });
+  });
+
+  describe("rust-only project (no JS/TS)", () => {
+    const r = recommend(rustOnlyReport());
+    const adds = idsByStatus(r, "add");
+    const skips = idsByStatus(r, "skip");
+
+    it("dprint in add bucket (rust detected, no formatter)", () => {
+      expect(adds).toContain("dprint");
+    });
+
+    it("no JS/TS-only tools in add: oxlint/biome/eslint/prettier/knip/jscpd/vitest", () => {
+      for (
+        const id of [
+          "oxlint",
+          "biome",
+          "eslint",
+          "prettier",
+          "knip",
+          "jscpd",
+          "vitest",
+          "codecov",
+          "changesets",
+          "releasePlease",
+          "semanticRelease",
+        ]
+      ) {
+        expect(adds).not.toContain(id);
+      }
+    });
+
+    it("commitlint/gitignore/editorconfig in add bucket", () => {
+      expect(adds).toContain("commitlint");
+      expect(adds).toContain("gitignore");
+      expect(adds).toContain("editorconfig");
+    });
+
+    it("git-hygiene skips: husky/lefthook/postCommit/prePush/pushProtection", () => {
+      for (
+        const id of [
+          "husky",
+          "lefthook",
+          "postCommit",
+          "prePush",
+          "pushProtection",
+        ]
+      ) {
+        expect(skips).toContain(id);
+      }
+    });
+
+    it("preCommit in add bucket (status is gated on existing only, not git repo)", () => {
+      expect(adds).toContain("preCommit");
+      expect(r.toWrite.find((t) => t.id === "preCommit")).toBeUndefined();
+    });
+
+    it("no TS-only quality tools in any bucket (madge/depcheck/tsPrune)", () => {
+      for (const id of ["madge", "depcheck", "tsPrune"]) {
+        expect(r.recommendations.find((rec) => rec.id === id)).toBeUndefined();
+      }
+    });
+  });
+});
