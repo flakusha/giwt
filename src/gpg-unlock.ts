@@ -178,7 +178,7 @@ export function warmCacheViaPassphrase(
  * `process.stdin.isTTY`, otherwise the sign fails at the pinentry layer
  * (surfaced via `ok: false` with gpg's stderr).
  */
-export function warmCacheViaPinentry(
+function warmCacheViaPinentry(
   keyId: string,
 ): { ok: boolean; sigCreated: boolean; stderrOut: string; } {
   const r = runSign(keyId, { mode: "default" });
@@ -190,7 +190,7 @@ export function warmCacheViaPinentry(
  * ~/.gpg-passphrase. Absent means "use pinentry" — the tool never
  * requires a passphrase file to exist.
  */
-export function passphraseSource(): string | null {
+function passphraseSource(): string | null {
   if (process.env.GIT_GPG_PASSPHRASE) return process.env.GIT_GPG_PASSPHRASE;
   const homeRoot = process.env.HOME ?? process.env.USERPROFILE;
   if (!homeRoot) return null;
