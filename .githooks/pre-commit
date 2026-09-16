@@ -1,7 +1,8 @@
 #!/bin/sh
 # Pre-commit hook for giwt — typecheck + full test gate.
 #
-# The project gate is `bun run check` (= `tsc --noEmit && bun test`).
+# The project gate is `bun run check` (= fmt:check + lint + lint:md + lint:sh
+#   + deadcode (knip) + duplication (jscpd) + tsc --noEmit + bun test).
 # tsc is project-wide by design (no per-file tsconfig mode) and the
 # suite runs in ~2s, so there is no staged-files-only fast path — the
 # full gate IS the fast path. Staged-file detection only decides
@@ -40,11 +41,11 @@ echo "Staged files:"
 echo ""
 
 # ── Step 1: Project gate — strict typecheck + full test suite ──
-echo "--- Step 1: bun run check (fmt + lint + tsc --noEmit + bun test) ---"
+echo "--- Step 1: bun run check (fmt + lint + knip + jscpd + tsc + tests) ---"
 if bun run check; then
-  green "PASS: typecheck + tests"
+  green "PASS: gate (fmt + lint + deadcode + duplication + typecheck + tests)"
 else
-  red "FAIL: typecheck or tests"
+  red "FAIL: gate (fmt/lint/duplication/deadcode/typecheck/tests)"
   failures=$((failures + 1))
 fi
 

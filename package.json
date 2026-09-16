@@ -24,7 +24,9 @@
     "lint": "oxlint src",
     "lint:md": "markdownlint-cli2",
     "lint:sh": "shfmt -ln posix -i 2 -d .githooks && shellcheck -x .githooks/pre-commit",
-    "check": "bun run fmt:check && bun run lint && bun run lint:md && bun run lint:sh && tsc --noEmit && bun test"
+    "deadcode": "knip",
+    "duplication": "jscpd",
+    "check": "bun run fmt:check && bun run lint && bun run lint:md && bun run lint:sh && bun run deadcode && bun run duplication && tsc --noEmit && bun test"
   },
   "dependencies": {
     "@optique/core": "^1.2.6",
@@ -33,6 +35,8 @@
   "devDependencies": {
     "@types/bun": "^1.4.2",
     "dprint": "^0.57.4",
+    "jscpd": "^4.0.5",
+    "knip": "^6.36.0",
     "markdownlint-cli2": "^0.23.2",
     "oxlint": "^1.82.0",
     "typescript": "^7.0.2"

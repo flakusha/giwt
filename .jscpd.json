@@ -1,0 +1,18 @@
+{
+  "threshold": 5,
+  "reporters": ["json", "console"],
+  "format": ["typescript"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.test-helpers.ts",
+    ".tmp",
+    "bin",
+    "node_modules",
+    "bun.lock",
+    "package.json"
+  ],
+  "absolute": true,
+  "noSymlinks": true,
+  "skipLocal": true,
+  "output": ".tmp/jscpd-report.json"
+}

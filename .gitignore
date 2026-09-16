@@ -125,3 +125,10 @@ tree/
 !.githooks/
 .githooks/*
 !.githooks/pre-commit
+
+# Tool scratch reports (jscpd output dir, knip cache)
+.tmp/jscpd-report.json/
+.tmp/knip-cache.json
+.tmp/knip-report.json
+.knip/
+.knip-cache

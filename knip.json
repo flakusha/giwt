@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/**/*.test.ts",
+    "src/finalize-lock-fixture.ts"
+  ],
+  "project": [
+    "src/**/*.ts"
+  ],
+  "ignoreBinaries": [
+    "shfmt",
+    "shellcheck",
+    "abort"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "paths": {
+    "src/": [
+      "./src/"
+    ]
+  },
+  "ignore": [
+    "src/doctor/types.ts",
+    "src/doctor/generators/index.ts"
+  ]
+}
