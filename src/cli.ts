@@ -35,6 +35,7 @@ import { commit } from "./commands/commit";
 import { commitWt } from "./commands/commit-wt";
 import { execute as createCmd } from "./commands/create";
 import { execute as diffCmd } from "./commands/diff";
+import { doctor } from "./commands/doctor";
 import { edit } from "./commands/edit";
 import { finalize } from "./commands/finalize";
 import { gi } from "./commands/gi";
@@ -92,6 +93,8 @@ const USAGE: Record<string, string> = {
     "<branch> [-F <file>|--message-file <file>] \"<message>\"\n  <branch>                    worktree branch to commit in\n  -F, --message-file <path>   read the message from file ('-' = stdin)",
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
+  "doctor":
+    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --root <dir>        override project root (default: worktreeRoot)",
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
@@ -175,6 +178,11 @@ const commands: Record<string, CommandHandler> = {
   "diff": {
     description: "Show diff for worktree branch",
     run: diffCmd,
+  },
+  "doctor": {
+    description:
+      "Detect project structure and set up dev tooling (oxlint, biome, knip, jscpd, hooks); `doctor check` runs repo-health checks",
+    run: doctor,
   },
   "edit": {
     description: "Edit issue metadata",

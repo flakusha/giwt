@@ -65,6 +65,33 @@ export type { SyncReport } from "./tickets/sync-ticket";
 
 // Plan tooling (.plan/ validation, code-map, backlog-sync, docs, links)
 export {
+  CHECK_IDS,
+  checkExitCode,
+  parseBiomeOutput,
+  parseEslintJson,
+  parseJscpdReport,
+  parseKnipIssues,
+  parseOxlintJson,
+  parseTestOutput,
+  parseTscOutput,
+  runDoctorChecks,
+} from "./doctor/check";
+export type {
+  CheckFinding,
+  CheckId,
+  CheckResult,
+  CheckSeverity,
+  CloneFinding,
+  DoctorCheckOptions,
+  DoctorCheckReport,
+  KnipFinding,
+  LintFinding,
+  SpawnFn,
+  TestFailure,
+  TodoMatch,
+  TscError,
+} from "./doctor/check";
+export {
   applyFixes as applyBacklogFixes,
   reconcile as reconcileBacklog,
 } from "./plan/backlog-sync";
