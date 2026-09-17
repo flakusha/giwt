@@ -292,7 +292,7 @@ describe("todo precision", () => {
       write(
         root,
         "src/a.ts",
-        "const m = x === \"FIXME\" ? \"FIXME\" : \"TODO\";\n// TODO: real work\n",
+        "const m = x === \"FIXME\" ? \"FIXME\" : \"TODO\";\n// TODO: real work\n// TODO\n// TODO: x\n",
       );
       write(root, "src/a.test.ts", "// TODO: scaffold\n");
       write(root, "__tests__/b.ts", "// TODO: fixture\n");

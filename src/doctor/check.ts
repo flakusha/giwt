@@ -14,11 +14,12 @@
  *   todo       TODO/FIXME comments in code (pure FS scan)
  *
  * Machine contract (omp `/find-work` consumes this):
- *   giwt doctor check --json  →  DoctorCheckReport JSON on stdout, nothing
- *   else on stdout. Finding severity/kind map 1:1 to work tickets:
- *   error/bug = must-fix, warning/task = hygiene. Exit code is 1 when any
- *   error-severity finding exists or a check fails to run, else 0 —
- *   warnings alone never fail.
+ *   giwt doctor check --json  →  DoctorCheckReport JSON on stdout. NOTE:
+ *   giwt's dispatcher prints a run-record announcement line before command
+ *   output, so consumers must parse from the first `{`, not from offset 0.
+ *   Finding severity/kind map 1:1 to work tickets: error/bug = must-fix,
+ *   warning/task = hygiene. Exit code is 1 when any error-severity finding
+ *   exists or a check fails to run, else 0 — warnings alone never fail.
  *
  * Runners shell out via Bun.spawnSync (giwt convention: no timeouts, the
  * operator owns cancellation). Every runner is best-effort: a nonzero exit
@@ -160,8 +161,10 @@ function isTestFile(name: string): boolean {
 }
 
 /** The marker must sit inside a comment (`//`, `#`, `/*`, `*`, …) —
- *  bare identifiers in string literals and ternaries are not work items. */
+ *  bare identifiers in string literals and ternaries are not work items.
+ *  Descriptions shorter than 2 chars are not actionable — skip them. */
 const TODO_COMMENT_BEFORE_RE = /(^|\s)(?:\/\/|#|\/\*|\*|<!--|--|%|;)/;
+const TODO_MIN_TEXT = 2;
 
 const TODO_MAX_FILES = 600;
 const TODO_MAX_FILE_BYTES = 200_000;
@@ -600,7 +603,9 @@ function scanTodoFile(abs: string): TodoMatch[] {
     if (!m?.[1]) continue;
     if (!TODO_COMMENT_BEFORE_RE.test(line.slice(0, m.index))) continue;
     const marker = m[1].toUpperCase() === "FIXME" ? "FIXME" : "TODO";
-    matches.push({ file: abs, line: i + 1, marker, text: todoText(line, marker) });
+    const desc = todoText(line, marker);
+    if (desc.length < TODO_MIN_TEXT) continue;
+    matches.push({ file: abs, line: i + 1, marker, text: desc });
   }
   return matches;
 }
