@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 giwt Contributors
+
+# giwt's own check script ends in plain `bun test`, which treats a
+# --diff-base sha as a test-file filter — opt out of the append.
+[commands]
+diff_base = false

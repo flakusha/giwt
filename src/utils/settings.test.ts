@@ -85,6 +85,33 @@ describe("loadSettings", () => {
     }
   });
 
+  test("commands.diff_base defaults to true and parses false from local config", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.commands.diffBase).toBe(true);
+      writeFileSync(fx.localPath, `[commands]\ndiff_base = false\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.commands.diffBase).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("commands.diff_base wrong type throws naming file and key", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[commands]\ndiff_base = "yes"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/diff_base must be boolean/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("doctor jobs parses from [doctor] and defaults to 4", () => {
     const fx = makeFixture();
     try {

@@ -23,7 +23,8 @@
  *   runlog       = ".tmp/giwt"
  *   check_report = ".tmp/check-report.json"
  *   [commands]
- *   check = "bun run check"    # finalize gate; "--diff-base <base>" appended
+ *   check = "bun run check"    # finalize gate; --diff-base appended unless
+ *                              # commands.diff_base = false
  *   test  = "bun run test:unit"
  *   [doctor]
  *   jobs = 4                  # max concurrent `doctor check` executions
@@ -48,7 +49,7 @@ import { log } from "./output";
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
   paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
-  commands: { check: string; test: string; };
+  commands: { check: string; test: string; diffBase: boolean; };
   doctor: { jobs: number; };
   runlog: { maxRuns: number; };
   output: { format: string; };
@@ -63,7 +64,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     runlog: ".tmp/giwt",
     checkReport: ".tmp/check-report.json",
   },
-  commands: { check: "bun run check", test: "bun run test:unit" },
+  commands: { check: "bun run check", test: "bun run test:unit", diffBase: true },
   doctor: { jobs: 4 },
   runlog: { maxRuns: 200 },
   output: { format: "simple" },
@@ -79,13 +80,16 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     runlog: "runlog",
     check_report: "checkReport",
   },
-  commands: { check: "check", test: "test" },
+  commands: { check: "check", test: "test", diff_base: "diffBase" },
   doctor: { jobs: "jobs" },
   runlog: { max_runs: "maxRuns" },
   output: { format: "format" },
 };
 
-const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" | "number">> = {
+const EXPECTED: Record<
+  keyof GiwtSettings,
+  Record<string, "string[]" | "string" | "number" | "boolean">
+> = {
   branches: { protected: "string[]", root: "string" },
   paths: {
     tree: "string",
@@ -94,7 +98,7 @@ const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" 
     runlog: "string",
     checkReport: "string",
   },
-  commands: { check: "string", test: "string" },
+  commands: { check: "string", test: "string", diffBase: "boolean" },
   doctor: { jobs: "number" },
   runlog: { maxRuns: "number" },
   output: { format: "string" },
@@ -114,6 +118,8 @@ function checkType(
     ? Array.isArray(value) && value.every((v) => typeof v === "string")
     : expect === "number"
     ? typeof value === "number" && Number.isFinite(value)
+    : expect === "boolean"
+    ? typeof value === "boolean"
     : typeof value === "string";
   if (!ok) {
     throw new Error(

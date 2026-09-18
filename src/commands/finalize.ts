@@ -636,8 +636,15 @@ function runCheck(
   // diff-base flag is appended the same way the historical hard-coded
   // "bun run check" form was.
   const cmdWords = (config?.settings.commands.check ?? "bun run check").split(/\s+/);
+  // --diff-base is opt-out (commands.diff_base = false): check runners that
+  // don't consume it — e.g. a script ending in plain `bun test` — otherwise
+  // interpret the sha as a test-file filter and fail. See ticket
+  // FIX-gates-accepts-ambiguous-display-names.
+  const diffBaseArgs = config?.settings.commands.diffBase === false
+    ? []
+    : ["--diff-base", diffBase];
   const result = Bun.spawnSync(
-    [...cmdWords, "--diff-base", diffBase, ...extraCheckArgs],
+    [...cmdWords, ...diffBaseArgs, ...extraCheckArgs],
     { stdout: "pipe", stderr: "pipe", cwd: wtPath },
   );
   if (capturePath) {
