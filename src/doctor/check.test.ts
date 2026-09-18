@@ -197,14 +197,14 @@ describe("runDoctorChecks", () => {
     };
   };
 
-  it("maps stubbed tool output to findings", () => {
+  it("maps stubbed tool output to findings", async () => {
     const root = makeRepo();
     try {
       write(root, "eslint.config.js", "export default [];\n");
       write(root, "tsconfig.json", "{}\n");
       write(root, "package.json", JSON.stringify({ scripts: { test: "bun test" } }));
       write(root, "src/a.ts", "// TODO: stub me\n");
-      const report: DoctorCheckReport = runDoctorChecks(
+      const report: DoctorCheckReport = await runDoctorChecks(
         root,
         {
           checks: ["lint", "typecheck", "tests", "todo"],
@@ -235,10 +235,10 @@ describe("runDoctorChecks", () => {
     }
   });
 
-  it("skips non-applicable checks and honors the filter", () => {
+  it("skips non-applicable checks and honors the filter", async () => {
     const root = makeRepo();
     try {
-      const report = runDoctorChecks(root, { checks: ["lint", "todo"] });
+      const report = await runDoctorChecks(root, { checks: ["lint", "todo"] });
       const byId = Object.fromEntries(report.checks.map((c) => [c.id, c]));
       expect(byId["lint"]?.skipped).toBe("not applicable to this project");
       expect(byId["todo"]?.skipped).toBe("not applicable to this project");
@@ -248,12 +248,12 @@ describe("runDoctorChecks", () => {
     }
   });
 
-  it("warnings alone never fail", () => {
+  it("warnings alone never fail", async () => {
     const root = makeRepo();
     try {
       write(root, "biome.json", "{}\n");
       write(root, "src/a.ts", "export const x = 1;\n");
-      const report = runDoctorChecks(
+      const report = await runDoctorChecks(
         root,
         {
           checks: ["lint"],
@@ -269,11 +269,11 @@ describe("runDoctorChecks", () => {
     }
   });
 
-  it("check errors fail the report", () => {
+  it("check errors fail the report", async () => {
     const root = makeRepo();
     try {
       write(root, "tsconfig.json", "{}\n");
-      const report = runDoctorChecks(root, {
+      const report = await runDoctorChecks(root, {
         checks: ["typecheck"],
         spawn: () => ({ exitCode: 2, stdout: "", stderr: "boom" }),
       });
@@ -285,8 +285,107 @@ describe("runDoctorChecks", () => {
   });
 });
 
+describe("runDoctorChecks concurrency", () => {
+  const makeApplicableRepo = () => {
+    const root = makeRepo();
+    write(root, "eslint.config.js", "export default [];\n");
+    write(root, "tsconfig.json", "{}\n");
+    write(root, "package.json", JSON.stringify({ scripts: { test: "bun test" } }));
+    write(root, "knip.json", "{}\n");
+    write(root, ".jscpd.json", "{}\n");
+    write(root, "src/a.ts", "export const x = 1;\n");
+    return root;
+  };
+
+  it("bounds in-flight checks at jobs", async () => {
+    const root = makeApplicableRepo();
+    try {
+      const state = { inFlight: 0, max: 0 };
+      const report = await runDoctorChecks(root, {
+        checks: ["lint", "typecheck", "tests", "knip", "jscpd"],
+        jobs: 2,
+        spawn: async () => {
+          state.inFlight++;
+          state.max = Math.max(state.max, state.inFlight);
+          await new Promise((r) => setTimeout(r, 10));
+          state.inFlight--;
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      expect(report.checks).toHaveLength(5);
+      expect(state.max).toBe(2);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("defaults to 4 concurrent checks", async () => {
+    const root = makeApplicableRepo();
+    try {
+      const state = { inFlight: 0, max: 0 };
+      await runDoctorChecks(root, {
+        checks: ["lint", "typecheck", "tests", "knip", "jscpd"],
+        spawn: async () => {
+          state.inFlight++;
+          state.max = Math.max(state.max, state.inFlight);
+          await new Promise((r) => setTimeout(r, 10));
+          state.inFlight--;
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      expect(state.max).toBe(4);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("preserves requested check order regardless of completion", async () => {
+    const root = makeApplicableRepo();
+    try {
+      const report = await runDoctorChecks(root, {
+        checks: ["lint", "typecheck", "tests", "knip", "jscpd"],
+        spawn: async (cmd) => {
+          const bin = cmd[0] ?? "";
+          const delay = bin.includes("eslint")
+            ? 40
+            : bin.includes("tsc")
+            ? 30
+            : bin.includes("knip")
+            ? 20
+            : 5;
+          await new Promise((r) => setTimeout(r, delay));
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      expect(report.checks.map((c) => c.id)).toEqual([
+        "lint",
+        "typecheck",
+        "tests",
+        "knip",
+        "jscpd",
+      ]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("throws on invalid jobs", () => {
+    const root = makeApplicableRepo();
+    try {
+      expect(() => runDoctorChecks(root, { checks: ["lint"], jobs: 0 })).toThrow(
+        /jobs must be an integer >= 1/,
+      );
+      expect(() => runDoctorChecks(root, { checks: ["lint"], jobs: 1.5 })).toThrow(
+        /jobs must be an integer >= 1/,
+      );
+    } finally {
+      cleanup(root);
+    }
+  });
+});
+
 describe("todo precision", () => {
-  it("skips markers outside comments and inside test files", () => {
+  it("skips markers outside comments and inside test files", async () => {
     const root = makeRepo();
     try {
       write(
@@ -296,7 +395,7 @@ describe("todo precision", () => {
       );
       write(root, "src/a.test.ts", "// TODO: scaffold\n");
       write(root, "__tests__/b.ts", "// TODO: fixture\n");
-      const report = runDoctorChecks(root, { checks: ["todo"] });
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
       const findings = report.checks[0]?.findings ?? [];
       expect(findings).toHaveLength(1);
       expect(findings[0]?.message).toBe("real work");

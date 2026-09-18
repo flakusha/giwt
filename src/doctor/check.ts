@@ -615,19 +615,24 @@ function scanTodoFile(abs: string): TodoMatch[] {
 // ---------------------------------------------------------------------------
 
 export interface SpawnFn {
-  (cmd: string[], cwd: string): { exitCode: number; stdout: string; stderr: string; };
+  (
+    cmd: string[],
+    cwd: string,
+  ):
+    | { exitCode: number; stdout: string; stderr: string; }
+    | Promise<{ exitCode: number; stdout: string; stderr: string; }>;
 }
 
-function defaultSpawn(
+async function defaultSpawn(
   cmd: string[],
   cwd: string,
-): { exitCode: number; stdout: string; stderr: string; } {
-  const result = Bun.spawnSync(cmd, { stdout: "pipe", stderr: "pipe", cwd });
-  return {
-    exitCode: result.exitCode ?? 1,
-    stdout: result.stdout.toString(),
-    stderr: result.stderr.toString(),
-  };
+): Promise<{ exitCode: number; stdout: string; stderr: string; }> {
+  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", cwd });
+  const [stdout, stderr] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  return { exitCode: await proc.exited, stdout, stderr };
 }
 
 /** Cap an output tail for error fields (keeps JSON reports small). */
@@ -649,7 +654,7 @@ function toFindings(
   }));
 }
 
-function runLint(root: string, spawn: SpawnFn): CheckResult {
+async function runLint(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const base = { id: "lint" as const, tool: "", ok: true, findings: [] as CheckFinding[] };
   let report: ReturnType<typeof detectProject>;
   try {
@@ -671,7 +676,7 @@ function runLint(root: string, spawn: SpawnFn): CheckResult {
     : tool === "oxlint"
     ? [bin, "--format", "json", "."]
     : [bin, "check", "--max-diagnostics=30", "."];
-  const res = spawn(argv, root);
+  const res = await spawn(argv, root);
   const out = res.stdout;
   try {
     const findings = tool === "eslint"
@@ -691,14 +696,14 @@ function runLint(root: string, spawn: SpawnFn): CheckResult {
   }
 }
 
-function runTypecheck(root: string, spawn: SpawnFn): CheckResult {
+async function runTypecheck(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const base = {
     id: "typecheck" as const,
     tool: "tsc --noEmit",
     ok: true,
     findings: [] as CheckFinding[],
   };
-  const res = spawn([toolBin(root, "tsc"), "--noEmit", "-p", root], root);
+  const res = await spawn([toolBin(root, "tsc"), "--noEmit", "-p", root], root);
   const out = res.stdout + res.stderr;
   const errors = parseTscOutput(out, root);
   if (errors.length > 0) {
@@ -724,7 +729,11 @@ function runTypecheck(root: string, spawn: SpawnFn): CheckResult {
   return base;
 }
 
-function runTests(root: string, testCommand: string, spawn: SpawnFn): CheckResult {
+async function runTests(
+  root: string,
+  testCommand: string,
+  spawn: SpawnFn,
+): Promise<CheckResult> {
   const words = testCommand.split(/\s+/).filter(Boolean);
   const base = {
     id: "tests" as const,
@@ -733,7 +742,7 @@ function runTests(root: string, testCommand: string, spawn: SpawnFn): CheckResul
     findings: [] as CheckFinding[],
   };
   if (words.length === 0) return { ...base, ok: false, error: "empty test command" };
-  const res = spawn(words, root);
+  const res = await spawn(words, root);
   const out = res.stdout + res.stderr;
   const failures = parseTestOutput(out);
   if (failures.length > 0) {
@@ -759,9 +768,9 @@ function runTests(root: string, testCommand: string, spawn: SpawnFn): CheckResul
   return base;
 }
 
-function runKnip(root: string, spawn: SpawnFn): CheckResult {
+async function runKnip(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const base = { id: "knip" as const, tool: "knip", ok: true, findings: [] as CheckFinding[] };
-  const res = spawn(
+  const res = await spawn(
     [
       toolBin(root, "knip"),
       "--reporter",
@@ -795,7 +804,7 @@ function runKnip(root: string, spawn: SpawnFn): CheckResult {
   };
 }
 
-function runJscpd(root: string, spawn: SpawnFn): CheckResult {
+async function runJscpd(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const base = { id: "jscpd" as const, tool: "jscpd", ok: true, findings: [] as CheckFinding[] };
   const outDir = mkdtempSync(join(tmpdir(), "giwt-doctor-jscpd-"));
   try {
@@ -803,7 +812,7 @@ function runJscpd(root: string, spawn: SpawnFn): CheckResult {
     // NOTE: no --exit-code flag — its spelling differs across jscpd
     // versions (--exit-code vs --exitCode) and the exit code is ignored
     // here anyway: findings come from the report file, not the status.
-    const res = spawn(
+    const res = await spawn(
       [
         toolBin(root, "jscpd"),
         "--silent",
@@ -889,29 +898,51 @@ function runTodo(root: string): CheckResult {
 // Entry
 // ---------------------------------------------------------------------------
 
+/** Default max concurrent checks — bounds peak memory on big projects
+ *  (tests, tsc, knip, jscpd each spawn their own heavy toolchain). */
+export const DOCTOR_JOBS_DEFAULT = 4;
+
 export interface DoctorCheckOptions {
   /** Subset of checks to run. Undefined = all applicable. */
   checks?: CheckId[];
   /** Test command words override (defaults to settings.commands.test). */
   testCommand?: string;
+  /** Max checks executing concurrently (integer >= 1; default 4). */
+  jobs?: number;
   /** Spawn injector (tests stub tools without subprocesses). */
   spawn?: SpawnFn;
 }
 
 /**
  * Run the requested health checks against root. Throws on a nonexistent
- * root (matches detectProject); per-check failures are captured in the
- * report, never thrown.
+ * root (matches detectProject) and on a `jobs` value that is not an
+ * integer >= 1; per-check failures are captured in the report, never
+ * thrown.
+ *
+ * Checks execute through a bounded worker pool of at most `jobs`
+ * concurrent tasks — the safe default (4) keeps peak memory bounded on
+ * big projects where tests + tsc + knip + jscpd each spawn heavy
+ * toolchains. The report preserves the requested check order regardless
+ * of completion order.
  */
-export function runDoctorChecks(
+export async function runDoctorChecks(
   root: string,
   opts: DoctorCheckOptions = {},
   testCommand = "bun run test:unit",
-): DoctorCheckReport {
+): Promise<DoctorCheckReport> {
+  const jobs = opts.jobs ?? DOCTOR_JOBS_DEFAULT;
+  if (!Number.isInteger(jobs) || jobs < 1) {
+    throw new Error(`doctor check: jobs must be an integer >= 1 (got ${jobs})`);
+  }
   const applicable = new Set(applicableChecks(root));
   const wanted = opts.checks ?? CHECK_IDS;
   const spawn = opts.spawn ?? defaultSpawn;
-  const checks: CheckResult[] = [];
+  const ids = wanted.filter((id): id is CheckId => (CHECK_IDS as readonly string[]).includes(id));
+  const checks: CheckResult[] = new Array(ids.length);
+  const tasks: Array<{
+    at: number;
+    run: () => CheckResult | Promise<CheckResult>;
+  }> = [];
   const skipped = (id: CheckId, tool: string, reason: string): CheckResult => ({
     id,
     tool,
@@ -919,33 +950,43 @@ export function runDoctorChecks(
     skipped: reason,
     findings: [],
   });
-  for (const id of wanted) {
-    if (!CHECK_IDS.includes(id)) continue;
+  ids.forEach((id, at) => {
     if (!applicable.has(id)) {
-      checks.push(skipped(id, id, "not applicable to this project"));
-      continue;
+      checks[at] = skipped(id, id, "not applicable to this project");
+      return;
     }
     switch (id) {
       case "lint":
-        checks.push(runLint(root, spawn));
+        tasks.push({ at, run: () => runLint(root, spawn) });
         break;
       case "typecheck":
-        checks.push(runTypecheck(root, spawn));
+        tasks.push({ at, run: () => runTypecheck(root, spawn) });
         break;
       case "tests":
-        checks.push(runTests(root, opts.testCommand ?? testCommand, spawn));
+        tasks.push({
+          at,
+          run: () => runTests(root, opts.testCommand ?? testCommand, spawn),
+        });
         break;
       case "knip":
-        checks.push(runKnip(root, spawn));
+        tasks.push({ at, run: () => runKnip(root, spawn) });
         break;
       case "jscpd":
-        checks.push(runJscpd(root, spawn));
+        tasks.push({ at, run: () => runJscpd(root, spawn) });
         break;
       case "todo":
-        checks.push(runTodo(root));
+        tasks.push({ at, run: () => runTodo(root) });
         break;
     }
-  }
+  });
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < tasks.length) {
+      const task = tasks[next++]!;
+      checks[task.at] = await task.run();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(jobs, tasks.length) }, worker));
   return { version: 1, root, checks };
 }
 

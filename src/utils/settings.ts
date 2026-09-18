@@ -25,6 +25,8 @@
  *   [commands]
  *   check = "bun run check"    # finalize gate; "--diff-base <base>" appended
  *   test  = "bun run test:unit"
+ *   [doctor]
+ *   jobs = 4                  # max concurrent `doctor check` executions
  *   [runlog]
  *   max_runs = 200
  *   [output]
@@ -47,6 +49,7 @@ export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
   paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
   commands: { check: string; test: string; };
+  doctor: { jobs: number; };
   runlog: { maxRuns: number; };
   output: { format: string; };
 }
@@ -61,6 +64,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     checkReport: ".tmp/check-report.json",
   },
   commands: { check: "bun run check", test: "bun run test:unit" },
+  doctor: { jobs: 4 },
   runlog: { maxRuns: 200 },
   output: { format: "simple" },
 };
@@ -76,6 +80,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     check_report: "checkReport",
   },
   commands: { check: "check", test: "test" },
+  doctor: { jobs: "jobs" },
   runlog: { max_runs: "maxRuns" },
   output: { format: "format" },
 };
@@ -90,6 +95,7 @@ const EXPECTED: Record<keyof GiwtSettings, Record<string, "string[]" | "string" 
     checkReport: "string",
   },
   commands: { check: "string", test: "string" },
+  doctor: { jobs: "number" },
   runlog: { maxRuns: "number" },
   output: { format: "string" },
 };

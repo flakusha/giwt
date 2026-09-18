@@ -94,7 +94,7 @@ const USAGE: Record<string, string> = {
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
-    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --root <dir>        override project root (default: worktreeRoot)",
+    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --root <dir>        override project root (default: worktreeRoot)",
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":

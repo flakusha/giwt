@@ -145,6 +145,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
   let json = false;
   let root = config.worktreeRoot;
   let checks: CheckId[] | undefined;
+  let jobs: number | undefined;
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     if (a === "--json") {
@@ -155,16 +156,20 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     } else if (a === "--checks" || a.startsWith("--checks=")) {
       const v = a.startsWith("--checks=") ? a.slice(9) : args[++i];
       if (v) checks = v.split(",").map((s) => s.trim()).filter(Boolean) as CheckId[];
+    } else if (a === "--jobs" || a.startsWith("--jobs=")) {
+      const v = a.startsWith("--jobs=") ? a.slice(7) : args[++i];
+      if (v) jobs = Number(v);
     } else if (a === "--help" || a === "-h") {
-      raw("Usage: giwt doctor check [--json] [--checks <csv>] [--root <dir>]");
+      raw("Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
       raw("");
       raw("Run repo-health checks: lint, typecheck, tests, knip, jscpd, todo.");
+      raw("Checks run through a bounded pool (default 4 concurrent; override with --jobs).");
       raw("Prints human-readable findings, or JSON with --json.");
       raw("Exit code is 1 on any error-severity finding or failed check.");
       return;
     } else {
       log("error", `unknown flag '${a}'`);
-      raw("  Usage: giwt doctor check [--json] [--checks <csv>] [--root <dir>]");
+      raw("  Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
       process.exit(1);
     }
   }
@@ -176,9 +181,16 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
       process.exit(1);
     }
   }
-  const report = runDoctorChecks(
+  if (jobs !== undefined && (!Number.isInteger(jobs) || jobs < 1)) {
+    log("error", `--jobs must be an integer >= 1 (got ${jobs})`);
+    process.exit(1);
+  }
+  const report = await runDoctorChecks(
     root,
-    checks ? { checks } : {},
+    {
+      ...(checks ? { checks } : {}),
+      jobs: jobs ?? config.settings.doctor.jobs,
+    },
     config.settings.commands.test,
   );
   if (json) {
@@ -215,7 +227,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
 
 function printHelp(): void {
   raw("Usage: giwt doctor [--apply] [--tool <csv>] [--root <dir>]");
-  raw("       giwt doctor check [--json] [--checks <csv>] [--root <dir>]");
+  raw("       giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
   raw("");
   raw("Detect project structure and set up dev tooling.");
   raw("Default mode is dry-run: shows what would be written.");
@@ -227,6 +239,7 @@ function printHelp(): void {
   raw("                        lint, typecheck, tests, knip, jscpd, todo");
   raw("  --json              (check only) machine-readable report on stdout");
   raw("  --checks <csv>      (check only) restrict to specific check ids");
+  raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)");
   raw("  -h, --help          this help");
   raw("");
   raw("Tool ids: oxlint, eslint, biome, knip, jscpd, dprint, stylelint,");

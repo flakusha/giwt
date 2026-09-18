@@ -85,6 +85,22 @@ describe("loadSettings", () => {
     }
   });
 
+  test("doctor jobs parses from [doctor] and defaults to 4", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.doctor.jobs).toBe(4);
+      writeFileSync(fx.localPath, `[doctor]\njobs = 2\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.doctor.jobs).toBe(2);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("invalid TOML throws naming the file", () => {
     const fx = makeFixture();
     try {
