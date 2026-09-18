@@ -66,6 +66,11 @@ export interface ExistingTooling {
   lefthook: boolean;
   linearHistory: boolean;
   pushProtection: boolean;
+  prettier: boolean;
+  madge: boolean;
+  renovate: boolean;
+  dependabot: boolean;
+  workflows: boolean;
 }
 
 export interface GitHygiene {
@@ -283,6 +288,19 @@ function detectExistingTooling(
     lefthook: hasAny(["lefthook.yml", ".lefthook.yml"]),
     linearHistory: false,
     pushProtection: false,
+    prettier: hasAny([
+      ".prettierrc",
+      ".prettierrc.json",
+      ".prettierrc.yaml",
+      ".prettierrc.yml",
+      "prettier.config.js",
+      "prettier.config.cjs",
+      "prettier.config.mjs",
+    ]),
+    madge: hasAny(["madge.config.js", "madge.config.cjs", "madge.config.mjs"]),
+    renovate: hasAny(["renovate.json", "renovate.json5"]),
+    dependabot: hasAny([".github/dependabot.yml", ".github/dependabot.yaml"]),
+    workflows: existsSync(join(root, ".github", "workflows")),
   };
 }
 

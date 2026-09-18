@@ -26,6 +26,7 @@ export { generateHappyDom } from "./happy-dom.ts";
 export { generateHooks } from "./hooks.ts";
 export { generateJscpd } from "./jscpd.ts";
 export { generateKnip } from "./knip.ts";
+export { generateLefthook } from "./lefthook.ts";
 export { generateMadge } from "./madge.ts";
 export { generateMarkdownlint } from "./markdownlint.ts";
 export { generateMarkuplint } from "./markuplint.ts";

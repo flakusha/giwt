@@ -107,6 +107,11 @@ describe("detectProject", () => {
     write(join(root, "knip.json"), "{}");
     write(join(root, ".jscpd.json"), "{}");
     write(join(root, ".markdownlint.json"), "{}");
+    write(join(root, ".prettierrc.json"), "{}");
+    write(join(root, "madge.config.cjs"), "module.exports = {};");
+    write(join(root, "renovate.json"), "{}");
+    write(join(root, ".github", "dependabot.yml"), "version: 2");
+    write(join(root, ".github", "workflows", "ci.yml"), "name: ci");
 
     const r = detectProject(root);
     expect(r.existing.oxlint).toBe(true);
@@ -114,6 +119,11 @@ describe("detectProject", () => {
     expect(r.existing.knip).toBe(true);
     expect(r.existing.jscpd).toBe(true);
     expect(r.existing.markdownlint).toBe(true);
+    expect(r.existing.prettier).toBe(true);
+    expect(r.existing.madge).toBe(true);
+    expect(r.existing.renovate).toBe(true);
+    expect(r.existing.dependabot).toBe(true);
+    expect(r.existing.workflows).toBe(true);
   });
 
   it("detects SPDX license from source headers", () => {

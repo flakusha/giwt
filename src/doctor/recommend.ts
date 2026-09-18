@@ -180,7 +180,7 @@ export function recommend(report: ProjectReport): RecommendResult {
   const isPython = report.languages.includes("python");
 
   const hasAnyFormatter = has("oxlint") || has("biome") || has("eslint")
-    || has("dprint");
+    || has("dprint") || has("prettier");
 
   const out: ToolRecommendation[] = [];
 
@@ -247,8 +247,10 @@ export function recommend(report: ProjectReport): RecommendResult {
     out.push({
       id: "prettier",
       category: "format",
-      status: "skip",
-      reason: "oxlint/biome/dprint already format — Prettier would duplicate",
+      status: has("prettier") ? "already-present" : "skip",
+      reason: has("prettier")
+        ? "prettier config present"
+        : "oxlint/biome/dprint already format — Prettier would duplicate",
       configWritable: false,
     });
   }
@@ -369,9 +371,11 @@ export function recommend(report: ProjectReport): RecommendResult {
     out.push({
       id: "madge",
       category: "quality",
-      status: "add",
-      reason: "circular-import / dep-graph visualization — catches tangled module graphs early",
-      configWritable: true,
+      status: has("madge") ? "already-present" : "add",
+      reason: has("madge")
+        ? "madge config present"
+        : "circular-import / dep-graph visualization — catches tangled module graphs early",
+      configWritable: !has("madge"),
     });
 
     out.push({
@@ -510,9 +514,11 @@ export function recommend(report: ProjectReport): RecommendResult {
     out.push({
       id: "actionlint",
       category: "git",
-      status: "add",
-      reason: "GitHub Actions workflow lint — catches typos in workflow YAML",
-      configWritable: true,
+      status: has("workflows") ? "add" : "skip",
+      reason: has("workflows")
+        ? "GitHub Actions workflow lint — catches typos in workflow YAML"
+        : "no .github/workflows — nothing to lint",
+      configWritable: has("workflows"),
     });
   }
 
@@ -564,16 +570,24 @@ export function recommend(report: ProjectReport): RecommendResult {
     out.push({
       id: "renovate",
       category: "depcfg",
-      status: "add",
-      reason: "Renovate config-as-code for auto-PR dep updates (config: renovate.json)",
-      configWritable: true,
+      status: has("renovate") ? "already-present" : has("dependabot") ? "skip" : "add",
+      reason: has("renovate")
+        ? "renovate.json present"
+        : has("dependabot")
+        ? "dependabot already handles updates — pick one automation"
+        : "Renovate config-as-code for auto-PR dep updates (config: renovate.json)",
+      configWritable: !has("renovate") && !has("dependabot"),
     });
     out.push({
       id: "dependabot",
       category: "depcfg",
-      status: "add",
-      reason: "GitHub-native Dependabot (.github/dependabot.yml) — zero-config if no renovate",
-      configWritable: true,
+      status: has("dependabot") ? "already-present" : has("renovate") ? "skip" : "add",
+      reason: has("dependabot")
+        ? "dependabot config present"
+        : has("renovate")
+        ? "renovate already handles updates — pick one automation"
+        : "GitHub-native Dependabot (.github/dependabot.yml) — zero-config if no renovate",
+      configWritable: !has("dependabot") && !has("renovate"),
     });
   }
 

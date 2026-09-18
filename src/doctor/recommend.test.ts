@@ -32,6 +32,11 @@ const NO_TOOLING = (): ExistingTooling => ({
   lefthook: false,
   linearHistory: false,
   pushProtection: false,
+  prettier: false,
+  madge: false,
+  renovate: false,
+  dependabot: false,
+  workflows: false,
 });
 
 const NO_GIT = (): GitHygiene => ({
@@ -353,10 +358,45 @@ describe("recommend()", () => {
       expect(r.toWrite.find((t) => t.id === "preCommit")).toBeUndefined();
     });
 
-    it("no TS-only quality tools in any bucket (madge/depcheck/tsPrune)", () => {
-      for (const id of ["madge", "depcheck", "tsPrune"]) {
-        expect(r.recommendations.find((rec) => rec.id === id)).toBeUndefined();
-      }
+    it("prettier already-present when config exists", () => {
+      const r2 = recommend({ ...bareTsReport(), existing: { ...NO_TOOLING(), prettier: true } });
+      expect(idsByStatus(r2, "already-present")).toContain("prettier");
+    });
+
+    it("madge already-present when config exists", () => {
+      const r2 = recommend({ ...bareTsReport(), existing: { ...NO_TOOLING(), madge: true } });
+      expect(idsByStatus(r2, "already-present")).toContain("madge");
+    });
+
+    it("renovate/dependabot mutually exclusive: one present skips the other", () => {
+      const withRenovate = recommend({
+        ...bareTsReport(),
+        git: { ...NO_GIT(), isGitRepo: true },
+        existing: { ...NO_TOOLING(), renovate: true },
+      });
+      expect(idsByStatus(withRenovate, "already-present")).toContain("renovate");
+      expect(idsByStatus(withRenovate, "skip")).toContain("dependabot");
+      const withDependabot = recommend({
+        ...bareTsReport(),
+        git: { ...NO_GIT(), isGitRepo: true },
+        existing: { ...NO_TOOLING(), dependabot: true },
+      });
+      expect(idsByStatus(withDependabot, "already-present")).toContain("dependabot");
+      expect(idsByStatus(withDependabot, "skip")).toContain("renovate");
+    });
+
+    it("actionlint skipped without workflows, added with workflows (git repo)", () => {
+      const noWorkflows = recommend({
+        ...bareTsReport(),
+        git: { ...NO_GIT(), isGitRepo: true },
+      });
+      expect(idsByStatus(noWorkflows, "skip")).toContain("actionlint");
+      const withWorkflows = recommend({
+        ...bareTsReport(),
+        git: { ...NO_GIT(), isGitRepo: true },
+        existing: { ...NO_TOOLING(), workflows: true },
+      });
+      expect(idsByStatus(withWorkflows, "add")).toContain("actionlint");
     });
   });
 });

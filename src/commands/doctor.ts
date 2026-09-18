@@ -20,8 +20,10 @@ import { dirname, join } from "node:path";
 import { CHECK_IDS, checkExitCode, runDoctorChecks } from "../doctor/check.ts";
 import type { CheckId } from "../doctor/check.ts";
 import { detectProject } from "../doctor/detect.ts";
+import { generateActionlint } from "../doctor/generators/actionlint.ts";
 import { generateBiome } from "../doctor/generators/biome.ts";
 import { generateCommitlint } from "../doctor/generators/commitlint.ts";
+import { generateDependabot } from "../doctor/generators/dependabot.ts";
 import { generateDprint } from "../doctor/generators/dprint.ts";
 import { generateEditorconfig } from "../doctor/generators/editorconfig.ts";
 import { generateEslint } from "../doctor/generators/eslint.ts";
@@ -29,9 +31,13 @@ import { generateGitignore } from "../doctor/generators/gitignore.ts";
 import { generateHooks } from "../doctor/generators/hooks.ts";
 import { generateJscpd } from "../doctor/generators/jscpd.ts";
 import { generateKnip } from "../doctor/generators/knip.ts";
+import { generateLefthook } from "../doctor/generators/lefthook.ts";
+import { generateMadge } from "../doctor/generators/madge.ts";
 import { generateMarkdownlint } from "../doctor/generators/markdownlint.ts";
 import { generateOxlint } from "../doctor/generators/oxlint.ts";
 import { generatePackageJson } from "../doctor/generators/package-json.ts";
+import { generatePrettier } from "../doctor/generators/prettier.ts";
+import { generateRenovate } from "../doctor/generators/renovate.ts";
 import { recommend } from "../doctor/recommend.ts";
 import type { DoctorOptions, GeneratedFile, ProjectReport, ToolId } from "../doctor/types.ts";
 import type { WorktreeConfig } from "../utils/config.ts";
@@ -244,7 +250,8 @@ function printHelp(): void {
   raw("");
   raw("Tool ids: oxlint, eslint, biome, knip, jscpd, dprint, stylelint,");
   raw("          markuplint, markdownlint, commitlint, preCommit, postCommit,");
-  raw("          prePush, linearHistory, pushProtection");
+  raw("          prePush, linearHistory, pushProtection, prettier, madge,");
+  raw("          renovate, dependabot, actionlint, lefthook");
   raw("Check ids: lint, typecheck, tests, knip, jscpd, todo");
   raw("Check exit code is 1 on any error-severity finding or failed check.");
 }
@@ -285,12 +292,28 @@ export function collectFiles(
     out.push(...files);
   };
 
+  const isTs = report.languages.includes("typescript")
+    || report.languages.includes("javascript");
+  const hasAnyFormatter = report.existing.oxlint || report.existing.biome
+    || report.existing.eslint || report.existing.dprint || report.existing.prettier;
   if (!report.existing.oxlint) accept("oxlint", generateOxlint(ctx));
   if (!report.existing.biome) accept("biome", generateBiome(ctx));
   if (!report.existing.knip) accept("knip", generateKnip(ctx));
   if (!report.existing.jscpd) accept("jscpd", generateJscpd(ctx));
   if (!report.existing.dprint) accept("dprint", generateDprint(ctx));
   if (!report.existing.markdownlint) accept("markdownlint", generateMarkdownlint(ctx));
+  if (isTs && !hasAnyFormatter) accept("prettier", generatePrettier(ctx));
+  if (isTs && !report.existing.madge) accept("madge", generateMadge(ctx));
+  if (report.git.isGitRepo && !report.existing.renovate && !report.existing.dependabot) {
+    accept("renovate", generateRenovate(ctx));
+    accept("dependabot", generateDependabot(ctx));
+  }
+  if (report.git.isGitRepo && report.existing.workflows) {
+    accept("actionlint", generateActionlint(ctx));
+  }
+  if (!report.existing.lefthook && opts.tools?.includes("lefthook")) {
+    accept("lefthook", generateLefthook(ctx));
+  }
   if (!report.existing.eslint && opts.tools?.includes("eslint")) {
     accept("eslint", generateEslint(ctx));
   }

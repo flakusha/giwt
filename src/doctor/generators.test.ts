@@ -27,6 +27,7 @@ import {
   generateHooks,
   generateJscpd,
   generateKnip,
+  generateLefthook,
   generateMadge,
   generateMarkdownlint,
   generateMarkuplint,
@@ -75,6 +76,11 @@ function baseReport(overrides: Partial<ProjectReport> = {}): ProjectReport {
       lefthook: false,
       linearHistory: false,
       pushProtection: false,
+      prettier: false,
+      madge: false,
+      renovate: false,
+      dependabot: false,
+      workflows: false,
     },
     git: {
       isGitRepo: true,
@@ -430,5 +436,14 @@ describe("generatePlaywright", () => {
   it("adds webServer block when project has backend", () => {
     const files = generatePlaywright(emptyCtx(baseReport({ hasBackend: true })));
     expect(files[0]?.content).toContain("webServer");
+  });
+});
+describe("generateLefthook", () => {
+  it("emits lefthook.yml mirroring staged-file fmt+lint checks", () => {
+    const files = generateLefthook(emptyCtx());
+    expect(files).toHaveLength(1);
+    expect(files[0]?.path).toBe("lefthook.yml");
+    expect(files[0]?.content).toContain("pre-commit");
+    expect(files[0]?.content).toContain("staged_files");
   });
 });
