@@ -37,7 +37,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { log, raw } from "../utils/output";
 import {
   type GitIssue,
@@ -65,7 +65,7 @@ export interface SyncOptions {
 export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   const fixMode = opts.fix ?? false;
   const verbose = opts.verbose ?? false;
-  const TICKETS_DIR = join(repoRoot, opts.ticketsPath ?? ".plan/tickets");
+  const TICKETS_DIR = resolve(repoRoot, opts.ticketsPath ?? ".plan/tickets");
   const INDEX_PATH = join(TICKETS_DIR, "index.json");
   /** Serializes concurrent `--fix` runs (mkdir-based lock: atomic on POSIX). */
   const LOCK_PATH = join(TICKETS_DIR, ".index-sync.lock");
