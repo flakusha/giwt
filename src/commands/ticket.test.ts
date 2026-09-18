@@ -21,7 +21,7 @@
  * real `git issue` CLI — skipped where it is not installed.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -137,4 +137,109 @@ describe("ticket command inside a linked worktree", () => {
       }
     },
   );
+});
+
+/**
+ * Issue-metadata path: with a real `git issue` CLI, `ticket` must apply the
+ * flag set to the created issue (labels in one `edit -l` invocation,
+ * priority in its own), record the plan-spec comment, and warn — without
+ * rewriting — when the plan file already exists.
+ */
+describe.skipIf(Bun.which("git-issue") === null)("ticket issue metadata (real git issue)", () => {
+  function capture(): { text: () => string; restore: () => void; } {
+    const chunks: string[] = [];
+    const push = (chunk: unknown): boolean => {
+      chunks.push(String(chunk));
+      return true;
+    };
+    const out = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const err = spyOn(process.stderr, "write").mockImplementation(push as never);
+    return {
+      text: () => chunks.join(""),
+      restore: () => {
+        out.mockRestore();
+        err.mockRestore();
+      },
+    };
+  }
+
+  /** The issue hash for `extid`, or null when no matching issue exists. */
+  function issueHash(repo: string, extid: string): string | null {
+    const out = git(repo, "issue", "ls", "--all", "--format", "oneline");
+    const line = out.split("\n").find((l) => l.includes(extid));
+    return line?.split(" ")[0] ?? null;
+  }
+
+  it("applies flags to the .md and the git issue, and warns on a repeated title", async () => {
+    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-meta-"));
+    const repo = join(base, "proj");
+    const prevCwd = process.cwd();
+    try {
+      initRepoWithCommit(repo);
+      mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
+      process.chdir(repo);
+      const config = await loadConfig();
+
+      const cap1 = capture();
+      try {
+        await ticket([
+          "TASK",
+          "metadata probe",
+          "first body",
+          "-l",
+          "bug,backend",
+          "-p",
+          "high",
+          "-e",
+          "EPIC-7",
+          "--effort",
+          "S",
+          "--tag",
+          "alpha,beta",
+        ], config);
+      } finally {
+        cap1.restore();
+      }
+      expect(cap1.text()).toContain("created ticket file: .plan/tickets/TASK-metadata-probe.md");
+
+      const md = readFileSync(join(repo, ".plan", "tickets", "TASK-metadata-probe.md"), "utf8");
+      expect(md).toContain("# TASK: metadata probe");
+      expect(md).toContain("**Priority:** high");
+      expect(md).toContain("**Effort:** S");
+      expect(md).toContain("**Epic:** EPIC-7");
+      expect(md).toContain("**Tags:** alpha, beta");
+      expect(md).toContain("first body");
+
+      const hash = issueHash(repo, "TASK-metadata-probe");
+      expect(hash).not.toBeNull();
+      const show = git(repo, "issue", "show", hash!);
+      expect(show).toContain("Labels:  bug, backend");
+      expect(show).toContain("Priority: high");
+      expect(show).toContain("Plan spec: .plan/tickets/TASK-metadata-probe.md");
+
+      // Second run on the same title: plan file is preserved, issue count grows.
+      const cap2 = capture();
+      try {
+        await ticket(["TASK", "metadata probe", "second body"], config);
+      } finally {
+        cap2.restore();
+      }
+      expect(cap2.text()).toContain(
+        "ticket file already exists: .plan/tickets/TASK-metadata-probe.md",
+      );
+      const mdAfter = readFileSync(
+        join(repo, ".plan", "tickets", "TASK-metadata-probe.md"),
+        "utf8",
+      );
+      expect(mdAfter).toBe(md);
+      expect(mdAfter).not.toContain("second body");
+      const matches = git(repo, "issue", "ls", "--all", "--format", "oneline")
+        .split("\n")
+        .filter((l) => l.includes("TASK-metadata-probe"));
+      expect(matches.length).toBe(2);
+    } finally {
+      process.chdir(prevCwd);
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
 });

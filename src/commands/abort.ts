@@ -40,7 +40,7 @@
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { resolve } from "path";
 import { type WorktreeConfig } from "../utils/config";
-import { gitSync, gitSyncQuiet } from "../utils/git";
+import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log, raw, section } from "../utils/output";
 
 export const LOCK_FILENAME = ".worktree-finalize.lock";
@@ -50,6 +50,17 @@ export const FINALIZE_STASH_PREFIX = "worktree-finalize-";
 // a stash entry created for a merge doesn't get pulled onto a conflicted
 // tree.
 export const DEV_IN_PROGRESS_HEADS = ["MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD"] as const;
+
+/**
+ * git subcommand that aborts the operation behind a `<OP>_HEAD` sentinel.
+ * Derived via a table, not `name.replace("_HEAD", "").toLowerCase()` — that
+ * produced `cherry_pick`, a command git does not have.
+ */
+export const IN_PROGRESS_ABORT_COMMAND: Record<(typeof DEV_IN_PROGRESS_HEADS)[number], string> = {
+  MERGE_HEAD: "merge",
+  REBASE_HEAD: "rebase",
+  CHERRY_PICK_HEAD: "cherry-pick",
+};
 
 /**
  * Minimal fs surface for the pure helpers. Production code uses the
@@ -193,12 +204,12 @@ export async function abort(
       }
       continue;
     }
-    const op = name.replace("_HEAD", "").toLowerCase();
+    const op = IN_PROGRESS_ABORT_COMMAND[name];
     log("info", `Found ${name} — aborting in-progress ${op}...`);
     if (dryRun) continue;
     const result = Bun.spawnSync(
       ["git", "-C", repoRoot, op, "--abort"],
-      { stdout: "pipe", stderr: "pipe" },
+      { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
     );
     if (result.exitCode === 0) {
       log("success", `aborted in-progress ${op}`);
@@ -223,7 +234,7 @@ export async function abort(
       if (dryRun) continue;
       const pop = Bun.spawnSync(
         ["git", "-C", repoRoot, "stash", "pop", entry.ref],
-        { stdout: "pipe", stderr: "pipe" },
+        { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
       );
       if (pop.exitCode === 0) {
         log("success", `restored ${entry.ref}`);
@@ -233,7 +244,7 @@ export async function abort(
       const head = gitSyncQuiet(repoRoot, "rev-parse", "HEAD");
       const reset = Bun.spawnSync(
         ["git", "-C", repoRoot, "reset", "--hard", head],
-        { stdout: "pipe", stderr: "pipe" },
+        { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
       );
       if (reset.exitCode !== 0) {
         log("error", `reset --hard HEAD failed`);

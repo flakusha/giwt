@@ -348,8 +348,9 @@ function detectGitHygiene(root: string): GitHygiene {
       { stdout: "pipe", stderr: "pipe" },
     );
     const stdout = out.stdout.toString();
-    hasLinearHistoryConfig = /pull\.ff\s*=\s*only/.test(stdout)
-      || /branch\..+\.rebase\s*=\s*true/.test(stdout);
+    // `git config --get-regexp` prints "key value", unlike `--list` ("key=value").
+    hasLinearHistoryConfig = /pull\.ff\s*=?\s*only/.test(stdout)
+      || /branch\..+\.rebase\s*=?\s*true/.test(stdout);
   }
 
   return {

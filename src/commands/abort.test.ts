@@ -14,14 +14,14 @@
  */
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { DEFAULT_SETTINGS } from "../utils/settings";
-import { abort, LOCK_FILENAME } from "./abort";
+import { abort, LOCK_FILENAME, removeLockfile } from "./abort";
 
 let root: string;
 const temps: string[] = [];
@@ -73,6 +73,18 @@ function startConflictedMerge(): void {
   writeFileSync(join(root, "a.txt"), "main\n");
   git(["commit", "-aqm", "main change"]);
   git(["merge", "feature"]);
+}
+
+/** Build a conflicted cherry-pick in the fixture repo (CHERRY_PICK_HEAD). */
+function startConflictedCherryPick(): void {
+  git(["checkout", "-q", "-b", "pick-source"]);
+  writeFileSync(join(root, "a.txt"), "picked\n");
+  git(["commit", "-aqm", "picked change"]);
+  const picked = git(["rev-parse", "HEAD"]).trim();
+  git(["checkout", "-q", "main"]);
+  writeFileSync(join(root, "a.txt"), "main line\n");
+  git(["commit", "-aqm", "main change"]);
+  git(["cherry-pick", picked]);
 }
 
 afterEach(() => {
@@ -187,5 +199,91 @@ describe("abort orchestrator", () => {
     const out = cap.text();
     expect(out).toContain("No leftover finalize stashes");
     expect(git(["stash", "list"])).toContain("my own stash");
+  });
+});
+
+describe("abort failure branches", () => {
+  test("removeLockfile reports false when the lockfile cannot be unlinked", () => {
+    const fs = {
+      existsSync: () => true,
+      readFileSync: () => "pid=7",
+      unlinkSync: () => {
+        throw new Error("EPERM: operation not permitted");
+      },
+    };
+    expect(removeLockfile("/repo", fs)).toBe(false);
+  });
+
+  test("aborts an in-progress cherry-pick with the real git subcommand", async () => {
+    const cfg = makeRepo();
+    startConflictedCherryPick();
+    expect(existsSync(join(root, ".git", "CHERRY_PICK_HEAD"))).toBe(true);
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    // Regression: the op must be `cherry-pick`, not `cherry_pick`.
+    expect(out).toContain("aborting in-progress cherry-pick");
+    expect(out).toContain("aborted in-progress cherry-pick");
+    expect(existsSync(join(root, ".git", "CHERRY_PICK_HEAD"))).toBe(false);
+  });
+
+  // The `<op> --abort` failure log branch is unreachable with real git: a
+  // bare MERGE_HEAD/CHERRY_PICK_HEAD is treated as abortable (exit 0), so
+  // there is no deterministic in-process way to make git refuse.
+
+  test("warns when the orphan rebase marker cannot be removed", async () => {
+    const cfg = makeRepo();
+    // A directory at REBASE_HEAD: present, orphaned, and un-unlinkable.
+    mkdirSync(join(root, ".git", "REBASE_HEAD"));
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    expect(out).toContain("Found orphan REBASE_HEAD");
+    expect(out).toContain("could not remove orphan REBASE_HEAD — remove it manually");
+    expect(existsSync(join(root, ".git", "REBASE_HEAD"))).toBe(true);
+  });
+
+  test("cleans the tree and reports a failed reset when a finalize stash pop fails", async () => {
+    const cfg = makeRepo();
+    writeFileSync(join(root, "stash-me.txt"), "dirty\n");
+    git(["stash", "push", "-q", "-u", "-m", "worktree-finalize-11", "stash-me.txt"]);
+    // Hold the index lock so both `stash pop` and `reset --hard` fail.
+    writeFileSync(join(root, ".git", "index.lock"), "");
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    expect(out).toContain("Found 1 finalize stash(es)");
+    expect(out).toContain("pop conflicted — preserving stash, cleaning tree");
+    expect(out).toContain("reset --hard HEAD failed");
+    expect(out).toContain("Stderr:");
+    // The stash is preserved for manual recovery.
+    expect(git(["stash", "list"])).toContain("worktree-finalize-11");
+  });
+
+  test("warns when the lockfile cannot be removed", async () => {
+    const cfg = makeRepo();
+    // A directory at the lockfile path: scan sees it, unlinkSync fails.
+    mkdirSync(join(root, LOCK_FILENAME));
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    expect(out).toContain("Found lockfile at");
+    expect(out).toContain("could not remove lockfile");
   });
 });

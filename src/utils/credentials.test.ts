@@ -10,8 +10,8 @@
  * subprocesses since they need a second module instance.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentCredentials } from "./credentials";
@@ -87,6 +87,63 @@ describe("credentials loader", () => {
       "AGENT_GPG_KEY_ID=K1\nAGENT_GPG_NAME=N1\nAGENT_GPG_EMAIL=E1\n",
     );
     expect(code).toBe(0);
+    expect(out).toContain("AGENT_GPG_KEY_ID='K1'");
+    expect(out).toContain("AGENT_GPG_NAME='N1'");
+    expect(out).toContain("AGENT_GPG_EMAIL='E1'");
+  });
+});
+
+describe("credentials loader edge cases (in-process module instances)", () => {
+  it("stays empty and walks all the way up when no .credentials.env exists", async () => {
+    // Fixture has no .credentials.env anywhere above it, so findCredentialsEnv
+    // must walk past it and return null rather than a stale candidate.
+    const specifier = ["./credentials.ts", "?in-process-no-env"].join("");
+    const mod = await import(specifier);
+    const creds = mod.credentials as AgentCredentials;
+    expect(creds.found).toBe(false);
+    expect(creds.keyId).toBe("");
+    expect(creds.name).toBe("");
+    expect(creds.email).toBe("");
+    expect(creds.path).toBeUndefined();
+  });
+
+  // NOTE: bun reports coverage per module *instance*, not merged across the
+  // query-busted imports in this file, so this last-loaded instance owns the
+  // file's coverage rows. It deliberately combines the two remaining
+  // behaviors: the upward walk landing on a parent .credentials.env, and the
+  // direct-execution shell output.
+  it("walks up to a parent .credentials.env and emits shell lines as the main script", async () => {
+    const base = mkdtempSync(join(tmpdir(), "giwt-credentials-parent-"));
+    const child = join(base, "nested", "child");
+    mkdirSync(child, { recursive: true });
+    writeFileSync(
+      join(base, ".credentials.env"),
+      "AGENT_GPG_KEY_ID=K1\nAGENT_GPG_NAME=N1\nAGENT_GPG_EMAIL=E1\n",
+    );
+    const prevArgv = process.argv[1];
+    process.chdir(child);
+    process.argv[1] = "/virtual/path/credentials.ts";
+    const chunks: string[] = [];
+    const spy = spyOn(process.stdout, "write").mockImplementation(
+      ((chunk: unknown) => {
+        chunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    let creds: AgentCredentials | undefined;
+    try {
+      const specifier = ["./credentials.ts", "?in-process-parent-walk"].join("");
+      const mod = await import(specifier);
+      creds = mod.credentials as AgentCredentials;
+    } finally {
+      spy.mockRestore();
+      process.argv[1] = prevArgv ?? "";
+      rmSync(base, { recursive: true, force: true });
+    }
+    expect(creds!.found).toBe(true);
+    expect(creds!.keyId).toBe("K1");
+    expect(creds!.path).toBe(join(base, ".credentials.env"));
+    const out = chunks.join("");
     expect(out).toContain("AGENT_GPG_KEY_ID='K1'");
     expect(out).toContain("AGENT_GPG_NAME='N1'");
     expect(out).toContain("AGENT_GPG_EMAIL='E1'");

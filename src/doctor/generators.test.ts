@@ -203,6 +203,32 @@ describe("generatePackageJson", () => {
     const files = generatePackageJson(emptyCtx(baseReport({ packageManager: "npm" })));
     expect(files[0]?.content).toContain("npx");
   });
+
+  it("uses pnpx commands for pnpm package manager", () => {
+    const files = generatePackageJson(emptyCtx(baseReport({ packageManager: "pnpm" })));
+    expect(files[0]?.content).toContain("pnpx oxlint");
+    expect(files[0]?.content).toContain("pnpm run lint");
+    expect(files[0]?.content).not.toContain("bunx");
+  });
+
+  it("uses yarn invocations for yarn package manager", () => {
+    const files = generatePackageJson(emptyCtx(baseReport({ packageManager: "yarn" })));
+    expect(files[0]?.content).toContain("yarn dprint fmt");
+    expect(files[0]?.content).toContain("yarn dprint check");
+    expect(files[0]?.content).not.toContain("bunx");
+  });
+
+  it("uses deno run/task invocations for deno package manager", () => {
+    const files = generatePackageJson(emptyCtx(baseReport({ packageManager: "deno" })));
+    expect(files[0]?.content).toContain("deno run -A npm:oxlint");
+    expect(files[0]?.content).toContain("deno task lint");
+    expect(files[0]?.content).not.toContain("bunx");
+  });
+
+  it("falls back to bun for an undetected package manager", () => {
+    const files = generatePackageJson(emptyCtx(baseReport({ packageManager: null })));
+    expect(files[0]?.content).toContain("bunx oxlint");
+  });
 });
 
 describe("generateGitignore", () => {

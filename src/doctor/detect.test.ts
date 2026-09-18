@@ -20,6 +20,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { isolatedGitEnv } from "../utils/git.ts";
 import { detectProject } from "./detect.ts";
 
 function makeRepo(): string {
@@ -183,5 +184,89 @@ describe("detectProject", () => {
     expect(r.packageManager).toBeNull();
     expect(r.runtimes).toEqual([]);
     expect(r.license).toBe("unknown");
+  });
+
+  it("tolerates malformed package.json (no name/type, lockfile still wins)", () => {
+    write(join(root, "package.json"), "{ not valid json");
+    write(join(root, "yarn.lock"), "");
+    const r = detectProject(root);
+    expect(r.pkgName).toBeNull();
+    expect(r.pkgType).toBeNull();
+    expect(r.packageManager).toBe("yarn");
+  });
+
+  it("ignores an unrecognized packageManager field and falls back to lockfiles", () => {
+    write(join(root, "package.json"), JSON.stringify({ packageManager: "cargo@1.0.0" }));
+    write(join(root, "pnpm-lock.yaml"), "");
+    expect(detectProject(root).packageManager).toBe("pnpm");
+  });
+
+  it("infers yarn and npm lockfile precedence when bun/deno/pnpm absent", () => {
+    write(join(root, "package-lock.json"), "{}");
+    expect(detectProject(root).packageManager).toBe("npm");
+    write(join(root, "yarn.lock"), "");
+    expect(detectProject(root).packageManager).toBe("yarn");
+    write(join(root, "deno.lock"), "{}");
+    expect(detectProject(root).packageManager).toBe("deno");
+  });
+
+  it("detects node runtime from dependencies without node_modules", () => {
+    write(join(root, "package.json"), JSON.stringify({ dependencies: { left: "^1" } }));
+    expect(detectProject(root).runtimes).toContain("node");
+  });
+
+  describe("git repo hygiene", () => {
+    const git = (...args: string[]): void => {
+      const res = Bun.spawnSync(["git", "-C", root, ...args], {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: isolatedGitEnv(),
+      });
+      if (res.exitCode !== 0) throw new Error(res.stderr.toString());
+    };
+
+    beforeEach(() => {
+      git("init", "-q", "-b", "main");
+    });
+
+    it("reports no hooksPath/linear history on a fresh repo", () => {
+      const r = detectProject(root);
+      expect(r.git.isGitRepo).toBe(true);
+      expect(r.git.hooksPath).toBeNull();
+      expect(r.git.hasLinearHistoryConfig).toBe(false);
+    });
+
+    it("reads core.hooksPath and pull.ff=only from git config", () => {
+      git("config", "core.hooksPath", ".githooks");
+      git("config", "pull.ff", "only");
+      const r = detectProject(root);
+      expect(r.git.hooksPath).toBe(".githooks");
+      expect(r.git.hasLinearHistoryConfig).toBe(true);
+    });
+
+    it("treats branch.<name>.rebase=true as linear history", () => {
+      git("config", "branch.main.rebase", "true");
+      expect(detectProject(root).git.hasLinearHistoryConfig).toBe(true);
+    });
+  });
+
+  describe("LICENSE-file license heuristics", () => {
+    const cases: Array<[string, string]> = [
+      ["Apache License\nVersion 2.0\n", "Apache-2.0"],
+      ["MIT License\n\nPermission is hereby granted...\n", "MIT"],
+      ["GNU LGPL Version 3\n", "LGPL-3.0-or-later"],
+      ["All rights reserved.\n", "unknown"],
+    ];
+    for (const [content, expected] of cases) {
+      it(`maps ${JSON.stringify(content.slice(0, 12))} to ${expected}`, () => {
+        write(join(root, "LICENSE"), content);
+        expect(detectProject(root).license).toBe(expected);
+      });
+    }
+
+    it("prefers LICENSE.md when LICENSE is absent", () => {
+      write(join(root, "LICENSE.md"), "Apache License 2.0\n");
+      expect(detectProject(root).license).toBe("Apache-2.0");
+    });
   });
 });

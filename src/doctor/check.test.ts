@@ -404,4 +404,216 @@ describe("todo precision", () => {
       cleanup(root);
     }
   });
+
+  it("orders FIXME before TODO, then by file and line", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "src/b.ts", "// FIXME: later file\n// TODO: second\n");
+      write(root, "src/a.ts", "// TODO: first\n// FIXME: urgent\n// TODO: third\n");
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
+      const findings = report.checks[0]?.findings ?? [];
+      expect(findings.map((f) => `${f.rule} ${f.file}:${f.line}`)).toEqual([
+        "FIXME src/a.ts:2",
+        "FIXME src/b.ts:1",
+        "TODO src/a.ts:1",
+        "TODO src/a.ts:3",
+        "TODO src/b.ts:2",
+      ]);
+    } finally {
+      cleanup(root);
+    }
+  });
+});
+
+describe("parser edge shapes", () => {
+  it("parseTestOutput falls back to a failure-count summary", () => {
+    expect(parseTestOutput("5 tests failed")).toEqual([
+      { name: "5 failing (see test output)" },
+    ]);
+  });
+
+  it("parseOxlintJson throws on unparseable output", () => {
+    expect(() => parseOxlintJson("not json", "/r")).toThrow("unparseable");
+  });
+
+  it("parseKnipIssues reads the legacy keyed shape (no issues array)", () => {
+    const out = parseKnipIssues({
+      files: ["src/only-file.ts"],
+      exports: [{ symbol: "unused", file: "src/a.ts", line: 4 }],
+      dependencies: [{ name: "left-pad" }],
+      devDependencies: [{ name: "tsx" }],
+      unlisted: [{ specifier: "missing-pkg" }],
+      unresolved: [{ name: "gone" }],
+      types: ["SomeType"],
+      binaries: "not-an-array",
+    });
+    expect(out).toEqual([
+      { kind: "file", file: "", name: "src/only-file.ts" },
+      { kind: "export", file: "", name: "unused", line: 4 },
+      { kind: "dependency", file: "", name: "left-pad" },
+      { kind: "dependency", file: "", name: "tsx" },
+      { kind: "dependency", file: "", name: "missing-pkg" },
+      { kind: "issue", file: "", name: "gone" },
+      { kind: "issue", file: "", name: "SomeType" },
+    ]);
+  });
+});
+
+describe("runner failure and report paths", () => {
+  it("runs oxlint and surfaces an unparseable report as a check error", async () => {
+    const root = makeRepo();
+    try {
+      write(root, ".oxlintrc.json", "{}");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const report = await runDoctorChecks(root, {
+        checks: ["lint"],
+        spawn: () => ({ exitCode: 1, stdout: "not json", stderr: "boom" }),
+      });
+      const lint = report.checks[0]!;
+      expect(lint.tool).toBe("oxlint");
+      expect(lint.ok).toBe(false);
+      expect(lint.error).toContain("oxlint failed");
+      expect(checkExitCode(report)).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("runs oxlint and maps diagnostics to findings", async () => {
+    const root = makeRepo();
+    try {
+      write(root, ".oxlintrc.json", "{}");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const report = await runDoctorChecks(root, {
+        checks: ["lint"],
+        spawn: () => ({
+          exitCode: 1,
+          stdout: JSON.stringify({
+            diagnostics: [
+              {
+                message: "No debugger",
+                code: "eslint(no-debugger)",
+                severity: "error",
+                filename: join(root, "src", "a.ts"),
+                labels: [{ span: { line: 1 } }],
+              },
+            ],
+          }),
+          stderr: "",
+        }),
+      });
+      expect(report.checks[0]?.tool).toBe("oxlint");
+      expect(report.checks[0]?.findings[0]?.rule).toBe("eslint(no-debugger)");
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("reports a failing test command with no parseable failures", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "true" } }));
+      const report = await runDoctorChecks(root, {
+        checks: ["tests"],
+        spawn: () => ({ exitCode: 3, stdout: "boom", stderr: "" }),
+      });
+      const tests = report.checks[0]!;
+      expect(tests.ok).toBe(false);
+      expect(tests.error).toContain("exited 3");
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("runs the test command through the real spawn when none is injected", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "true" } }));
+      const report = await runDoctorChecks(root, { checks: ["tests"] }, "true");
+      expect(report.checks[0]?.ok).toBe(true);
+      expect(report.checks[0]?.findings).toEqual([]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("surfaces a knip crash and maps knip issues to findings", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "knip.json", "{}");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const crashed = await runDoctorChecks(root, {
+        checks: ["knip"],
+        spawn: () => ({ exitCode: 2, stdout: "not json", stderr: "knip blew up" }),
+      });
+      expect(crashed.checks[0]?.ok).toBe(false);
+      expect(crashed.checks[0]?.error).toContain("knip failed");
+
+      const ok = await runDoctorChecks(root, {
+        checks: ["knip"],
+        spawn: () => ({
+          exitCode: 0,
+          stdout: JSON.stringify({
+            issues: [
+              {
+                file: "src/a.ts",
+                files: [{ name: "src/a.ts", line: 3 }],
+                exports: [{ symbol: "unused" }],
+                dependencies: [{ name: "left-pad" }],
+              },
+              { file: "src/b.ts", types: ["SomeType"] },
+            ],
+          }),
+          stderr: "",
+        }),
+      });
+      const findings = ok.checks[0]?.findings ?? [];
+      expect(findings.map((f) => f.rule)).toEqual([
+        "knip:file",
+        "knip:export",
+        "knip:dependency",
+        "knip:issue",
+      ]);
+      expect(findings[3]?.severity).toBe("error");
+      expect(checkExitCode(ok)).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("maps a jscpd report file to duplication findings", async () => {
+    const root = makeRepo();
+    try {
+      write(root, ".jscpd.json", "{}");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const report = await runDoctorChecks(root, {
+        checks: ["jscpd"],
+        spawn: (cmd) => {
+          const outDir = cmd[cmd.indexOf("-o") + 1]!;
+          writeFileSync(
+            join(outDir, "jscpd-report.json"),
+            JSON.stringify({
+              duplicates: [
+                {
+                  firstFile: { name: join(root, "src", "a.ts"), startLoc: { line: 4 } },
+                  secondFile: { name: join(root, "src", "b.ts"), startLoc: { line: 30 } },
+                  lines: 12,
+                },
+              ],
+            }),
+          );
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      const jscpd = report.checks[0]!;
+      expect(jscpd.ok).toBe(true);
+      expect(jscpd.findings).toHaveLength(1);
+      expect(jscpd.findings[0]?.file).toBe("src/a.ts");
+      expect(jscpd.findings[0]?.line).toBe(4);
+      expect(jscpd.findings[0]?.rule).toBe("duplication");
+      expect(jscpd.findings[0]?.message).toContain("src/a.ts:4 ↔ src/b.ts:30");
+    } finally {
+      cleanup(root);
+    }
+  });
 });

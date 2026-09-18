@@ -144,6 +144,12 @@ let EXIT_HOOK_INSTALLED = false;
 export function finishActiveRun(exitCode: number): void {
   if (ACTIVE_RUN === null || ACTIVE_RUN_FINISHED) return;
   ACTIVE_RUN.finish(exitCode);
+  // A finished run is not active: clear the pointer so later work in the same
+  // process (a second command, or a test file following one that drove a run)
+  // cannot inherit this run's dir via activeRun() — observed as finalize
+  // writing its check.log into a previous test's run directory.
+  ACTIVE_RUN = null;
+  ACTIVE_RUN_FINISHED = true;
 }
 
 /**

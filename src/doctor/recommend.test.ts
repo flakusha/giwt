@@ -399,4 +399,140 @@ describe("recommend()", () => {
       expect(idsByStatus(withWorkflows, "add")).toContain("actionlint");
     });
   });
+
+  describe("frontend TS project with markdown (the full-stack shape)", () => {
+    const report: ProjectReport = {
+      ...bareTsReport(),
+      languages: ["typescript", "markdown", "html", "css"],
+      hasFrontend: true,
+    };
+    const r = recommend(report);
+    const adds = idsByStatus(r, "add");
+    const skips = idsByStatus(r, "skip");
+
+    it("biome recommended for a frontend (formatter+linter combo)", () => {
+      expect(adds).toContain("biome");
+    });
+
+    it("stylelint/markuplint/markdownlint recommended for CSS/HTML/MD", () => {
+      expect(adds).toContain("stylelint");
+      expect(adds).toContain("markuplint");
+      expect(adds).toContain("markdownlint");
+    });
+
+    it("remark recommended for a markdown-heavy frontend", () => {
+      expect(adds).toContain("remark");
+    });
+
+    it("playwright/happy-dom recommended for a frontend with HTML", () => {
+      expect(adds).toContain("playwright");
+      expect(adds).toContain("happyDom");
+    });
+
+    it("typedoc/vitepress/docusaurus recommended for a documented frontend", () => {
+      expect(adds).toContain("typedoc");
+      expect(adds).toContain("vitepress");
+      expect(adds).toContain("docusaurus");
+    });
+
+    it("vitepress/docusaurus not skipped while markdown is present", () => {
+      expect(skips).not.toContain("vitepress");
+      expect(skips).not.toContain("docusaurus");
+    });
+  });
+
+  describe("frontend TS project without markdown", () => {
+    const report: ProjectReport = {
+      ...bareTsReport(),
+      languages: ["typescript", "html", "css"],
+      hasFrontend: true,
+    };
+    const r = recommend(report);
+    const adds = idsByStatus(r, "add");
+    const skips = idsByStatus(r, "skip");
+
+    it("docs-site tools skipped (no markdown to publish)", () => {
+      expect(skips).toContain("vitepress");
+      expect(skips).toContain("docusaurus");
+    });
+
+    it("typedoc still added; remark absent", () => {
+      expect(adds).toContain("typedoc");
+      expect(r.recommendations.find((rec) => rec.id === "remark")).toBeUndefined();
+    });
+
+    it("playwright/happy-dom still added (frontend with HTML)", () => {
+      expect(adds).toContain("playwright");
+      expect(adds).toContain("happyDom");
+    });
+  });
+
+  describe("already-present CSS/docs tooling", () => {
+    it("stylelint already-present suppresses repair when config exists", () => {
+      const r = recommend({
+        ...bareTsReport(),
+        languages: ["typescript", "css"],
+        existing: { ...NO_TOOLING(), stylelint: true },
+      });
+      expect(idsByStatus(r, "already-present")).toContain("stylelint");
+      expect(r.toWrite.find((t) => t.id === "stylelint")).toBeUndefined();
+    });
+
+    it("markuplint already-present when config exists", () => {
+      const r = recommend({
+        ...bareTsReport(),
+        languages: ["typescript", "html"],
+        existing: { ...NO_TOOLING(), markuplint: true },
+      });
+      expect(idsByStatus(r, "already-present")).toContain("markuplint");
+    });
+
+    it("markdownlint already-present when config exists", () => {
+      const r = recommend({
+        ...bareTsReport(),
+        languages: ["typescript", "markdown"],
+        existing: { ...NO_TOOLING(), markdownlint: true },
+      });
+      expect(idsByStatus(r, "already-present")).toContain("markdownlint");
+    });
+
+    it("biome already-present when config exists", () => {
+      const r = recommend({
+        ...bareTsReport(),
+        hasFrontend: true,
+        existing: { ...NO_TOOLING(), biome: true },
+      });
+      expect(idsByStatus(r, "already-present")).toContain("biome");
+      expect(r.toWrite.find((t) => t.id === "biome")).toBeUndefined();
+    });
+  });
+
+  describe("python-only project", () => {
+    const report: ProjectReport = {
+      root: "/fake/py",
+      languages: ["python"],
+      packageManager: null,
+      runtimes: [],
+      hasFrontend: false,
+      hasBackend: false,
+      hasNative: false,
+      existing: NO_TOOLING(),
+      git: NO_GIT(),
+      license: "unknown",
+      pkgName: null,
+      pkgType: null,
+    };
+    const r = recommend(report);
+
+    it("ruff recommended for python", () => {
+      expect(idsByStatus(r, "add")).toContain("ruff");
+    });
+
+    it("no TS formatter lint tools for a python-only project", () => {
+      const adds = idsByStatus(r, "add");
+      for (const id of ["oxlint", "biome", "eslint", "prettier", "knip"]) {
+        expect(adds).not.toContain(id);
+      }
+    });
+  });
 });

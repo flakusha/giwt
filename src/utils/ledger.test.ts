@@ -21,8 +21,8 @@
  *   - `appendGripe` records the resolved branch with the emoji prefix.
  */
 
-import { describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { describe, expect, it, spyOn } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -36,6 +36,7 @@ import {
   LEDGER_FILENAME,
   LEDGER_MAX_MSG,
   LEDGER_MAX_RECORDS,
+  printRecentLedger,
   readLedger,
   truncateMsg,
 } from "./ledger";
@@ -381,6 +382,118 @@ describe("appendCommitOutcome", () => {
       const records = readLedger(dir, 10);
       expect(records[0]!.branch).toBe("");
       expect(records[0]!.msg).toBe("commit :: ✅ abc123456 fix: x");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("ledger failure and display paths", () => {
+  function capture(): { text: () => string; restore: () => void; } {
+    const chunks: string[] = [];
+    const push = (chunk: unknown): boolean => {
+      chunks.push(String(chunk));
+      return true;
+    };
+    const out = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const err = spyOn(process.stderr, "write").mockImplementation(push as never);
+    return {
+      text: () => chunks.join(""),
+      restore: () => {
+        out.mockRestore();
+        err.mockRestore();
+      },
+    };
+  }
+
+  it("printRecentLedger prints the empty placeholder when there is no ledger", () => {
+    const dir = makeTreeDir();
+    const cap = capture();
+    try {
+      printRecentLedger(dir);
+    } finally {
+      cap.restore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+    expect(cap.text()).toContain("Agent ledger is empty — no recent agent activity");
+  });
+
+  it("printRecentLedger renders the newest records one line each", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "new", ["a"], null, "a");
+      appendLedger(dir, "sync", [], null, "dev");
+      const cap = capture();
+      try {
+        printRecentLedger(dir, 10);
+      } finally {
+        cap.restore();
+      }
+      const out = cap.text();
+      expect(out).toContain("Agent ledger (last 2):");
+      expect(out).toContain("] new: new a");
+      expect(out).toContain("] sync: sync");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("readLedger and appendLedger tolerate a ledger path that is not a file", () => {
+    const dir = makeTreeDir();
+    try {
+      // A directory at the ledger path: existsSync passes, reads/writes throw.
+      mkdirSync(join(dir, LEDGER_FILENAME));
+      expect(readLedger(dir, 5)).toEqual([]);
+      expect(() => appendLedger(dir, "new", ["a"], null, "a")).not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("appendCommitOutcome falls back to a supplement line with no matching invocation", () => {
+    const dir = makeTreeDir();
+    try {
+      writeFileSync(
+        join(dir, LEDGER_FILENAME),
+        JSON.stringify({
+          v: 1,
+          ts: "2026-09-18T12:00:00Z",
+          pid: process.pid + 424242,
+          cmd: "commit-wt",
+          branch: "other",
+          msg: "commit-wt other",
+        }) + "\n",
+      );
+      appendCommitOutcome(dir, "commit-wt", "dev", "abc1234567890", "fix: x");
+      const lines = rawLines(dir);
+      expect(lines.length).toBe(2);
+      expect(lines[1]).toContain("✅ abc123456 fix: x");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("appendCommitOutcome skips corrupt lines while hunting its own record", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "commit-wt", ["feat"], null, "dev");
+      writeFileSync(join(dir, LEDGER_FILENAME), "}{ not json\n", { flag: "a" });
+      appendCommitOutcome(dir, "commit-wt", "dev", "feedface0000", "feat: y");
+      const records = readLedger(dir, 10);
+      const own = records.find((r) => r.pid === process.pid)!;
+      expect(own.msg).toBe("commit-wt feat :: ✅ feedface0 feat: y");
+      expect(records.length).toBe(1); // corrupt line was skipped, not rewritten into a record
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("appendCommitOutcome never throws on an unreadable ledger path", () => {
+    const dir = makeTreeDir();
+    try {
+      mkdirSync(join(dir, LEDGER_FILENAME));
+      expect(() => appendCommitOutcome(dir, "commit-wt", "dev", "abc1234567890", "fix: x"))
+        .not.toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
