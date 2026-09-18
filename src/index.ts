@@ -54,13 +54,13 @@ export {
 } from "./utils/ledger";
 export type { LedgerRecord, SayArgs } from "./utils/ledger";
 
-// Run records (.tmp/giwt/runs/)
-export { activeRun, beginRun, listRuns } from "./utils/runlog";
-export type { RunEvent, RunMeta, RunRecorder } from "./utils/runlog";
+// Run records (<repoRoot>/.tmp/giwt/runs/ — they must survive worktree removal)
+export { activeRun, beginRun, finishActiveRun, formatOutcome, listRuns } from "./utils/runlog";
+export type { RunEvent, RunMeta, RunOutcome, RunRecorder, SyncOutcome } from "./utils/runlog";
 
 // Ticket-index sync (`.plan/tickets/index.json` reconciliation)
 export { runSync } from "./tickets/sync-index";
-export type { SyncOptions } from "./tickets/sync-index";
+export type { SyncOptions, SyncSummary } from "./tickets/sync-index";
 export type { SyncReport } from "./tickets/sync-ticket";
 
 // Plan tooling (.plan/ validation, code-map, backlog-sync, docs, links)

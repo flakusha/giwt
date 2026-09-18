@@ -14,8 +14,9 @@ import { type GiwtSettings, loadSettings } from "./settings";
 export interface WorktreeConfig {
   repoRoot: string;
   /** Per-invocation checkout root: worktree root when invoked inside
-   *  tree/<branch>, otherwise identical to repoRoot. Run records and
-   *  plan-file sync land here, not in the main checkout. */
+   *  tree/<branch>, otherwise identical to repoRoot. Plan-file sync lands
+   *  here, not in the main checkout. Run records do NOT: they live under
+   *  repoRoot so a finalize that removes this tree keeps its evidence. */
   worktreeRoot: string;
   treeDir: string;
   /** Effective layered settings (defaults < global < local file). */

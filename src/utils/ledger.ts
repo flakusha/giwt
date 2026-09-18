@@ -31,7 +31,9 @@ export interface LedgerRecord {
   ts: string;
   pid: number;
   cmd: string;
-  /** First positional arg hint (usually a branch); "" when none. */
+  /** Resolved current branch at dispatch (same source as the run
+   *  record's meta.branch); "" when unknown. Never a subcommand or other
+   *  positional argument. */
   branch: string;
   msg: string;
 }
@@ -115,14 +117,20 @@ export function extractSayArgs(args: readonly string[]): SayArgs {
  *
  * @param treeDir - shared tree directory (ledger lives inside it)
  * @param cmd - command name as invoked
- * @param args - command args (say-flags already stripped)
+ * @param args - command args (say-flags already stripped; they shape the
+ *   default message only, never the branch field)
  * @param said - optional free-text context from --say
+ * @param branch - resolved current branch (the dispatcher computes it once
+ *   from `git branch --show-current` and shares it with the run record's
+ *   meta.branch; "" when unknown). Positional args are NOT a branch source:
+ *   `doctor check` would record the subcommand, `sync` nothing at all.
  */
 export function appendLedger(
   treeDir: string,
   cmd: string,
   args: string[],
   said: string | null,
+  branch: string,
 ): void {
   try {
     // Never create the directory as a side effect: commands probing a
@@ -138,7 +146,7 @@ export function appendLedger(
       ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       pid: process.pid,
       cmd,
-      branch: args.filter((a) => !a.startsWith("-"))[0] ?? "",
+      branch,
       msg,
     };
     const path = resolve(treeDir, LEDGER_FILENAME);
@@ -216,14 +224,58 @@ export function printRecentLedger(treeDir: string, count: number = LEDGER_DUMP_D
  * @param message - gripe text without the emoji prefix
  */
 export function appendGripe(treeDir: string, branch: string, message: string): void {
-  appendLedger(treeDir, "gripe", branch === "" ? [] : [branch], `😤 ${message}`);
+  // The [branch] arg only shapes the default message; the resolved branch
+  // is passed explicitly so the field never lies.
+  appendLedger(treeDir, "gripe", branch === "" ? [] : [branch], `😤 ${message}`, branch);
 }
+/** Outcome of hunting for this invocation's own ledger line. */
+type EnrichResult = "enriched" | "already-done" | "not-found";
+
 /**
- * Record a commit outcome: a `<cmd>`-cmd ledger record carrying the new
- * commit's short SHA plus subject line. Called by `commit` and
- * `commit-wt` after a successful GPG-signed commit so the shared
- * ledger shows what landed, not just that a commit ran (the generic
- * auto-append in `index.ts` records the invocation). Best-effort.
+ * Enrich the newest ledger line of THIS invocation (same pid + cmd) in
+ * place with `outcome`. "not-found" (missing ledger, pruned past the cap,
+ * I/O error) lets the caller fall back to a plain append; "already-done"
+ * means the line carries the ✅ marker already and must be left alone.
+ */
+function enrichOwnRecord(treeDir: string, cmd: string, outcome: string): EnrichResult {
+  try {
+    if (!existsSync(treeDir)) return "not-found";
+    const path = resolve(treeDir, LEDGER_FILENAME);
+    if (!existsSync(path)) return "not-found";
+    const lines = readFileSync(path, "utf8").split("\n");
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      if (line === undefined || line.trim().length === 0) continue;
+      let rec: LedgerRecord;
+      try {
+        rec = JSON.parse(line) as LedgerRecord;
+      } catch {
+        continue;
+      }
+      // Newest-to-oldest scan for THIS invocation's line (same pid +
+      // cmd); records from other runs are skipped, not barriers.
+      if (rec.pid !== process.pid || rec.cmd !== cmd) continue;
+      // The " :: ✅ " marker is written only by appendCommitOutcome, so a
+      // matching line either awaits enrichment or is already done.
+      if (rec.msg.includes(" :: ✅ ")) return "already-done"; // never duplicate
+      rec.msg = truncateMsg(`${rec.msg} :: ${outcome}`);
+      lines[i] = JSON.stringify(rec);
+      writeFileSync(path, lines.join("\n"));
+      return "enriched";
+    }
+  } catch { /* treat as no eligible line */ }
+  return "not-found";
+}
+
+/**
+ * Record a commit outcome so the shared ledger shows what landed, not just
+ * that a commit ran. Called by `commit` and `commit-wt` after a successful
+ * GPG-signed commit. The dispatch auto-append already wrote exactly one
+ * line for this invocation (same pid + cmd), so this ENRICHES that line in
+ * place — `:: ✅ <short-sha> <subject>` — instead of appending a duplicate.
+ * When the invocation line is gone (missing ledger, pruned past the cap,
+ * unparseable), it falls back to a supplement line. Either way the commit
+ * lands as exactly one ✅-carrying line. Best-effort: never throws.
  *
  * @param treeDir - shared tree directory
  * @param cmd - "commit" or "commit-wt"
@@ -239,5 +291,9 @@ export function appendCommitOutcome(
   subject: string,
 ): void {
   const firstLine = (subject.split("\n")[0] ?? "").trim();
-  appendLedger(treeDir, cmd, branch === "" ? [] : [branch], `✅ ${sha.slice(0, 9)} ${firstLine}`);
+  const outcome = `✅ ${sha.slice(0, 9)} ${firstLine}`;
+  // "already-done" lands here too: the commit is recorded, appending again
+  // would resurrect the double-line bug this function exists to prevent.
+  if (enrichOwnRecord(treeDir, cmd, outcome) !== "not-found") return;
+  appendLedger(treeDir, cmd, branch === "" ? [] : [branch], outcome, branch);
 }

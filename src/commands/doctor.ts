@@ -43,6 +43,7 @@ import type { DoctorOptions, GeneratedFile, ProjectReport, ToolId } from "../doc
 import type { WorktreeConfig } from "../utils/config.ts";
 import { gitSync, gitSyncQuiet } from "../utils/git.ts";
 import { log, raw, section } from "../utils/output.ts";
+import { activeRun } from "../utils/runlog.ts";
 
 export async function doctor(
   args: string[],
@@ -115,6 +116,7 @@ export async function doctor(
   }
 
   if (files.length === 0) {
+    activeRun()?.outcome({ doctor: "nothing to do — all recommended tools configured" });
     log("success", "Nothing to do — all recommended tools already configured");
     return;
   }
@@ -127,12 +129,14 @@ export async function doctor(
   raw("");
 
   if (opts.dryRun) {
+    activeRun()?.outcome({ doctor: `dry-run: ${files.length} file(s) planned` });
     log("info", "Dry-run only — pass --apply to write these files");
     return;
   }
 
   section("doctor: apply");
   const written = writeAll(root, files);
+  activeRun()?.outcome({ doctor: `applied: wrote ${written} file(s)` });
   log("success", `Wrote ${written} file(s)`);
 
   // Apply git config side-effects (linear history, hooks path)
@@ -199,6 +203,21 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     },
     config.settings.commands.test,
   );
+  // Outcome summary on the run record: the same numbers the human report
+  // and checkExitCode are built from, for `giwt runs` without opening files.
+  const failedIds = report.checks
+    .filter((c) =>
+      (!c.ok && c.skipped === undefined) || c.findings.some((f) => f.severity === "error")
+    )
+    .map((c) => c.id);
+  const skippedCount = report.checks.filter((c) => c.skipped !== undefined).length;
+  const findingCount = report.checks.reduce((n, c) => n + c.findings.length, 0);
+  const passedCount = report.checks.length - skippedCount - failedIds.length;
+  activeRun()?.outcome({
+    doctor: `${passedCount}/${report.checks.length} ok, ${failedIds.length} failed, `
+      + `${skippedCount} skipped, ${findingCount} findings`,
+    ...(failedIds.length > 0 ? { failedGates: failedIds } : {}),
+  });
   if (json) {
     raw(JSON.stringify(report, null, 2));
     process.exitCode = checkExitCode(report);

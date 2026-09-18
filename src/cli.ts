@@ -61,7 +61,7 @@ import { ticket } from "./commands/ticket";
 import { runGpgUnlock } from "./gpg-unlock";
 import { isNoColor } from "./utils/colors";
 import { loadConfig, type WorktreeConfig } from "./utils/config";
-import { assertNotInWorktree } from "./utils/git";
+import { assertNotInWorktree, gitSyncQuiet } from "./utils/git";
 import { appendLedger, extractSayArgs, LEDGER_SILENT_COMMANDS } from "./utils/ledger";
 import { log, raw, setOutputFormat } from "./utils/output";
 import { beginRun } from "./utils/runlog";
@@ -99,7 +99,8 @@ const USAGE: Record<string, string> = {
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
     "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge",
-  "gi": "<git-issue args...>\n  forwarded verbatim to git issue",
+  "gi":
+    "<git-issue args...>\n  forwarded verbatim to git issue; issue-taking subcommands want the id first (show/edit/state <id> ...)\n  git-issue has no close command; close with: giwt gi state <id> --close",
   "gpg-unlock": "",
   "gripe":
     "[--at <branch>] <message...>\n  --at <branch>   branch/agent the gripe targets (--at=<branch> also accepted)",
@@ -113,7 +114,7 @@ const USAGE: Record<string, string> = {
   "new":
     "<branch> [base]\n  <branch>   new branch name\n  [base]     base ref (default: root branch)",
   "plan":
-    "<subcommand> [flags]\n  backlog-sync  sync .plan/backlog/ index ↔ tier files (--fix, --verbose)\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix)\n  status        show .plan/ health summary",
+    "<subcommand> [flags]\n  backlog-sync  sync .plan/backlog/ index ↔ tier files (--fix, --verbose)\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        show .plan/ health summary",
   "prs": "",
   "rebase":
     "<branch> [onto]\n  <branch>   worktree branch\n  [onto]     target ref (default: root branch)",
@@ -380,18 +381,24 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   // run-record announcement) move to stderr and stdout carries only the
   // raw() payload. See FIX-json-output-polluted-by-run-record-announcement.
   if (cleanArgs.includes("--json")) setOutputFormat("json");
+  const silent = LEDGER_SILENT_COMMANDS[cmdName] === true;
+  // Resolved branch: one `git branch --show-current` shared by both
+  // evidence records. Never derived from args — a positional can be a
+  // subcommand (`doctor check`) or absent (`sync`); "" on detached HEAD.
+  // Silent commands record neither, so they skip the git call entirely.
+  const branch = silent ? "" : gitSyncQuiet(config.worktreeRoot, "branch", "--show-current");
   // Run record first: the location is announced BEFORE the command runs,
   // and every later step can attach captures/events to it.
-  const runRec = LEDGER_SILENT_COMMANDS[cmdName]
-    ? null
-    : beginRun(config, cmdName, cleanArgs, said);
-  if (!LEDGER_SILENT_COMMANDS[cmdName]) {
-    appendLedger(config.treeDir, cmdName, cleanArgs, said);
+  const runRec = silent ? null : beginRun(config, cmdName, cleanArgs, said, branch);
+  if (!silent) {
+    appendLedger(config.treeDir, cmdName, cleanArgs, said, branch);
   }
 
   try {
     await handler.action(cleanArgs, config);
-    runRec?.finish(0);
+    // Handlers may set process.exitCode instead of exiting (doctor check
+    // keeps piped JSON intact that way) — record the real code.
+    runRec?.finish(typeof process.exitCode === "number" ? process.exitCode : 0);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     log("error", msg);

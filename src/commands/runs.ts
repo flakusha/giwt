@@ -10,7 +10,7 @@
 
 import { type WorktreeConfig } from "../utils/config";
 import { colorize, log, raw } from "../utils/output";
-import { listRuns } from "../utils/runlog";
+import { formatOutcome, listRuns } from "../utils/runlog";
 
 export async function runs(
   args: string[],
@@ -57,5 +57,7 @@ export async function runs(
       } exit=${exitLabel} ${dur}`,
     );
     raw(`    ${record.dir}`);
+    const outcome = formatOutcome(record.outcome);
+    if (outcome.length > 0) raw(`    ${outcome}`);
   }
 }

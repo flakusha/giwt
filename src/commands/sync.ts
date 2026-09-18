@@ -7,9 +7,10 @@
  * against the managed repo root, in-process.
  */
 
-import { runSync } from "../tickets/sync-index";
+import { runSync, type SyncSummary } from "../tickets/sync-index";
 import { type WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
+import { activeRun } from "../utils/runlog";
 
 export async function sync(
   args: string[],
@@ -25,11 +26,20 @@ export async function sync(
   }
 
   log("info", "Syncing ticket index...");
+  let summary: SyncSummary | null = null;
   const exitCode = runSync(config.worktreeRoot, {
     fix: hasFix,
     verbose: hasVerbose,
     ticketsPath: config.settings.paths.tickets,
+    onSummary: (s) => {
+      summary = s;
+    },
   });
+  if (summary !== null) {
+    // Outcome lands on the run record BEFORE any exit path: the exit hook
+    // backfills end/exitCode only, never outcome data.
+    activeRun()?.outcome({ sync: summary });
+  }
   if (exitCode !== 0) {
     log("error", `sync found actionable issues (exit ${exitCode})`);
     process.exit(exitCode);
