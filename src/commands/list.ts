@@ -9,6 +9,7 @@ import type { WorktreeConfig } from "../utils/config";
 import { getStatus, getWorktrees } from "../utils/git";
 import { colorize, log, raw, section } from "../utils/output";
 import { DEFAULT_SETTINGS } from "../utils/settings";
+import { staleReasons } from "./worktree-registry";
 
 export async function listWorktrees(
   _args?: string[],
@@ -33,6 +34,24 @@ export async function listWorktrees(
     const label = isProt
       ? `${colorize(branch, "gray")} ${colorize("(protected)", "gray")}`
       : colorize(branch, "cyan");
+
+    // Reconcile against git reality: entries whose directory or branch ref
+    // vanished are marked stale instead of masquerading as healthy —
+    // ticket FIX-stale-worktree-registry.
+    const stale = staleReasons(repoRoot!, wt);
+    if (stale.dirMissing || stale.refMissing) {
+      const reasons = [
+        stale.dirMissing ? "directory missing" : null,
+        stale.refMissing ? "branch ref missing" : null,
+      ].filter((reason) => reason !== null).join(", ");
+
+      raw(`\n  ${label} ${colorize(`(stale: ${reasons})`, "red")}`);
+      raw(`    path: ${wt.path}`);
+      const headShort = /^0+$/.test(wt.HEAD) ? "<unknown>" : wt.HEAD.slice(0, 8);
+      const pruneHint = branch ? `giwt remove ${branch}` : "git worktree prune";
+      raw(`    HEAD: ${headShort} — stale; prune with: ${pruneHint}`);
+      continue;
+    }
 
     raw(`\n  ${label}`);
     raw(`    path: ${wt.path}`);

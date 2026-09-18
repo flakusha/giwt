@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { existsSync } from "fs";
 import { resolve } from "path";
-import { branchToPath } from "../utils/config";
+import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
+import { hasWorktreeDir, pruneStaleRegistrations, registrationFor } from "./worktree-registry";
 
-export async function execute(
-  args: string[],
-  config: Awaited<ReturnType<typeof import("../index").loadConfig>>,
-): Promise<void> {
+export async function execute(args: string[], config: WorktreeConfig): Promise<void> {
   const branch = args[0];
   if (!branch) {
     log("error", "branch name required");
@@ -20,8 +17,21 @@ export async function execute(
   const dirName = branchToPath(branch);
   const wtPath = resolve(config.treeDir, dirName);
 
-  if (!existsSync(resolve(wtPath, ".git"))) {
-    log("error", `no worktree found for branch '${branch}'`);
+  if (!hasWorktreeDir(wtPath)) {
+    const registration = await registrationFor(config.repoRoot, wtPath);
+    if (registration) {
+      // Stale registration: git still lists the worktree but its directory
+      // is gone — prune the registration instead of erroring (ticket
+      // FIX-stale-worktree-registry).
+      log("info", `pruning stale worktree registration: ${wtPath} (directory missing)`);
+      pruneStaleRegistrations(config.repoRoot);
+      log("success", `pruned stale registration for branch '${branch}'`);
+      return;
+    }
+    log(
+      "error",
+      `no worktree found for branch '${branch}' — create it first: giwt create ${branch}`,
+    );
     process.exit(1);
   }
 
