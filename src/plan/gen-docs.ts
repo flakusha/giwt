@@ -95,7 +95,10 @@ export function collectEpics(epicsDir: string): Epic[] {
  * Returns the markdown string; does not write to disk.
  */
 export function generateIndex(epics: Epic[], backlogPath: string): string {
-  let md = "# Epics Index\n\n";
+  // ponytail: loop-lore's SPDX convention hardcoded; parameterize when giwt serves a second repo
+  let md = "<!-- SPDX-License-Identifier: Apache-2.0 -->\n";
+  md += "<!-- SPDX-FileCopyrightText: 2026 Loop Lore Contributors -->\n\n";
+  md += "# Epics Index\n\n";
   md += "> Auto-generated from `.plan/epics/`. Do not edit manually.\n";
   md += `> Regenerate with \`giwt plan gen-docs\`.\n\n`;
   md += `**Total:** ${epics.length} epics\n\n`;
