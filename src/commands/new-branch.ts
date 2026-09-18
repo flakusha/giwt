@@ -8,6 +8,33 @@ import { gitSync, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
 
+/**
+ * Report a missing base ref with everything needed to proceed without
+ * trial-and-error: the existing branch candidates, the [branches] root
+ * override in giwt.toml, and the explicit-base escape hatch.
+ * Ticket FIX-errors-carry-no-remedy. Output-only; the caller exits.
+ */
+function reportMissingBase(
+  base: string,
+  branch: string,
+  config: WorktreeConfig,
+): void {
+  log("error", `base '${base}' does not exist (checked as branch, tag, and commit)`);
+  const candidates = gitSync(config.repoRoot, "branch", "--format=%(refname:short)")
+    .split("\n")
+    .map((b) => b.trim().replace(/^\* /, ""))
+    .filter((b) => b.length > 0);
+  if (candidates.length > 0) {
+    raw(`  Existing branches you can base on: ${candidates.join(", ")}`);
+  } else {
+    raw("  No local branches exist yet — pass a commit or tag as the base instead.");
+  }
+  raw(
+    `  Change the default base in giwt.toml: [branches] root = "<branch>" (currently '${config.settings.branches.root}').`,
+  );
+  raw(`  Or pass one explicitly: giwt new-branch ${branch} <base>`);
+}
+
 export async function execute(
   args: string[],
   config: WorktreeConfig,
@@ -39,7 +66,7 @@ export async function execute(
   try {
     gitSync(config.repoRoot, "rev-parse", "--verify", base);
   } catch {
-    log("error", `base '${base}' does not exist`);
+    reportMissingBase(base, branch, config);
     process.exit(1);
   }
 

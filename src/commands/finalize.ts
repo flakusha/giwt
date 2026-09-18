@@ -2,7 +2,15 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { existsSync } from "fs";
-import { closeSync, openSync, readFileSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
+import {
+  closeSync,
+  openSync,
+  readFileSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+  writeSync,
+} from "node:fs";
 import { join, resolve } from "path";
 import { ALL_GATES, runValidate } from "../plan/validate";
 import type { GateName } from "../plan/validate";
@@ -121,6 +129,71 @@ function checkDevMergeable(repoRoot: string): void {
 }
 
 /**
+ * True when `pid` refers to a live process (kill -0 semantics). EPERM
+ * counts as alive: the process exists, we merely lack permission to
+ * signal it — same policy as the stale-reap path above.
+ */
+function pidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+/** Compact human duration for the held-lock report ("45s", "3m12s", "2h05m"). */
+function formatLockAge(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}h${String(m).padStart(2, "0")}m`;
+  if (m > 0) return `${m}m${s}s`;
+  return `${s}s`;
+}
+
+/**
+ * Report a finalize lock we could not acquire, with everything an operator
+ * (or agent) needs to decide without leaving the terminal: lock path,
+ * holder PID, alive/dead, lock age, and the `giwt abort` recovery command.
+ * Ticket FIX-errors-carry-no-remedy: the old message was just "could not
+ * acquire lock", forcing manual lockfile stat + PID checks. Output-only
+ * (no exit) so tests can assert the report; the caller exits.
+ */
+export function reportHeldLock(lockPath: string, now: number = Date.now()): void {
+  let holderPid: number | null = null;
+  try {
+    const parsed = parseInt(readFileSync(lockPath, "utf8").trim(), 10);
+    if (Number.isFinite(parsed)) holderPid = parsed;
+  } catch {
+    // Empty/unreadable lockfile: reported below without a PID line.
+  }
+  let ageMs: number | null = null;
+  try {
+    ageMs = now - statSync(lockPath).mtimeMs;
+  } catch {
+    // Lockfile vanished between the last acquire attempt and this report.
+  }
+  log("error", `could not acquire finalize lock at ${lockPath} — another finalize is in progress`);
+  if (holderPid === null) {
+    raw(
+      "  Lockfile is empty or unreadable — a previous run likely died between creating the lock and writing its PID.",
+    );
+  } else {
+    const alive = pidAlive(holderPid);
+    const age = ageMs === null ? "unknown" : formatLockAge(ageMs);
+    raw(`  Holder: PID ${holderPid} (${alive ? "alive" : "dead"}), lock age ${age}`);
+    if (!alive) {
+      raw(
+        `  Holder is dead, so this lock is stale; if 'giwt abort' does not clear it, remove the lockfile: rm ${lockPath}`,
+      );
+    }
+  }
+  raw("  Recovery: run 'giwt abort' — it rolls back the in-progress merge and releases the lock.");
+}
+
+/**
  * Acquire an exclusive finalize lock on the dev checkout.
  *
  * Two concurrent `finalize` invocations race on `repoRoot`: each pushes a
@@ -208,9 +281,7 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
     // Brief backoff before retry. 50 × 20ms = 1s ceiling.
     Bun.sleepSync(20);
   }
-  log("error", `could not acquire finalize lock at ${lockPath} — another finalize in progress?`);
-  raw("  If no other finalize is running, remove the lockfile manually:");
-  raw(`    rm ${lockPath}`);
+  reportHeldLock(lockPath);
   process.exit(1);
 }
 
@@ -970,6 +1041,11 @@ async function runFinalize(
             }
           }
         }
+        // Outcome before exit: process.exit bypasses the dispatch catch,
+        // the exit hook only backfills end/exitCode, never outcome data.
+        activeRun()?.outcome({
+          failedGates: planResult.results.filter((r) => !r.pass).map((r) => r.gate),
+        });
         process.exit(1);
       }
     }
@@ -993,6 +1069,11 @@ async function runFinalize(
       if (runCheck(wtPath, diffBase, checkArgs, config, activeRun()?.capturePath("check.log"))) {
         log("success", `Checks passed (diff-base=${diffBase.slice(0, 8)}…)`);
       } else {
+        // LAST_FAILED_GATES names the actual gates when the check report
+        // was parseable; without a report the failed gate is "check" itself.
+        activeRun()?.outcome({
+          failedGates: LAST_FAILED_GATES.length > 0 ? [...LAST_FAILED_GATES] : ["check"],
+        });
         log("error", "Checks failed — fix before finalizing (or use --force)");
         process.exit(1);
       }
@@ -1012,6 +1093,7 @@ async function runFinalize(
     } else if (!hasBunLock) {
       log("warn", "Skipped: no bun.lock found");
     } else {
+      activeRun()?.outcome({ failedGates: ["tests"] });
       log("error", "Tests failed — fix before finalizing (or use --force)");
       raw(`  Full test log: ${activeRun()?.capturePath("test.log") ?? "(not captured)"}`);
       process.exit(1);
@@ -1157,6 +1239,11 @@ async function runFinalize(
       process.exit(1);
     }
   }
+
+  // Record the merge result while the tree still exists: the run record
+  // itself lives under repoRoot now, but the SHA is the durable answer to
+  // "what did this finalize land" (head of the target branch post-merge).
+  activeRun()?.outcome({ mergeCommit: gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD") });
 
   // Step 6: Remove worktree
   log("info", "Step 6: Removing worktree...");

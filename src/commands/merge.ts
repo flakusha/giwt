@@ -44,7 +44,13 @@ export async function merge(
 
   const wtPath = findWorktree(branch, config);
   if (!wtPath) {
-    log("error", `no worktree found for branch '${branch}'`);
+    log(
+      "error",
+      `no worktree found for branch '${branch}' — giwt merge targets worktree checkouts only (tree/<branch>), not plain branches`,
+    );
+    raw(
+      `  Next: create it with 'giwt new-branch ${branch} [base]', then re-run this merge; integrate finished work with 'giwt finalize'.`,
+    );
     process.exit(1);
   }
 
