@@ -364,10 +364,6 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   const config = await loadConfig();
-  // Logger format from settings ([output].format; env GIWT_OUTPUT wins at
-  // module load). Applied before any command output, including run records.
-  setOutputFormat(config.settings.output.format);
-
   if (ROOT_ONLY_COMMANDS[cmdName]) {
     assertNotInWorktree(cmdName);
   }
@@ -376,6 +372,14 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   // optional --say context). Say-flags are stripped before dispatch so
   // subcommands never see them.
   const { cleanArgs, said } = extractSayArgs(handler.args);
+  // Logger format from settings ([output].format; env GIWT_OUTPUT wins at
+  // module load). Applied before any command output, including run records.
+  setOutputFormat(config.settings.output.format);
+  // An explicit --json flag is the most specific machine-output request:
+  // it forces a machine format so banners/log traffic (including the
+  // run-record announcement) move to stderr and stdout carries only the
+  // raw() payload. See FIX-json-output-polluted-by-run-record-announcement.
+  if (cleanArgs.includes("--json")) setOutputFormat("json");
   // Run record first: the location is announced BEFORE the command runs,
   // and every later step can attach captures/events to it.
   const runRec = LEDGER_SILENT_COMMANDS[cmdName]

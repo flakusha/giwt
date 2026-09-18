@@ -107,6 +107,14 @@ export function setOutputFormat(format: string): void {
   activeFormat = normalized as OutputFormat;
 }
 
+/** True when the active format is machine-consumed (json/jsonl/toml).
+ *  log()/section() traffic is administrative: it routes to stderr so that
+ *  stdout carries only the command payload (raw()). See ticket
+ *  FIX-json-output-polluted-by-run-record-announcement. */
+export function isMachineFormat(): boolean {
+  return activeFormat === "json" || activeFormat === "jsonl" || activeFormat === "toml";
+}
+
 // TODO(perf): log()/section() are the per-message hot path. Per-event work is
 // deliberately O(1): memoized format resolution, one Record lookup, one
 // stream write; JSON.stringify only on machine formats. Precompiled/native
@@ -135,8 +143,9 @@ function emit(stream: NodeJS.WriteStream, message: string): void {
 }
 
 /**
- * Unified logger. debug/info/success go to stdout, warn/error to stderr,
- * gated by the configured minimum level (GIWT_LOG env or setLogLevel).
+ * Unified logger. debug/info/success go to stdout (stderr under machine
+ * formats), warn/error always to stderr; gated by the configured minimum
+ * level (GIWT_LOG env or setLogLevel).
  */
 export function log(
   level: "info" | "success" | "warn" | "error" | "debug",
@@ -144,7 +153,9 @@ export function log(
 ): void {
   if (LEVEL_ORDER[level] < minLevel) return;
   emit(
-    level === "warn" || level === "error" ? process.stderr : process.stdout,
+    level === "warn" || level === "error" || isMachineFormat()
+      ? process.stderr
+      : process.stdout,
     render(level, message),
   );
 }
@@ -169,5 +180,5 @@ export function section(title: string): void {
     emit(process.stdout, `-- ${title}`);
     return;
   }
-  emit(process.stdout, render("info", title));
+  emit(isMachineFormat() ? process.stderr : process.stdout, render("info", title));
 }

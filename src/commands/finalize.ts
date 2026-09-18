@@ -13,7 +13,7 @@ import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { appendGripe, printRecentLedger } from "../utils/ledger";
 import { log, raw, section } from "../utils/output";
 import { activeRun } from "../utils/runlog";
-import { DEV_IN_PROGRESS_HEADS, FINALIZE_STASH_PREFIX } from "./abort";
+import { DEV_IN_PROGRESS_HEADS, FINALIZE_STASH_PREFIX, isOrphanRebaseMarker } from "./abort";
 
 const LOCK_FILENAME = ".worktree-finalize.lock";
 // Signals we treat as user-initiated cancellation. SIGINT (Ctrl-C), SIGTERM
@@ -77,17 +77,24 @@ function checkDevMergeable(repoRoot: string): void {
   const gitDirRaw = gitSyncQuiet(repoRoot, "rev-parse", "--git-dir");
   const gitDirAbs = resolve(repoRoot, gitDirRaw.startsWith("/") ? gitDirRaw.slice(1) : gitDirRaw);
   for (const name of DEV_IN_PROGRESS_HEADS) {
-    if (existsSync(resolve(gitDirAbs, name))) {
-      const op = name.replace("_HEAD", "").toLowerCase();
-      log(
-        "error",
-        `dev checkout is mid-${op} (${name} exists) — abort or resolve before finalizing`,
-      );
-      if (op === "merge") raw("  git merge --abort  (or commit the merge)");
-      else if (op === "rebase") raw("  git rebase --abort  (or git rebase --continue)");
-      else raw("  git cherry-pick --abort  (or git cherry-pick --continue)");
-      process.exit(1);
+    if (!existsSync(resolve(gitDirAbs, name))) continue;
+    if (name === "REBASE_HEAD" && isOrphanRebaseMarker(gitDirAbs)) {
+      // Orphan breadcrumb: the rebase already concluded (state dirs gone)
+      // but the marker survived, e.g. after a SIGKILL. Blocking finalize
+      // on a concluded operation deadlocks the abort → finalize recovery
+      // flow; `giwt abort` removes the marker.
+      log("warn", "ignoring orphan REBASE_HEAD marker (no rebase-merge/rebase-apply dirs)");
+      continue;
     }
+    const op = name.replace("_HEAD", "").toLowerCase();
+    log(
+      "error",
+      `dev checkout is mid-${op} (${name} exists) — abort or resolve before finalizing`,
+    );
+    if (op === "merge") raw("  git merge --abort  (or commit the merge)");
+    else if (op === "rebase") raw("  git rebase --abort  (or git rebase --continue)");
+    else raw("  git cherry-pick --abort  (or git cherry-pick --continue)");
+    process.exit(1);
   }
 
   // 3. Staged-but-uncommitted entries — these would interfere with the in-place
@@ -647,8 +654,69 @@ function runCheck(
     if (stderr.length > 0) {
       process.stderr.write(stderr);
     }
+    reportCheckFailure(
+      config ? resolve(wtPath, config.settings.paths.checkReport) : "",
+      capturePath,
+      result.stdout.toString(),
+    );
   }
   return result.exitCode === 0;
+}
+
+/** Last N non-empty lines of `text`, printed via raw(). Used for bounded
+ *  failure tails so a 1 MB test.log never floods the console. */
+function printTail(text: string, lines: number): void {
+  const parts = text.split("\n").filter((l) => l.length > 0);
+  for (const line of parts.slice(Math.max(0, parts.length - lines))) {
+    raw(`  ${line}`);
+  }
+}
+
+// Failing gate names from the most recent check failure; surfaced in the
+// failure gripe so the ledger line names the actual gates.
+let LAST_FAILED_GATES: string[] = [];
+
+/**
+ * Bounded on-console failure report for the check gate. Reads the
+ * runner's check-report JSON when it exists and lists failing gate
+ * names + first error line each (max 10); otherwise prints the last
+ * lines of the runner's stdout. Always prints the artifact paths
+ * (check.log capture + report) so the operator never hunts for them.
+ * See ticket FIX-finalize-does-not-surface-gate-results-on-failure.
+ */
+export function reportCheckFailure(
+  reportPath: string,
+  capturePath: string | undefined,
+  stdout: string,
+): void {
+  LAST_FAILED_GATES = [];
+  let failed: Array<{ name: string; first: string; }> = [];
+  if (reportPath !== "" && existsSync(reportPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(reportPath, "utf8")) as {
+        checks?: Array<{ name?: string; passed?: boolean; output?: string; }>;
+      };
+      for (const check of parsed.checks ?? []) {
+        if (check.passed === false && typeof check.name === "string") {
+          const first = (check.output ?? "").split("\n").find((l) => l.trim().length > 0) ?? "";
+          failed.push({ name: check.name, first });
+        }
+      }
+    } catch { /* corrupt report — fall through to the stdout tail */ }
+  }
+  section("Failed checks");
+  if (failed.length > 0) {
+    LAST_FAILED_GATES = failed.map((f) => f.name);
+    for (const f of failed.slice(0, 10)) {
+      raw(`  ✗ ${f.name}`);
+      if (f.first.length > 0) raw(`      ${f.first.slice(0, 200)}`);
+    }
+    if (failed.length > 10) raw(`  … and ${failed.length - 10} more`);
+  } else {
+    printTail(stdout, 25);
+  }
+  raw(`  Check log:    ${capturePath ?? "(not captured)"}`);
+  if (reportPath !== "") raw(`  Check report: ${reportPath}`);
 }
 
 function runTests(wtPath: string, config?: WorktreeConfig, capturePath?: string): boolean {
@@ -689,7 +757,11 @@ function installFailureGripe(treeDir: string, getBranch: () => string): void {
     if (process.exitCode !== 1) return;
     const branch = getBranch();
     const target = branch === "" ? "?" : branch;
-    appendGripe(treeDir, branch, `finalize ${target} failed (exit 1) — see console output`);
+    const runDir = activeRun()?.dir;
+    const gates = LAST_FAILED_GATES.slice(0, 3).join(", ");
+    const why = gates.length > 0 ? ` — failed gates: ${gates}` : "";
+    const where = runDir ? ` — run record: ${runDir}` : "";
+    appendGripe(treeDir, branch, `finalize ${target} failed (exit 1)${why}${where}`);
   };
   process.on("exit", gripeOnFail);
 }
@@ -934,6 +1006,7 @@ async function runFinalize(
       log("warn", "Skipped: no bun.lock found");
     } else {
       log("error", "Tests failed — fix before finalizing (or use --force)");
+      raw(`  Full test log: ${activeRun()?.capturePath("test.log") ?? "(not captured)"}`);
       process.exit(1);
     }
   }

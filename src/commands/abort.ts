@@ -66,6 +66,19 @@ export interface FsOps {
 const defaultFs: FsOps = { existsSync, readFileSync, unlinkSync };
 
 /**
+ * True when `REBASE_HEAD` exists but its state dirs (rebase-merge /
+ * rebase-apply) do not — git treats the operation as concluded and the
+ * marker is a leftover breadcrumb (e.g. after a SIGKILL mid-rebase).
+ * `git rebase --abort` errors in this state; the recovery paths remove
+ * the marker (abort) or ignore it (finalize precheck).
+ */
+export function isOrphanRebaseMarker(gitDirAbs: string, fs: FsOps = defaultFs): boolean {
+  if (!fs.existsSync(resolve(gitDirAbs, "REBASE_HEAD"))) return false;
+  return !fs.existsSync(resolve(gitDirAbs, "rebase-merge"))
+    && !fs.existsSync(resolve(gitDirAbs, "rebase-apply"));
+}
+
+/**
  * Result of inspecting the finalize lockfile at `repoRoot`. All fields are
  * populated even when the lockfile is absent — `present: false` simply
  * means the rest is undefined / zeroed.
@@ -162,6 +175,24 @@ export async function abort(
   // 1. Abort in-progress operations.
   for (const name of DEV_IN_PROGRESS_HEADS) {
     if (!existsSync(resolve(gitDirAbs, name))) continue;
+    if (name === "REBASE_HEAD" && isOrphanRebaseMarker(gitDirAbs)) {
+      // Orphan breadcrumb: the rebase already concluded (git's own state
+      // dirs are gone) but the marker survived. `git rebase --abort`
+      // errors in this state — remove the marker instead.
+      log(
+        "info",
+        "Found orphan REBASE_HEAD (no rebase-merge/rebase-apply dirs) — removing stale marker",
+      );
+      if (!dryRun) {
+        try {
+          unlinkSync(resolve(gitDirAbs, name));
+          log("success", "removed orphan rebase marker");
+        } catch {
+          log("warn", "could not remove orphan REBASE_HEAD — remove it manually");
+        }
+      }
+      continue;
+    }
     const op = name.replace("_HEAD", "").toLowerCase();
     log("info", `Found ${name} — aborting in-progress ${op}...`);
     if (dryRun) continue;

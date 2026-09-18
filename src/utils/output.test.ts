@@ -79,12 +79,15 @@ describe("json/jsonl formats", () => {
         log("info", "first");
         log("warn", "second");
       });
-      const lines = out.trim().split("\n");
-      const first = JSON.parse(lines[0]!) as { ts: string; level: string; msg: string; };
+      // Machine formats route ALL log events to stderr; stdout carries
+      // only raw() payload (FIX-json-output-polluted-by-run-record-announcement).
+      expect(out).toBe("");
+      const rows = err.trim().split("\n");
+      const first = JSON.parse(rows[0]!) as { ts: string; level: string; msg: string; };
       expect(first.level).toBe("info");
       expect(first.msg).toBe("first");
       expect(first.ts).toBeTruthy();
-      const warnRow = JSON.parse(err.trim()) as { level: string; msg: string; };
+      const warnRow = JSON.parse(rows[1]!) as { level: string; msg: string; };
       expect(warnRow.level).toBe("warn");
       expect(warnRow.msg).toBe("second");
     }
@@ -92,8 +95,9 @@ describe("json/jsonl formats", () => {
 
   test("section becomes an info event", () => {
     setOutputFormat("json");
-    const { out } = capture(() => section("Stage"));
-    const row = JSON.parse(out.trim()) as { level: string; msg: string; };
+    const { out, err } = capture(() => section("Stage"));
+    expect(out).toBe("");
+    const row = JSON.parse(err.trim()) as { level: string; msg: string; };
     expect(row.level).toBe("info");
     expect(row.msg).toBe("Stage");
   });
@@ -102,11 +106,12 @@ describe("json/jsonl formats", () => {
 describe("toml format", () => {
   test("emits valid [[log]] array-of-tables blocks", () => {
     setOutputFormat("toml");
-    const { out } = capture(() => {
+    const { out, err } = capture(() => {
       log("info", "has \"quotes\" and \\ backslash");
       log("info", "second");
     });
-    const doc = Bun.TOML.parse(out) as { log: Array<{ level: string; msg: string; ts: string; }>; };
+    expect(out).toBe("");
+    const doc = Bun.TOML.parse(err) as { log: Array<{ level: string; msg: string; ts: string; }>; };
     expect(doc.log.length).toBe(2);
     expect(doc.log[0]!.msg).toBe("has \"quotes\" and \\ backslash");
     expect(doc.log[1]!.level).toBe("info");
@@ -118,15 +123,15 @@ describe("format resolution", () => {
     setOutputFormat("json");
     const { err } = capture(() => setOutputFormat("bogus"));
     expect(err).toContain("ignoring invalid output format \"bogus\"");
-    const { out } = capture(() => log("info", "still json"));
-    expect(() => JSON.parse(out.trim())).not.toThrow();
+    const { err: stillJson } = capture(() => log("info", "still json"));
+    expect(() => JSON.parse(stillJson.trim())).not.toThrow();
     setOutputFormat("simple");
   });
 
   test("value matching is normalized (trim + case)", () => {
     setOutputFormat("  JSON ");
-    const { out } = capture(() => log("info", "x"));
-    expect(() => JSON.parse(out.trim())).not.toThrow();
+    const { err } = capture(() => log("info", "x"));
+    expect(() => JSON.parse(err.trim())).not.toThrow();
     setOutputFormat("simple");
   });
 });
