@@ -25,7 +25,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { dirname, join, resolve, resolve as resolvePath } from "node:path";
 import { extractComments, extractDocRefs } from "./src-refs";
 
 // ── File collection ─────────────────────────────────────────────
@@ -44,7 +44,7 @@ const SRC_EXTS = new Set([".ts", ".tsx"]);
 /** Recursively collect *.md files under a directory (handles hidden dirs). */
 export function collectMdFiles(projectRoot: string, rootDir: string): string[] {
   const out: string[] = [];
-  const start = join(projectRoot, rootDir);
+  const start = resolve(projectRoot, rootDir);
   if (!existsSync(start)) return out;
   const walk = (d: string): void => {
     for (const entry of readdirSync(d)) {
@@ -57,7 +57,7 @@ export function collectMdFiles(projectRoot: string, rootDir: string): string[] {
       }
     }
   };
-  walk(join(projectRoot, rootDir));
+  walk(resolve(projectRoot, rootDir));
   return out;
 }
 
@@ -165,7 +165,7 @@ export function resolveTarget(
   if (pathPart.startsWith("/")) return null;
   // Bare `TASK-*.md` in .plan/ docs mean a ticket in tickets/
   if (/^TASK-[\w-]+\.md$/.test(pathPart)) {
-    const ticket = join(projectRoot, ticketsDir, pathPart);
+    const ticket = resolve(projectRoot, ticketsDir, pathPart);
     if (existsSync(ticket)) return ticket;
   }
   // Else relative to the containing file's directory
@@ -336,7 +336,7 @@ export function runLinkCheck(
 
   // Collect ticket filenames for TASK-ref resolution
   const ticketFiles = new Set<string>();
-  const ticketsAbs = join(projectRoot, ticketsDir);
+  const ticketsAbs = resolve(projectRoot, ticketsDir);
   if (existsSync(ticketsAbs)) {
     for (const f of readdirSync(ticketsAbs)) {
       if (f.endsWith(".md")) ticketFiles.add(f.toLowerCase());
