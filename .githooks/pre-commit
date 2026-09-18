@@ -41,8 +41,15 @@ echo "Staged files:"
 echo ""
 
 # ── Step 1: Project gate — strict typecheck + full test suite ──
+# GIT_* context (GIT_DIR, GIT_INDEX_FILE, …) is hook-scoped and relative to
+# the repo; the gate spawns fixture git repos in /tmp that must not inherit
+# it. Strip it for the toolchain only.
 echo "--- Step 1: bun run check (fmt + lint + knip + jscpd + tsc + tests) ---"
-if bun run check; then
+if env \
+  -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY \
+  -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_COMMON_DIR -u GIT_QUARANTINE_PATH \
+  -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL \
+  bun run check; then
   green "PASS: gate (fmt + lint + deadcode + duplication + typecheck + tests)"
 else
   red "FAIL: gate (fmt/lint/duplication/deadcode/typecheck/tests)"

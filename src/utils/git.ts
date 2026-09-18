@@ -123,6 +123,21 @@ export function assertNotInWorktree(command: string): void {
 }
 
 /**
+ * GIT_* context vars (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, …) leak into
+ * giwt whenever it runs inside a git hook — and giwt's job is to run inside
+ * hooks. gitSync always targets an explicit repo via `-C`, so inherited
+ * context is at best redundant and at worst fatal (e.g. a relative
+ * GIT_INDEX_FILE resolved against a tmp worktree). Strip it per call.
+ */
+export function isolatedGitEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined && !key.startsWith("GIT_")) env[key] = value;
+  }
+  return env;
+}
+
+/**
  * Run git in repoRoot. Throws on non-zero exit — callers use try/catch for
  * existence checks (rev-parse --verify). Use gitSyncQuiet for reads where a
  * non-zero exit is a legit empty result (e.g. unset git config).
@@ -131,6 +146,7 @@ export function gitSync(repoRoot: string, ...args: string[]): string {
   const result = Bun.spawnSync(["git", "-C", repoRoot, ...args], {
     stdout: "pipe",
     stderr: "pipe",
+    env: isolatedGitEnv(),
   });
   if (result.exitCode !== 0) {
     const stderr = result.stderr.toString().trim();
@@ -144,6 +160,7 @@ export function gitSyncQuiet(repoRoot: string, ...args: string[]): string {
   const result = Bun.spawnSync(["git", "-C", repoRoot, ...args], {
     stdout: "pipe",
     stderr: "pipe",
+    env: isolatedGitEnv(),
   });
   return result.stdout.toString().trim();
 }

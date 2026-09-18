@@ -40,6 +40,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 import { runSync } from "./sync-index";
 
 // ── Fixture helpers ────────────────────────────────────────────
@@ -102,13 +103,14 @@ function writeTicket(root: string, filename: string, title: string): void {
   );
 }
 
-/** The exact probe runSync's readGitIssues performs — same command, same cwd. */
+/** The exact probe runSync's readGitIssues performs — same command, cwd, env. */
 function gitIssueLsAvailable(root: string): boolean {
   try {
     execSync("git issue ls --all --format oneline 2>/dev/null", {
       encoding: "utf8",
       timeout: 10_000,
       cwd: root,
+      env: isolatedGitEnv(),
     });
     return true;
   } catch {

@@ -38,6 +38,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import {
   type GitIssue,
@@ -130,6 +131,22 @@ export interface SyncOptions {
   verbose?: boolean;
   /** Tickets dir relative to root; default ".plan/tickets" (settings.paths.tickets). */
   ticketsPath?: string;
+  /** Called once with the final counts when a scan ran to completion
+   *  (dry-run or fix mode, any exit code). Not called on early refusals
+   *  (missing tickets dir, --fix lock/CLI refusal). */
+  onSummary?: (summary: SyncSummary) => void;
+}
+
+/** Final ticket-sync counts, for run-record outcome summaries. */
+export interface SyncSummary {
+  /** Ticket .md files scanned. */
+  tickets: number;
+  /** Automatic fixes applied to the index (0 in dry-run). */
+  fixesApplied: number;
+  /** Actionable issues remaining after the run (drives the exit code). */
+  issuesRemaining: number;
+  /** Advisory (non-gating) findings remaining. */
+  advisoryRemaining: number;
 }
 
 /**
@@ -161,6 +178,8 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         encoding: "utf8",
         timeout: 10_000,
         cwd: issuesRoot,
+        // Isolate from ambient GIT_* hook context (see isolatedGitEnv).
+        env: isolatedGitEnv(),
       });
 
       for (const line of output.trim().split("\n")) {
@@ -485,7 +504,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       try {
         execSync(
           `git issue state ${m.gitIssueHash} --close -m 'Auto-closed: ticket ${m.extid} marked done in index.json'`,
-          { timeout: 10_000, cwd: repoRoot },
+          { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv() },
         );
         report.fixesApplied.push(`${m.extid}: closed git issue ${m.gitIssueHash}`);
       } catch {
@@ -739,6 +758,12 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         }`,
       );
     }
+    opts.onSummary?.({
+      tickets: ticketFiles.length,
+      fixesApplied: report.fixesApplied.length,
+      issuesRemaining: postTotal,
+      advisoryRemaining: postAdvisory,
+    });
     return postTotal > 0 ? 1 : 0;
   }
 
@@ -757,6 +782,13 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       }`,
     );
   }
+
+  opts.onSummary?.({
+    tickets: ticketFiles.length,
+    fixesApplied: 0,
+    issuesRemaining: totalIssues,
+    advisoryRemaining: advisoryCount,
+  });
 
   // Exit code
   return totalIssues > 0 ? 1 : 0;
