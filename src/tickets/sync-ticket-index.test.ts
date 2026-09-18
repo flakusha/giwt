@@ -79,6 +79,81 @@ describe("normalizeStatus", () => {
   test("passes unknown through unchanged", () => {
     expect(normalizeStatus("Weird")).toBe("Weird");
   });
+
+  // Loop-lore drift patterns observed in .plan/tickets/index.json
+  // (27010 entries; high-frequency drift documented in
+  // tooling-plan-validate-integration). Each pattern must normalize to a
+  // canonical 5-state value so reconciliation against git-issue status
+  // does not produce spurious statusMismatches.
+
+  describe("loop-lore resolved-class drift", () => {
+    test("emoji-prefixed Resolved/Fixed/Implemented/Finished", () => {
+      expect(normalizeStatus("✅ Resolved")).toBe("done");
+      expect(normalizeStatus("✅ Fixed (fix-x @ abc1234)")).toBe("done");
+      expect(normalizeStatus("✅ Implemented")).toBe("done");
+      expect(normalizeStatus("✅ Finished (2026-09-10)")).toBe("done");
+    });
+
+    test("resolved/fixed with trailing commit annotation", () => {
+      expect(normalizeStatus("Resolved 2026-08-25 — fix in commit abc")).toBe("done");
+      expect(normalizeStatus("Implemented (commit ed1844be+3)")).toBe("done");
+    });
+
+    test("fixed-in-worktree (loop-lore convention)", () => {
+      expect(normalizeStatus("fixed-in-worktree")).toBe("done");
+    });
+  });
+
+  describe("loop-lore in-progress-class drift", () => {
+    test("emoji-prefixed Partial/Partially Built", () => {
+      expect(normalizeStatus("🟡 Partial")).toBe("in_progress");
+      expect(normalizeStatus("🟡 Partially Built")).toBe("in_progress");
+      expect(normalizeStatus("🟡 Partially Implemented")).toBe("in_progress");
+    });
+
+    test("emoji-prefixed with trailing annotation", () => {
+      expect(normalizeStatus("🟢 Partial (adopted in `adopt-bun-features`)"))
+        .toBe("in_progress");
+      expect(
+        normalizeStatus(
+          "🟡 Foundation + Phases A–D shipped (commit 10b203b4); remainder in 4 child tickets",
+        ),
+      )
+        .toBe("in_progress");
+    });
+  });
+
+  describe("loop-lore open-class drift", () => {
+    test("emoji-prefixed Open variants", () => {
+      expect(normalizeStatus("⬜ Open")).toBe("open");
+      expect(normalizeStatus("🟡 Open")).toBe("open");
+      expect(normalizeStatus("⬜ Open — follow-up for a future session")).toBe("open");
+    });
+
+    test("deferred / todo / research-needed / follow-up", () => {
+      expect(normalizeStatus("⬜ Deferred to v2")).toBe("open");
+      expect(normalizeStatus("⬜ Todo")).toBe("open");
+      expect(normalizeStatus("⬜ Research Needed")).toBe("open");
+    });
+
+    test("not-yet-implemented (loop-lore convention)", () => {
+      expect(normalizeStatus("not-yet-implemented")).toBe("open");
+    });
+  });
+
+  describe("loop-lore freeform pass-through", () => {
+    test("intentional state notes pass through unchanged", () => {
+      // These carry signal that classification would destroy.
+      expect(normalizeStatus("not-a-bug")).toBe("not-a-bug");
+      expect(normalizeStatus("stale")).toBe("stale");
+      expect(normalizeStatus("[OK] Resolved")).toBe("[OK] Resolved");
+      expect(normalizeStatus("[OK] Documented in docs/meta/workflow.md"))
+        .toBe("[OK] Documented in docs/meta/workflow.md");
+      expect(normalizeStatus("🔄 Split into two tickets below"))
+        .toBe("🔄 Split into two tickets below");
+      expect(normalizeStatus("🟡 Permanently Ongoing")).toBe("🟡 Permanently Ongoing");
+    });
+  });
 });
 
 // ── reconcile: orphan files ────────────────────────────────────
