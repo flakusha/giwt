@@ -5,7 +5,7 @@
  * Sync .plan/tickets/index.json with ticket .md files and git issues.
  *
  * Reads:
- *   1. .plan/tickets/*.md — extract frontmatter (title, status, type, priority, epic)
+ *   1. .plan/tickets/*.md — extract frontmatter (title, status, type, priority, epic, tags)
  *   2. git issue ls — build hash→issue lookup
  *   3. .plan/tickets/index.json — current index state
  *
@@ -48,6 +48,81 @@ import {
   type TicketFile,
 } from "./sync-ticket";
 
+// ── Ticket .md parsing ────────────────────────────────────────
+
+/**
+ * Parse a ticket .md file into a TicketFile.
+ *
+ * Metadata fields (**Status:**, **Priority:**, **Epic:**, **Tags:**) are
+ * matched against the header region (first 30 lines) only — whole-file
+ * matching captured body prose into the epic field. The git-issue
+ * reference is still matched against the whole file: applyFixes appends
+ * it at the end of the file, beyond the header region.
+ */
+export function parseTicketFile(filePath: string): TicketFile | null {
+  try {
+    const ticketText = readFileSync(filePath, "utf8");
+    const lines = ticketText.split("\n").slice(0, 30); // header region only
+    const header = lines.join("\n");
+
+    const filename = basename(filePath);
+
+    // Extract title from first heading
+    const titleMatch = lines.find((l) => l.startsWith("# "));
+    const title = titleMatch?.replace(
+      /^#\s+(?:TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE):\s*/i,
+      "",
+    ).trim()
+      ?? filename.replace(/\.md$/, "");
+
+    // Extract metadata fields (header region only — body prose mentioning
+    // **Epic:**/**Tags:** must not pollute the index fields)
+    const statusMatch = header.match(/\*\*Status:\*\*\s*(.+)/i);
+    const priorityMatch = header.match(/\*\*Priority:\*\*\s*(.+)/i);
+    const epicMatch = header.match(/\*\*Epic:\*\*\s*(.+)/i);
+    const tagsMatch = header.match(/\*\*Tags:\*\*\s*(.+)/);
+
+    // Extract type from heading
+    const typeMatch = titleMatch?.match(
+      /^#\s+(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)/i,
+    );
+    const type = typeMatch?.[1]?.toUpperCase() ?? guessType(filename);
+
+    // Extract git issue reference (e.g. "git issue: abc1234" or "Issue: abc1234")
+    const gitIssueMatch = ticketText.match(/(?:git.?issue|issue):\s*([a-f0-9]{7,})/i);
+
+    // Normalize status
+    const rawStatus = statusMatch?.[1]?.trim() ?? "undefined";
+    const status = normalizeStatus(rawStatus);
+
+    return {
+      path: filePath,
+      filename,
+      title,
+      status,
+      type,
+      priority: priorityMatch?.[1]?.trim() ?? "medium",
+      epic: epicMatch?.[1]?.trim() ?? "",
+      tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
+      hash: gitIssueMatch?.[1] ?? null,
+      gitIssue: gitIssueMatch?.[1] ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function guessType(filename: string): string {
+  const prefix = filename.split("-")[0]?.toUpperCase();
+  if (
+    ["TASK", "FEAT", "BUG", "FIX", "EPIC", "SOL", "INFRA", "TEST", "PERF", "WIRE", "IMPROVE"]
+      .includes(prefix ?? "")
+  ) {
+    return prefix!;
+  }
+  return "TASK";
+}
+
 // ── Entry ─────────────────────────────────────────────────────
 
 export interface SyncOptions {
@@ -69,68 +144,6 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   const INDEX_PATH = join(TICKETS_DIR, "index.json");
   /** Serializes concurrent `--fix` runs (mkdir-based lock: atomic on POSIX). */
   const LOCK_PATH = join(TICKETS_DIR, ".index-sync.lock");
-
-  // ── Parse ticket .md frontmatter ───────────────────────────────
-
-  function parseTicketFile(filePath: string): TicketFile | null {
-    try {
-      const ticketText = readFileSync(filePath, "utf8");
-      const lines = ticketText.split("\n").slice(0, 30); // only first 30 lines
-
-      const filename = basename(filePath);
-
-      // Extract title from first heading
-      const titleMatch = lines.find((l) => l.startsWith("# "));
-      const title = titleMatch?.replace(
-        /^#\s+(?:TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE):\s*/i,
-        "",
-      ).trim()
-        ?? filename.replace(/\.md$/, "");
-
-      // Extract metadata fields
-      const statusMatch = ticketText.match(/\*\*Status:\*\*\s*(.+)/i);
-      const priorityMatch = ticketText.match(/\*\*Priority:\*\*\s*(.+)/i);
-      const epicMatch = ticketText.match(/\*\*Epic:\*\*\s*(.+)/i);
-
-      // Extract type from heading
-      const typeMatch = titleMatch?.match(
-        /^#\s+(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)/i,
-      );
-      const type = typeMatch?.[1]?.toUpperCase() ?? guessType(filename);
-
-      // Extract git issue reference (e.g. "git issue: abc1234" or "Issue: abc1234")
-      const gitIssueMatch = ticketText.match(/(?:git.?issue|issue):\s*([a-f0-9]{7,})/i);
-
-      // Normalize status
-      const rawStatus = statusMatch?.[1]?.trim() ?? "undefined";
-      const status = normalizeStatus(rawStatus);
-
-      return {
-        path: filePath,
-        filename,
-        title,
-        status,
-        type,
-        priority: priorityMatch?.[1]?.trim() ?? "medium",
-        epic: epicMatch?.[1]?.trim() ?? "",
-        hash: gitIssueMatch?.[1] ?? null,
-        gitIssue: gitIssueMatch?.[1] ?? null,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  function guessType(filename: string): string {
-    const prefix = filename.split("-")[0]?.toUpperCase();
-    if (
-      ["TASK", "FEAT", "BUG", "FIX", "EPIC", "SOL", "INFRA", "TEST", "PERF", "WIRE", "IMPROVE"]
-        .includes(prefix ?? "")
-    ) {
-      return prefix!;
-    }
-    return "TASK";
-  }
 
   // ── Read git issues ────────────────────────────────────────────
 
@@ -428,7 +441,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         label: tf.type.toLowerCase(),
         priority: tf.priority,
         epic: tf.epic,
-        tags: [],
+        tags: tf.tags,
         source: sourcePath,
         status: normalizeStatus(tf.status),
       };
@@ -625,6 +638,23 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     }
   } else {
     raw(`\n🟢 No orphan git issues`);
+  }
+
+  // Advisory: non-epic tickets not bound to any epic. Deliberately not
+  // counted in totalIssues or advisoryCount — a count in advisoryCount would
+  // trigger gratuitous --fix index rewrites on every run.
+  if (report.unboundEpics.length > 0) {
+    raw(`\n🟡 Unbound to epic (advisory, non-gating): ${report.unboundEpics.length}`);
+    if (verbose) {
+      report.unboundEpics.forEach((extid) => raw(`   ${extid}`));
+    } else {
+      report.unboundEpics.slice(0, 10).forEach((extid) => raw(`   ${extid}`));
+      if (report.unboundEpics.length > 10) {
+        raw(`   ... and ${report.unboundEpics.length - 10} more`);
+      }
+    }
+  } else {
+    raw(`\n🟢 All non-epic tickets bound to an epic`);
   }
 
   // Summary — only *actionable* issues gate the result. Placeholder hashes,

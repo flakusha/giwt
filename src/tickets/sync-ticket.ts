@@ -23,6 +23,7 @@ export interface TicketFile {
   type: string;
   priority: string;
   epic: string;
+  tags: string[];
   hash: string | null;
   gitIssue: string | null;
 }
@@ -94,6 +95,12 @@ export interface SyncReport {
     extid: string;
     title: string;
   }>;
+  /**
+   * Advisory: non-epic index entries with no epic binding (extids).
+   * Deliberately excluded from every gating/advisory count in runSync —
+   * informational only, mirroring checkLinkage's warn-level finding.
+   */
+  unboundEpics: string[];
   fixesApplied: string[];
 }
 
@@ -132,6 +139,7 @@ export function reconcile(
     missingGitIssueLinks: [],
     staleOpenGitIssues: [],
     orphanGitIssues: [],
+    unboundEpics: [],
     fixesApplied: [],
   };
 
@@ -344,6 +352,15 @@ export function reconcile(
         title: issue.title,
       });
     }
+  }
+
+  // 9. Advisory: non-epic index entries not bound to any epic. Never gates
+  //    the sync result (excluded from totalIssues and advisoryCount alike)
+  //    — informational only, mirroring checkLinkage's warn-level finding.
+  for (const [extid, entry] of Object.entries(index)) {
+    if (entry.type?.toUpperCase() === "EPIC") continue;
+    if (entry.epic && entry.epic !== "") continue;
+    report.unboundEpics.push(extid);
   }
 
   return report;

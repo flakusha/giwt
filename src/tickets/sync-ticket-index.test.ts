@@ -2,15 +2,17 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
- * Tests for src/tickets/sync-ticket.ts — pure reconciliation logic for
- * .plan/tickets/index.json. Covers gitObjectExists, normalizeStatus, and
- * reconcile's phantom/hash/orphan classification.
+ * Tests for src/tickets/sync-ticket.ts and src/tickets/sync-index.ts —
+ * pure reconciliation logic + ticket .md parsing for .plan/tickets/index.json.
+ * Covers gitObjectExists, normalizeStatus, parseTicketFile, and reconcile's
+ * phantom/hash/orphan/unbound-to-epic classification.
  */
 
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parseTicketFile } from "./sync-index";
 import {
   type GitIssue,
   gitObjectExists,
@@ -168,6 +170,7 @@ describe("reconcile orphan detection", () => {
       type: "TASK",
       priority: "medium",
       epic: "",
+      tags: [],
       hash: null,
       gitIssue: null,
     }];
@@ -488,5 +491,102 @@ describe("reconcile orphan git issues", () => {
       makeRoot(),
     );
     expect(report.orphanGitIssues).toEqual([]);
+  });
+});
+
+// ── reconcile: unbound-to-epic advisory ────────────────────────
+
+describe("reconcile unbound-to-epic advisory", () => {
+  test("epicless non-epic entry is listed", () => {
+    const report = reconcile(
+      [],
+      new Map(),
+      { "TASK-NOEPIC": entry({ extid: "TASK-NOEPIC", epic: "" }) },
+      false,
+      makeRoot(),
+    );
+    expect(report.unboundEpics).toEqual(["TASK-NOEPIC"]);
+  });
+
+  test("EPIC-typed entry with empty epic is not listed", () => {
+    const report = reconcile(
+      [],
+      new Map(),
+      { "EPIC-ROOT": entry({ extid: "EPIC-ROOT", type: "EPIC", epic: "" }) },
+      false,
+      makeRoot(),
+    );
+    expect(report.unboundEpics).toEqual([]);
+  });
+
+  test("entry bound to an epic is not listed", () => {
+    const report = reconcile(
+      [],
+      new Map(),
+      { "TASK-BOUND": entry({ extid: "TASK-BOUND", epic: "epic-auth.md" }) },
+      false,
+      makeRoot(),
+    );
+    expect(report.unboundEpics).toEqual([]);
+  });
+
+  test("entry missing the epic field entirely (raw index JSON) is listed", () => {
+    // index.json entries come from disk and may lack fields the interface
+    // declares — reconcile must treat a missing epic like an empty one.
+    const index = JSON.parse(
+      "{\"TASK-RAW\":{\"hash\":\"pending\",\"extid\":\"TASK-RAW\",\"type\":\"TASK\","
+        + "\"title\":\"Raw entry\",\"label\":\"task\",\"priority\":\"medium\",\"tags\":[],\"source\":\"\"}}",
+    ) as Record<string, IndexEntry>;
+    const report = reconcile([], new Map(), index, false, makeRoot());
+    expect(report.unboundEpics).toEqual(["TASK-RAW"]);
+  });
+});
+
+// ── parseTicketFile ────────────────────────────────────────────
+
+describe("parseTicketFile", () => {
+  test("parses header **Tags:** comma-list, dropping empty items", () => {
+    const root = makeRoot();
+    try {
+      const path = join(root, ".plan/tickets", "TASK-TAGGED.md");
+      writeFileSync(
+        path,
+        "# TASK-TAGGED: Tagged\n\n**Status:** open\n**Priority:** medium\n**Tags:** a, b,, c\n",
+      );
+      const tf = parseTicketFile(path);
+      expect(tf?.tags).toEqual(["a", "b", "c"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("absent **Tags:** yields an empty array", () => {
+    const root = makeRoot();
+    try {
+      const path = join(root, ".plan/tickets", "TASK-UNTAGGED.md");
+      writeFileSync(path, "# TASK-UNTAGGED: Untagged\n\n**Status:** open\n");
+      const tf = parseTicketFile(path);
+      expect(tf?.tags).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("body prose beyond the 30-line header does not pollute epic or tags", () => {
+    const root = makeRoot();
+    try {
+      const path = join(root, ".plan/tickets", "TASK-POLLUTED.md");
+      const filler = Array.from({ length: 40 }, (_, i) => `filler line ${i}`);
+      writeFileSync(
+        path,
+        "# TASK-POLLUTED: Polluted\n\n**Status:** open\n**Priority:** medium\n\n## Summary\n\n"
+          + `${filler.join("\n")}\n\n**Epic:** body-prose-epic\n**Tags:** body-prose-tag\n`,
+      );
+      const tf = parseTicketFile(path);
+      expect(tf?.epic).toBe("");
+      expect(tf?.tags).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -265,6 +265,41 @@ describe("validate / linkage gate", () => {
       fx.cleanup();
     }
   });
+
+  test("warns (non-gating) when tickets are not bound to an epic", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-unbound.md");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["linkage"],
+        runSync: () => 0,
+      });
+      const linkageResult = result.results.find((r) => r.gate === "linkage");
+      // The aggregated warn finding is present, but the gate still passes:
+      // linkage fails on error-level findings only.
+      expect(linkageResult!.pass).toBe(true);
+      const warn = linkageResult!.findings.find(
+        (f) => f.level === "warn" && f.message.includes("not bound to an epic"),
+      );
+      expect(warn).toBeDefined();
+      expect(warn!.message).toContain("1 ticket(s) not bound to an epic");
+      expect(warn!.message).toContain("TASK-unbound.md");
+    } finally {
+      fx.cleanup();
+    }
+  });
 });
 
 // ── backlog gate ────────────────────────────────────────────────

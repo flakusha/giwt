@@ -164,12 +164,17 @@ function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
     readdirSync(epicsDir).filter((f) => f.startsWith("epic-") && f.endsWith(".md")),
   );
 
-  // Check ticket → epic linkage
+  // Check ticket → epic linkage. Also collects tickets with no **Epic:**
+  // binding at all — reported below as ONE aggregated advisory finding.
+  const unbound: string[] = [];
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
     const raw = readFileSync(join(ticketsDir, f), "utf8");
     const epicMatch = raw.match(/\*\*Epic:\*\*\s*(.+)/);
-    if (!epicMatch) continue;
+    if (!epicMatch) {
+      unbound.push(f);
+      continue;
+    }
     const epicRef = epicMatch[1]!.trim();
     // Epic ref can be a filename like "epic-auth-flow.md" or a title
     const isFilename = epicRef.endsWith(".md");
@@ -180,6 +185,19 @@ function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
         message: `${f}: **Epic:** references non-existent file ${epicRef}`,
       });
     }
+  }
+
+  // Advisory: unbound tickets never fail the gate — the linkage gate passes
+  // on error-count 0, and this finding is warn-level on purpose (mirrors the
+  // sync report's unbound-to-epic advisory).
+  if (unbound.length > 0) {
+    const listed = unbound.slice(0, 10).join(", ");
+    const more = unbound.length > 10 ? ` ... and ${unbound.length - 10} more` : "";
+    findings.push({
+      gate: "linkage",
+      level: "warn",
+      message: `${unbound.length} ticket(s) not bound to an epic (advisory): ${listed}${more}`,
+    });
   }
 
   // Check epic → ticket linkage

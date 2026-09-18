@@ -15,6 +15,7 @@ interface TicketFlags {
   labels: string[];
   priority: string;
   epic: string;
+  tags: string[];
   effort: string;
 }
 
@@ -33,7 +34,9 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
 
   if (!typeRaw || !title) {
     log("error", "type and title required");
-    raw("  Usage: ticket <TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X]");
+    raw(
+      "  Usage: ticket <TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]",
+    );
     raw(`  TYPE: ${VALID_TYPES.join(", ")}`);
     process.exit(1);
   }
@@ -49,6 +52,13 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
   if (flags.priority && !(VALID_PRIORITIES as readonly string[]).includes(flags.priority)) {
     log("error", `unknown priority '${flags.priority}' — use: ${VALID_PRIORITIES.join(", ")}`);
     process.exit(1);
+  }
+
+  if (!flags.epic) {
+    log(
+      "warn",
+      "no --epic given — ticket will be unbound (giwt sync lists it under the unbound-to-epic advisory)",
+    );
   }
 
   const ticketName = kebab(title);
@@ -75,6 +85,9 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
     content += `**Effort:** ${flags.effort}\n`;
     if (flags.epic) {
       content += `**Epic:** ${flags.epic}\n`;
+    }
+    if (flags.tags.length > 0) {
+      content += `**Tags:** ${flags.tags.join(", ")}\n`;
     }
     content += `\n## Summary\n\n${body || "No description provided."}\n\n`;
     content += `## Acceptance Criteria\n\n`;
@@ -126,7 +139,7 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
 }
 
 function parseFlags(args: string[]): TicketFlags {
-  const flags: TicketFlags = { labels: [], priority: "", epic: "", effort: "Medium" };
+  const flags: TicketFlags = { labels: [], priority: "", epic: "", effort: "Medium", tags: [] };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case "-l":
@@ -152,6 +165,13 @@ function parseFlags(args: string[]): TicketFlags {
       case "--effort": {
         const value = args[++i];
         if (value !== undefined) flags.effort = value;
+        break;
+      }
+      case "--tag": {
+        const value = args[++i];
+        if (value !== undefined) {
+          flags.tags.push(...value.split(",").map((t) => t.trim()).filter((t) => t.length > 0));
+        }
         break;
       }
     }

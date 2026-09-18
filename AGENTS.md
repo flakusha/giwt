@@ -12,7 +12,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 4. **Optique passthrough dispatch**: one `command(name, object({ action: constant(handler), args: withDefault(passThrough({ format: "greedy" }), []) }))` per subcommand. Handlers keep parsing their own raw `string[]` args; `or()` accepts ≤15 branches → `buildParser()` nests groups of 15. Per-command `--help`/`-h` bodies live in the `USAGE: Record<string, string>` table in `src/cli.ts` — **update it when changing a command's flags**.
 5. **Run records** (`src/utils/runlog.ts`): `beginRun()` announces the run dir `<paths.runlog>/runs/<UTCts>-<pid>-<cmd>/` *before* the command runs and returns a `RunRecorder` (captures/events, pruned by `runlog.max_runs`).
 6. **Ledger** (`src/utils/ledger.ts`): every non-silent run appends one compact JSONL record to `<treeDir>/.ledger.jsonl`; `appendCommitOutcome`/`appendGripe` enrich it; `--say` text rides along as `msg :: <said>`.
-7. **Tickets** (`src/tickets/sync-index.ts`, `sync-ticket.ts`): `runSync(root)` reconciles `.plan/tickets/*.md` ↔ `index.json` ↔ git issues; `giwt ticket` creates ticket + issue in one step.
+7. **Tickets** (`src/tickets/sync-index.ts`, `sync-ticket.ts`): `runSync(root)` reconciles `.plan/tickets/*.md` ↔ `index.json` ↔ git issues; `giwt ticket` creates ticket + issue in one step (`--tag` repeatable → `**Tags:**` line; warns when `--epic` omitted). Ticket metadata (Status/Priority/Epic/Tags) is parsed from the **header region only** (first 30 lines) — body prose cannot pollute index fields; the git-issue ref is matched whole-file (applyFixes appends it past the header). Orphan adoption carries `tf.tags` into the index; existing entries keep their index tags on rewrite. Entries with an empty `epic` surface as a **non-gating unbound-to-epic advisory** (yellow 🟡 block in `giwt sync`, aggregated warn finding in `plan validate` linkage gate — excluded from both `totalIssues` and `advisoryCount`). Both `giwt ticket` and `giwt sync` are **worktree-aware**: plan files land in the invoking checkout (`worktreeRoot`), the git-issue registry stays repo-shared (`repoRoot`) — contracts covered by `src/commands/ticket.test.ts` and `src/tickets/sync-worktree.test.ts`.
 8. **Finalize family** (`src/commands/finalize.ts`, `abort.ts`): merge-with-gates + lockfile + signal-safe cleanup; the most delicate code — see `finalize-signal-safety.test.ts` for the contract (SIGHUP not SIGUSR1: Bun reserves SIGUSR1 for its inspector).
 
 ## Key Directories
@@ -27,7 +27,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 ## Development Commands
 
 ```sh
-bun test                        # full suite (141 tests, colocated *.test.ts)
+bun test                        # full suite (colocated *.test.ts)
 bun test src/utils/ledger.test.ts   # one module
 bun run giwt -- list            # run the CLI locally
 bun run build:bin               # bun build --compile src/cli.ts → bin/giwt (gitignored, ~82 MB)
@@ -77,7 +77,7 @@ Pre-commit hook: `git config core.hooksPath .githooks && chmod +x .githooks/pre-
 
 ## Testing & QA
 
-- **Runner**: `bun test` (bun:test — `describe`/`it`/`expect`/`spyOn`). 14 colocated `*.test.ts` files next to their subjects (`src/`, `src/utils/`, `src/tickets/`). No separate test dir, no coverage config.
+- **Runner**: `bun test` (bun:test — `describe`/`it`/`expect`/`spyOn`). ~30 colocated `*.test.ts` files next to their subjects (`src/`, `src/commands/`, `src/doctor/`, `src/plan/`, `src/tickets/`, `src/utils/`). No separate test dir, no coverage config.
 - **Conventions**: mkdtemp tmp-dir fixtures cleaned in `finally`/`afterEach`; output captured via `spyOn(process.stdout, "write")` joined from `mock.calls` (logger writes via `raw`, so `console.log` spies see nothing); `process.exit` mocked by replacing it with a spy that throws an `__exit:<code>` sentinel; `entry(overrides)` builder factories for structured records.
 - **Real subprocess tests**: `finalize-lock-cleanup.test.ts` spawns `bun run src/finalize-lock-fixture.ts <tmp> <mode>` — process.exit semantics can't be tested in-runner (it kills the bun test runner). Signal tests use SIGHUP and sync on a `started` stdout marker, never wall-clock timers.
 - **Expectations**: tests assert behavior (ledger record contents, exit codes, lockfile absence, symlink targets, output substrings) — not implementation plumbing; keep it that way. `bunx tsc --noEmit` clean + full `bun test` green = shippable.

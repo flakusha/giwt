@@ -130,7 +130,7 @@ const USAGE: Record<string, string> = {
   "sync":
     "[--fix] [--verbose]\n  --fix      apply fixes, not just report\n  --verbose  verbose output",
   "ticket":
-    "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL",
+    "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
 };
 
 const commands: Record<string, CommandHandler> = {
