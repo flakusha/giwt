@@ -18,7 +18,7 @@ import { applyFixes, reconcile } from "../plan/backlog-sync";
 import { runLinkCheck } from "../plan/check-links";
 import { buildMap, findOwners, findStale, readMap, verifyFresh, writeMap } from "../plan/code-map";
 import { collectEpics, genDocs, generateIndex } from "../plan/gen-docs";
-import { ALL_GATES, runValidate } from "../plan/validate";
+import { ALL_GATES, renderValidateSummary, resolveFromRoot, runValidate } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
 import { type WorktreeConfig } from "../utils/config";
 import { log, raw, section } from "../utils/output";
@@ -46,7 +46,7 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
   {
     name: "validate",
     description: "Comprehensive .plan/ validation",
-    flags: "--gates <csv>, --skip-gates <csv>, --fix",
+    flags: "--gates <csv>, --skip-gates <csv>, --fix, --json",
   },
   { name: "status", description: "Show .plan/ health summary", flags: "" },
 ];
@@ -130,7 +130,7 @@ async function runBacklogSync(
     process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
   }
 
-  const planDir = join(config.worktreeRoot, config.settings.paths.planDir);
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const backlogDir = join(planDir, "backlog");
   const indexFiles = ["priority.md", "open.md"];
 
@@ -258,7 +258,7 @@ async function runCodeMap(
     process.exit(isHelp ? 0 : 1);
   }
 
-  const planDir = join(config.worktreeRoot, config.settings.paths.planDir);
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const mapPath = join(planDir, "code-map.json");
   const map = buildMap(config.worktreeRoot, mapSourcesFor(config.settings.paths.planDir));
 
@@ -334,7 +334,7 @@ async function runGenDocs(
     process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
   }
 
-  const planDir = join(config.worktreeRoot, config.settings.paths.planDir);
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const epicsDir = join(planDir, "epics");
   const outPath = join(planDir, "epics-index.md");
   const backlogPath = join(planDir, "backlog", "open.md");
@@ -424,6 +424,7 @@ async function runValidateCmd(
   let gatesArg = "all";
   let skipGatesArg = "";
   const fix = args.includes("--fix");
+  const json = args.includes("--json");
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--gates" && args[i + 1]) {
       gatesArg = args[++i]!;
@@ -434,7 +435,7 @@ async function runValidateCmd(
 
   const isHelp = args.includes("--help") || args.includes("-h");
   if (isHelp) {
-    raw("Usage: giwt plan validate [--gates <list>] [--skip-gates <list>] [--fix]");
+    raw("Usage: giwt plan validate [--gates <list>] [--skip-gates <list>] [--fix] [--json]");
     raw("  Comprehensive .plan/ validation");
     raw("  --gates       comma-separated gate list (default: all)");
     raw(
@@ -442,6 +443,8 @@ async function runValidateCmd(
     );
     raw("  --skip-gates  run all gates except these (mutually exclusive with --gates)");
     raw("  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc)");
+    raw("                unfixable failing gates are reported with a manual next step");
+    raw("  --json        machine-readable full result on stdout (every finding, no cap)");
     return;
   }
 
@@ -462,7 +465,7 @@ async function runValidateCmd(
     gateNames = gatesArg.split(",").map((g) => g.trim()).filter(Boolean);
   }
 
-  const planDir = join(config.worktreeRoot, config.settings.paths.planDir);
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const result = runValidate({
     projectRoot: config.worktreeRoot,
     worktreeRoot: config.worktreeRoot,
@@ -482,21 +485,19 @@ async function runValidateCmd(
     ...(fix ? { fix: true } : {}),
   });
 
+  if (json) {
+    // Machine contract (mirrors `doctor check --json`): the full result —
+    // every finding, no cap — is the only stdout payload. process.exitCode
+    // instead of process.exit so piped JSON is never truncated.
+    raw(JSON.stringify(result, null, 2));
+    process.exitCode = result.pass ? 0 : 1;
+    return;
+  }
+
   section("Plan Validation Results");
 
-  for (const r of result.results) {
-    const status = r.pass ? "✓" : "✗";
-    const icon = r.pass ? "OK" : "FAIL";
-    raw(`  ${status} ${r.gate.padEnd(12)} ${icon}`);
-    for (const f of r.findings) {
-      const prefix = f.level === "error" ? "  ✗" : "  ⚠";
-      raw(`  ${prefix} ${f.message}`);
-    }
-    if (r.fixes && r.fixes.length > 0) {
-      for (const fx of r.fixes) {
-        raw(`    ↳ fixed: ${fx}`);
-      }
-    }
+  for (const line of renderValidateSummary(result)) {
+    raw(line);
   }
 
   raw("");
@@ -531,7 +532,7 @@ async function runStatus(
     return;
   }
 
-  const planDir = join(config.worktreeRoot, config.settings.paths.planDir);
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const ticketsDir = join(planDir, "tickets");
   const epicsDir = join(planDir, "epics");
   const backlogDir = join(planDir, "backlog");

@@ -11,7 +11,16 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ALL_GATES, FIXABLE_GATES, type GateName, runValidate } from "./validate";
+import {
+  ALL_GATES,
+  FIXABLE_GATES,
+  type GateName,
+  MAX_LISTED_FINDINGS,
+  renderUnfixableGates,
+  renderValidateSummary,
+  resolveFromRoot,
+  runValidate,
+} from "./validate";
 
 interface Fixture {
   root: string;
@@ -1224,6 +1233,254 @@ describe("validate / --fix mode", () => {
       });
 
       expect(result.fixedCount).toBeGreaterThanOrEqual(2);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── resolveFromRoot / absolute-path respect ─────────────────────
+
+describe("resolveFromRoot", () => {
+  test("joins relative configured paths onto the root", () => {
+    expect(resolveFromRoot("/repo", ".plan")).toBe("/repo/.plan");
+    expect(resolveFromRoot("/repo", ".plan/tickets")).toBe("/repo/.plan/tickets");
+  });
+
+  test("respects absolute configured paths instead of doubling them", () => {
+    // Documents the historic bug: join() concatenates an absolute path onto
+    // the root (worktree doubling), so the isAbsolute check must come first.
+    expect(join("/repo", "/home/x/.plan")).toBe("/repo/home/x/.plan");
+    expect(resolveFromRoot("/repo", "/home/x/.plan")).toBe("/home/x/.plan");
+  });
+});
+
+// ── worktree smoke: absolute configured planDir from a worktree root ──
+
+describe("validate / worktree path resolution", () => {
+  test("absolute tickets dir outside the worktree resolves without doubling", () => {
+    // Simulates the ticket evidence: `giwt plan validate` run inside
+    // tree/<branch> with an absolute tickets path configured — the plan
+    // files live in the main checkout, not under the worktree root.
+    const wtRoot = mkdtempSync(join(tmpdir(), "giwt-wt-"));
+    const mainRoot = mkdtempSync(join(tmpdir(), "giwt-main-"));
+    const planDir = join(mainRoot, ".plan");
+    const ticketsDir = join(planDir, "tickets");
+    const epicsDir = join(planDir, "epics");
+    const backlogDir = join(planDir, "backlog");
+    mkdirSync(ticketsDir, { recursive: true });
+    mkdirSync(epicsDir, { recursive: true });
+    mkdirSync(backlogDir, { recursive: true });
+    writeFileSync(
+      join(ticketsDir, "TASK-good.md"),
+      "# TASK-good.md\n\n**Status:** open\n**Priority:** high\n**Effort:** S\n**Summary:** x\n**Context:** y\n**Acceptance Criteria:** z\n",
+    );
+    try {
+      const result = runValidate({
+        projectRoot: wtRoot,
+        worktreeRoot: wtRoot,
+        ticketsDir: resolveFromRoot(wtRoot, ticketsDir),
+        epicsDir: resolveFromRoot(wtRoot, epicsDir),
+        backlogDir: resolveFromRoot(wtRoot, backlogDir),
+        planDir: resolveFromRoot(wtRoot, planDir),
+        srcDir: "src",
+        codeMapPath: join(resolveFromRoot(wtRoot, planDir), "code-map.json"),
+        epicsIndexPath: join(resolveFromRoot(wtRoot, planDir), "epics-index.md"),
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format"],
+        runSync: () => 0,
+      });
+      const format = result.results[0]!;
+      expect(format.gate).toBe("format");
+      expect(format.pass).toBe(true);
+      expect(format.findings).toEqual([]);
+      // The path join() used to fabricate must not appear in any finding.
+      expect(format.findings.some((f) => f.message.includes(join(wtRoot, mainRoot)))).toBe(
+        false,
+      );
+    } finally {
+      rmSync(wtRoot, { recursive: true, force: true });
+      rmSync(mainRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── bounded default output ──────────────────────────────────────
+
+describe("renderValidateSummary / bounded default output", () => {
+  test("per-gate counts, capped findings, and hidden remainder pointer", () => {
+    const fx = makeFixture();
+    try {
+      // 30 tickets each missing 5 of the 6 required sections → 150 findings.
+      for (let i = 0; i < 30; i++) {
+        writeTicket(fx, `TASK-bad${i}.md`, ["Status"]);
+      }
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format"],
+        runSync: () => 0,
+      });
+      const lines = renderValidateSummary(result);
+
+      const gateLine = lines.find((l) => l.includes("format"));
+      expect(gateLine).toBeDefined();
+      expect(gateLine).toContain("FAIL (150 error(s))");
+
+      const findingLines = lines.filter((l) => l.includes("missing required section"));
+      expect(findingLines).toHaveLength(MAX_LISTED_FINDINGS);
+
+      const moreLine = lines.find((l) => l.includes("more"));
+      expect(moreLine).toContain(`… and ${150 - MAX_LISTED_FINDINGS} more`);
+      expect(moreLine).toContain("--json");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("passing gate reports a single OK line with no findings", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-good.md");
+      writeEpic(fx, "epic-good.md");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format"],
+        runSync: () => 0,
+      });
+      const lines = renderValidateSummary(result);
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain("✓");
+      expect(lines[0]).toContain("OK");
+      expect(lines[0]).not.toContain("FAIL");
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── --fix reports unfixed gates ─────────────────────────────────
+
+describe("validate / --fix reports unfixed gates", () => {
+  test("lists failing non-fixable gates with a manual next step", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-bad.md", ["Status"]); // format errors
+      writeTicket(fx, "bad-name.md"); // naming error
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format", "naming"],
+        runSync: () => 0,
+        fix: true,
+      });
+      expect(result.unfixableGates).toEqual(["format", "naming"]);
+
+      const lines = renderUnfixableGates(result.unfixableGates!);
+      expect(lines).toHaveLength(2);
+      expect(lines[0]).toContain("--fix cannot auto-fix 'format'");
+      expect(lines[0]).toContain("**Section:**");
+      expect(lines[1]).toContain("--fix cannot auto-fix 'naming'");
+      expect(lines[1]).toContain("rename");
+
+      // The bounded summary surfaces the unfixable-gate lines too.
+      const summary = renderValidateSummary(result);
+      expect(summary.some((l) => l.includes("cannot auto-fix 'format'"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("does not list fixable gates that --fix repaired", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        join(fx.backlogDir, "priority.md"),
+        "## File map\n\n| [tier](./tier.md) | desc |\n",
+      );
+      writeFileSync(join(fx.backlogDir, "tier.md"), "# Tier\n");
+      writeFileSync(join(fx.backlogDir, "orphan.md"), "# Orphan\n");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: ["priority.md"],
+        gates: ["backlog"],
+        runSync: () => 0,
+        fix: true,
+      });
+      expect(result.fixedCount).toBeGreaterThan(0);
+      expect(result.unfixableGates).toBeUndefined();
+      const summary = renderValidateSummary(result);
+      expect(summary.some((l) => l.includes("cannot auto-fix"))).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("omits unfixableGates when --fix is not set", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-bad.md", ["Status"]);
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format"],
+        runSync: () => 0,
+      });
+      expect(result.pass).toBe(false);
+      expect(result.unfixableGates).toBeUndefined();
     } finally {
       fx.cleanup();
     }

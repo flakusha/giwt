@@ -13,7 +13,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { extractSrcRefs } from "./src-refs";
 
 export interface RefEntry {
@@ -39,7 +39,9 @@ const SKIP_DIRS = new Set([
 
 /** Recursively collect *.md files under a directory (handles hidden dirs). */
 export function collectMdFiles(projectRoot: string, dir: string): string[] {
-  const root = join(projectRoot, dir);
+  // Respect absolute inputs: join() would concatenate an absolute dir onto
+  // projectRoot (path doubling). Mirrors resolveFromRoot in validate.ts.
+  const root = isAbsolute(dir) ? dir : join(projectRoot, dir);
   const out: string[] = [];
   if (!existsSync(root)) return out;
   const walk = (d: string): void => {

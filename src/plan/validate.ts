@@ -21,7 +21,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
 import { runLinkCheck } from "./check-links";
 import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
@@ -56,6 +56,19 @@ export const ALL_GATES: GateName[] = [
 /** Gates that can be auto-fixed when --fix is passed. */
 export const FIXABLE_GATES: GateName[] = ["backlog", "tickets", "code-map", "epics-doc"];
 
+/** A gate that actually runs ("all" is expanded by runValidate, never a result). */
+export type ConcreteGate = Exclude<GateName, "all">;
+
+/**
+ * Resolve a configured path against a root, respecting absolute inputs.
+ * `join(root, p)` concatenates an absolute `p` onto `root` — the historic
+ * worktree doubling bug (ticket FIX-plan-validate-path-doubling) — so the
+ * isAbsolute check must come before the join.
+ */
+export function resolveFromRoot(root: string, configured: string): string {
+  return isAbsolute(configured) ? configured : join(root, configured);
+}
+
 export interface Finding {
   gate: GateName;
   level: "error" | "warn";
@@ -74,6 +87,8 @@ export interface ValidateResult {
   pass: boolean;
   issueCount: number;
   fixedCount: number;
+  /** Gates --fix could not repair (no auto-fix exists). Set only when opts.fix. */
+  unfixableGates?: ConcreteGate[];
 }
 
 // ── Format gate ─────────────────────────────────────────────────
@@ -635,10 +650,78 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
     (sum, r) => sum + (r.fixes?.length ?? 0),
     0,
   );
+  const unfixable = opts.fix
+    ? (results
+      .filter((r) => !r.pass && !FIXABLE_GATES.includes(r.gate))
+      .map((r) => r.gate) as ConcreteGate[])
+    : undefined;
   return {
     results,
     pass: issueCount === 0,
     issueCount,
     fixedCount,
+    ...(unfixable && unfixable.length > 0 ? { unfixableGates: unfixable } : {}),
   };
+}
+
+// ── Bounded summary rendering (pure; caller prints) ─────────────
+
+/** Max findings listed per gate in the default human summary (--json lifts the cap). */
+export const MAX_LISTED_FINDINGS = 20;
+
+/** Manual remedy per gate — every reported problem names an actionable next step. */
+const MANUAL_FIX_HINTS: Record<ConcreteGate, string> = {
+  format: "add the missing **Section:** headers to the flagged ticket/epic files",
+  linkage: "add the missing epic↔ticket links to the flagged files",
+  backlog: "reconcile the backlog indexes (giwt plan backlog-sync --fix)",
+  tickets: "reconcile the ticket index (giwt sync)",
+  "code-map": "regenerate .plan/code-map.json (giwt plan code-map)",
+  links: "fix or remove the broken links/refs listed in the findings",
+  spdx: "add an SPDX-License-Identifier header to the flagged .md files",
+  naming: "rename the flagged files to the TYPE-kebab-case-title.md convention",
+  "epics-doc": "regenerate .plan/epics-index.md (giwt plan gen-docs)",
+};
+
+/** Per-gate error/warning counts for the summary line. */
+function gateCounts(r: GateResult): string {
+  const errors = r.findings.filter((f) => f.level === "error").length;
+  const warns = r.findings.length - errors;
+  const parts: string[] = [];
+  if (errors > 0 || !r.pass) parts.push(`${errors} error(s)`);
+  if (warns > 0) parts.push(`${warns} warning(s)`);
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+}
+
+/** Explain which gates --fix left unfixed, each with a manual next step. */
+export function renderUnfixableGates(gates: readonly ConcreteGate[]): string[] {
+  return gates.map((g) => `--fix cannot auto-fix '${g}' — ${MANUAL_FIX_HINTS[g]}`);
+}
+
+/**
+ * Render the summary-first, bounded validation report (no I/O):
+ * per-gate pass/fail + counts, the first MAX_LISTED_FINDINGS findings per
+ * gate, a "… and N more" pointer to --json, fix notes, and unfixable gates.
+ */
+export function renderValidateSummary(result: ValidateResult): string[] {
+  const lines: string[] = [];
+  for (const r of result.results) {
+    const status = r.pass ? "✓" : "✗";
+    const icon = r.pass ? "OK" : "FAIL";
+    lines.push(`  ${status} ${r.gate.padEnd(12)} ${icon}${gateCounts(r)}`);
+    for (const f of r.findings.slice(0, MAX_LISTED_FINDINGS)) {
+      const prefix = f.level === "error" ? "  ✗" : "  ⚠";
+      lines.push(`  ${prefix} ${f.message}`);
+    }
+    const hidden = r.findings.length - MAX_LISTED_FINDINGS;
+    if (hidden > 0) {
+      lines.push(`    … and ${hidden} more — full findings: giwt plan validate --json`);
+    }
+    for (const fx of r.fixes ?? []) {
+      lines.push(`    ↳ fixed: ${fx}`);
+    }
+  }
+  if (result.unfixableGates && result.unfixableGates.length > 0) {
+    lines.push(...renderUnfixableGates(result.unfixableGates));
+  }
+  return lines;
 }
