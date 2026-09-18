@@ -4,7 +4,7 @@
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
-import { gitSync } from "../utils/git";
+import { gitSync, isolatedGitEnv } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { log, raw } from "../utils/output";
 
@@ -12,7 +12,7 @@ function gpgMergeFlags(config: WorktreeConfig): string[] {
   if (!config.agentGpgKeyId) return [];
   const gpgCheck = Bun.spawnSync(
     ["gpg", "--list-secret-keys", config.agentGpgKeyId],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: process.env },
   );
   if (gpgCheck.exitCode !== 0) return [];
   return [
@@ -62,14 +62,16 @@ export async function merge(
     process.exit(1);
   }
 
-  // Check worktree clean
+  // Check worktree clean. Child git gets isolatedGitEnv() so ambient GIT_*
+  // hook context (GIT_DIR/GIT_INDEX_FILE, relative) cannot redirect these
+  // checks at the hook's repo instead of the worktree.
   const dirty = Bun.spawnSync(
     ["git", "-C", wtPath, "diff", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
   const staged = Bun.spawnSync(
     ["git", "-C", wtPath, "diff", "--cached", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
   if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
     log("error", `uncommitted changes in worktree '${branch}'`);
@@ -85,7 +87,7 @@ export async function merge(
 
   const result = Bun.spawnSync(
     ["git", "-C", wtPath, ...flags, "merge", source, "--no-edit"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
 
   if (result.exitCode !== 0) {

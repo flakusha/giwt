@@ -17,6 +17,7 @@
   },
   "scripts": {
     "test": "bun test",
+    "coverage": "bun run scripts/coverage-gate.ts",
     "giwt": "bun run src/cli.ts",
     "build:bin": "bun build --compile src/cli.ts --outfile bin/giwt",
     "fmt": "dprint fmt",
@@ -26,7 +27,7 @@
     "lint:sh": "shfmt -ln posix -i 2 -d .githooks && shellcheck -x .githooks/pre-commit",
     "deadcode": "knip",
     "duplication": "jscpd",
-    "check": "bun run fmt:check && bun run lint && bun run lint:md && bun run lint:sh && bun run deadcode && bun run duplication && tsc --noEmit && bun test"
+    "check": "bun run fmt:check && bun run lint && bun run lint:md && bun run lint:sh && bun run deadcode && bun run duplication && tsc --noEmit && bun test && bun run coverage"
   },
   "dependencies": {
     "@optique/core": "^1.2.6",

@@ -31,7 +31,7 @@ import { DEFAULT_SETTINGS } from "../utils/settings";
 import { execute as createExecute } from "./create";
 import { listWorktrees } from "./list";
 import { execute as removeExecute } from "./remove";
-import { findRegistration, recoverableHead, staleReasons } from "./worktree-registry";
+import { findRegistration, isDirEmpty, recoverableHead, staleReasons } from "./worktree-registry";
 
 let root: string;
 let treeDir: string;
@@ -338,5 +338,15 @@ describe("staleReasons / recoverableHead", () => {
     expect(reasons.dirMissing).toBe(true);
     expect(reasons.refMissing).toBe(true);
     expect(recoverableHead(reg!)).toBeNull();
+  });
+
+  test("isDirEmpty: empty husk true, populated or missing dir false", () => {
+    const husk = resolve(treeDir, "empty-husk");
+    mkdirSync(husk);
+    expect(isDirEmpty(husk)).toBe(true);
+    writeFileSync(resolve(husk, "leftover.txt"), "x");
+    expect(isDirEmpty(husk)).toBe(false);
+    // A directory that does not exist is not an empty leftover husk
+    expect(isDirEmpty(resolve(treeDir, "never-existed"))).toBe(false);
   });
 });

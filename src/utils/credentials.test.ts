@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+/**
+ * Tests for the shared credential loader. The module loads at import time by
+ * walking up from cwd, so the in-process case chdirs into a fixture and
+ * imports the module once with a query string (busts Bun's module cache —
+ * each fresh instance would clobber the previous one's coverage).
+ * Remaining scenarios (incomplete identity, shell output mode) run as
+ * subprocesses since they need a second module instance.
+ */
+
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { AgentCredentials } from "./credentials";
+
+let fixture: string;
+let savedCwd: string;
+const repoRoot = join(import.meta.dir, "../..");
+
+beforeEach(() => {
+  savedCwd = process.cwd();
+  fixture = mkdtempSync(join(tmpdir(), "giwt-credentials-"));
+  process.chdir(fixture);
+});
+
+afterEach(() => {
+  process.chdir(savedCwd);
+  rmSync(fixture, { recursive: true, force: true });
+});
+
+/** Run the module as a script with `content` as its .credentials.env. */
+function runScript(content: string): { code: number; out: string; } {
+  if (content.length > 0) {
+    writeFileSync(join(fixture, ".credentials.env"), content);
+  }
+  const proc = Bun.spawnSync(["bun", join(repoRoot, "src/utils/credentials.ts")], {
+    cwd: fixture,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  return { code: proc.exitCode ?? 1, out: proc.stdout.toString() };
+}
+
+describe("credentials loader", () => {
+  it("finds .credentials.env above cwd and parses the agent identity", async () => {
+    writeFileSync(
+      join(fixture, ".credentials.env"),
+      [
+        "# agent identity",
+        "",
+        "MALFORMED_LINE_WITHOUT_EQUALS",
+        "OTHER_KEY=ignored",
+        "AGENT_GPG_KEY_ID=\"KEY123\"",
+        "AGENT_GPG_NAME='Agent McAgent'",
+        "AGENT_GPG_EMAIL=agent@giwt.local",
+      ].join("\n"),
+    );
+    // Dynamic import is intentional: the module parses cwd at import time.
+    // The specifier is built at runtime so TS does not resolve the
+    // query-busted path (a static literal fails TS2307).
+    const specifier = ["./credentials.ts", "?in-process-once"].join("");
+    const mod = await import(specifier);
+    const creds = mod.credentials as AgentCredentials;
+    expect(creds.found).toBe(true);
+    expect(creds.keyId).toBe("KEY123");
+    expect(creds.name).toBe("Agent McAgent");
+    expect(creds.email).toBe("agent@giwt.local");
+    expect(creds.path).toBe(join(fixture, ".credentials.env"));
+  });
+
+  it("reports found=false when identity fields are incomplete", () => {
+    const { out } = runScript("AGENT_GPG_KEY_ID=only-key\n");
+    // No shell lines are emitted for an incomplete identity
+    expect(out).toBe("");
+  });
+
+  it("falls back to an empty identity when nothing is found", () => {
+    const { out } = runScript("");
+    expect(out).toBe("");
+  });
+
+  it("prints shell-compatible lines when run directly", () => {
+    const { code, out } = runScript(
+      "AGENT_GPG_KEY_ID=K1\nAGENT_GPG_NAME=N1\nAGENT_GPG_EMAIL=E1\n",
+    );
+    expect(code).toBe(0);
+    expect(out).toContain("AGENT_GPG_KEY_ID='K1'");
+    expect(out).toContain("AGENT_GPG_NAME='N1'");
+    expect(out).toContain("AGENT_GPG_EMAIL='E1'");
+  });
+});

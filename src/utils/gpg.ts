@@ -71,6 +71,7 @@ function gpgAvailable(): boolean {
   const probe = spawnSync(["gpg", "--version"], {
     stdout: "ignore",
     stderr: "ignore",
+    env: process.env,
   });
   return probe.success;
 }
@@ -110,6 +111,7 @@ export function assertGpgUnlocked(keyId: string | undefined | null): void {
   const publicCheck = spawnSync(["gpg", "--list-keys", keyId], {
     stdout: "ignore",
     stderr: "ignore",
+    env: process.env,
   });
   if (!publicCheck.success) {
     fail(
@@ -123,6 +125,7 @@ export function assertGpgUnlocked(keyId: string | undefined | null): void {
   const secretCheck = spawnSync(["gpg", "--list-secret-keys", keyId], {
     stdout: "ignore",
     stderr: "ignore",
+    env: process.env,
   });
   if (!secretCheck.success) {
     fail(
