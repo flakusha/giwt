@@ -8,6 +8,7 @@
  *   backlog-sync  Sync .plan/backlog/ index file maps ↔ tier files (--fix, --verbose)
  *   code-map      Build/check/query reverse code→plan index (--check, --find <path>)
  *   gen-docs      Generate .plan/epics-index.md from .plan/epics/
+ *   matrix        Generate .plan/feature-matrix.md from the ticket index
  *   check-links   Validate internal markdown links + TASK refs
  *   validate      Comprehensive .plan/ validation (--gates <list>)
  */
@@ -17,6 +18,7 @@ import { join } from "node:path";
 import { applyFixes, reconcile } from "../plan/backlog-sync";
 import { runLinkCheck } from "../plan/check-links";
 import { buildMap, findOwners, findStale, readMap, verifyFresh, writeMap } from "../plan/code-map";
+import { genMatrix, matrixOutput } from "../plan/feature-matrix";
 import { collectEpics, genDocs, generateIndex } from "../plan/gen-docs";
 import { ALL_GATES, renderValidateSummary, resolveFromRoot, runValidate } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
@@ -42,6 +44,11 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     flags: "--check, --find <path>, --stale",
   },
   { name: "gen-docs", description: "Generate .plan/epics-index.md from epics", flags: "--check" },
+  {
+    name: "matrix",
+    description: "Generate feature matrix from ticket index",
+    flags: "--check, --json, --cooccurrence",
+  },
   { name: "check-links", description: "Validate internal markdown links + TASK refs", flags: "" },
   {
     name: "validate",
@@ -98,6 +105,9 @@ export async function plan(
       break;
     case "gen-docs":
       await runGenDocs(rest, config);
+      break;
+    case "matrix":
+      await runMatrix(rest, config);
       break;
     case "check-links":
       await runCheckLinks(rest, config);
@@ -359,6 +369,61 @@ async function runGenDocs(
   log("success", `wrote ${outPath} (${epics.length} epics)`);
 }
 
+// ── matrix ──────────────────────────────────────────────────────
+
+async function runMatrix(args: string[], config: WorktreeConfig): Promise<void> {
+  const isCheck = args.includes("--check");
+  const json = args.includes("--json");
+  const cooccurrence = args.includes("--cooccurrence");
+  const unknown = args.filter(
+    (a) =>
+      a !== "--help" && a !== "-h" && a !== "--check" && a !== "--json"
+      && a !== "--cooccurrence",
+  );
+  if (unknown.length > 0 || args.includes("--help") || args.includes("-h")) {
+    raw("Usage: giwt plan matrix [--check] [--json] [--cooccurrence]");
+    raw("  Generate .plan/feature-matrix.md from the ticket index");
+    raw("  --check          verify committed matrix matches fresh rebuild (CI gate)");
+    raw("  --json           print the matrix as JSON on stdout (no file write)");
+    raw("  --cooccurrence   append the tag×tag co-occurrence section");
+    process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
+  }
+  if (isCheck && json) {
+    log("error", "--check and --json are mutually exclusive");
+    process.exit(1);
+  }
+
+  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
+  const indexPath = join(planDir, "tickets", "index.json");
+  const outPath = join(planDir, "feature-matrix.md");
+
+  if (isCheck) {
+    if (!existsSync(outPath)) {
+      log("error", "feature-matrix.md missing — run `giwt plan matrix` to generate");
+      process.exit(1);
+    }
+    // matrixOutput throws on a missing/corrupt index — main() catches and
+    // reports with the path named, keeping stdout clean for pipelines.
+    const fresh = matrixOutput(indexPath, { cooccurrence });
+    if (readFileSync(outPath, "utf8") !== fresh.output) {
+      log("error", "feature-matrix.md is stale — run `giwt plan matrix` to regenerate");
+      process.exit(1);
+    }
+    log("success", `OK - feature-matrix.md is up to date (${fresh.matrix.total} tickets)`);
+    return;
+  }
+
+  if (json) {
+    const { matrix } = matrixOutput(indexPath, { cooccurrence });
+    raw(JSON.stringify(matrix, null, 2));
+    process.exitCode = 0;
+    return;
+  }
+
+  const { matrix } = genMatrix(indexPath, outPath, { cooccurrence });
+  log("success", `wrote ${outPath} (${matrix.total} tickets)`);
+}
+
 // ── check-links ─────────────────────────────────────────────────
 
 async function runCheckLinks(
@@ -439,10 +504,10 @@ async function runValidateCmd(
     raw("  Comprehensive .plan/ validation");
     raw("  --gates       comma-separated gate list (default: all)");
     raw(
-      "                gates: format,linkage,backlog,tickets,code-map,links,spdx,naming,epics-doc,all",
+      "                gates: format,linkage,backlog,tickets,code-map,links,spdx,naming,epics-doc,matrix,all",
     );
     raw("  --skip-gates  run all gates except these (mutually exclusive with --gates)");
-    raw("  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc)");
+    raw("  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc, matrix)");
     raw("                unfixable failing gates are reported with a manual next step");
     raw("  --json        machine-readable full result on stdout (every finding, no cap)");
     return;

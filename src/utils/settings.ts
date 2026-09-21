@@ -52,7 +52,7 @@ export interface GiwtSettings {
   commands: { check: string; test: string; diffBase: boolean; };
   doctor: { jobs: number; };
   runlog: { maxRuns: number; };
-  output: { format: string; };
+  output: { format: string; streamTail: number; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -67,7 +67,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   commands: { check: "bun run check", test: "bun run test:unit", diffBase: true },
   doctor: { jobs: 4 },
   runlog: { maxRuns: 200 },
-  output: { format: "simple" },
+  output: { format: "simple", streamTail: 25 },
 };
 
 /** snake_case TOML keys → camelCase settings keys, per section. */
@@ -83,7 +83,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   commands: { check: "check", test: "test", diff_base: "diffBase" },
   doctor: { jobs: "jobs" },
   runlog: { max_runs: "maxRuns" },
-  output: { format: "format" },
+  output: { format: "format", stream_tail: "streamTail" },
 };
 
 const EXPECTED: Record<
@@ -101,7 +101,7 @@ const EXPECTED: Record<
   commands: { check: "string", test: "string", diffBase: "boolean" },
   doctor: { jobs: "number" },
   runlog: { maxRuns: "number" },
-  output: { format: "string" },
+  output: { format: "string", streamTail: "number" },
 };
 
 type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };

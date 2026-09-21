@@ -14,6 +14,7 @@
  *   spdx       — SPDX header compliance
  *   naming     — ticket filename convention
  *   epics-doc  — epics-index.md freshness
+ *   matrix     — feature-matrix.md freshness (projected from index.json)
  *   all        — run every gate (default)
  *
  * Each gate returns a GateResult with pass/fail + findings.
@@ -25,6 +26,7 @@ import { isAbsolute, join } from "node:path";
 import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
 import { runLinkCheck } from "./check-links";
 import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
+import { genMatrix, matrixOutput } from "./feature-matrix";
 import { collectEpics, genDocs, generateIndex } from "./gen-docs";
 
 // ── Gate types ──────────────────────────────────────────────────
@@ -39,6 +41,7 @@ export type GateName =
   | "spdx"
   | "naming"
   | "epics-doc"
+  | "matrix"
   | "all";
 
 export const ALL_GATES: GateName[] = [
@@ -51,10 +54,17 @@ export const ALL_GATES: GateName[] = [
   "spdx",
   "naming",
   "epics-doc",
+  "matrix",
 ];
 
 /** Gates that can be auto-fixed when --fix is passed. */
-export const FIXABLE_GATES: GateName[] = ["backlog", "tickets", "code-map", "epics-doc"];
+export const FIXABLE_GATES: GateName[] = [
+  "backlog",
+  "tickets",
+  "code-map",
+  "epics-doc",
+  "matrix",
+];
 
 /** A gate that actually runs ("all" is expanded by runValidate, never a result). */
 export type ConcreteGate = Exclude<GateName, "all">;
@@ -639,6 +649,70 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
         });
         break;
       }
+      case "matrix": {
+        const indexPath = join(opts.planDir, "tickets", "index.json");
+        const outPath = join(opts.planDir, "feature-matrix.md");
+        const findings: Finding[] = [];
+        if (!existsSync(indexPath)) {
+          findings.push({
+            gate,
+            level: "error",
+            message: `${indexPath}: ticket index missing — run \`giwt sync\``,
+          });
+        } else {
+          try {
+            const fresh = matrixOutput(indexPath);
+            if (!existsSync(outPath)) {
+              findings.push({
+                gate,
+                level: "error",
+                message: `${outPath}: missing — run \`giwt plan matrix\` to generate`,
+              });
+            } else if (readFileSync(outPath, "utf8") !== fresh.output) {
+              findings.push({
+                gate,
+                level: "error",
+                message: `${outPath}: stale — run \`giwt plan matrix\` to regenerate`,
+              });
+            }
+          } catch (error) {
+            findings.push({
+              gate,
+              level: "error",
+              message: (error as Error).message,
+            });
+          }
+        }
+        let pass = findings.length === 0;
+        let fixMsgs: string[] = [];
+        if (opts.fix && !pass && existsSync(indexPath)) {
+          // Regeneration is millisecond-scale (pure projection of the
+          // index), so unlike the tickets gate we re-check after fixing.
+          try {
+            const { matrix } = genMatrix(indexPath, outPath);
+            const rechecked = matrixOutput(indexPath);
+            const clean = existsSync(outPath)
+              && readFileSync(outPath, "utf8") === rechecked.output;
+            if (clean) {
+              // Regeneration resolves every finding — drop them so both the
+              // per-gate pass and the aggregated issueCount reflect the
+              // post-fix state (no re-run needed, unlike the tickets gate).
+              findings.length = 0;
+              pass = true;
+            }
+            fixMsgs = [`regenerated ${outPath} (${matrix.total} tickets)`];
+          } catch {
+            /* leave unfixed — findings already name the failure */
+          }
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
     }
   }
 
@@ -680,6 +754,7 @@ const MANUAL_FIX_HINTS: Record<ConcreteGate, string> = {
   spdx: "add an SPDX-License-Identifier header to the flagged .md files",
   naming: "rename the flagged files to the TYPE-kebab-case-title.md convention",
   "epics-doc": "regenerate .plan/epics-index.md (giwt plan gen-docs)",
+  matrix: "regenerate .plan/feature-matrix.md (giwt plan matrix)",
 };
 
 /** Per-gate error/warning counts for the summary line. */

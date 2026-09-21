@@ -816,6 +816,59 @@ describe("finalize check gate", () => {
     ]);
   });
 
+  test("forwards a display-name gates csv verbatim as argv (no re-splitting)", async () => {
+    // Ticket FIX-gates-accepts-ambiguous-display-names: the csv values can
+    // contain spaces, dashes, commas and parens — they must reach the check
+    // command as ONE argv token, never split or entangled with --diff-base.
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
+
+    const expectedBase = git(["merge-base", "main", "HEAD"], wtPath).trim();
+    const csv = "format - dprint,dead - code (knip),typecheck — backend";
+    const run = await driveFinalize(["feature/x", "--gates", csv]);
+
+    expect(run.exitCode).toBeNull();
+    expect(readFileSync(argsPath, "utf8").trim().split("\n")).toEqual([
+      "--diff-base",
+      expectedBase,
+      "--gates",
+      csv,
+    ]);
+  });
+
+  test("caps the failing test output tail and points at the full log", async () => {
+    // Ticket FEAT-bounded-output-mode-for-check-and-test-streams: a failing
+    // test stream prints only the last output.stream_tail lines on console.
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    const sixty = "i=1; while [ $i -le 60 ]; do echo \"line-$i\"; i=$((i+1)); done";
+    configureCommands("exit 0", `${sixty}; exit 1`);
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("Failed tests");
+    expect(run.output).toContain("  line-60");
+    expect(run.output).toContain("  line-36");
+    expect(run.output).not.toContain("  line-35");
+    expect(run.output).toContain("Full test log: ");
+  });
+
+  test("test tail honors output.stream_tail from settings", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    config.settings.output.streamTail = 2;
+    configureCommands("exit 0", "echo early; echo mid; echo last; exit 1");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("  mid");
+    expect(run.output).toContain("  last");
+    expect(run.output).not.toContain("  early");
+  });
+
   test("omits --diff-base when commands.diff_base is disabled", async () => {
     const wtPath = featureWorktree();
     withBunLock(wtPath);

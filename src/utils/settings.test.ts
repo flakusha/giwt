@@ -128,6 +128,34 @@ describe("loadSettings", () => {
     }
   });
 
+  test("output.stream_tail parses from [output] and defaults to 25", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.output.streamTail).toBe(25);
+      writeFileSync(fx.localPath, `[output]\nformat = "json"\nstream_tail = 40\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.output.streamTail).toBe(40);
+      expect(s.output.format).toBe("json");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("output.stream_tail wrong type throws naming file and key", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[output]\nstream_tail = "many"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/stream_tail must be number/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("invalid TOML throws naming the file", () => {
     const fx = makeFixture();
     try {

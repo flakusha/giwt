@@ -94,7 +94,8 @@ describe("ALL_GATES", () => {
     expect(ALL_GATES).toContain("spdx");
     expect(ALL_GATES).toContain("naming");
     expect(ALL_GATES).toContain("epics-doc");
-    expect(ALL_GATES).toHaveLength(9);
+    expect(ALL_GATES).toContain("matrix");
+    expect(ALL_GATES).toHaveLength(10);
   });
 });
 

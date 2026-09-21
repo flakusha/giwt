@@ -736,6 +736,7 @@ function runCheck(
       config ? resolve(wtPath, config.settings.paths.checkReport) : "",
       capturePath,
       result.stdout.toString(),
+      config?.settings.output.streamTail ?? 25,
     );
   }
   return result.exitCode === 0;
@@ -766,6 +767,8 @@ export function reportCheckFailure(
   reportPath: string,
   capturePath: string | undefined,
   stdout: string,
+  /** Cap for the stdout tail fallback — output.stream_tail, defaulted here for direct callers/tests. */
+  streamTail = 25,
 ): void {
   LAST_FAILED_GATES = [];
   let failed: Array<{ name: string; first: string; }> = [];
@@ -791,7 +794,7 @@ export function reportCheckFailure(
     }
     if (failed.length > 10) raw(`  … and ${failed.length - 10} more`);
   } else {
-    printTail(stdout, 25);
+    printTail(stdout, streamTail);
   }
   raw(`  Check log:    ${capturePath ?? "(not captured)"}`);
   if (reportPath !== "") raw(`  Check report: ${reportPath}`);
@@ -807,6 +810,18 @@ function runTests(wtPath: string, config?: WorktreeConfig, capturePath?: string)
     try {
       writeFileSync(capturePath, result.stdout.toString() + result.stderr.toString());
     } catch { /* best-effort */ }
+  }
+  if (result.exitCode !== 0) {
+    // Bounded on-console tail (output.stream_tail lines) mirroring the
+    // check-gate report: which tests failed without dumping the 1 MB log.
+    // The full output stays in the run-record capture; the step-3 branch
+    // prints the "Full test log" pointer. See ticket
+    // FEAT-bounded-output-mode-for-check-and-test-streams.
+    section("Failed tests");
+    printTail(
+      result.stdout.toString() + "\n" + result.stderr.toString(),
+      config?.settings.output.streamTail ?? 25,
+    );
   }
   return result.exitCode === 0;
 }
