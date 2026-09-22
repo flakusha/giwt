@@ -27,6 +27,32 @@ function kebab(title: string): string {
     .slice(0, 60);
 }
 
+/**
+ * Strip a duplicated type-name prefix from the prose `title` so the git issue
+ * title doesn't carry the same words twice (the extid already encodes them).
+ *
+ * Only strips when the title starts LITERALLY with `kebab(type)` (followed by
+ * a space or dash). No fuzzy/kebab-prefix matching — that over-strips unrelated
+ * prose that merely happens to share letters with the post-type segment.
+ *   ("FEAT", "FEAT story UI") → "story UI"
+ *   ("TASK", "TASK-")         → ""      (whole-title collapse)
+ *   ("BUG",  "something else") → "something else"  (no literal BUG prefix)
+ *
+ * - Matches case-insensitively against `kebab(type)` (e.g. "BUG" → "bug").
+ * - The .md filename uses `kebab(title)` (unstripped); only the git-issue
+ *   prose uses the stripped form.
+ */
+export function stripTypePrefix(type: string, title: string): string {
+  const prefix = kebab(type);
+  if (!prefix) return title;
+  const lower = title.toLowerCase();
+  if (lower === prefix) return "";
+  if (lower.startsWith(prefix + " ") || lower.startsWith(prefix + "-")) {
+    return title.slice(prefix.length + 1).trimStart();
+  }
+  return title;
+}
+
 export async function ticket(args: string[], config: WorktreeConfig): Promise<void> {
   const typeRaw = args[0]?.toUpperCase() ?? "";
   const title = args[1];
@@ -64,7 +90,10 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
   const ticketName = kebab(title);
   const ticketFile = `${config.settings.paths.tickets}/${type}-${ticketName}.md`;
   const extid = `${type}-${ticketName}`;
-  const fullTitle = `${extid}: ${title}`;
+  // Issue title: collapse the prose when it duplicates the type-name words that
+  // `extid` already encodes. The .md filename above still uses the full title.
+  const issueTitle = stripTypePrefix(type, title);
+  const fullTitle = `${extid}: ${issueTitle}`;
   // Plan files belong to the checkout in progress (worktree-aware): when the
   // CLI is invoked from inside tree/<branch>, the ticket file must land in
   // that worktree, not the main checkout (config.repoRoot is the *main* root

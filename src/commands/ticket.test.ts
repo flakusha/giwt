@@ -2,10 +2,13 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
- * End-to-end test for `ticket` invoked from inside a linked worktree
- * (TASK-GIWT-TICKET-CREATE-TICKETS-FROM-INSIDE-A-WORKTREE).
+ * Tests for `ticket` and its `stripTypePrefix` helper.
  *
- * The contract under proof:
+ * Pure-function suite at the top exercises `stripTypePrefix` in isolation
+ * (covers BUG-giwt-ticket-extid-double-prefix-on-duplicate-type-slug).
+ *
+ * End-to-end suite below proves `ticket` invoked from inside a linked
+ * worktree (TASK-GIWT-TICKET-CREATE-TICKETS-FROM-INSIDE-A-WORKTREE):
  *   1. the ticket .md lands in the *invoking worktree*'s .plan/tickets/
  *      (getWorktreeRoot()), never in the main checkout;
  *   2. the git issue is created in the *shared registry* (config.repoRoot
@@ -21,13 +24,13 @@
  * real `git issue` CLI — skipped where it is not installed.
  */
 
-import { describe, expect, it, spyOn } from "bun:test";
+import { describe, expect, it, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runSync } from "../tickets/sync-index";
 import { loadConfig } from "../utils/config";
-import { ticket } from "./ticket";
+import { stripTypePrefix, ticket } from "./ticket";
 
 /** Hermetic env for fixture git calls: concurrent test files may mutate
  * process.env (e.g. GNUPGHOME); spawned git must not inherit that. */
@@ -63,6 +66,53 @@ function initRepoWithCommit(path: string): void {
   git(path, "add", "-A");
   git(path, "commit", "-q", "-m", "init");
 }
+
+describe("stripTypePrefix — literal type-prefix strip", () => {
+  test("'FEAT' + 'FEAT story UI' → 'story UI' (case-insensitive)", () => {
+    expect(stripTypePrefix("FEAT", "FEAT story UI")).toBe("story UI");
+  });
+
+  test("'feat' + 'feat story UI' → 'story UI' (lowercase type)", () => {
+    expect(stripTypePrefix("feat", "feat story UI")).toBe("story UI");
+  });
+});
+
+describe("stripTypePrefix — whole-title collapse", () => {
+  test("'TASK' + 'TASK-' → ''", () => {
+    expect(stripTypePrefix("TASK", "TASK-")).toBe("");
+  });
+
+  test("'BUG' + 'BUG' → ''", () => {
+    expect(stripTypePrefix("BUG", "BUG")).toBe("");
+  });
+});
+
+describe("stripTypePrefix — no-op when no leading prefix", () => {
+  test("'BUG' + 'something else' → 'something else'", () => {
+    expect(stripTypePrefix("BUG", "something else")).toBe("something else");
+  });
+
+  test("'BUG' + 'unrelated prose here' → 'unrelated prose here'", () => {
+    expect(stripTypePrefix("BUG", "unrelated prose here")).toBe(
+      "unrelated prose here",
+    );
+  });
+});
+
+describe("stripTypePrefix — broader duplicate-prefix (literal no-op)", () => {
+  test(
+    "'BUG' + 'giwt ticket extid double prefix on duplicate type slug' → "
+      + "title unchanged (no literal BUG prefix)",
+    () => {
+      expect(
+        stripTypePrefix(
+          "BUG",
+          "giwt ticket extid double prefix on duplicate type slug",
+        ),
+      ).toBe("giwt ticket extid double prefix on duplicate type slug");
+    },
+  );
+});
 
 describe("ticket command inside a linked worktree", () => {
   it.skipIf(Bun.which("git-issue") === null)(
