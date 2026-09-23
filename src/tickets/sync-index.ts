@@ -27,7 +27,7 @@
  * as a git issue — see BUG-plan-sync-fix-creates-orphan-git-issues).
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -37,7 +37,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import {
@@ -60,7 +60,7 @@ import {
  * reference is still matched against the whole file: applyFixes appends
  * it at the end of the file, beyond the header region.
  */
-export function parseTicketFile(filePath: string): TicketFile | null {
+export function parseTicketFile(filePath: string, source?: string): TicketFile | null {
   try {
     const ticketText = readFileSync(filePath, "utf8");
     const lines = ticketText.split("\n").slice(0, 30); // header region only
@@ -107,6 +107,7 @@ export function parseTicketFile(filePath: string): TicketFile | null {
       tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
       hash: gitIssueMatch?.[1] ?? null,
       gitIssue: gitIssueMatch?.[1] ?? null,
+      source: source ?? filePath,
     };
   } catch {
     return null;
@@ -126,11 +127,40 @@ function guessType(filename: string): string {
 
 // ── Entry ─────────────────────────────────────────────────────
 
+/**
+ * Point a ticket .md's `git issue:` reference at `hash` — replacing an
+ * existing reference line or appending one past the header region.
+ */
+function appendIssueRef(mdPath: string, hash: string): void {
+  let text = readFileSync(mdPath, "utf8");
+  if (/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i.test(text)) {
+    text = text.replace(/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i, `git issue: ${hash}`);
+  } else {
+    text = text.replace(/(\n---\n|$)/, `\n\ngit issue: ${hash}\n`);
+  }
+  writeFileSync(mdPath, text);
+}
+
 export interface SyncOptions {
   fix?: boolean;
   verbose?: boolean;
   /** Tickets dir relative to root; default ".plan/tickets" (settings.paths.tickets). */
   ticketsPath?: string;
+  /**
+   * With `--fix`: additionally create registry issues for plan files that
+   * have none (`.md` → `git issue create` + link). Opt-in because mass
+   * import on a repo full of plan-only files recreates the orphan-flood
+   * failure mode (see BUG-plan-sync-fix-creates-orphan-git-issues); plain
+   * `--fix` only reports them as importable tickets.
+   */
+  import?: boolean;
+  /**
+   * With `--fix`: additionally import foreign registry issues back into
+   * `.plan/` — generate `.md` + index entry for each open issue whose extid
+   * has no plan file and no index entry. Off by default because import-back
+   * can resurrect tickets that were deliberately deleted; explicit opt-in.
+   */
+  importBack?: boolean;
   /** Called once with the final counts when a scan ran to completion
    *  (dry-run or fix mode, any exit code). Not called on early refusals
    *  (missing tickets dir, --fix lock/CLI refusal). */
@@ -311,6 +341,20 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         report.fixesApplied.push(
           `${mismatch.extid}: status ${mismatch.indexStatus} → ${mismatch.gitStatus}`,
         );
+        // Converge in one pass: rewrite the .md Status line too, so the
+        // post-fix re-scan does not re-surface it as a new .md-status fix.
+        const tf = fileByExtid.get(mismatch.extid);
+        if (tf) {
+          try {
+            const text = readFileSync(tf.path, "utf8").replace(
+              /^(\*\*Status:\*\*\s*).*$/im,
+              `$1${mismatch.gitStatus}`,
+            );
+            writeFileSync(tf.path, text);
+          } catch {
+            // non-fatal: index entry already corrected; .md fixed next run
+          }
+        }
       }
     }
 
@@ -369,16 +413,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       const tf = fileByExtid.get(ph.extid);
       if (tf) {
         try {
-          let ticketRaw = readFileSync(tf.path, "utf8");
-          if (/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i.test(ticketRaw)) {
-            ticketRaw = ticketRaw.replace(
-              /(?:git.?issue|issue):\s*[0-9a-f]{7,}/i,
-              `git issue: ${target.hash}`,
-            );
-          } else {
-            ticketRaw = ticketRaw.replace(/(\n---\n|$)/, `\n\ngit issue: ${target.hash}\n`);
-          }
-          writeFileSync(tf.path, ticketRaw);
+          appendIssueRef(tf.path, target.hash);
           report.fixesApplied.push(`${ph.extid}: linked .md to git issue ${target.hash}`);
         } catch {
           // non-fatal: the index entry itself is already corrected
@@ -499,6 +534,166 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       }
     }
 
+    // Import: create registry issues for plan files that have none. Unlike
+    // the placeholder fix (which deliberately never mass-creates for
+    // unprovenanced index entries), an existing .md file IS provenance —
+    // one bounded create per file, idempotent by extid. Opt-in (`--import`):
+    // plain --fix only reports importable tickets, never mass-creates.
+    if (opts.import) {
+      for (const it of report.importableTickets) {
+        const tf = fileByExtid.get(it.extid);
+        if (!tf) continue;
+        try {
+          const out = execFileSync(
+            "git",
+            ["issue", "create", `${it.extid}: ${it.title}`, "-m", `Imported from ${it.source}`],
+            { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv(), encoding: "utf8" },
+          );
+          const created = out.match(/Created issue ([0-9a-f]{7,40})/);
+          if (!created?.[1]) throw new Error(`unparsable create output: ${out.slice(0, 80)}`);
+          const hash = created[1].slice(0, 7);
+
+          const entry = fixed[it.extid];
+          fixed[it.extid] = {
+            ...(entry ?? {}),
+            hash,
+            git_issue: hash,
+            extid: it.extid,
+            type: tf.type,
+            title: tf.title,
+            label: tf.type.toLowerCase(),
+            priority: tf.priority,
+            epic: tf.epic,
+            tags: tf.tags,
+            source: it.source,
+            status: entry?.status ?? normalizeStatus(tf.status),
+          } as IndexEntry;
+
+          appendIssueRef(tf.path, hash);
+          report.fixesApplied.push(
+            `${it.extid}: imported ${it.source} → git issue ${hash}`,
+          );
+        } catch (e) {
+          report.fixesApplied.push(
+            `${it.extid}: FAILED to import ${it.source}: ${
+              e instanceof Error ? e.message.split("\n")[0] : String(e)
+            }`,
+          );
+        }
+      }
+    }
+
+    // Title drift: the ticket was reclassified/moved (TASK-x → BUG-x); rename
+    // the registry issue to match and relink file + index to it.
+    for (const td of report.titleDrifts) {
+      try {
+        const strippedTitle = td.issueTitle.replace(/^\S+[:-]?\s*/, "");
+        execFileSync(
+          "git",
+          ["issue", "edit", td.hash, "-t", `${td.extid}: ${strippedTitle}`],
+          { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv(), encoding: "utf8" },
+        );
+        const entry = fixed[td.extid];
+        if (entry) {
+          fixed[td.extid] = { ...entry, hash: td.hash, git_issue: td.hash };
+        }
+        const tf = fileByExtid.get(td.extid);
+        if (tf) appendIssueRef(tf.path, td.hash);
+        report.fixesApplied.push(
+          `${td.extid}: renamed issue ${td.hash} (${td.issueExtid} → ${td.extid})`,
+        );
+      } catch (e) {
+        report.fixesApplied.push(
+          `${td.extid}: FAILED to rename issue ${td.hash}: ${
+            e instanceof Error ? e.message.split("\n")[0] : String(e)
+          }`,
+        );
+      }
+    }
+
+    // .md Status drift: rewrite the header Status line to the authoritative
+    // index status (the linked issue already agrees with the index).
+    for (const ms of report.mdStatusStale) {
+      const tf = fileByExtid.get(ms.extid);
+      if (!tf) continue;
+      try {
+        let text = readFileSync(tf.path, "utf8");
+        text = text.replace(
+          /^(\*\*Status:\*\*\s*).*$/im,
+          `$1${ms.indexStatus}`,
+        );
+        writeFileSync(tf.path, text);
+        report.fixesApplied.push(
+          `${ms.extid}: .md status ${ms.mdStatus} → ${ms.indexStatus}`,
+        );
+      } catch (e) {
+        report.fixesApplied.push(
+          `${ms.extid}: FAILED to rewrite .md status: ${
+            e instanceof Error ? e.message.split("\n")[0] : String(e)
+          }`,
+        );
+      }
+    }
+
+    // Import-back: generate .md + index entry for foreign registry issues.
+    // Explicit opt-in (`--import-back`) — this can resurrect deliberately
+    // deleted tickets, so it never runs as part of plain --fix.
+    if (opts.importBack) {
+      for (const fi of report.foreignIssues) {
+        try {
+          const type = /^([A-Z]+)-/.exec(fi.extid)?.[1] ?? "TASK";
+          const bareTitle = fi.title.replace(/^\S+[:]\s*/, "");
+          const filename = `${fi.extid}.md`;
+          const target = join(TICKETS_DIR, filename);
+          // Never clobber an existing plan file in the target dir — or in the
+          // canonical .plan/tickets location when syncing a custom dir.
+          const canonical = join(resolve(repoRoot, ".plan/tickets"), filename);
+          if (existsSync(target) || (canonical !== target && existsSync(canonical))) {
+            report.fixesApplied.push(
+              `${fi.extid}: SKIPPED import-back — ${filename} already exists`,
+            );
+            continue;
+          }
+          writeFileSync(
+            target,
+            [
+              `# ${type}: ${bareTitle}`,
+              "",
+              `**Status:** open`,
+              "**Priority:** medium",
+              "",
+              `Imported from git issue ${fi.hash}.`,
+              "",
+              `git issue: ${fi.hash}`,
+              "",
+            ].join("\n"),
+          );
+          fixed[fi.extid] = {
+            hash: fi.hash,
+            git_issue: fi.hash,
+            extid: fi.extid,
+            type,
+            title: bareTitle,
+            label: type.toLowerCase(),
+            priority: "medium",
+            epic: "",
+            tags: [],
+            source: `.plan/tickets/${filename}`,
+            status: "open",
+          };
+          report.fixesApplied.push(
+            `${fi.extid}: imported back git issue ${fi.hash} → .plan/tickets/${filename}`,
+          );
+        } catch (e) {
+          report.fixesApplied.push(
+            `${fi.extid}: FAILED import-back: ${
+              e instanceof Error ? e.message.split("\n")[0] : String(e)
+            }`,
+          );
+        }
+      }
+    }
+
     // Close stale open git issues (index=done, git=open)
     for (const m of report.staleOpenGitIssues) {
       try {
@@ -526,11 +721,30 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       f.endsWith(".md") && /^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)-/i.test(f),
   );
 
-  const ticketFiles: TicketFile[] = [];
-  for (const f of mdFiles) {
-    const tf = parseTicketFile(join(TICKETS_DIR, f));
-    if (tf) ticketFiles.push(tf);
-  }
+  // Epics live in a sibling dir (.plan/epics) with the same filename
+  // conventions; scan it so epic files take part in every reconciliation
+  // pass (import, adoption, phantom checks) instead of being invisible.
+  const EPICS_DIR = resolve(repoRoot, ".plan/epics");
+  const epicFiles = existsSync(EPICS_DIR)
+    ? readdirSync(EPICS_DIR).filter(
+      (f) =>
+        f.endsWith(".md")
+        && /^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)-/i.test(f),
+    )
+    : [];
+
+  const scanTicketFiles = (): TicketFile[] => {
+    const files: TicketFile[] = [];
+    for (const [dir, list] of [[TICKETS_DIR, mdFiles], [EPICS_DIR, epicFiles]] as const) {
+      for (const f of list) {
+        const tf = parseTicketFile(join(dir, f), relative(repoRoot, join(dir, f)));
+        if (tf) files.push(tf);
+      }
+    }
+    return files;
+  };
+
+  const ticketFiles: TicketFile[] = scanTicketFiles();
 
   const { issues: gitIssues, available: gitIssuesAvailable } = readGitIssues(repoRoot);
   const index = readIndex(INDEX_PATH);
@@ -546,6 +760,15 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   // Reconcile
   const report = reconcile(ticketFiles, gitIssues, index, verbose, repoRoot);
+
+  // Importable is the one category that INVERTS on an unreadable registry:
+  // an empty map is indistinguishable from a missing tool, so plan-only
+  // files must not be reported (nor trigger the --fix refusal below) when
+  // the registry state is unknown. Issue-derived categories are naturally
+  // empty in that case and need no gating.
+  if (!gitIssuesAvailable) {
+    report.importableTickets = [];
+  }
 
   // Report
   raw(`\n📋 Reconciliation Report`);
@@ -659,6 +882,86 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     raw(`\n🟢 No orphan git issues`);
   }
 
+  // ── Issue-lifecycle drift (import / foreign / move) ──────────
+
+  if (report.importableTickets.length > 0) {
+    raw(`\n🟡 Importable tickets (.md, no git issue): ${report.importableTickets.length}`);
+    for (const m of report.importableTickets.slice(0, verbose ? Infinity : 10)) {
+      raw(`   ${m.extid}: ${m.source}`);
+    }
+    if (!verbose && report.importableTickets.length > 10) {
+      raw(`   ... and ${report.importableTickets.length - 10} more`);
+    }
+    raw(`   → rerun with --fix --import to create the missing issues`);
+  } else {
+    raw(`\n🟢 No importable tickets`);
+  }
+
+  if (report.titleDrifts.length > 0) {
+    raw(`\n🔴 Title drift (issue extid ≠ ticket extid, slug match): ${report.titleDrifts.length}`);
+    for (const m of report.titleDrifts) {
+      raw(`   ${m.extid}: issue ${m.hash} still "${m.issueExtid}"`);
+    }
+  } else {
+    raw(`\n🟢 No title drift`);
+  }
+
+  if (report.mdStatusStale.length > 0) {
+    raw(`\n🟡 .md status stale (index authoritative): ${report.mdStatusStale.length}`);
+    for (const m of report.mdStatusStale) {
+      raw(`   ${m.extid}: .md="${m.mdStatus}" → ${m.indexStatus}`);
+    }
+  } else {
+    raw(`\n🟢 No stale .md statuses`);
+  }
+
+  if (report.foreignIssues.length > 0) {
+    raw(
+      `\n🟡 Foreign issues (open in registry, no .plan/ reflection): ${report.foreignIssues.length}`,
+    );
+    for (const m of report.foreignIssues.slice(0, verbose ? Infinity : 10)) {
+      raw(`   ${m.hash} ${m.extid}: ${m.title.slice(0, 60)}`);
+    }
+    if (!verbose && report.foreignIssues.length > 10) {
+      raw(`   ... and ${report.foreignIssues.length - 10} more`);
+    }
+    raw(`   → import manually or rerun --fix --import-back`);
+  } else {
+    raw(`\n🟢 No foreign issues`);
+  }
+
+  if (report.foreignUnparsedIssues.length > 0) {
+    raw(
+      `\n🟡 Foreign issues without TYPE-extid (manual only): ${report.foreignUnparsedIssues.length}`,
+    );
+    for (const m of report.foreignUnparsedIssues.slice(0, verbose ? Infinity : 10)) {
+      raw(`   ${m.hash}: ${m.title.slice(0, 60)}`);
+    }
+    if (!verbose && report.foreignUnparsedIssues.length > 10) {
+      raw(`   ... and ${report.foreignUnparsedIssues.length - 10} more`);
+    }
+  } else {
+    raw(`\n🟢 No unparsed foreign issues`);
+  }
+
+  if (report.duplicateOpenIssues.length > 0) {
+    raw(`\n🟡 Duplicate open issues (manual dedupe): ${report.duplicateOpenIssues.length}`);
+    for (const m of report.duplicateOpenIssues) {
+      raw(`   ${m.extid}: ${m.hashes.join(", ")}`);
+    }
+  } else {
+    raw(`\n🟢 No duplicate open issues`);
+  }
+
+  if (report.danglingMdRefs.length > 0) {
+    raw(`\n🟡 Dangling .md issue refs (hash not in registry): ${report.danglingMdRefs.length}`);
+    for (const m of report.danglingMdRefs) {
+      raw(`   ${m.extid}: git issue: ${m.hash}`);
+    }
+  } else {
+    raw(`\n🟢 No dangling .md refs`);
+  }
+
   // Advisory: non-epic tickets not bound to any epic. Deliberately not
   // counted in totalIssues or advisoryCount — a count in advisoryCount would
   // trigger gratuitous --fix index rewrites on every run.
@@ -683,11 +986,18 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     + report.phantomEntries.length
     + report.hashMismatches.length
     + report.statusMismatches.length
-    + report.staleOpenGitIssues.length;
+    + report.staleOpenGitIssues.length
+    + report.titleDrifts.length
+    + report.mdStatusStale.length;
   const advisoryCount = report.placeholderHashes.length
     + report.missingHashes.length
     + report.missingGitIssueLinks.length
-    + report.orphanGitIssues.length;
+    + report.orphanGitIssues.length
+    + report.importableTickets.length
+    + report.foreignIssues.length
+    + report.foreignUnparsedIssues.length
+    + report.duplicateOpenIssues.length
+    + report.danglingMdRefs.length;
 
   raw(`\n${"═".repeat(60)}`);
 
@@ -736,18 +1046,33 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       report.fixesApplied.forEach((f) => raw(`   ${f}`));
     }
 
-    // Recompute reconciliation on the *fixed* index so the summary reflects the
-    // resolved state (e.g. placeholder hashes now linked, not still advisory).
-    const postReport = reconcile(ticketFiles, gitIssues, fixedIndex, verbose, repoRoot);
+    // Recompute reconciliation on the *fixed* index so the summary reflects
+    // the resolved state (e.g. placeholder hashes now linked, not still
+    // advisory). The registry is re-read too: import/rename fixes changed
+    // it, and a stale map would re-report resolved tickets as importable.
+    const refreshed = readGitIssues(repoRoot);
+    const postGitIssues = refreshed.available ? refreshed.issues : gitIssues;
+    // Re-scan .md files too: fixes may have rewritten Status lines or
+    // generated import-back files; reconciling against stale in-memory
+    // copies would re-report what the fix just resolved.
+    const postTicketFiles = scanTicketFiles();
+    const postReport = reconcile(postTicketFiles, postGitIssues, fixedIndex, verbose, repoRoot);
     const postTotal = postReport.orphanFiles.length
       + postReport.phantomEntries.length
       + postReport.hashMismatches.length
       + postReport.statusMismatches.length
-      + postReport.staleOpenGitIssues.length;
+      + postReport.staleOpenGitIssues.length
+      + postReport.titleDrifts.length
+      + postReport.mdStatusStale.length;
     const postAdvisory = postReport.placeholderHashes.length
       + postReport.missingHashes.length
       + postReport.missingGitIssueLinks.length
-      + postReport.orphanGitIssues.length;
+      + postReport.orphanGitIssues.length
+      + postReport.importableTickets.length
+      + postReport.foreignIssues.length
+      + postReport.foreignUnparsedIssues.length
+      + postReport.duplicateOpenIssues.length
+      + postReport.danglingMdRefs.length;
 
     if (postTotal === 0) {
       raw(`Index is in sync${postAdvisory > 0 ? ` (${postAdvisory} advisory remaining)` : ""}`);

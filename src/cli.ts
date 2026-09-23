@@ -129,7 +129,7 @@ const USAGE: Record<string, string> = {
     "<ID> <open|closed>\n  <ID>      issue id\n  <state>   open|closed (other values become --state=<state>)",
   "status": "[branch]\n  [branch]   optional branch (default: current)",
   "sync":
-    "[--fix] [--verbose]\n  --fix      apply fixes, not just report\n  --verbose  verbose output",
+    "[--fix] [--import] [--import-back] [--verbose]\n  --fix           apply fixes, not just report\n  --import        with --fix: create issues for plan-only .md files\n  --import-back   with --fix: generate .md + index for foreign issues\n  --verbose       verbose output",
   "ticket":
     "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
 };

@@ -173,6 +173,7 @@ describe("reconcile orphan detection", () => {
       tags: [],
       hash: null,
       gitIssue: null,
+      source: ".plan/tickets/TASK-NEW.md",
     }];
     const root = makeRoot();
     const report = reconcile(ticketFiles, new Map(), {}, false, root);

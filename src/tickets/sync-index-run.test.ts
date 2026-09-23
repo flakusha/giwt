@@ -634,8 +634,10 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
       expect(out).toContain(`TASK-FIXLINK: added git_issue = ${iLink}`);
       expect(out).toContain("TASK-NOSTATUS: backfilled status (was undefined) → \"done\"");
       expect(out).toContain("TASK-FIXORPHAN: added to index (from orphan file)");
-      // The dangling FIX-other issue is the only advisory left after the fix.
-      expect(out).toContain("Index is in sync (1 advisory remaining)");
+      // The leftovers are advisory: the FIX-other orphan issue is claimed by
+      // the adopted fallback ticket, and the report now also itemizes the
+      // plan-only .md files (importable) and the stale abc1234 ref (dangling).
+      expect(out).toContain("Index is in sync (5 advisory remaining)");
 
       const fixed = readIndex(root);
       expect(Object.keys(fixed)).toEqual([...Object.keys(fixed)].sort());
@@ -659,7 +661,8 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
       expect(summaries).toHaveLength(1);
       expect(summaries[0]!.tickets).toBe(8);
       expect(summaries[0]!.issuesRemaining).toBe(0);
-      expect(summaries[0]!.advisoryRemaining).toBe(1);
+      // 4 plan-only .md files (importable) + the stale abc1234 ref (dangling).
+      expect(summaries[0]!.advisoryRemaining).toBe(5);
       expect(summaries[0]!.fixesApplied).toBeGreaterThan(0);
       expect(residue(root)).toEqual([]);
     } finally {
@@ -686,11 +689,11 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
 
       const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
 
-      // The close really happened; the post-fix summary re-reconciles against
-      // the issue map read *before* the fix, so it still counts as stale.
-      expect(exit).toBe(1);
+      // The close really happened; the post-fix summary re-reads the
+      // registry, so the resolved ticket no longer counts as stale.
+      expect(exit).toBe(0);
       expect(out).toContain(`TASK-FIXCLOSE: closed git issue ${iClose}`);
-      expect(out).toContain("1 actionable issue(s) remain");
+      expect(out).toContain("Index is in sync");
       expect(issueState(root, iClose)).toBe("closed");
       expect(readIndex(root)["TASK-FIXCLOSE"]).toMatchObject({
         hash: iClose,
@@ -728,9 +731,9 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
       expect(readIndex(root)["TASK-RELINK"]).toMatchObject({ hash: iNew, git_issue: iNew });
       expect(issueState(root, iOld)).toBe("closed");
 
-      // The relink target was reported stale and closed in the same pass, so
-      // the summary (computed from the pre-fix snapshot) still sees it open.
-      expect(exit).toBe(1);
+      // The relink target was reported stale and closed in the same pass;
+      // the summary re-reads the registry, so the fixed state exits 0.
+      expect(exit).toBe(0);
       expect(out).toContain(`TASK-RELINK: closed git issue ${iNew}`);
       expect(issueState(root, iNew)).toBe("closed");
       expect(residue(root)).toEqual([]);

@@ -26,6 +26,8 @@ export interface TicketFile {
   tags: string[];
   hash: string | null;
   gitIssue: string | null;
+  /** Repo-relative source path (`.plan/tickets/x.md` or `.plan/epics/x.md`). */
+  source: string;
 }
 
 export interface GitIssue {
@@ -96,6 +98,62 @@ export interface SyncReport {
     title: string;
   }>;
   /**
+   * Ticket/epic .md files with no git issue at all (no registry entry whose
+   * extid matches, in any state). Fixable: `--fix` creates the issue
+   * (`git issue create "<extid>: <title>"`) and links file + index.
+   */
+  importableTickets: Array<{
+    extid: string;
+    title: string;
+    source: string;
+  }>;
+  /**
+   * Open issues whose extid has no .md file and no index entry anywhere —
+   * work that lives in the registry but is not reflected in `.plan/`.
+   * Report-only by default; `--import-back` generates the .md + index entry.
+   */
+  foreignIssues: Array<{
+    hash: string;
+    extid: string;
+    title: string;
+  }>;
+  /** Open issues with no parsable extid and no index/.md claim — manual. */
+  foreignUnparsedIssues: Array<{
+    hash: string;
+    title: string;
+  }>;
+  /** Two or more OPEN issues sharing one extid — manual dedupe. */
+  duplicateOpenIssues: Array<{
+    extid: string;
+    hashes: string[];
+  }>;
+  /** A .md `git issue: <hash>` reference resolving to no registry entry. */
+  danglingMdRefs: Array<{
+    extid: string;
+    hash: string;
+  }>;
+  /**
+   * Issue extid differs from the ticket's extid but the slug matches — the
+   * ticket was reclassified/moved (e.g. TASK-x → BUG-x). Fixable via
+   * `git issue edit <hash> -t`.
+   */
+  titleDrifts: Array<{
+    extid: string;
+    hash: string;
+    issueExtid: string;
+    issueTitle: string;
+  }>;
+  /**
+   * .md Status line disagrees with the (authoritative) index status while the
+   * linked issue agrees with the index. Fixable: rewrite the .md line.
+   */
+  mdStatusStale: Array<{
+    extid: string;
+    mdStatus: string;
+    indexStatus: string;
+    source: string;
+  }>;
+  /**
    * Advisory: non-epic index entries with no epic binding (extids).
    * Deliberately excluded from every gating/advisory count in runSync —
    * informational only, mirroring checkLinkage's warn-level finding.
@@ -139,6 +197,13 @@ export function reconcile(
     missingGitIssueLinks: [],
     staleOpenGitIssues: [],
     orphanGitIssues: [],
+    importableTickets: [],
+    foreignIssues: [],
+    foreignUnparsedIssues: [],
+    duplicateOpenIssues: [],
+    danglingMdRefs: [],
+    titleDrifts: [],
+    mdStatusStale: [],
     unboundEpics: [],
     fixesApplied: [],
   };
@@ -352,6 +417,131 @@ export function reconcile(
         title: issue.title,
       });
     }
+  }
+
+  // 10. Issue-lifecycle drift (import / foreign / duplicate / move):
+  //     keyed per extid across ALL issues (the lookups above stop at the
+  //     first match, which hides duplicates and reclassified tickets).
+  const issuesByExtid = new Map<string, GitIssue[]>();
+  for (const [, issue] of gitIssues) {
+    if (!issue.extid) continue;
+    const list = issuesByExtid.get(issue.extid) ?? [];
+    list.push(issue);
+    issuesByExtid.set(issue.extid, list);
+  }
+
+  /** TYPE-agnostic slug: `BUG-server-host-dead` → `server-host-dead`. */
+  const extidSlug = (extid: string): string =>
+    extid.replace(/^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)-/i, "")
+      .toLowerCase();
+
+  const seenTicketExtids = new Set<string>();
+  for (const tf of ticketFiles) {
+    const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
+    if (seenTicketExtids.has(extid)) continue; // same extid in tickets+epics → manual
+    seenTicketExtids.add(extid);
+    const issueList = issuesByExtid.get(extid) ?? [];
+
+    if (issueList.length === 0) {
+      // Importable only if the ticket claims no live issue elsewhere: an
+      // index entry pointing at an existing issue (even under a different
+      // extid) means this is a mismatch/relink case, not a missing import —
+      // creating a fresh issue would fork the ticket.
+      const entry = index[extid];
+      const claimsLiveIssue = [entry?.hash, entry?.git_issue].some(
+        (h) => h !== undefined && h !== "pending" && gitIssues.has(h),
+      );
+      if (tf.gitIssue && !gitIssues.has(tf.gitIssue)) {
+        report.danglingMdRefs.push({ extid, hash: tf.gitIssue });
+      } else if (claimsLiveIssue) {
+        // covered by hashMismatches / missingGitIssueLinks categories
+      } else {
+        report.importableTickets.push({ extid, title: tf.title, source: tf.source });
+      }
+      continue;
+    }
+
+    const openIssues = issueList.filter((i) => i.status === "open");
+    if (openIssues.length >= 2) {
+      report.duplicateOpenIssues.push({ extid, hashes: openIssues.map((i) => i.hash) });
+      continue; // ambiguous: never auto-import/relink/dedupe
+    }
+  }
+
+  // Dangling .md refs for tickets that DO have a matching issue (ref points
+  // at a stale/removed hash). Manual: relink by hand or clear the line.
+  for (const tf of ticketFiles) {
+    const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
+    if (!tf.gitIssue || gitIssues.has(tf.gitIssue)) continue;
+    if ((issuesByExtid.get(extid) ?? []).length > 0) {
+      report.danglingMdRefs.push({ extid, hash: tf.gitIssue });
+    }
+  }
+
+  // Title drift: the ticket was reclassified or moved (TASK-x.md → BUG-x.md)
+  // but the registry issue still carries the old extid prefix. Slug-equal
+  // (TYPE-prefix-insensitive) and unclaimed by any other .md → fixable.
+  const claimedIssueHashes = new Set<string>();
+  for (const tf of ticketFiles) {
+    if (tf.gitIssue) claimedIssueHashes.add(tf.gitIssue);
+  }
+  for (const [, entry] of Object.entries(index)) {
+    if (entry.git_issue) claimedIssueHashes.add(entry.git_issue);
+  }
+  for (const tf of ticketFiles) {
+    const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
+    if ((issuesByExtid.get(extid) ?? []).length > 0) continue; // own issue exists
+    const slug = extidSlug(extid);
+    if (!slug) continue;
+    for (const [hash, issue] of gitIssues) {
+      if (!issue.extid || extidSlug(issue.extid) !== slug) continue;
+      if (claimedIssueHashes.has(hash)) continue;
+      report.titleDrifts.push({
+        extid,
+        hash,
+        issueExtid: issue.extid,
+        issueTitle: issue.title,
+      });
+      break; // one drift candidate per ticket; further matches are duplicates
+    }
+  }
+
+  // Foreign issues: open, parsable extid, but neither a .md file nor an index
+  // entry claims that extid anywhere — registry work not reflected in .plan/.
+  for (const [, issue] of gitIssues) {
+    if (issue.status !== "open") continue;
+    if (claimedIssueHashes.has(issue.hash)) continue;
+    if (!issue.extid) {
+      report.foreignUnparsedIssues.push({ hash: issue.hash, title: issue.title });
+      continue;
+    }
+    const hasFile = ticketFiles.some(
+      (tf) => tf.filename.replace(/\.md$/, "").toUpperCase() === issue.extid,
+    );
+    if (hasFile || indexExtids.has(issue.extid)) continue;
+    report.foreignIssues.push({ hash: issue.hash, extid: issue.extid, title: issue.title });
+  }
+
+  // 11. .md Status drift: the index is authoritative (existing fixes treat it
+  //     so) — flag .md files whose Status line disagrees while the linked
+  //     issue agrees with the index (or there is no linked issue).
+  for (const [extid, entry] of Object.entries(index)) {
+    if (!entry.status) continue; // nothing authoritative recorded yet
+    const indexStatus = normalizeStatus(entry.status);
+    if (!indexStatus || indexStatus === "undefined") continue;
+    const tf = fileByExtid.get(extid);
+    if (!tf || normalizeStatus(tf.status) === indexStatus) continue;
+    const issue = entry.git_issue ? gitIssues.get(entry.git_issue) : undefined;
+    if (issue) {
+      const issueStatus = issue.status === "open" ? "open" : "done";
+      if (issueStatus !== indexStatus) continue; // three-way conflict → manual
+    }
+    report.mdStatusStale.push({
+      extid,
+      mdStatus: tf.status,
+      indexStatus,
+      source: tf.source,
+    });
   }
 
   // 9. Advisory: non-epic index entries not bound to any epic. Never gates

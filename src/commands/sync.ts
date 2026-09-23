@@ -18,10 +18,18 @@ export async function sync(
 ): Promise<void> {
   const hasFix = args.includes("--fix");
   const hasVerbose = args.includes("--verbose");
-  const unknown = args.filter((a) => a !== "--fix" && a !== "--verbose");
+  const hasImport = args.includes("--import");
+  const hasImportBack = args.includes("--import-back");
+  const unknown = args.filter(
+    (a) => a !== "--fix" && a !== "--verbose" && a !== "--import" && a !== "--import-back",
+  );
   if (unknown.length > 0) {
     log("error", `unknown flag '${unknown[0]}'`);
-    raw("  Usage: giwt sync [--fix] [--verbose]");
+    raw("  Usage: giwt sync [--fix] [--import] [--import-back] [--verbose]");
+    process.exit(1);
+  }
+  if ((hasImport || hasImportBack) && !hasFix) {
+    log("error", "--import/--import-back require --fix");
     process.exit(1);
   }
 
@@ -30,6 +38,8 @@ export async function sync(
   const exitCode = runSync(config.worktreeRoot, {
     fix: hasFix,
     verbose: hasVerbose,
+    import: hasImport,
+    importBack: hasImportBack,
     ticketsPath: config.settings.paths.tickets,
     onSummary: (s) => {
       summary = s;
