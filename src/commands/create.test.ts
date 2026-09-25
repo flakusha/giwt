@@ -198,9 +198,8 @@ describe("create: argument and registry guards", () => {
 
   test("reports a branch that does not exist with a recovery command", async () => {
     const out = await runExpectExit1(["never-created"]);
-    expect(out).toContain("branch 'never-created' does not exist — create it first");
-    expect(out).toContain("git branch never-created <base>");
-    expect(out).toContain("giwt new never-created");
+    expect(out).toContain("branch 'never-created' does not exist");
+    expect(out).toContain("giwt new-branch never-created");
     expect(existsSync(resolve(treeDir, "never-created"))).toBe(false);
   });
 

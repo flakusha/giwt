@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { existsSync } from "fs";
-import { resolve } from "path";
-import { branchToPath, type WorktreeConfig } from "../utils/config";
+import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { log, raw } from "../utils/output";
@@ -21,13 +19,6 @@ function gpgMergeFlags(config: WorktreeConfig): string[] {
     "-c",
     `user.signingkey=${config.agentGpgKeyId}`,
   ];
-}
-
-function findWorktree(branch: string, config: WorktreeConfig): string | null {
-  const dirName = branchToPath(branch);
-  const wtPath = resolve(config.treeDir, dirName);
-  if (existsSync(resolve(wtPath, ".git"))) return wtPath;
-  return null;
 }
 
 export async function merge(

@@ -100,6 +100,41 @@ export function branchToPath(branch: string): string {
 }
 
 /**
+ * Configure `commit.gpgsign` and `user.signingkey` for a freshly-created
+ * worktree. Silent on cold cache: only logs success when both the public
+ * AND secret keys are present, so a missing-key environment silently
+ * falls back to unsigned commits (matches the prior create/new-branch
+ * behavior). Use `assertAgentGpgUnlocked` from utils/gpg.ts for the
+ * exit-on-cold path that sign.ts and merge.ts take.
+ */
+export function configureGpgSigningSilently(
+  wtPath: string,
+  agentGpgKeyId: string | undefined,
+): void {
+  if (!agentGpgKeyId) return;
+  const gpgCheck = Bun.spawnSync(
+    ["gpg", "--list-keys", agentGpgKeyId],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  if (gpgCheck.exitCode !== 0) return;
+  const secretCheck = Bun.spawnSync(
+    ["gpg", "--list-secret-keys", agentGpgKeyId],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  if (secretCheck.exitCode !== 0) return;
+  gitSync(wtPath, "config", "commit.gpgsign", "true");
+  gitSync(wtPath, "config", "user.signingkey", agentGpgKeyId);
+  log("success", `GPG signing enabled (key: ${agentGpgKeyId.slice(0, 8)}...)`);
+}
+
+export function findWorktree(branch: string, config: WorktreeConfig): string | null {
+  const dirName = branchToPath(branch);
+  const wtPath = resolve(config.treeDir, dirName);
+  if (existsSync(resolve(wtPath, ".git"))) return wtPath;
+  return null;
+}
+
+/**
  * Symlink root `.credentials.env` into a worktree so worktree-local scripts
  * (gpg-unlock) find agent GPG identity without a
  * parent-walk. Mirrors the node_modules symlink: same pattern, same

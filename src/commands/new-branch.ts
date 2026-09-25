@@ -3,37 +3,16 @@
 
 import { existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
-import { branchToPath, linkWorktreeCredentials, type WorktreeConfig } from "../utils/config";
+import {
+  branchToPath,
+  configureGpgSigningSilently,
+  linkWorktreeCredentials,
+  type WorktreeConfig,
+} from "../utils/config";
+import { reportMissingBase } from "../utils/errors";
 import { gitSync, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
-
-/**
- * Report a missing base ref with everything needed to proceed without
- * trial-and-error: the existing branch candidates, the [branches] root
- * override in giwt.toml, and the explicit-base escape hatch.
- * Ticket FIX-errors-carry-no-remedy. Output-only; the caller exits.
- */
-function reportMissingBase(
-  base: string,
-  branch: string,
-  config: WorktreeConfig,
-): void {
-  log("error", `base '${base}' does not exist (checked as branch, tag, and commit)`);
-  const candidates = gitSync(config.repoRoot, "branch", "--format=%(refname:short)")
-    .split("\n")
-    .map((b) => b.trim().replace(/^\* /, ""))
-    .filter((b) => b.length > 0);
-  if (candidates.length > 0) {
-    raw(`  Existing branches you can base on: ${candidates.join(", ")}`);
-  } else {
-    raw("  No local branches exist yet — pass a commit or tag as the base instead.");
-  }
-  raw(
-    `  Change the default base in giwt.toml: [branches] root = "<branch>" (currently '${config.settings.branches.root}').`,
-  );
-  raw(`  Or pass one explicitly: giwt new-branch ${branch} <base>`);
-}
 
 export async function execute(
   args: string[],
@@ -94,24 +73,8 @@ export async function execute(
     process.exit(1);
   }
 
-  // Configure GPG signing
-  if (config.agentGpgKeyId) {
-    const gpgCheck = Bun.spawnSync(
-      ["gpg", "--list-keys", config.agentGpgKeyId],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    if (gpgCheck.exitCode === 0) {
-      const secretCheck = Bun.spawnSync(
-        ["gpg", "--list-secret-keys", config.agentGpgKeyId],
-        { stdout: "pipe", stderr: "pipe" },
-      );
-      if (secretCheck.exitCode === 0) {
-        gitSync(wtPath, "config", "commit.gpgsign", "true");
-        gitSync(wtPath, "config", "user.signingkey", config.agentGpgKeyId);
-        log("success", `GPG signing enabled (key: ${config.agentGpgKeyId.slice(0, 8)}...)`);
-      }
-    }
-  }
+  // Configure GPG signing (silent on cold cache — see configureGpgSigningSilently).
+  configureGpgSigningSilently(wtPath, config.agentGpgKeyId);
 
   // Configure hooks
   const hooksDir = resolve(config.repoRoot, ".githooks");

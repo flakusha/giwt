@@ -3,7 +3,13 @@
 
 import { existsSync, mkdirSync, rmdirSync } from "fs";
 import { resolve } from "path";
-import { branchToPath, linkWorktreeCredentials, type WorktreeConfig } from "../utils/config";
+import {
+  branchToPath,
+  configureGpgSigningSilently,
+  linkWorktreeCredentials,
+  type WorktreeConfig,
+} from "../utils/config";
+import { reportMissingBranch } from "../utils/errors";
 import { gitSync, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
@@ -39,10 +45,7 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
     gitSync(config.repoRoot, "rev-parse", "--verify", branch);
   } catch {
     if (!(await recoverDeletedBranch(config, wtPath, branch))) {
-      log(
-        "error",
-        `branch '${branch}' does not exist — create it first: git branch ${branch} <base>, or giwt new ${branch}`,
-      );
+      reportMissingBranch(branch, config);
       process.exit(1);
     }
   }
@@ -96,24 +99,8 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
     process.exit(1);
   }
 
-  // Configure GPG signing
-  if (config.agentGpgKeyId) {
-    const gpgCheck = Bun.spawnSync(
-      ["gpg", "--list-keys", config.agentGpgKeyId],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    if (gpgCheck.exitCode === 0) {
-      const secretCheck = Bun.spawnSync(
-        ["gpg", "--list-secret-keys", config.agentGpgKeyId],
-        { stdout: "pipe", stderr: "pipe" },
-      );
-      if (secretCheck.exitCode === 0) {
-        gitSync(wtPath, "config", "commit.gpgsign", "true");
-        gitSync(wtPath, "config", "user.signingkey", config.agentGpgKeyId);
-        log("success", `GPG signing enabled (key: ${config.agentGpgKeyId.slice(0, 8)}...)`);
-      }
-    }
-  }
+  // Configure GPG signing (silent on cold cache — see configureGpgSigningSilently).
+  configureGpgSigningSilently(wtPath, config.agentGpgKeyId);
 
   // Configure hooks
   const hooksDir = resolve(config.repoRoot, ".githooks");

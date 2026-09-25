@@ -26,6 +26,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve, resolve as resolvePath } from "node:path";
+import { collectMdFiles } from "./code-map";
 import { extractComments, extractDocRefs } from "./src-refs";
 
 // ── File collection ─────────────────────────────────────────────
@@ -40,26 +41,6 @@ const SKIP_DIRS = new Set([
 ]);
 
 const SRC_EXTS = new Set([".ts", ".tsx"]);
-
-/** Recursively collect *.md files under a directory (handles hidden dirs). */
-export function collectMdFiles(projectRoot: string, rootDir: string): string[] {
-  const out: string[] = [];
-  const start = resolve(projectRoot, rootDir);
-  if (!existsSync(start)) return out;
-  const walk = (d: string): void => {
-    for (const entry of readdirSync(d)) {
-      if (SKIP_DIRS.has(entry)) continue;
-      const p = join(d, entry);
-      if (statSync(p).isDirectory()) {
-        walk(p);
-      } else if (p.endsWith(".md")) {
-        out.push(p);
-      }
-    }
-  };
-  walk(resolve(projectRoot, rootDir));
-  return out;
-}
 
 /** Recursively collect TypeScript source files under src/. */
 export function collectSrcFiles(projectRoot: string, srcDir: string): string[] {

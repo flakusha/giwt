@@ -220,7 +220,7 @@ describe("create: stale registry reconciliation", () => {
     expect(exit.calls).toEqual([1]);
     const out = cap.lines();
     expect(out).toContain("does not exist");
-    expect(out).toContain("git branch gone-symref <base>");
+    expect(out).toContain("giwt new-branch gone-symref");
     expect(out).toContain("pruned stale worktree registration");
     // registry was cleaned even though create failed
     expect(findRegistration(await getWorktrees(root), wtPath)).toBeUndefined();

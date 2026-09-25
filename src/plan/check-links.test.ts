@@ -15,7 +15,6 @@ import {
   checkFile,
   checkSrcComments,
   collectLinks,
-  collectMdFiles,
   collectSrcFiles,
   collectTaskRefs,
   isAnchorOnly,
@@ -25,6 +24,7 @@ import {
   stripCodeBlocks,
   stripInlineCode,
 } from "./check-links";
+import { collectMdFiles } from "./code-map";
 
 interface Fixture {
   root: string;

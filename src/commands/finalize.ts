@@ -15,7 +15,7 @@ import { join, resolve } from "path";
 import { ALL_GATES, runValidate } from "../plan/validate";
 import type { GateName } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
-import { branchToPath, type WorktreeConfig } from "../utils/config";
+import { branchToPath, findWorktree, type WorktreeConfig } from "../utils/config";
 import { getRootBranch, gitSync, gitSyncQuiet, isProtected } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { appendGripe, printRecentLedger } from "../utils/ledger";
@@ -456,14 +456,6 @@ function setMergeInProgress(
 ): void {
   ACTIVE_ABORT_STATE = { stashLabel, mergeHead, mergeInProgress: inProgress, repoRoot, branch };
 }
-
-function findWorktree(branch: string, config: WorktreeConfig): string | null {
-  const dirName = branchToPath(branch);
-  const wtPath = resolve(config.treeDir, dirName);
-  if (existsSync(resolve(wtPath, ".git"))) return wtPath;
-  return null;
-}
-
 function gpgMergeFlags(config: WorktreeConfig): string[] {
   if (!config.agentGpgKeyId) return [];
   const gpgCheck = Bun.spawnSync(
