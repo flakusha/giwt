@@ -167,6 +167,7 @@ describe("reconcile orphan detection", () => {
       filename: "TASK-NEW.md",
       title: "New",
       status: "open",
+      statusValues: ["open"],
       type: "TASK",
       priority: "medium",
       epic: "",
