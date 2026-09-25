@@ -422,34 +422,49 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     }
 
     // Fix phantom entries by trying to find matching files with different names.
-    // Only relocate entries whose source is empty or already under
-    // .plan/tickets/ — never rewrite a distinct source (e.g. .plan/epics/*.md)
-    // to a guessed path.
+    // Search both `ticketsDir` (default `.plan/tickets/`, overridable via
+    // `ticketsPath`) and the canonical `.plan/epics/` sibling dir (epics
+    // live there with the same filename conventions). The earlier code
+    // only searched `ticketsDir`, which left EPIC-* entries with their
+    // `source` pinned to `.plan/tickets/epic-foo.md` while the actual
+    // file lived in `.plan/epics/epic-foo.md` — see
+    // TASK-plan-index-orphan-phantom-cleanup for the 297-phantom debt.
+    const epicsDir = resolve(repoRoot, ".plan/epics");
+    const ticketsPrefix = relative(repoRoot, ticketsDir);
+    const epicsPrefix = relative(repoRoot, epicsDir);
     for (const extid of report.phantomEntries) {
       if (!fixed[extid]) continue;
 
-      const src = fixed[extid].source ?? "";
-      if (src && !src.startsWith(".plan/tickets/")) continue;
-
-      // Try different file name patterns
-      const patterns = [
+      const lc = extid.toLowerCase();
+      const patterns: Array<{ dir: string; prefix: string; }> = [
+        { dir: ticketsDir, prefix: ticketsPrefix },
+        { dir: epicsDir, prefix: epicsPrefix },
+      ];
+      const fileNames = [
         `${extid}.md`,
-        `${extid.toLowerCase()}.md`,
-        `TASK-${extid.toLowerCase()}.md`,
-        `FEAT-${extid.toLowerCase()}.md`,
-        `BUG-${extid.toLowerCase()}.md`,
+        `${lc}.md`,
+        `TASK-${lc}.md`,
+        `FEAT-${lc}.md`,
+        `BUG-${lc}.md`,
+        `epic-${lc}.md`,
+        `EPIC-${lc}.md`,
       ];
 
-      for (const pattern of patterns) {
-        const filePath = join(ticketsDir, pattern);
-        if (existsSync(filePath)) {
-          fixed[extid] = {
-            ...fixed[extid],
-            source: `.plan/tickets/${pattern}`,
-          };
-          report.fixesApplied.push(`${extid}: fixed source path to ${pattern}`);
-          break;
+      for (const { dir, prefix } of patterns) {
+        for (const name of fileNames) {
+          const filePath = join(dir, name);
+          if (existsSync(filePath)) {
+            fixed[extid] = {
+              ...fixed[extid],
+              source: `${prefix}/${name}`,
+            };
+            report.fixesApplied.push(
+              `${extid}: fixed source path to ${prefix}/${name}`,
+            );
+            break;
+          }
         }
+        if (report.fixesApplied.some((f) => f.startsWith(`${extid}: fixed`))) break;
       }
     }
 

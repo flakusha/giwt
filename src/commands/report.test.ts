@@ -51,6 +51,12 @@ function reportJson(overrides: Record<string, unknown> = {}): string {
 }
 
 beforeEach(() => {
+  // Report output uses ANSI color codes that depend on the runtime
+  // environment (NO_COLOR / CI / OMP). Bun's test runner does not set
+  // any of those, so the raw output contains the escape codes. Disable
+  // colors for the test process so the assertions match the plain-text
+  // labels the report command actually prints (e.g. `(main) no report`).
+  process.env.NO_COLOR = "1";
   setOutputFormat("simple");
   root = mkdtempSync(join(tmpdir(), "giwt-report-test-"));
   mkdirSync(join(root, ".tmp"), { recursive: true });

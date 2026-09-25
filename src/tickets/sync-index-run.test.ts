@@ -832,15 +832,21 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
         runSync(root, { fix: true, ticketsPath: ".plan/tix" })
       );
 
-      // The relocated sources are reported, but they still cannot resolve on
-      // the next pass, so actionable issues remain.
-      expect(exit).toBe(1);
-      expect(out).toContain("TASK-GHOST1: fixed source path to TASK-GHOST1.md");
-      expect(out).toContain("TASK-GHOST2: fixed source path to task-ghost2.md");
-      expect(out).toContain("2 actionable issue(s) remain");
+      // The relocated sources now point at the actual tickets dir and DO
+      // resolve on the next pass — exit is clean. The pre-fix behaviour
+      // was exit=1 because the source was rewritten to `.plan/tickets/`
+      // (the literal string), so it could never resolve under `.plan/tix/`.
+      expect(exit).toBe(0);
+      expect(out).toContain("TASK-GHOST1: fixed source path to .plan/tix/TASK-GHOST1.md");
+      expect(out).toContain("TASK-GHOST2: fixed source path to .plan/tix/task-ghost2.md");
+      expect(out).toContain("Index is in sync");
       const relocated = readIndex(root, ".plan/tix");
-      expect(relocated["TASK-GHOST1"]?.source).toBe(".plan/tickets/TASK-GHOST1.md");
-      expect(relocated["TASK-GHOST2"]?.source).toBe(".plan/tickets/task-ghost2.md");
+      // The relocated source paths use the actual tickets dir passed via
+      // `ticketsPath` (not the literal `.plan/tickets/` string) — this is
+      // the bug fix that accompanies the cross-dir phantom search
+      // (TASK-plan-index-orphan-phantom-cleanup).
+      expect(relocated["TASK-GHOST1"]?.source).toBe(".plan/tix/TASK-GHOST1.md");
+      expect(relocated["TASK-GHOST2"]?.source).toBe(".plan/tix/task-ghost2.md");
       expect(residue(root, ".plan/tix")).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });

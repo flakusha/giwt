@@ -231,13 +231,22 @@ export function reconcile(
       continue;
     }
 
-    // Fall back to ticket-naming conventions under .plan/tickets/
+    // Fall back to ticket-naming conventions under .plan/tickets/ and
+    // .plan/epics/ (epics live in a sibling dir with the same filename
+    // conventions — historical index entries may have their `source`
+    // pinned to .plan/tickets/ even though the file was migrated to
+    // .plan/epics/, so we have to look in both places).
+    const lc = extid.toLowerCase();
     const candidates = [
       `.plan/tickets/${extid}.md`,
-      `.plan/tickets/${extid.toLowerCase()}.md`,
-      `.plan/tickets/TASK-${extid.toLowerCase()}.md`,
-      `.plan/tickets/FEAT-${extid.toLowerCase()}.md`,
-      `.plan/tickets/BUG-${extid.toLowerCase()}.md`,
+      `.plan/tickets/${lc}.md`,
+      `.plan/tickets/TASK-${lc}.md`,
+      `.plan/tickets/FEAT-${lc}.md`,
+      `.plan/tickets/BUG-${lc}.md`,
+      `.plan/epics/${extid}.md`,
+      `.plan/epics/${lc}.md`,
+      `.plan/epics/epic-${lc}.md`,
+      `.plan/epics/EPIC-${lc}.md`,
     ].filter(Boolean);
 
     const found = candidates.some((src) => existsSync(join(root, src)));

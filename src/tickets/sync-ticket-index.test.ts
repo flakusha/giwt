@@ -215,11 +215,72 @@ describe("reconcile phantom detection", () => {
     const report = reconcile(
       [],
       new Map(),
-      { "TASK-GONE": entry({ source: ".plan/tickets/TASK-GONE.md" }) },
+      { "TASK-GONE": entry({ source: "" }) },
       false,
       root,
     );
     expect(report.phantomEntries).toEqual(["TASK-GONE"]);
+  });
+
+  test("entry with WRONG source pointing to .plan/tickets/ when file is in .plan/epics/ is NOT phantom", () => {
+    // Regression: EPIC-* index entries historically had `source` pinned to
+    // .plan/tickets/epic-foo.md while the file lived in
+    // .plan/epics/epic-foo.md. Phantom detection must fall back to both
+    // candidate dirs.
+    const root = makeRoot();
+    writeFileSync(join(root, ".plan/epics/epic-housing-base.md"), "# Epic Housing\n");
+    const report = reconcile(
+      [],
+      new Map(),
+      {
+        "EPIC-HOUSING-BASE": entry({
+          source: ".plan/tickets/epic-housing-base.md",
+          title: "Housing",
+        }),
+      },
+      false,
+      root,
+    );
+    expect(report.phantomEntries).toEqual([]);
+  });
+
+  test("entry with EPIC- prefix file under .plan/epics/ (case variant) is NOT phantom", () => {
+    // Real-world variant: index extid is `EPIC-FOO` (uppercase), file is
+    // `EPIC-FOO.md` (uppercase). The candidate set must include the exact
+    // uppercase extid so case-sensitive file systems match.
+    const root = makeRoot();
+    writeFileSync(join(root, ".plan/epics/EPIC-FOO.md"), "# Epic Foo\n");
+    const report = reconcile(
+      [],
+      new Map(),
+      {
+        "EPIC-FOO": entry({
+          source: ".plan/tickets/EPIC-FOO.md",
+          title: "Foo",
+        }),
+      },
+      false,
+      root,
+    );
+    expect(report.phantomEntries).toEqual([]);
+  });
+
+  test("entry with epic- prefix file under .plan/epics/ (lowercase) is NOT phantom", () => {
+    const root = makeRoot();
+    writeFileSync(join(root, ".plan/epics/epic-foo.md"), "# Epic Foo\n");
+    const report = reconcile(
+      [],
+      new Map(),
+      {
+        "EPIC-FOO": entry({
+          source: ".plan/tickets/EPIC-FOO.md",
+          title: "Foo",
+        }),
+      },
+      false,
+      root,
+    );
+    expect(report.phantomEntries).toEqual([]);
   });
 });
 
