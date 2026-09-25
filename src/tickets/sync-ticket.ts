@@ -20,6 +20,9 @@ export interface TicketFile {
   filename: string;
   title: string;
   status: string;
+  /** Raw values of every Status line in the header; `status` is the
+   * any-done aggregate (reconciler convention: appended lines are newer). */
+  statusValues: string[];
   type: string;
   priority: string;
   epic: string;
@@ -154,6 +157,16 @@ export interface SyncReport {
     source: string;
   }>;
   /**
+   * Multi-status .md whose any-done aggregate outranks a lagging index —
+   * the reconciler's appended Status line is the newer state. Fixable:
+   * flip the index to done (+ close the linked open issue in one pass).
+   */
+  indexStatusStale: Array<{
+    extid: string;
+    indexStatus: string;
+    source: string;
+  }>;
+  /**
    * Advisory: non-epic index entries with no epic binding (extids).
    * Deliberately excluded from every gating/advisory count in runSync —
    * informational only, mirroring checkLinkage's warn-level finding.
@@ -204,6 +217,7 @@ export function reconcile(
     danglingMdRefs: [],
     titleDrifts: [],
     mdStatusStale: [],
+    indexStatusStale: [],
     unboundEpics: [],
     fixesApplied: [],
   };
@@ -543,12 +557,16 @@ export function reconcile(
       const issueStatus = issue.status === "open" ? "open" : "done";
       if (issueStatus !== indexStatus) continue; // three-way conflict → manual
     }
-    report.mdStatusStale.push({
-      extid,
-      mdStatus: tf.status,
-      indexStatus,
-      source: tf.source,
-    });
+    if (tf.statusValues.length > 1 && normalizeStatus(tf.status) === "done") {
+      report.indexStatusStale.push({ extid, indexStatus, source: tf.source });
+    } else {
+      report.mdStatusStale.push({
+        extid,
+        mdStatus: tf.status,
+        indexStatus,
+        source: tf.source,
+      });
+    }
   }
 
   // 9. Advisory: non-epic index entries not bound to any epic. Never gates

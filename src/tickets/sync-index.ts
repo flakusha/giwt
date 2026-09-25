@@ -120,6 +120,7 @@ export function parseTicketFile(filePath: string, source?: string): TicketFile |
       filename,
       title,
       status,
+      statusValues,
       type,
       priority: priorityMatch?.[1]?.trim() ?? "medium",
       epic: epicMatch?.[1]?.trim() ?? "",
@@ -388,13 +389,38 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         if (tf) {
           try {
             const text = readFileSync(tf.path, "utf8").replace(
-              /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/im,
+              /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
               `$1${mismatch.gitStatus}`,
             );
             writeFileSync(tf.path, text);
           } catch {
             // non-fatal: index entry already corrected; .md fixed next run
           }
+        }
+      }
+    }
+
+    // Fix lagging index entries outranked by an appended .md done-marker
+    // (reconciler convention: a later Status line is the newer state).
+    // Flip the index to done and close the linked open issue in the same
+    // pass — reconcile ran before the flip, so deferring to the
+    // staleOpenGitIssues pass would burn an extra run.
+    for (const m of report.indexStatusStale) {
+      const cur = fixed[m.extid];
+      if (!cur) continue;
+      fixed[m.extid] = { ...cur, status: "done" };
+      report.fixesApplied.push(
+        `${m.extid}: index status ${m.indexStatus} → done (appended .md marker)`,
+      );
+      if (cur.git_issue && gitIssues.get(cur.git_issue)?.status === "open") {
+        try {
+          execSync(
+            `git issue state ${cur.git_issue} --close -m 'Auto-closed: appended .md marker marks ${m.extid} done'`,
+            { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv() },
+          );
+          report.fixesApplied.push(`${m.extid}: closed git issue ${cur.git_issue}`);
+        } catch {
+          // non-fatal: the next run's staleOpenGitIssues pass closes it
         }
       }
     }
@@ -683,15 +709,17 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       }
     }
 
-    // .md Status drift: rewrite the header Status line to the authoritative
-    // index status (the linked issue already agrees with the index).
+    // .md Status drift: rewrite EVERY header Status line to the
+    // authoritative index status (the linked issue already agrees with the
+    // index) — rewriting only the first line would leave an appended line
+    // re-diverging the any-done aggregate on the next scan.
     for (const ms of report.mdStatusStale) {
       const tf = fileByExtid.get(ms.extid);
       if (!tf) continue;
       try {
         let text = readFileSync(tf.path, "utf8");
         text = text.replace(
-          /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/im,
+          /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
           `$1${ms.indexStatus}`,
         );
         writeFileSync(tf.path, text);
@@ -987,6 +1015,15 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     raw(`\n🟢 No stale .md statuses`);
   }
 
+  if (report.indexStatusStale.length > 0) {
+    raw(
+      `\n🟡 Index status lags an appended .md done-marker (fixable): ${report.indexStatusStale.length}`,
+    );
+    for (const m of report.indexStatusStale) {
+      raw(`   ${m.extid}: index="${m.indexStatus}" → done`);
+    }
+  }
+
   if (report.foreignIssues.length > 0) {
     raw(
       `\n🟡 Foreign issues (open in registry, no .plan/ reflection): ${report.foreignIssues.length}`,
@@ -1060,7 +1097,8 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     + report.statusMismatches.length
     + report.staleOpenGitIssues.length
     + report.titleDrifts.length
-    + report.mdStatusStale.length;
+    + report.mdStatusStale.length
+    + report.indexStatusStale.length;
   const advisoryCount = report.placeholderHashes.length
     + report.missingHashes.length
     + report.missingGitIssueLinks.length
@@ -1139,7 +1177,8 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       + postReport.statusMismatches.length
       + postReport.staleOpenGitIssues.length
       + postReport.titleDrifts.length
-      + postReport.mdStatusStale.length;
+      + postReport.mdStatusStale.length
+      + postReport.indexStatusStale.length;
     const postAdvisory = postReport.placeholderHashes.length
       + postReport.missingHashes.length
       + postReport.missingGitIssueLinks.length

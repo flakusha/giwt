@@ -579,6 +579,67 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     expect(issueLines(root).find((i) => i.hash === hash)?.status).toBe("closed");
   });
 
+  test("appended done-marker outranks a lagging open index — flipped and closed in one pass", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-lag: lagging index");
+    const dir = join(root, ".plan/tickets");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "TASK-lag.md"),
+      "# TASK: lagging index\n\n**Status:** open\n**Status**: done\n\ngit issue: " + hash + "\n",
+    );
+    writeIndex(root, {
+      "TASK-LAG": indexEntry({
+        extid: "TASK-LAG",
+        hash,
+        git_issue: hash,
+        status: "open",
+        title: "lagging index",
+        source: ".plan/tickets/TASK-lag.md",
+      }),
+    });
+
+    // First fix converges in ONE pass: index flips to done and the linked
+    // open issue is closed inside applyFixes (reconcile ran before the
+    // flip, so the staleOpenGitIssues list does not carry it yet).
+    const first = runCaptured(() => runSync(root, { fix: true }));
+    expect(first.out).toContain("TASK-LAG: index status open → done (appended .md marker)");
+    expect(first.out).toContain("TASK-LAG: closed git issue");
+    expect(readIndex(root)["TASK-LAG"]?.status).toBe("done");
+    expect(issueLines(root).find((i) => i.hash === hash)?.status).toBe("closed");
+    expect(first.exit).toBe(0);
+
+    const second = runCaptured(() => runSync(root, { fix: true }));
+    expect(second.exit).toBe(0);
+  });
+
+  test("multi-line non-done disagreement rewrites every Status line and converges", () => {
+    const root = makeRepo();
+    const dir = join(root, ".plan/tickets");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "TASK-multi.md"),
+      "# TASK: multi status\n\n**Status:** In Progress\n**Status**: blocked\n",
+    );
+    writeIndex(root, {
+      "TASK-MULTI": indexEntry({
+        extid: "TASK-MULTI",
+        status: "open",
+        title: "multi status",
+        source: ".plan/tickets/TASK-multi.md",
+      }),
+    });
+
+    const first = runCaptured(() => runSync(root, { fix: true }));
+    expect(first.out).toContain("TASK-MULTI: .md status in_progress → open");
+    const text = readFileSync(join(dir, "TASK-multi.md"), "utf8");
+    expect(text).not.toContain("blocked");
+    expect(text).not.toContain("In Progress");
+
+    const second = runCaptured(() => runSync(root, { fix: true }));
+    expect(second.exit).toBe(0);
+  });
+
   test("phantom with a distinct non-plan source is left for manual handling", () => {
     const root = makeRepo();
     writeIndex(root, {
