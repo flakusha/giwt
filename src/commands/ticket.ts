@@ -32,8 +32,9 @@ function kebab(title: string): string {
  * title doesn't carry the same words twice (the extid already encodes them).
  *
  * Only strips when the title starts LITERALLY with `kebab(type)` (followed by
- * a space or dash). No fuzzy/kebab-prefix matching — that over-strips unrelated
- * prose that merely happens to share letters with the post-type segment.
+ * a space, dash, or colon — "BUG story", "BUG-story", "BUG: story"). No
+ * fuzzy/kebab-prefix matching — that over-strips unrelated prose that merely
+ * happens to share letters with the post-type segment.
  *   ("FEAT", "FEAT story UI") → "story UI"
  *   ("TASK", "TASK-")         → ""      (whole-title collapse)
  *   ("BUG",  "something else") → "something else"  (no literal BUG prefix)
@@ -47,7 +48,11 @@ export function stripTypePrefix(type: string, title: string): string {
   if (!prefix) return title;
   const lower = title.toLowerCase();
   if (lower === prefix) return "";
-  if (lower.startsWith(prefix + " ") || lower.startsWith(prefix + "-")) {
+  if (
+    lower.startsWith(prefix + " ")
+    || lower.startsWith(prefix + "-")
+    || lower.startsWith(prefix + ":")
+  ) {
     return title.slice(prefix.length + 1).trimStart();
   }
   return title;

@@ -35,6 +35,7 @@ import {
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
@@ -51,6 +52,14 @@ import {
 
 // ── Ticket .md parsing ────────────────────────────────────────
 
+/**
+ * One `**Status:**` / `**Status**:` line (colon inside or outside the bold;
+ * `status = value` and list/quote prefixes accepted). Mirrors omp-plugins
+ * find-work's STATUS_LINE_RE so giwt's index and /find-work's roster
+ * classify the same files — including dual-status reconciliation stubs.
+ */
+const STATUS_LINE_RE =
+  /^\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*(.+?)\s*(?:\*\*)?\s*$/i;
 /**
  * Parse a ticket .md file into a TicketFile.
  *
@@ -78,7 +87,6 @@ export function parseTicketFile(filePath: string, source?: string): TicketFile |
 
     // Extract metadata fields (header region only — body prose mentioning
     // **Epic:**/**Tags:** must not pollute the index fields)
-    const statusMatch = header.match(/\*\*Status:\*\*\s*(.+)/i);
     const priorityMatch = header.match(/\*\*Priority:\*\*\s*(.+)/i);
     const epicMatch = header.match(/\*\*Epic:\*\*\s*(.+)/i);
     const tagsMatch = header.match(/\*\*Tags:\*\*\s*(.+)/);
@@ -92,9 +100,20 @@ export function parseTicketFile(filePath: string, source?: string): TicketFile |
     // Extract git issue reference (e.g. "git issue: abc1234" or "Issue: abc1234")
     const gitIssueMatch = ticketText.match(/(?:git.?issue|issue):\s*([a-f0-9]{7,})/i);
 
-    // Normalize status
-    const rawStatus = statusMatch?.[1]?.trim() ?? "undefined";
-    const status = normalizeStatus(rawStatus);
+    // Normalize status — mirror omp-plugins find-work's planFileTicket
+    // (BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick):
+    // reconciled tickets can carry multiple status lines (legacy
+    // `**Status:** Not Started → closed (duplicate)` + follow-up
+    // `**Status**: duplicate-of-…`); ANY done-class line closes the ticket.
+    // When none is done-class the FIRST line wins, preserving
+    // in_progress/draft detection from the primary Status.
+    const statusValues = lines
+      .map((l) => STATUS_LINE_RE.exec(l)?.[1]?.trim() ?? "")
+      .filter((v) => v.length > 0);
+    const rawStatus = statusValues[0] ?? "undefined";
+    const status = statusValues.some((v) => normalizeStatus(v) === "done")
+      ? "done"
+      : normalizeStatus(rawStatus);
 
     return {
       path: filePath,
@@ -191,6 +210,12 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   const INDEX_PATH = join(TICKETS_DIR, "index.json");
   /** Serializes concurrent `--fix` runs (mkdir-based lock: atomic on POSIX). */
   const LOCK_PATH = join(TICKETS_DIR, ".index-sync.lock");
+  const epicsDir = resolve(repoRoot, ".plan/epics");
+  /** Repo-relative plan-dir prefixes shared by reconcile (candidate search)
+   *  and applyFixes (relocation + index `source` fields) — custom
+   *  `ticketsPath` aware so report and fix modes agree. */
+  const ticketsPrefix = relative(repoRoot, TICKETS_DIR);
+  const epicsPrefix = relative(repoRoot, epicsDir);
 
   // ── Read git issues ────────────────────────────────────────────
 
@@ -224,6 +249,8 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         // "TASK-chat-message-search: ..." → "TASK-CHAT-MESSAGE-SEARCH")
         const extidMatch = title.match(/^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA)-[a-z0-9-]+/i);
         const extid = extidMatch?.[0]?.toUpperCase() ?? null;
+        // Extid chars are constrained to [A-Z0-9-] here, so it is safe to
+        // use as a path segment downstream (import-back filenames).
 
         issues.set(hash, { hash, status, title, extid });
       }
@@ -238,6 +265,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   // ── Fix-mode lock (serializes concurrent --fix runs) ───────────
 
   function isLockStale(lockPath: string): boolean {
+    let ageMs = Number.POSITIVE_INFINITY;
     try {
       const pid = parseInt(readFileSync(join(lockPath, "owner.pid"), "utf8").trim(), 10);
       if (!Number.isInteger(pid)) return true;
@@ -249,13 +277,24 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         return (e as NodeJS.ErrnoException).code !== "EPERM";
       }
     } catch {
-      return true; // missing/unreadable pid file — nothing alive claims it
+      // No readable pid: the owner may be inside the mkdir→writeFileSync
+      // window — a fresh lock counts as held; an aged or vanished one is
+      // stale (ageMs stays Infinity when the lock is already gone).
+      try {
+        ageMs = Date.now() - statSync(lockPath).mtimeMs;
+      } catch {
+        // lock vanished — nothing alive claims it
+      }
     }
+    return ageMs > 5_000;
   }
 
   function acquireFixLock(lockPath: string): boolean {
-    if (existsSync(lockPath)) {
-      if (!isLockStale(lockPath)) {
+    // mkdir is the atomic test-and-set — no existsSync→mkdir TOCTOU window.
+    try {
+      mkdirSync(lockPath);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST" || !isLockStale(lockPath)) {
         log(
           "error",
           String(`Another index sync is in progress (lock: ${lockPath}).`).replace(/\n$/, ""),
@@ -267,8 +306,10 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         "warn",
         String("Removed stale index-sync lock left by a dead process").replace(/\n$/, ""),
       );
+      // Losing the reclaim race twice in a row is beyond mitigation — let
+      // the error propagate; the dispatcher exits non-zero.
+      mkdirSync(lockPath);
     }
-    mkdirSync(lockPath);
     writeFileSync(join(lockPath, "owner.pid"), `${process.pid}\n`);
     return true;
   }
@@ -347,7 +388,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         if (tf) {
           try {
             const text = readFileSync(tf.path, "utf8").replace(
-              /^(\*\*Status:\*\*\s*).*$/im,
+              /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/im,
               `$1${mismatch.gitStatus}`,
             );
             writeFileSync(tf.path, text);
@@ -429,11 +470,25 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     // `source` pinned to `.plan/tickets/epic-foo.md` while the actual
     // file lived in `.plan/epics/epic-foo.md` — see
     // TASK-plan-index-orphan-phantom-cleanup for the 297-phantom debt.
-    const epicsDir = resolve(repoRoot, ".plan/epics");
-    const ticketsPrefix = relative(repoRoot, ticketsDir);
-    const epicsPrefix = relative(repoRoot, epicsDir);
+    // ticketsPrefix/epicsPrefix/epicsDir live in runSync scope — shared with
+    // the reconcile call so report-only and fix modes see the same dirs.
     for (const extid of report.phantomEntries) {
-      if (!fixed[extid]) continue;
+      const entry = fixed[extid];
+      if (!entry) continue;
+
+      // Never re-anchor a distinct source (a custom external path, a file
+      // on another branch/worktree, a temporary rename) to a guessed path —
+      // only entries whose source is empty or already managed by this
+      // sync (tickets/epics dirs) may be relocated.
+      const src = entry.source ?? "";
+      const managed = src === ""
+        || src.startsWith(`${ticketsPrefix}/`)
+        || src.startsWith(`${epicsPrefix}/`)
+        || src.startsWith(".plan/tickets/"); // historical canonical sources
+      if (!managed) continue;
+      // Out-of-repo tickets dir → relative() yields `../…` garbage; never
+      // write that into the index.
+      if (ticketsPrefix.startsWith("..") || epicsPrefix.startsWith("..")) continue;
 
       const lc = extid.toLowerCase();
       const patterns: Array<{ dir: string; prefix: string; }> = [
@@ -450,21 +505,23 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         `EPIC-${lc}.md`,
       ];
 
+      let relocated = false;
       for (const { dir, prefix } of patterns) {
         for (const name of fileNames) {
           const filePath = join(dir, name);
           if (existsSync(filePath)) {
             fixed[extid] = {
-              ...fixed[extid],
+              ...entry,
               source: `${prefix}/${name}`,
             };
             report.fixesApplied.push(
               `${extid}: fixed source path to ${prefix}/${name}`,
             );
+            relocated = true;
             break;
           }
         }
-        if (report.fixesApplied.some((f) => f.startsWith(`${extid}: fixed`))) break;
+        if (relocated) break;
       }
     }
 
@@ -477,7 +534,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       const extid = filename.replace(/\.md$/, "").toUpperCase();
       if (fixed[extid]) continue; // key already exists
 
-      const sourcePath = `.plan/tickets/${filename}`;
+      const sourcePath = `${ticketsPrefix}/${filename}`;
       if (existingSources.has(sourcePath.toLowerCase())) continue; // source already tracked
 
       const tf = fileByExtid.get(extid);
@@ -634,7 +691,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       try {
         let text = readFileSync(tf.path, "utf8");
         text = text.replace(
-          /^(\*\*Status:\*\*\s*).*$/im,
+          /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/im,
           `$1${ms.indexStatus}`,
         );
         writeFileSync(tf.path, text);
@@ -693,11 +750,11 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
             priority: "medium",
             epic: "",
             tags: [],
-            source: `.plan/tickets/${filename}`,
+            source: `${ticketsPrefix}/${filename}`,
             status: "open",
           };
           report.fixesApplied.push(
-            `${fi.extid}: imported back git issue ${fi.hash} → .plan/tickets/${filename}`,
+            `${fi.extid}: imported back git issue ${fi.hash} → ${ticketsPrefix}/${filename}`,
           );
         } catch (e) {
           report.fixesApplied.push(
@@ -1016,8 +1073,12 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   raw(`\n${"═".repeat(60)}`);
 
-  // Apply fixes (also when only advisory issues exist — e.g. missing-hash links)
-  if (fixMode && (totalIssues > 0 || advisoryCount > 0)) {
+  // Apply fixes (also when only advisory issues exist — e.g. missing-hash
+  // links, or a pending status backfill that no other category surfaces).
+  const backfillPending = ticketFiles.some(
+    (tf) => index[tf.filename.replace(/\.md$/, "").toUpperCase()]?.status === undefined,
+  );
+  if (fixMode && (totalIssues > 0 || advisoryCount > 0 || backfillPending)) {
     // With the issue registry unreadable, every non-commit hash looks like a
     // placeholder — --fix would mass-create issues. Refuse instead.
     if (!gitIssuesAvailable) {

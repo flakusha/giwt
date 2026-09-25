@@ -439,12 +439,10 @@ export function reconcile(
     issuesByExtid.set(issue.extid, list);
   }
 
-  /** TYPE-agnostic slug: `BUG-server-host-dead` → `server-host-dead`. */
+  const seenTicketExtids = new Set<string>();
   const extidSlug = (extid: string): string =>
     extid.replace(/^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA|TEST|PERF|WIRE|IMPROVE)-/i, "")
       .toLowerCase();
-
-  const seenTicketExtids = new Set<string>();
   for (const tf of ticketFiles) {
     const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
     if (seenTicketExtids.has(extid)) continue; // same extid in tickets+epics → manual
@@ -601,6 +599,10 @@ export function normalizeStatus(raw: string): string {
   // fixed-in-worktree is the loop-lore convention for a fix landed in a
   // branch that hasn't merged yet — treat as done for reconciliation.
   if (stripped.includes("fixed-in-worktree")) return "done";
+  // Reconciliation markers: `duplicate-of-…` stubs are closed work —
+  // mirrors omp-plugins find-work's STATUS_DONE_RE duplicate class so both
+  // parsers close dual-status stubs identically.
+  if (/\bduplicate([- ]of)?\b/.test(stripped)) return "done";
 
   // Open-class: explicit "open", "deferred", "todo", "research needed",
   // "follow-up".

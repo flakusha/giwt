@@ -75,6 +75,14 @@ describe("stripTypePrefix — literal type-prefix strip", () => {
   test("'feat' + 'feat story UI' → 'story UI' (lowercase type)", () => {
     expect(stripTypePrefix("feat", "feat story UI")).toBe("story UI");
   });
+
+  test("'BUG' + 'BUG: story ui' → 'story ui' (colon form)", () => {
+    expect(stripTypePrefix("BUG", "BUG: story ui")).toBe("story ui");
+  });
+
+  test("'FEAT' + 'feat:' → '' (whole-title collapse, colon)", () => {
+    expect(stripTypePrefix("FEAT", "feat:")).toBe("");
+  });
 });
 
 describe("stripTypePrefix — whole-title collapse", () => {

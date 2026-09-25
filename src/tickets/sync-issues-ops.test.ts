@@ -548,4 +548,70 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     expect(lines.find((l) => l.startsWith("**Status:**"))).toBe("**Status:** done");
     expect(exit).toBe(0);
   });
+
+  test("dual-status Shape B .md backfills done, then closes the linked issue on the next fix", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-dual: dual status");
+    const dir = join(root, ".plan/tickets");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "TASK-dual.md"),
+      "# TASK: dual status\n\n**Status:** Not Started\n**Status**: duplicate-of-epic-x\n\ngit issue: "
+        + hash + "\n",
+    );
+    writeIndex(root, {
+      "TASK-DUAL": indexEntry({
+        extid: "TASK-DUAL",
+        hash,
+        git_issue: hash,
+        source: ".plan/tickets/TASK-dual.md",
+      }),
+    });
+
+    // First fix: the any-done-line parse backfills `done` into the index
+    // (the stale-open close fires on the NEXT pass — reconcile ran before
+    // the backfill).
+    runCaptured(() => runSync(root, { fix: true }));
+    expect(readIndex(root)["TASK-DUAL"]?.status).toBe("done");
+
+    const second = runCaptured(() => runSync(root, { fix: true }));
+    expect(second.out).toContain("TASK-DUAL: closed git issue");
+    expect(issueLines(root).find((i) => i.hash === hash)?.status).toBe("closed");
+  });
+
+  test("phantom with a distinct non-plan source is left for manual handling", () => {
+    const root = makeRepo();
+    writeIndex(root, {
+      "TASK-EXT": indexEntry({
+        extid: "TASK-EXT",
+        source: "tree/feat/TASK-EXT.md",
+        status: "done",
+      }),
+    });
+
+    const { out } = runCaptured(() => runSync(root, { fix: true }));
+
+    // Never re-anchored to a guessed path, never dropped — a distinct
+    // source (worktree file, external dir) is manual work.
+    const idx = readIndex(root);
+    expect(idx["TASK-EXT"]?.source).toBe("tree/feat/TASK-EXT.md");
+    expect(out.toLowerCase()).toContain("phantom");
+  });
+
+  test("custom ticketsPath: adoption records the custom source; report agrees afterwards", () => {
+    const root = makeRepo();
+    writeTicket(root, "TASK-CUSTOM.md", "Custom dir work", { ticketsPath: ".plan/custom" });
+    writeIndex(root, {}, ".plan/custom");
+
+    runCaptured(() => runSync(root, { fix: true, ticketsPath: ".plan/custom" }));
+
+    const idx = readIndex(root, ".plan/custom");
+    expect(idx["TASK-CUSTOM"]?.source).toBe(".plan/custom/TASK-CUSTOM.md");
+
+    // Report-only must agree with fix mode (same candidate dirs) — no
+    // phantom churn against the just-written source.
+    const report = runCaptured(() => runSync(root, { ticketsPath: ".plan/custom" }));
+    expect(report.out).toContain("No phantom entries");
+    expect(report.exit).toBe(0);
+  });
 });

@@ -651,4 +651,78 @@ describe("parseTicketFile", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // Dual-status lockstep with omp-plugins /find-work (roster.ts
+  // planFileTicket): reconciled tickets carry a legacy `**Status:**` line
+  // plus a follow-up `**Status**:` marker — giwt and the roster must
+  // classify them identically (BUG-parseticketfile-vs-omp-roster-
+  // divergence-on-dual-status-tick).
+  describe("dual-status lines (omp-plugins /find-work lockstep)", () => {
+    test("legacy 'closed' keyword on the FIRST line closes (Shape A)", () => {
+      const root = makeRoot();
+      try {
+        const path = join(root, ".plan/tickets", "EPIC-030.md");
+        writeFileSync(
+          path,
+          "# EPIC-030: Dup stub\n\n**Status:** Not Started → closed (duplicate)\n\n## Notes\n**Status**: duplicate-of-epic-llm-queue\n",
+        );
+        expect(parseTicketFile(path)?.status).toBe("done");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    test("open FIRST line + done follow-up marker closes (Shape B — roster parity)", () => {
+      const root = makeRoot();
+      try {
+        const path = join(root, ".plan/tickets", "EPIC-058.md");
+        writeFileSync(
+          path,
+          "# EPIC-058: Dup stub\n\n**Status:** Not Started\n**Status**: duplicate-of-epic-locations\n",
+        );
+        expect(parseTicketFile(path)?.status).toBe("done");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    test("colon-outside-bold single status line parses (**Status**: done)", () => {
+      const root = makeRoot();
+      try {
+        const path = join(root, ".plan/tickets", "TASK-COLON.md");
+        writeFileSync(path, "# TASK-COLON: Colon out\n\n**Status**: done\n");
+        expect(parseTicketFile(path)?.status).toBe("done");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    test("no done line anywhere: FIRST line wins (in_progress preserved)", () => {
+      const root = makeRoot();
+      try {
+        const path = join(root, ".plan/tickets", "TASK-OPEN.md");
+        writeFileSync(
+          path,
+          "# TASK-OPEN: Open work\n\n**Status:** In Progress\n**Status**: waiting-on-review\n",
+        );
+        expect(parseTicketFile(path)?.status).toBe("in_progress");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    test("done wording inside body prose (non-status line) never closes", () => {
+      const root = makeRoot();
+      try {
+        const path = join(root, ".plan/tickets", "TASK-PROSE.md");
+        writeFileSync(
+          path,
+          "# TASK-PROSE: Prose\n\n**Status:** open\n\nRelated: closed by epic-42 later.\n",
+        );
+        expect(parseTicketFile(path)?.status).toBe("open");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+  });
 });

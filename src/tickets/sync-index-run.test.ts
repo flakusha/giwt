@@ -24,6 +24,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -374,6 +375,7 @@ describe("runSync report and refusal paths", () => {
         "TASK-OK": indexEntry({
           extid: "TASK-OK",
           title: "ok ticket",
+          status: "open", // defined → no backfill pending → genuinely in sync
           source: ".plan/tickets/TASK-OK.md",
         }),
       });
@@ -391,6 +393,7 @@ describe("runSync report and refusal paths", () => {
         "TASK-OK": indexEntry({
           extid: "TASK-OK",
           title: "ok ticket",
+          status: "open",
           hash: "zzzzzzz",
           source: ".plan/tickets/TASK-OK.md",
         }),
@@ -853,6 +856,44 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
     }
   });
 
+  test("--fix never writes an out-of-repo source when ticketsPath escapes the repo", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      const outside = join(dir, "outside-tickets");
+      mkdirSync(outside, { recursive: true });
+      writeFileSync(
+        join(outside, "TASK-OUT.md"),
+        "# TASK-OUT: outside\n\n**Status:** open\n**Epic:** EPIC-1\n",
+      );
+      writeIndex(
+        root,
+        {
+          "TASK-OUT": indexEntry({
+            extid: "TASK-OUT",
+            title: "outside",
+            status: "open",
+            source: "", // managed (empty) but the dir escapes the repo
+          }),
+        },
+        "../outside-tickets",
+      );
+
+      const { exit } = runCaptured(() =>
+        runSync(root, { fix: true, ticketsPath: "../outside-tickets" })
+      );
+
+      // The file exists at the out-of-repo candidate path, but relative()
+      // would yield `../outside-tickets/...` — relocation must refuse and
+      // leave the phantom actionable for manual handling.
+      const idx = readIndex(root, "../outside-tickets");
+      expect(idx["TASK-OUT"]?.source).toBe("");
+      expect(exit).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("--fix refuses while a live lock is held", () => {
     const dir = tempDir();
     try {
@@ -898,7 +939,9 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
     }
   });
 
-  test("--fix reclaims a lock directory with no owner pid at all", () => {
+  test("--fix holds a FRESH pid-less lock, then reclaims it once aged", () => {
+    // A lock with no owner.pid may be mid-creation (mkdir → writeFileSync
+    // window) — a fresh one is treated as held; an aged one is stale.
     const dir = tempDir();
     try {
       const root = makeRepo(dir);
@@ -906,10 +949,17 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
       const lock = join(root, ".plan/tickets/.index-sync.lock");
       mkdirSync(lock, { recursive: true });
 
-      const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
+      const held = runCaptured(() => runSync(root, { fix: true }));
+      expect(held.exit).toBe(1);
+      expect(held.out).toContain(`Another index sync is in progress (lock: ${lock}).`);
+      expect(existsSync(lock)).toBe(true);
 
-      expect(exit).toBe(0);
-      expect(out).toContain("Removed stale index-sync lock left by a dead process");
+      // Age the lock past the freshness grace and rerun — reclaimed.
+      const aged = new Date(Date.now() - 10_000);
+      utimesSync(lock, aged, aged);
+      const reclaimed = runCaptured(() => runSync(root, { fix: true }));
+      expect(reclaimed.exit).toBe(0);
+      expect(reclaimed.out).toContain("Removed stale index-sync lock left by a dead process");
       expect(existsSync(lock)).toBe(false);
       expect(residue(root)).toEqual([]);
     } finally {
