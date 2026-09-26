@@ -83,6 +83,11 @@ describe("reportMissingBase", () => {
   });
 
   afterEach(() => {
+    // Unset the escape hatch alongside the fixture: loadConfig() treats
+    // REPO_ROOT as overriding cwd, so leaving it pointing at a deleted
+    // temp dir poisons every later test file in this process.
+    delete process.env.REPO_ROOT;
+    delete process.env.TREE_DIR;
     if (root) rmSync(root, { recursive: true, force: true });
   });
 
@@ -131,6 +136,11 @@ describe("reportMissingBranch", () => {
   });
 
   afterEach(() => {
+    // Unset the escape hatch alongside the fixture: loadConfig() treats
+    // REPO_ROOT as overriding cwd, so leaving it pointing at a deleted
+    // temp dir poisons every later test file in this process.
+    delete process.env.REPO_ROOT;
+    delete process.env.TREE_DIR;
     if (root) rmSync(root, { recursive: true, force: true });
   });
 
