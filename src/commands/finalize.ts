@@ -766,14 +766,27 @@ export function reportCheckFailure(
   let failed: Array<{ name: string; first: string; }> = [];
   if (reportPath !== "" && existsSync(reportPath)) {
     try {
+      // Two real-world runner shapes are accepted here:
+      //   - giwt's own runner fixtures: checks[i].name
+      //   - the loop-lore check runner (schemaVersion 1): checks[i].command
+      //     ("bun run typecheck"), with output:null when a check was quiet.
+      // BUG-finalize-check-failure-report-never-names-failed-gates-check:
+      // filtering on `name` alone matched nothing on the real schema, so the
+      // report degraded to a raw stdout tail and never named the failed gate.
       const parsed = JSON.parse(readFileSync(reportPath, "utf8")) as {
-        checks?: Array<{ name?: string; passed?: boolean; output?: string; }>;
+        checks?: Array<{
+          name?: string;
+          command?: string;
+          passed?: boolean;
+          output?: string | null;
+        }>;
       };
       for (const check of parsed.checks ?? []) {
-        if (check.passed === false && typeof check.name === "string") {
-          const first = (check.output ?? "").split("\n").find((l) => l.trim().length > 0) ?? "";
-          failed.push({ name: check.name, first });
-        }
+        if (check.passed !== false) continue;
+        const name = check.name ?? check.command;
+        if (typeof name !== "string") continue;
+        const first = (check.output ?? "").split("\n").find((l) => l.trim().length > 0) ?? "";
+        failed.push({ name, first });
       }
     } catch { /* corrupt report — fall through to the stdout tail */ }
   }
@@ -786,6 +799,11 @@ export function reportCheckFailure(
     }
     if (failed.length > 10) raw(`  … and ${failed.length - 10} more`);
   } else {
+    // A parseable report with no failing entry means the runner's own
+    // accounting disagreed with the report (or it predates per-check
+    // entries). Say so explicitly instead of letting raw runner stdout
+    // masquerade as gate results under this heading.
+    raw("  no failing gate found in the check report — showing the runner's stdout tail:");
     printTail(stdout, streamTail);
   }
   raw(`  Check log:    ${capturePath ?? "(not captured)"}`);

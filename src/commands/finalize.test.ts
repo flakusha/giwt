@@ -737,6 +737,55 @@ describe("finalize check gate", () => {
     expect(run.output).toContain(`Check report: ${reportPath}`);
   });
 
+  test("lists failing gates when the report uses the real runner schema (command, not name)", async () => {
+    // Regression: BUG-finalize-check-failure-report-never-names-failed-gates-check.
+    // The loop-lore check runner (schemaVersion 1) identifies checks by
+    // `command` and writes `output: null` for quiet checks. The old filter
+    // (check.name only) matched nothing, so finalize degraded to a raw
+    // stdout tail and never named the failed gate.
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands("echo 'PASS lint'; exit 3");
+    mkdirSync(join(wtPath, ".tmp"));
+    const reportPath = join(wtPath, ".tmp", "check-report.json");
+    writeFileSync(
+      reportPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        runner: "loop-lore-check",
+        passed: false,
+        exitCode: 3,
+        checks: [
+          {
+            command: "bun run typecheck",
+            passed: true,
+            exitCode: 0,
+            durationMs: 4980,
+            output: null,
+            truncated: false,
+          },
+          {
+            command: "bun run check:code-map",
+            passed: false,
+            exitCode: 1,
+            durationMs: 312,
+            output: "code-map stale: src/commands/clean.ts missing from index\n1 gate failed",
+            truncated: false,
+          },
+        ],
+        nonBlocking: [],
+      }),
+    );
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("\u2717 bun run check:code-map");
+    expect(run.output).toContain("code-map stale: src/commands/clean.ts missing from index");
+    expect(run.output).not.toContain("\u2717 bun run typecheck");
+    expect(run.output).not.toContain("PASS lint\n");
+  });
+
   test("caps the failing-gate list and points at the remainder", async () => {
     const wtPath = featureWorktree();
     withBunLock(wtPath);
@@ -767,6 +816,7 @@ describe("finalize check gate", () => {
 
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("tail marker");
+    expect(run.output).toContain("no failing gate found in the check report");
   });
 
   test("falls back to the tail when every reported check passed", async () => {
