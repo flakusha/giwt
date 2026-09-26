@@ -8,9 +8,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { STATUS_ENUM } from "./status-vocab";
 import {
   ALL_GATES,
   FIXABLE_GATES,
@@ -95,7 +96,8 @@ describe("ALL_GATES", () => {
     expect(ALL_GATES).toContain("naming");
     expect(ALL_GATES).toContain("epics-doc");
     expect(ALL_GATES).toContain("matrix");
-    expect(ALL_GATES).toHaveLength(10);
+    expect(ALL_GATES).toContain("status-vocab");
+    expect(ALL_GATES).toHaveLength(11);
   });
 });
 
@@ -990,6 +992,7 @@ describe("validate / --fix mode", () => {
     expect(FIXABLE_GATES).toContain("tickets");
     expect(FIXABLE_GATES).toContain("code-map");
     expect(FIXABLE_GATES).toContain("epics-doc");
+    expect(FIXABLE_GATES).toContain("status-vocab");
     expect(FIXABLE_GATES).not.toContain("format");
     expect(FIXABLE_GATES).not.toContain("linkage");
     expect(FIXABLE_GATES).not.toContain("links");
@@ -1482,6 +1485,180 @@ describe("validate / --fix reports unfixed gates", () => {
       });
       expect(result.pass).toBe(false);
       expect(result.unfixableGates).toBeUndefined();
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── status-vocab gate ───────────────────────────────────────────
+
+describe("validate / status-vocab gate", () => {
+  /** Options for a status-vocab-only run against the calling test's fixture. */
+  function statusOpts(
+    fx: Fixture,
+    extra: { fix?: boolean; statusAliases?: Record<string, string>; } = {},
+  ) {
+    return {
+      projectRoot: fx.root,
+      worktreeRoot: fx.root,
+      ticketsDir: fx.ticketsDir,
+      epicsDir: fx.epicsDir,
+      backlogDir: fx.backlogDir,
+      planDir: fx.planDir,
+      srcDir: "src",
+      codeMapPath: fx.codeMapPath,
+      epicsIndexPath: fx.epicsIndexPath,
+      mapSources: [],
+      linkScanDirs: [],
+      backlogIndexFiles: [],
+      gates: ["status-vocab"] as GateName[],
+      runSync: () => 0,
+      ...(extra.fix ? { fix: true } : {}),
+      ...(extra.statusAliases ? { statusAliases: extra.statusAliases } : {}),
+    };
+  }
+
+  /** Each test owns a private mkdtemp fixture; files live only in its ticketsDir. */
+  function writeStatusTicket(fx: Fixture, name: string, statusLines: string[]): void {
+    writeFileSync(join(fx.ticketsDir, name), `# ${name}\n\n${statusLines.join("\n")}\n`);
+  }
+
+  function vocabGate(result: ReturnType<typeof runValidate>) {
+    const gate = result.results.find((r) => r.gate === "status-vocab");
+    expect(gate).toBeDefined();
+    return gate!;
+  }
+
+  test("fails on alias and unresolvable status values", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-alias.md", ["**Status:** in-progress"]);
+      writeStatusTicket(fx, "TASK-weird.md", ["**Status:** On Hold"]);
+      const result = runValidate(statusOpts(fx));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(false);
+      expect([...gate.findings.map((f) => f.message)].sort()).toEqual([
+        "TASK-alias.md: status \"in-progress\" is not in the vocabulary (Not Started, In Progress, Blocked, Done, Wontfix, Postponed)",
+        "TASK-weird.md: status \"On Hold\" is not in the vocabulary (Not Started, In Progress, Blocked, Done, Wontfix, Postponed)",
+      ]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("passes on canonical values and duplicate-of markers", () => {
+    const fx = makeFixture();
+    try {
+      STATUS_ENUM.forEach((s, i) =>
+        writeStatusTicket(fx, `TASK-canonical-${i}.md`, [`**Status:** ${s}`])
+      );
+      // Colon outside the bold — the reconciliation stub convention.
+      writeStatusTicket(fx, "TASK-dup.md", ["**Status**: duplicate-of-abc1234"]);
+      // Zero Status lines passes vacuously.
+      writeFileSync(join(fx.ticketsDir, "TASK-nostatus.md"), "# TASK-nostatus.md\n\nProse only.\n");
+      const result = runValidate(statusOpts(fx));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(true);
+      expect(gate.findings).toHaveLength(0);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("--fix rewrites aliases in place and re-checks green; a second --fix is a no-op", () => {
+    const fx = makeFixture();
+    try {
+      const cases: Array<[string, string, string]> = [
+        ["TASK-a.md", "**Status:** in-progress", "**Status:** In Progress"],
+        ["TASK-b.md", "**Status:** in progress", "**Status:** In Progress"],
+        ["TASK-c.md", "**Status:** open", "**Status:** Not Started"],
+        ["TASK-d.md", "**Status:** closed", "**Status:** Done"],
+        ["TASK-e.md", "**Status:** ⬜ Not Started", "**Status:** Not Started"],
+        ["TASK-f.md", "**Status:** cancelled", "**Status:** Wontfix"],
+        ["TASK-g.md", "**Status:** dropped", "**Status:** Wontfix"],
+      ];
+      for (const [name, before] of cases) writeStatusTicket(fx, name, [before]);
+
+      const result = runValidate(statusOpts(fx, { fix: true }));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(true);
+      expect(gate.findings).toHaveLength(0); // re-check cleared the findings
+      expect(result.fixedCount).toBe(cases.length);
+      expect(gate.fixes).toContain("TASK-e.md: \"⬜ Not Started\" → \"Not Started\"");
+      for (const [name, , after] of cases) {
+        expect(readFileSync(join(fx.ticketsDir, name), "utf8")).toBe(
+          `# ${name}\n\n${after}\n`,
+        );
+      }
+
+      // Already-canonical files: nothing to do, nothing changes.
+      const second = runValidate(statusOpts(fx, { fix: true }));
+      expect(second.pass).toBe(true);
+      expect(second.fixedCount).toBe(0);
+      for (const [name, , after] of cases) {
+        expect(readFileSync(join(fx.ticketsDir, name), "utf8")).toBe(
+          `# ${name}\n\n${after}\n`,
+        );
+      }
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("leaves unresolvable values untouched and reports the gate as unfixable", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-hold.md", ["**Status:** On Hold"]);
+      const original = readFileSync(join(fx.ticketsDir, "TASK-hold.md"), "utf8");
+      const result = runValidate(statusOpts(fx, { fix: true }));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(false);
+      expect(gate.fixes).toBeUndefined();
+      expect(result.unfixableGates).toContain("status-vocab");
+      expect(readFileSync(join(fx.ticketsDir, "TASK-hold.md"), "utf8")).toBe(original);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("statusAliases extends the defaults", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-hold.md", ["**Status:** on hold"]);
+      // Without the alias the value is unresolvable.
+      expect(vocabGate(runValidate(statusOpts(fx))).pass).toBe(false);
+      // [status.aliases] "on hold" = "Blocked" makes it fixable → canonical.
+      const result = runValidate(statusOpts(fx, {
+        fix: true,
+        statusAliases: { "on hold": "Blocked" },
+      }));
+      expect(result.pass).toBe(true);
+      expect(readFileSync(join(fx.ticketsDir, "TASK-hold.md"), "utf8")).toBe(
+        "# TASK-hold.md\n\n**Status:** Blocked\n",
+      );
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("multi-status file: fixes the fixable line, still fails naming the invalid one", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-multi.md", [
+        "**Status:** in-progress",
+        "**Status:** On Hold",
+      ]);
+      const result = runValidate(statusOpts(fx, { fix: true }));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(false);
+      expect(gate.fixes).toEqual(["TASK-multi.md: \"in-progress\" → \"In Progress\""]);
+      expect(readFileSync(join(fx.ticketsDir, "TASK-multi.md"), "utf8")).toBe(
+        "# TASK-multi.md\n\n**Status:** In Progress\n**Status:** On Hold\n",
+      );
+      const msgs = gate.findings.map((f) => f.message);
+      expect(msgs.some((m) => m.includes("\"On Hold\""))).toBe(true);
+      expect(msgs.some((m) => m.includes("in-progress"))).toBe(false);
     } finally {
       fx.cleanup();
     }

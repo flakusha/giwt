@@ -11,7 +11,8 @@
  *   giwt doctor --tool oxlint,knip    restrict to specific tools
  *   giwt doctor --root <dir>          operate on a different root
  *   giwt doctor check [--json]        run repo-health checks (lint, typecheck,
- *                                     tests, knip, jscpd, todo)
+ *                                     tests, knip, jscpd, todo, scratchpad)
+ *   giwt doctor scratchpad [--json]   scratchpad bloat report (check shortcut)
  *   giwt doctor --help                this help
  */
 
@@ -56,6 +57,13 @@ export async function doctor(
 
   if (args[0] === "check") {
     await runDoctorCheck(args.slice(1), config);
+    return;
+  }
+
+  if (args[0] === "scratchpad") {
+    // Shorthand for the scratchpad check; extra flags (--json, --root,
+    // --jobs) forward unchanged so check surface stays available.
+    await runDoctorCheck(["--checks", "scratchpad", ...args.slice(1)], config);
     return;
   }
 
@@ -172,7 +180,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     } else if (a === "--help" || a === "-h") {
       raw("Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
       raw("");
-      raw("Run repo-health checks: lint, typecheck, tests, knip, jscpd, todo.");
+      raw("Run repo-health checks: lint, typecheck, tests, knip, jscpd, todo, scratchpad.");
       raw("Checks run through a bounded pool (default 4 concurrent; override with --jobs).");
       raw("Prints human-readable findings, or JSON with --json.");
       raw("Exit code is 1 on any error-severity finding or failed check.");
@@ -200,6 +208,16 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     {
       ...(checks ? { checks } : {}),
       jobs: jobs ?? config.settings.doctor.jobs,
+      scratch: {
+        config: config.settings.scratch,
+        thresholds: {
+          warnMb: config.settings.doctor.scratchpadWarnMb,
+          errorMb: config.settings.doctor.scratchpadErrorMb,
+          orphanWarn: config.settings.doctor.scratchpadOrphanWarn,
+          oldestWarnDays: config.settings.doctor.scratchpadOldestWarnDays,
+        },
+        rootDir: config.settings.scratch.root,
+      },
     },
     config.settings.commands.test,
   );
@@ -246,6 +264,9 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     for (const f of check.findings) {
       raw(`       ${f.file}:${f.line} [${f.rule}] ${f.message}`);
     }
+    for (const note of check.notes ?? []) {
+      raw(`       ${note}`);
+    }
   }
   process.exitCode = checkExitCode(report);
 }
@@ -253,6 +274,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
 function printHelp(): void {
   raw("Usage: giwt doctor [--apply] [--tool <csv>] [--root <dir>]");
   raw("       giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
+  raw("       giwt doctor scratchpad [--json] [--root <dir>]");
   raw("");
   raw("Detect project structure and set up dev tooling.");
   raw("Default mode is dry-run: shows what would be written.");
@@ -261,7 +283,9 @@ function printHelp(): void {
   raw("  --tool <csv>        restrict to specific tool ids (oxlint,knip,jscpd,...)");
   raw("  --root <dir>        override project root (default: worktreeRoot)");
   raw("  check               run repo-health checks instead of scaffolding:");
-  raw("                        lint, typecheck, tests, knip, jscpd, todo");
+  raw("                        lint, typecheck, tests, knip, jscpd, todo, scratchpad");
+  raw("  scratchpad          scratchpad bloat report — shortcut for `check --checks");
+  raw("                        scratchpad`; shares --json/--root with check");
   raw("  --json              (check only) machine-readable report on stdout");
   raw("  --checks <csv>      (check only) restrict to specific check ids");
   raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)");
@@ -271,7 +295,7 @@ function printHelp(): void {
   raw("          markuplint, markdownlint, commitlint, preCommit, postCommit,");
   raw("          prePush, linearHistory, pushProtection, prettier, madge,");
   raw("          renovate, dependabot, actionlint, lefthook");
-  raw("Check ids: lint, typecheck, tests, knip, jscpd, todo");
+  raw("Check ids: lint, typecheck, tests, knip, jscpd, todo, scratchpad");
   raw("Check exit code is 1 on any error-severity finding or failed check.");
 }
 

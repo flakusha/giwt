@@ -29,6 +29,7 @@ import { agentMerge } from "./commands/agent-merge";
 import { attach } from "./commands/attach";
 import { attachDir } from "./commands/attach-dir";
 import { execute as branchesCmd } from "./commands/branches";
+import { clean } from "./commands/clean";
 import { execute as cleanupCmd } from "./commands/cleanup";
 import { comment } from "./commands/comment";
 import { commit } from "./commands/commit";
@@ -84,6 +85,8 @@ const USAGE: Record<string, string> = {
   "attach": "<ID> <FILE>\n  <ID>     issue id\n  <FILE>   file to attach as comment",
   "attach-dir": "<ID> <DIR>\n  <ID>    issue id\n  <DIR>   directory of files to attach",
   "branches": "",
+  "clean":
+    "[--dry-run] [--apply] [--json] [--verbose]\n  --dry-run   print the prune plan per class (default; nothing is deleted)\n  --apply     run the prune and report bytes freed\n  --json      machine-readable plan/result on stdout\n  --verbose   list every candidate path, not just per-class totals",
   "cleanup": "",
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
@@ -94,7 +97,7 @@ const USAGE: Record<string, string> = {
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
-    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --root <dir>        override project root (default: worktreeRoot)",
+    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>] | scratchpad [--json] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  scratchpad          scratchpad bloat report (shortcut for `check --checks scratchpad`; shares --json/--root)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --root <dir>        override project root (default: worktreeRoot)",
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
@@ -159,6 +162,10 @@ const commands: Record<string, CommandHandler> = {
   "branches": {
     description: "List branches with status",
     run: branchesCmd,
+  },
+  "clean": {
+    description: "Age/size-capped pruning of .tmp scratchpad artifacts (dry-run by default)",
+    run: clean,
   },
   "cleanup": {
     description: "Remove stale worktrees for deleted branches",

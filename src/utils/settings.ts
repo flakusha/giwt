@@ -22,6 +22,18 @@
  *   plan         = ".plan"          # plan root dir (epics, backlog, tickets)
  *   runlog       = ".tmp/giwt"
  *   check_report = ".tmp/check-report.json"
+ *   [scratch]
+ *   tmp_max_age_days = 7       # orphan .tmp older than this is pruned by `giwt clean`
+ *   lcov_keep_latest = 2       # newest cov-* dirs kept; lcov.*.tmp always pruned
+ *   jscpd_max_age_days = 7
+ *   check_report_keep = 20
+ *   root = ".tmp"
+ *   [doctor]
+ *   jobs = 4
+ *   scratchpad_warn_mb = 100 / scratchpad_error_mb = 500
+ *   scratchpad_orphan_warn = 100 / scratchpad_oldest_warn_days = 30
+ *   [status.aliases]
+ *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate
  *   [commands]
  *   check = "bun run check"    # finalize gate; --diff-base appended unless
  *                              # commands.diff_base = false
@@ -45,14 +57,29 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { log } from "./output";
+import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "./scratch";
 
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
   paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
   commands: { check: string; test: string; diffBase: boolean; };
-  doctor: { jobs: number; };
+  doctor: {
+    jobs: number;
+    scratchpadWarnMb: number;
+    scratchpadErrorMb: number;
+    scratchpadOrphanWarn: number;
+    scratchpadOldestWarnDays: number;
+  };
   runlog: { maxRuns: number; };
   output: { format: string; streamTail: number; };
+  scratch: {
+    tmpMaxAgeDays: number;
+    lcovKeepLatest: number;
+    jscpdMaxAgeDays: number;
+    checkReportKeep: number;
+    root: string;
+  };
+  status: { aliases: Record<string, string>; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -65,9 +92,17 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     checkReport: ".tmp/check-report.json",
   },
   commands: { check: "bun run check", test: "bun run test:unit", diffBase: true },
-  doctor: { jobs: 4 },
+  doctor: {
+    jobs: 4,
+    scratchpadWarnMb: DEFAULT_SCRATCHPAD_THRESHOLDS.warnMb,
+    scratchpadErrorMb: DEFAULT_SCRATCHPAD_THRESHOLDS.errorMb,
+    scratchpadOrphanWarn: DEFAULT_SCRATCHPAD_THRESHOLDS.orphanWarn,
+    scratchpadOldestWarnDays: DEFAULT_SCRATCHPAD_THRESHOLDS.oldestWarnDays,
+  },
   runlog: { maxRuns: 200 },
   output: { format: "simple", streamTail: 25 },
+  scratch: { ...DEFAULT_SCRATCH_CONFIG, root: ".tmp" },
+  status: { aliases: {} },
 };
 
 /** snake_case TOML keys → camelCase settings keys, per section. */
@@ -81,14 +116,28 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     check_report: "checkReport",
   },
   commands: { check: "check", test: "test", diff_base: "diffBase" },
-  doctor: { jobs: "jobs" },
+  doctor: {
+    jobs: "jobs",
+    scratchpad_warn_mb: "scratchpadWarnMb",
+    scratchpad_error_mb: "scratchpadErrorMb",
+    scratchpad_orphan_warn: "scratchpadOrphanWarn",
+    scratchpad_oldest_warn_days: "scratchpadOldestWarnDays",
+  },
   runlog: { max_runs: "maxRuns" },
   output: { format: "format", stream_tail: "streamTail" },
+  scratch: {
+    tmp_max_age_days: "tmpMaxAgeDays",
+    lcov_keep_latest: "lcovKeepLatest",
+    jscpd_max_age_days: "jscpdMaxAgeDays",
+    check_report_keep: "checkReportKeep",
+    root: "root",
+  },
+  status: { aliases: "aliases" },
 };
 
 const EXPECTED: Record<
   keyof GiwtSettings,
-  Record<string, "string[]" | "string" | "number" | "boolean">
+  Record<string, "string[]" | "string" | "number" | "boolean" | "map">
 > = {
   branches: { protected: "string[]", root: "string" },
   paths: {
@@ -99,9 +148,23 @@ const EXPECTED: Record<
     checkReport: "string",
   },
   commands: { check: "string", test: "string", diffBase: "boolean" },
-  doctor: { jobs: "number" },
+  doctor: {
+    jobs: "number",
+    scratchpadWarnMb: "number",
+    scratchpadErrorMb: "number",
+    scratchpadOrphanWarn: "number",
+    scratchpadOldestWarnDays: "number",
+  },
   runlog: { maxRuns: "number" },
   output: { format: "string", streamTail: "number" },
+  scratch: {
+    tmpMaxAgeDays: "number",
+    lcovKeepLatest: "number",
+    jscpdMaxAgeDays: "number",
+    checkReportKeep: "number",
+    root: "string",
+  },
+  status: { aliases: "map" },
 };
 
 type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };
@@ -120,6 +183,9 @@ function checkType(
     ? typeof value === "number" && Number.isFinite(value)
     : expect === "boolean"
     ? typeof value === "boolean"
+    : expect === "map"
+    ? typeof value === "object" && value !== null && !Array.isArray(value)
+      && Object.values(value).every((v) => typeof v === "string")
     : typeof value === "string";
   if (!ok) {
     throw new Error(
@@ -160,7 +226,22 @@ function mergeLayer(
         continue;
       }
       checkType(section, camel, key, v, source);
-      mergedSection[camel] = v;
+      // Map-typed values merge per key across layers (global < local),
+      // mirroring how scalar keys override per key. Record<string,string>
+      // is guaranteed by checkType's "map" branch above.
+      const expect = EXPECTED[section][camel];
+      const prev = mergedSection[camel];
+      if (
+        expect === "map" && typeof prev === "object" && prev !== null
+        && !Array.isArray(prev)
+      ) {
+        mergedSection[camel] = {
+          ...(prev as Record<string, string>),
+          ...(v as Record<string, string>),
+        };
+      } else {
+        mergedSection[camel] = v;
+      }
     }
     merged[section] = mergedSection as never;
   }

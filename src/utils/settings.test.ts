@@ -166,4 +166,92 @@ describe("loadSettings", () => {
       fx.cleanup();
     }
   });
+
+  test("[scratch] parses keys and defaults sensibly", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.scratch).toEqual({
+        tmpMaxAgeDays: 7,
+        lcovKeepLatest: 2,
+        jscpdMaxAgeDays: 7,
+        checkReportKeep: 20,
+        root: ".tmp",
+      });
+      writeFileSync(
+        fx.localPath,
+        `[scratch]\ntmp_max_age_days = 3\nlcov_keep_latest = 1\nroot = "scratch-tmp"\n`,
+      );
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.scratch.tmpMaxAgeDays).toBe(3);
+      expect(s.scratch.lcovKeepLatest).toBe(1);
+      expect(s.scratch.root).toBe("scratch-tmp");
+      // Untouched scratch keys keep defaults.
+      expect(s.scratch.jscpdMaxAgeDays).toBe(7);
+      expect(s.scratch.checkReportKeep).toBe(20);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[doctor] scratchpad thresholds parse and default", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.doctor.scratchpadWarnMb).toBe(100);
+      expect(defaults.doctor.scratchpadErrorMb).toBe(500);
+      expect(defaults.doctor.scratchpadOrphanWarn).toBe(100);
+      expect(defaults.doctor.scratchpadOldestWarnDays).toBe(30);
+      writeFileSync(fx.localPath, `[doctor]\nscratchpad_warn_mb = 50\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.doctor.scratchpadWarnMb).toBe(50);
+      expect(s.doctor.scratchpadErrorMb).toBe(500);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[status] aliases parse as a string map", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        fx.localPath,
+        `[status.aliases]\n"wont do" = "Wontfix"\n"shipped" = "Done"\n`,
+      );
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.status.aliases).toEqual({ "wont do": "Wontfix", shipped: "Done" });
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[status] aliases merge per key across layers", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.globalPath, `[status.aliases]\n"shipped" = "Done"\n"dropped" = "Wontfix"\n`);
+      writeFileSync(fx.localPath, `[status.aliases]\n"shipped" = "In Progress"\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      // Local key overrides the global same-key alias; global-only keys survive.
+      expect(s.status.aliases).toEqual({ shipped: "In Progress", dropped: "Wontfix" });
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[status] aliases with a non-string value throw", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[status.aliases]\n"shipped" = 3\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/aliases must be map/);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });

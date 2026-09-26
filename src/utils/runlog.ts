@@ -65,6 +65,8 @@ export interface RunOutcome {
   sync?: SyncOutcome | undefined;
   /** One-line doctor summary. */
   doctor?: string | undefined;
+  /** One-line clean summary (scratchpad bytes freed). */
+  clean?: string | undefined;
 }
 
 export interface RunMeta {
@@ -304,5 +306,6 @@ export function formatOutcome(outcome: RunOutcome | undefined): string {
     );
   }
   if (outcome.doctor) parts.push(`doctor: ${outcome.doctor}`);
+  if (outcome.clean) parts.push(`clean: ${outcome.clean}`);
   return parts.join("; ");
 }

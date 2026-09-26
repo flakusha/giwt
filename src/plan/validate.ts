@@ -14,6 +14,7 @@
  *   spdx       — SPDX header compliance
  *   naming     — ticket filename convention
  *   epics-doc  — epics-index.md freshness
+ *   status-vocab — ticket **Status:** value vocabulary (aliases via settings)
  *   matrix     — feature-matrix.md freshness (projected from index.json)
  *   all        — run every gate (default)
  *
@@ -21,13 +22,15 @@
  * Pure logic — no process.exit / console.log. Caller handles reporting.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { parseTicketFile } from "../tickets/sync-index";
 import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
 import { runLinkCheck } from "./check-links";
 import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
 import { genMatrix, matrixOutput } from "./feature-matrix";
 import { collectEpics, genDocs, generateIndex } from "./gen-docs";
+import { resolveStatus, rewriteStatusLine, STATUS_ENUM } from "./status-vocab";
 
 // ── Gate types ──────────────────────────────────────────────────
 
@@ -42,6 +45,7 @@ export type GateName =
   | "naming"
   | "epics-doc"
   | "matrix"
+  | "status-vocab"
   | "all";
 
 export const ALL_GATES: GateName[] = [
@@ -54,6 +58,7 @@ export const ALL_GATES: GateName[] = [
   "spdx",
   "naming",
   "epics-doc",
+  "status-vocab",
   "matrix",
 ];
 
@@ -63,6 +68,7 @@ export const FIXABLE_GATES: GateName[] = [
   "tickets",
   "code-map",
   "epics-doc",
+  "status-vocab",
   "matrix",
 ];
 
@@ -389,6 +395,34 @@ function checkNaming(ticketsDir: string): Finding[] {
   return findings;
 }
 
+// ── Status-vocab gate ───────────────────────────────────────────
+
+function checkStatusVocab(
+  ticketsDir: string,
+  statusAliases: Record<string, string>,
+): Finding[] {
+  const findings: Finding[] = [];
+  if (!existsSync(ticketsDir)) return findings;
+
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    const parsed = parseTicketFile(join(ticketsDir, f));
+    if (!parsed) continue;
+    // parseTicketFile returns every **Status:** line in the header region —
+    // a file with zero Status lines passes vacuously.
+    for (const raw of parsed.statusValues) {
+      const { action } = resolveStatus(raw, statusAliases);
+      if (action === "valid") continue;
+      findings.push({
+        gate: "status-vocab",
+        level: "error",
+        message: `${f}: status "${raw}" is not in the vocabulary (${STATUS_ENUM.join(", ")})`,
+      });
+    }
+  }
+  return findings;
+}
+
 // ── Epics-doc gate ──────────────────────────────────────────────
 
 function checkEpicsDoc(epicsDir: string, outPath: string, backlogPath: string): Finding[] {
@@ -470,6 +504,35 @@ function fixEpicsDocGate(epicsDir: string, outPath: string, backlogPath: string)
   return [`regenerated epics-index.md (${output.length} bytes)`];
 }
 
+/**
+ * Rewrite fixable **Status:** values in ticket headers in place. Only the
+ * value span of a Status line (first 30 lines) changes — decoration,
+ * duplicate-of-* markers, and unresolvable values are left untouched.
+ */
+function fixStatusVocabGate(
+  ticketsDir: string,
+  statusAliases: Record<string, string>,
+): string[] {
+  const fixes: string[] = [];
+  if (!existsSync(ticketsDir)) return fixes;
+
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    const path = join(ticketsDir, f);
+    const lines = readFileSync(path, "utf8").split("\n");
+    let changed = false;
+    for (let i = 0; i < Math.min(lines.length, 30); i++) {
+      const rw = rewriteStatusLine(lines[i] ?? "", statusAliases);
+      if (!rw) continue;
+      lines[i] = rw.line;
+      changed = true;
+      fixes.push(`${f}: "${rw.raw}" → "${rw.canonical}"`);
+    }
+    if (changed) writeFileSync(path, lines.join("\n"));
+  }
+  return fixes;
+}
+
 /** Run ticket index sync with fix=true. */
 function fixTicketIndexGate(
   worktreeRoot: string,
@@ -497,6 +560,8 @@ export interface ValidateOptions {
   backlogIndexFiles: string[];
   gates: GateName[];
   runSync: TicketSyncFn;
+  /** Extra freeform → canonical Status aliases ([status.aliases] in giwt.toml). */
+  statusAliases?: Record<string, string>;
   fix?: boolean;
 }
 
@@ -713,6 +778,31 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
         });
         break;
       }
+      case "status-vocab": {
+        const statusAliases = opts.statusAliases ?? {};
+        const findings = checkStatusVocab(opts.ticketsDir, statusAliases);
+        let pass = findings.length === 0;
+        let fixMsgs: string[] = [];
+        if (opts.fix && !pass) {
+          fixMsgs = fixStatusVocabGate(opts.ticketsDir, statusAliases);
+          if (fixMsgs.length > 0) {
+            // Rewriting is a cheap in-place file edit, so re-check like the
+            // code-map gate: the post-fix findings are exactly the values
+            // --fix could not resolve (green only when none remain).
+            const rechecked = checkStatusVocab(opts.ticketsDir, statusAliases);
+            findings.length = 0;
+            findings.push(...rechecked);
+            pass = rechecked.length === 0;
+          }
+        }
+        results.push({
+          gate,
+          pass,
+          findings,
+          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
+        });
+        break;
+      }
     }
   }
 
@@ -724,9 +814,15 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
     (sum, r) => sum + (r.fixes?.length ?? 0),
     0,
   );
+  // A fixable gate that --fix left failing (the fix pass changed nothing)
+  // is de-facto manual for these findings — report it alongside the
+  // never-fixable gates so the summary names an actionable next step.
   const unfixable = opts.fix
     ? (results
-      .filter((r) => !r.pass && !FIXABLE_GATES.includes(r.gate))
+      .filter((r) =>
+        !r.pass
+        && (!FIXABLE_GATES.includes(r.gate) || (r.fixes?.length ?? 0) === 0)
+      )
       .map((r) => r.gate) as ConcreteGate[])
     : undefined;
   return {
@@ -755,6 +851,8 @@ const MANUAL_FIX_HINTS: Record<ConcreteGate, string> = {
   naming: "rename the flagged files to the TYPE-kebab-case-title.md convention",
   "epics-doc": "regenerate .plan/epics-index.md (giwt plan gen-docs)",
   matrix: "regenerate .plan/feature-matrix.md (giwt plan matrix)",
+  "status-vocab":
+    "rename the flagged **Status:** values to the vocabulary, or add [status.aliases] entries in giwt.toml",
 };
 
 /** Per-gate error/warning counts for the summary line. */

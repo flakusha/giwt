@@ -10,13 +10,19 @@
  *   - runDoctorChecks end-to-end with stubbed spawning
  *   - checkExitCode error/warning semantics
  *   - runTodo on a real fixture tree
+ *   - runScratchpad findings/notes/skip semantics + largestDirs
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import {
+  DEFAULT_SCRATCH_CONFIG,
+  DEFAULT_SCRATCHPAD_THRESHOLDS,
+  largestDirs,
+} from "../utils/scratch.ts";
 import {
   applicableChecks,
   checkExitCode,
@@ -29,6 +35,7 @@ import {
   parseTestOutput,
   parseTscOutput,
   runDoctorChecks,
+  runScratchpad,
 } from "./check.ts";
 
 function makeRepo(): string {
@@ -162,16 +169,18 @@ describe("applicableChecks", () => {
         "knip",
         "jscpd",
         "todo",
+        "scratchpad",
       ]);
     } finally {
       cleanup(root);
     }
   });
 
-  it("returns [] for an empty dir", () => {
+  it("returns only scratchpad for an empty dir", () => {
     const root = makeRepo();
     try {
-      expect(applicableChecks(root)).toEqual([]);
+      // scratchpad is pure FS — applicable to every repo, empty or not.
+      expect(applicableChecks(root)).toEqual(["scratchpad"]);
     } finally {
       cleanup(root);
     }
@@ -419,6 +428,171 @@ describe("todo precision", () => {
         "TODO src/a.ts:3",
         "TODO src/b.ts:2",
       ]);
+    } finally {
+      cleanup(root);
+    }
+  });
+});
+
+describe("scratchpad check", () => {
+  const TINY = { warnMb: 0.001, errorMb: 0.002, orphanWarn: 100, oldestWarnDays: 30 };
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it("under thresholds is ok with the numbers in notes", () => {
+    const root = makeRepo();
+    try {
+      write(root, ".tmp/cov-a/f.txt", "x".repeat(40));
+      const res = runScratchpad(
+        join(root, ".tmp"),
+        DEFAULT_SCRATCH_CONFIG,
+        DEFAULT_SCRATCHPAD_THRESHOLDS,
+      );
+      expect(res.id).toBe("scratchpad");
+      expect(res.tool).toBe("scratchpad");
+      expect(res.ok).toBe(true);
+      expect(res.skipped).toBeUndefined();
+      expect(res.findings).toEqual([]);
+      expect(res.notes?.[0]).toMatch(/^total /);
+      expect(res.notes?.join("\n")).toContain("orphans: 0 *.tmp");
+      expect(res.notes?.join("\n")).toContain("cov-a");
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("over errorMb reports an error finding that fails checkExitCode", () => {
+    const root = makeRepo();
+    try {
+      write(root, ".tmp/big.bin", "x".repeat(4096)); // 0.0039 MB > 0.002
+      const res = runScratchpad(join(root, ".tmp"), DEFAULT_SCRATCH_CONFIG, TINY);
+      const size = res.findings.find((f) => f.rule === "scratchpad:size");
+      expect(size?.severity).toBe("error");
+      expect(size?.kind).toBe("bug");
+      expect(size?.message).toContain("threshold");
+      expect(checkExitCode({ version: 1, root, checks: [res] })).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("between warnMb and errorMb is a warning only (exit 0)", () => {
+    const root = makeRepo();
+    try {
+      write(root, ".tmp/med.bin", "x".repeat(4096));
+      const res = runScratchpad(join(root, ".tmp"), DEFAULT_SCRATCH_CONFIG, {
+        ...TINY,
+        errorMb: 1,
+      });
+      expect(res.findings).toHaveLength(1);
+      expect(res.findings[0]?.rule).toBe("scratchpad:size");
+      expect(res.findings[0]?.severity).toBe("warning");
+      expect(res.findings[0]?.kind).toBe("task");
+      expect(checkExitCode({ version: 1, root, checks: [res] })).toBe(0);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("orphan *.tmp count over the limit is an error", () => {
+    const root = makeRepo();
+    try {
+      write(root, ".tmp/a.tmp", "x");
+      write(root, ".tmp/b.tmp", "x");
+      write(root, ".tmp/c.tmp", "x");
+      const res = runScratchpad(join(root, ".tmp"), DEFAULT_SCRATCH_CONFIG, {
+        ...TINY,
+        orphanWarn: 2,
+      });
+      const orphans = res.findings.find((f) => f.rule === "scratchpad:orphans");
+      expect(orphans?.severity).toBe("error");
+      expect(orphans?.message).toContain("3");
+      expect(checkExitCode({ version: 1, root, checks: [res] })).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("oldest artifact over oldestWarnDays is a warning", () => {
+    const root = makeRepo();
+    try {
+      const now = 1_800_000_000_000;
+      write(root, ".tmp/old.tmp", "x");
+      const stale = new Date(now - 40 * DAY);
+      utimesSync(join(root, ".tmp", "old.tmp"), stale, stale);
+      const res = runScratchpad(
+        join(root, ".tmp"),
+        DEFAULT_SCRATCH_CONFIG,
+        TINY,
+        now,
+      );
+      const age = res.findings.find((f) => f.rule === "scratchpad:age");
+      expect(age?.severity).toBe("warning");
+      expect(age?.message).toContain("40.0 days");
+      expect(res.notes?.join("\n")).toContain("40.0 days");
+      expect(checkExitCode({ version: 1, root, checks: [res] })).toBe(0);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("missing scratch dir is a clean skip", () => {
+    const root = makeRepo();
+    try {
+      const res = runScratchpad(
+        join(root, "no-such-tmp"),
+        DEFAULT_SCRATCH_CONFIG,
+        DEFAULT_SCRATCHPAD_THRESHOLDS,
+      );
+      expect(res.ok).toBe(true);
+      expect(res.skipped).toContain("no scratchpad dir at");
+      expect(res.findings).toEqual([]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("largestDirs orders, caps, and tolerates a missing root", () => {
+    const root = makeRepo();
+    try {
+      write(root, "a/f.txt", "xxx"); // 3 bytes
+      write(root, "b/f.txt", "xxxxxxx"); // 7 bytes
+      write(root, "c/deep/g.txt", "xx"); // 2 bytes, nested one level down
+      write(root, "loose.txt", "x"); // a file is never a dir entry
+      expect(largestDirs(root, 2)).toEqual([
+        { path: join(root, "b"), bytes: 7 },
+        { path: join(root, "a"), bytes: 3 },
+      ]);
+      expect(largestDirs(root, 0)).toEqual([]);
+      expect(largestDirs(join(root, "missing"), 5)).toEqual([]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("runDoctorChecks wires opts.scratch and leaves other checks intact", async () => {
+    const root = makeRepo();
+    try {
+      write(root, ".tmp/med.tmp", "y".repeat(2048)); // 0.00195 MB: warn, not error
+      const report = await runDoctorChecks(root, {
+        checks: ["todo", "scratchpad"],
+        scratch: {
+          config: DEFAULT_SCRATCH_CONFIG,
+          thresholds: { ...TINY, errorMb: 1 },
+          rootDir: ".tmp",
+        },
+      });
+      expect(report.checks.map((c) => c.id)).toEqual(["todo", "scratchpad"]);
+      const sp = report.checks[1];
+      expect(sp?.tool).toBe("scratchpad");
+      expect(sp?.findings.map((f) => f.rule)).toEqual(["scratchpad:size"]);
+      expect(sp?.findings[0]?.severity).toBe("warning");
+      expect(checkExitCode(report)).toBe(0);
+
+      // Without opts.scratch the defaults apply (root/.tmp, 100/500 MB,
+      // orphanWarn 100): the tiny fixture stays far under every threshold.
+      const bare = await runDoctorChecks(root, { checks: ["scratchpad"] });
+      expect(bare.checks[0]?.id).toBe("scratchpad");
+      expect(bare.checks[0]?.findings).toEqual([]);
     } finally {
       cleanup(root);
     }
