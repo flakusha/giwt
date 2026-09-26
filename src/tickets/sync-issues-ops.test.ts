@@ -613,6 +613,42 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     expect(second.exit).toBe(0);
   });
 
+  test("rewritten done .md + lagging index + open issue flips and closes in one pass", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-rewrite: rewritten status");
+    writeTicket(root, "TASK-rewrite.md", "rewritten status", {
+      status: "done",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-REWRITE": indexEntry({
+        extid: "TASK-REWRITE",
+        hash,
+        git_issue: hash,
+        status: "Not Started",
+        title: "rewritten status",
+        source: ".plan/tickets/TASK-rewrite.md",
+      }),
+    });
+
+    // The .md Status was edited to done after the index recorded Not
+    // Started; the linked issue is still open. Dry-run must FLAG this
+    // (not report green), and --fix converges in ONE pass: index flips
+    // to done and the linked open issue is closed.
+    const dry = runCaptured(() => runSync(root, {}));
+    expect(dry.exit).toBe(1);
+    expect(dry.out).toContain("TASK-REWRITE");
+
+    const fixed = runCaptured(() => runSync(root, { fix: true }));
+    expect(fixed.out).toContain("TASK-REWRITE: index status");
+    expect(readIndex(root)["TASK-REWRITE"]?.status).toBe("done");
+    expect(issueLines(root).find((i) => i.hash === hash)?.status).toBe("closed");
+    expect(fixed.exit).toBe(0);
+
+    const second = runCaptured(() => runSync(root, {}));
+    expect(second.exit).toBe(0);
+  });
+
   test("multi-line non-done disagreement rewrites every Status line and converges", () => {
     const root = makeRepo();
     const dir = join(root, ".plan/tickets");

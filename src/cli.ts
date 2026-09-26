@@ -108,7 +108,7 @@ const USAGE: Record<string, string> = {
   "gripe":
     "[--at <branch>] <message...>\n  --at <branch>   branch/agent the gripe targets (--at=<branch> also accepted)",
   "issues":
-    "[--all|-a] [--format <f>|-f <f>]\n  --all, -a          show all issues (default: first 50)\n  --format, -f <f>   git-issue ls format",
+    "[--all|-a] [--state <open|closed|all>|-s <v>] [--format <f>|-f <f>]\n  --all, -a                show all issues (default: first 50, with a truncation notice)\n  --state, -s <v>          filter by state: open|closed|all (default: open; --state=<v> also accepted)\n  --format, -f <f>         git-issue ls format",
   "ledger":
     "[--last N] [--json]\n  --last <N>   show only the last N records (--last=N also accepted)\n  --json       machine-readable output",
   "list": "",

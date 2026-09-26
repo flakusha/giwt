@@ -551,13 +551,23 @@ export function reconcile(
     const indexStatus = normalizeStatus(entry.status);
     if (!indexStatus || indexStatus === "undefined") continue;
     const tf = fileByExtid.get(extid);
-    if (!tf || normalizeStatus(tf.status) === indexStatus) continue;
+    if (!tf) continue;
+    const mdStatus = normalizeStatus(tf.status);
+    if (mdStatus === indexStatus) continue;
     const issue = entry.git_issue ? gitIssues.get(entry.git_issue) : undefined;
+    let doneMdOpenIssue = false;
     if (issue) {
       const issueStatus = issue.status === "open" ? "open" : "done";
-      if (issueStatus !== indexStatus) continue; // three-way conflict → manual
+      // A done .md beside a lagging non-done index and a still-open issue is
+      // NOT a manual three-way conflict: the done marker outranks the stale
+      // index, and indexStatusStale's fix closes the open issue in the same
+      // pass. Everything else stays manual.
+      doneMdOpenIssue = mdStatus === "done" && indexStatus !== "done" && issueStatus === "open";
+      if (issueStatus !== indexStatus && !doneMdOpenIssue) continue;
     }
-    if (tf.statusValues.length > 1 && normalizeStatus(tf.status) === "done") {
+    if (
+      (tf.statusValues.length > 1 && mdStatus === "done") || doneMdOpenIssue
+    ) {
       report.indexStatusStale.push({ extid, indexStatus, source: tf.source });
     } else {
       report.mdStatusStale.push({
