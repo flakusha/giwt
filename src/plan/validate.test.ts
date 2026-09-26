@@ -1663,4 +1663,52 @@ describe("validate / status-vocab gate", () => {
       fx.cleanup();
     }
   });
+
+  test("fenced code-block status lines are documentation, not metadata", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-fenced.md", [
+        "**Status:** Not Started",
+        "```md",
+        "**Status:** Not Started → closed (duplicate)",
+        "**Status**: duplicate-of-epic-llm-queue",
+        "```",
+      ]);
+      // The real header line passes; the fenced legacy lines (one of them
+      // unresolvable freeform) must not be flagged or rewritten.
+      const checkOnly = runValidate(statusOpts(fx, {}));
+      expect(vocabGate(checkOnly).pass).toBe(true);
+      expect(vocabGate(checkOnly).findings).toEqual([]);
+
+      const withFix = runValidate(statusOpts(fx, { fix: true }));
+      expect(vocabGate(withFix).fixes ?? []).toEqual([]);
+      expect(readFileSync(join(fx.ticketsDir, "TASK-fenced.md"), "utf8")).toBe(
+        "# TASK-fenced.md\n\n**Status:** Not Started\n```md\n"
+          + "**Status:** Not Started → closed (duplicate)\n"
+          + "**Status**: duplicate-of-epic-llm-queue\n```\n",
+      );
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("annotated canonical statuses keep their annotation when fixed", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-annotated.md", [
+        "**Status:** ✅ Done (landed on master: stream_tail + bounded tails)",
+      ]);
+      const result = runValidate(statusOpts(fx, { fix: true }));
+      const gate = vocabGate(result);
+      expect(gate.pass).toBe(true);
+      expect(gate.fixes).toEqual([
+        "TASK-annotated.md: \"✅ Done (landed on master: stream_tail + bounded tails)\" → "
+        + "\"Done (landed on master: stream_tail + bounded tails)\"",
+      ]);
+      // Already-annotated canonical form is valid as-is on re-run.
+      expect(vocabGate(runValidate(statusOpts(fx, {}))).pass).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });

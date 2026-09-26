@@ -1,3 +1,8 @@
 [test]
+# Worktrees under tree/ hold stale copies of the suite. Without this, a
+# root-level `bun test` collects them alongside src/ and the suites fight
+# over process.cwd() / process.env. Scoped runs (bun test src/) are
+# unaffected - pathIgnorePatterns applies to discovery, not explicit args.
+pathIgnorePatterns = ["tree/**"]
 coverageSkipTestFiles = true
 coverageReporter = ["text", "lcov"]

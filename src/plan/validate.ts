@@ -24,13 +24,17 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import { parseTicketFile } from "../tickets/sync-index";
 import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
 import { runLinkCheck } from "./check-links";
 import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
 import { genMatrix, matrixOutput } from "./feature-matrix";
 import { collectEpics, genDocs, generateIndex } from "./gen-docs";
-import { resolveStatus, rewriteStatusLine, STATUS_ENUM } from "./status-vocab";
+import {
+  resolveStatus,
+  rewriteStatusLine,
+  scanHeaderStatusLines,
+  STATUS_ENUM,
+} from "./status-vocab";
 
 // ── Gate types ──────────────────────────────────────────────────
 
@@ -406,17 +410,16 @@ function checkStatusVocab(
 
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
-    const parsed = parseTicketFile(join(ticketsDir, f));
-    if (!parsed) continue;
-    // parseTicketFile returns every **Status:** line in the header region —
-    // a file with zero Status lines passes vacuously.
-    for (const raw of parsed.statusValues) {
-      const { action } = resolveStatus(raw, statusAliases);
+    const path = join(ticketsDir, f);
+    // scanHeaderStatusLines skips fenced code blocks — a `**Status:**` inside
+    // a reproduction example is documentation, not metadata.
+    for (const { value } of scanHeaderStatusLines(path)) {
+      const { action } = resolveStatus(value, statusAliases);
       if (action === "valid") continue;
       findings.push({
         gate: "status-vocab",
         level: "error",
-        message: `${f}: status "${raw}" is not in the vocabulary (${STATUS_ENUM.join(", ")})`,
+        message: `${f}: status "${value}" is not in the vocabulary (${STATUS_ENUM.join(", ")})`,
       });
     }
   }
@@ -521,10 +524,12 @@ function fixStatusVocabGate(
     const path = join(ticketsDir, f);
     const lines = readFileSync(path, "utf8").split("\n");
     let changed = false;
-    for (let i = 0; i < Math.min(lines.length, 30); i++) {
-      const rw = rewriteStatusLine(lines[i] ?? "", statusAliases);
+    // Same fence-aware scan as the check: fenced **Status:** lines are
+    // documentation and are never rewritten.
+    for (const { line, text } of scanHeaderStatusLines(path)) {
+      const rw = rewriteStatusLine(text, statusAliases);
       if (!rw) continue;
-      lines[i] = rw.line;
+      lines[line] = rw.line;
       changed = true;
       fixes.push(`${f}: "${rw.raw}" → "${rw.canonical}"`);
     }

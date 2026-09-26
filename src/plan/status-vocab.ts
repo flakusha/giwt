@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { readFileSync } from "node:fs";
+
 /**
  * Status vocabulary for the `giwt plan validate status-vocab` gate.
  *
@@ -32,6 +34,8 @@ export const DEFAULT_STATUS_ALIASES: Record<string, string> = {
   "open": "Not Started",
   "open (planning)": "Not Started",
   "closed": "Done",
+  "complete": "Done",
+  "completed": "Done",
   "cancelled": "Wontfix",
   "dropped": "Wontfix",
 };
@@ -79,6 +83,23 @@ export function resolveStatus(
   const target = table[stripped];
   if (target !== undefined) return { value: target, action: "fixable" };
 
+  // Annotation tolerance: "✅ Done (landed on master: ...)" — a resolvable
+  // core followed by a trailing parenthetical. The annotation carries
+  // signal (normalizeStatus never coerces freeform notes), so the rewrite
+  // keeps it: "Done (landed on master: ...)". Full-string alias lookup
+  // runs first, so table keys that themselves end in a parenthetical
+  // ("open (planning)") still win.
+  const annotation = raw.trim().match(/^(.+?)(\s*\([^()]*\))$/s);
+  if (annotation !== null) {
+    const core = resolveStatus(annotation[1]!, aliases);
+    if (core.action === "fixable" || core.action === "valid") {
+      if (core.action === "valid" && core.value === annotation[1]) {
+        return { value: raw, action: "valid" };
+      }
+      return { value: `${core.value}${annotation[2]}`, action: "fixable" };
+    }
+  }
+
   return { value: raw, action: "invalid" };
 }
 
@@ -98,6 +119,31 @@ export interface StatusLineRewrite {
   raw: string;
   /** The canonical value it was rewritten to. */
   canonical: string;
+}
+
+/**
+ * Scan a ticket file's header region (first 30 lines) for Status lines,
+ * skipping fenced code blocks — a `**Status:**` inside a ```md reproduction
+ * example is documentation, not metadata. Returns 0-based line indices with
+ * the line text and the extracted raw value span.
+ */
+export function scanHeaderStatusLines(
+  path: string,
+): Array<{ line: number; text: string; value: string; }> {
+  const lines = readFileSync(path, "utf8").split("\n").slice(0, 30);
+  const out: Array<{ line: number; text: string; value: string; }> = [];
+  let fenced = false;
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i] ?? "";
+    if (/^\s*(```|~~~)/.test(text)) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
+    const m = STATUS_LINE_PARTS_RE.exec(text);
+    if (m) out.push({ line: i, text, value: m[2] ?? "" });
+  }
+  return out;
 }
 
 /**
