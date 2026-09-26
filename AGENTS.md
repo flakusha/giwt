@@ -23,7 +23,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 - `src/utils/` — config/settings/ledger/runlog/output (logger)/git plumbing/GPG/credentials/colors/message.
 - `src/index.ts` — **public API surface** (`exports["."]`); re-exports are a compatibility promise; external consumers import by absolute path or `giwt`.
 - `src/tickets/` — ticket-index sync logic.
-- `src/plan/` — `.plan/` tooling: gen-docs, code-map, backlog-sync, check-links, feature matrix (`feature-matrix.ts` → generated `.plan/feature-matrix.md`, freshness gate `matrix` in `validate.ts`, subcommand `giwt plan matrix [--check] [--json] [--cooccurrence]`).
+- `src/plan/` — `.plan/` tooling: gen-docs, code-map, backlog-sync, check-links, feature matrix (`feature-matrix.ts` → generated `.plan/feature-matrix.md`, freshness gate `matrix` in `validate.ts`, subcommand `giwt plan matrix [--check] [--json] [--cooccurrence]`), and generated-plan conflict reconciliation (`reconcile-conflicts.ts`, used by `giwt rebase` and finalize's rebase/squash strategy).
 - `.tmp/giwt/runs/` — run records (scratch, regenerated); `.ledger.jsonl` under `treeDir`.
 
 ## Development Commands

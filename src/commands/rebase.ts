@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { getRootBranch, gitSync, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
@@ -53,12 +54,15 @@ export async function rebase(
 
   log("info", `Rebasing '${branch}' onto '${target}'...`);
 
-  const result = Bun.spawnSync(
-    ["git", "-C", wtPath, "rebase", target],
-    { stdout: "pipe", stderr: "pipe" },
+  const result = rebaseWithPlanReconciliation(
+    wtPath,
+    target,
+    config.settings.paths.planDir,
+    config.settings.paths.tickets,
   );
 
   if (result.exitCode !== 0) {
+    if (result.output.trim()) raw(result.output.trimEnd());
     log("error", `rebase failed — resolve conflicts in ${wtPath}`);
     raw(`  Then: cd ${wtPath} && git rebase --continue`);
     raw(`  Or:   cd ${wtPath} && git rebase --abort`);

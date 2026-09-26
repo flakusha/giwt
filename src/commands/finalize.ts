@@ -12,6 +12,7 @@ import {
   writeSync,
 } from "node:fs";
 import { join, resolve } from "path";
+import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { ALL_GATES, runValidate } from "../plan/validate";
 import type { GateName } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
@@ -1139,11 +1140,14 @@ async function runFinalize(
   if (mergeStrategy === "rebase" || mergeStrategy === "squash") {
     // 5a: Rebase
     log("info", `Step 5a: Rebasing '${branch}' onto ${targetBranch}...`);
-    const rebaseResult = Bun.spawnSync(
-      ["git", "-C", wtPath, "rebase", targetBranch],
-      { stdout: "pipe", stderr: "pipe" },
+    const rebaseResult = rebaseWithPlanReconciliation(
+      wtPath,
+      targetBranch,
+      config.settings.paths.planDir,
+      config.settings.paths.tickets,
     );
     if (rebaseResult.exitCode !== 0) {
+      if (rebaseResult.output.trim()) raw(rebaseResult.output.trimEnd());
       log("error", `Rebase conflicts — resolve in ${wtPath}`);
       raw(`  Then: cd ${wtPath} && git rebase --continue`);
       raw(`  Then: finalize again`);
