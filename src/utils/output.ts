@@ -115,7 +115,8 @@ export function isMachineFormat(): boolean {
   return activeFormat === "json" || activeFormat === "jsonl" || activeFormat === "toml";
 }
 
-// TODO(perf): log()/section() are the per-message hot path. Per-event work is
+// Perf note (deliberate): log()/section() are the per-message hot path.
+// Per-event work is
 // deliberately O(1): memoized format resolution, one Record lookup, one
 // stream write; JSON.stringify only on machine formats. Precompiled/native
 // hooks (N-API, child process, precompiled regex) rejected: per-event cost

@@ -6,7 +6,7 @@
  * giwt — git worktree / commit / GPG / git-issue management CLI.
  *
  * Bun-only tooling: relies on Bun.spawnSync, Bun.file, and Bun test
- * throughout. TODO(env): add a node shim layer only if a node target lands;
+ * throughout. If a node target ever lands, a shim layer is added first;
  * every env-specific call site lives under src/commands/ and src/utils/.
  *
  * Command dispatch is built on Optique: one `command()` parser per

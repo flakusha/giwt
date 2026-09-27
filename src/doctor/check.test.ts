@@ -414,6 +414,29 @@ describe("todo precision", () => {
     }
   });
 
+  it("ignores prose mentions of todo/FIXME without action-item shape", async () => {
+    const root = makeRepo();
+    try {
+      write(
+        root,
+        "src/a.ts",
+        [
+          " *   tests, knip, jscpd, todo, scratchpad)",
+          " *   todo       TODO/FIXME comments in code (pure FS scan)",
+          "/** Scan one file for TODO/FIXME lines; skips oversized files. */",
+          "// Open-class: \"deferred\", \"todo\", \"research needed\", \"follow-up\".",
+          "// TODO: real work",
+        ].join("\n") + "\n",
+      );
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
+      const findings = report.checks[0]?.findings ?? [];
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.message).toBe("real work");
+    } finally {
+      cleanup(root);
+    }
+  });
+
   it("orders FIXME before TODO, then by file and line", async () => {
     const root = makeRepo();
     try {

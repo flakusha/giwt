@@ -92,7 +92,10 @@ export const CHECK_MAX_FINDINGS = 20;
 /** jscpd languages passed via -f (verified to exist; unknown names fail the run). */
 const JSCPD_FORMATS = "typescript,javascript,python,java,ruby,php";
 
-const TODO_MARKER_RE = /\b(TODO|FIXME)\b/i;
+// Action-item shape only: TODO/FIXME optionally scoped `TODO(scope)`, then a
+// colon. Prose mentions ("todo, scratchpad", "TODO/FIXME comments") don't
+// match, so documentation lines never surface as findings.
+const TODO_MARKER_RE = /\b(TODO|FIXME)(\([^)]*\))?:/i;
 
 const TODO_EXTS: Record<string, true> = {
   ".ts": true,
