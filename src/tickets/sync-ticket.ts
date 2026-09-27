@@ -147,8 +147,10 @@ export interface SyncReport {
     issueTitle: string;
   }>;
   /**
-   * .md Status line disagrees with the (authoritative) index status while the
-   * linked issue agrees with the index. Fixable: rewrite the .md line.
+   * .md Status does not classify done while the (authoritative-for-done-ness)
+   * index does, and the linked issue agrees with the index. Fixable: rewrite
+   * the .md line to the vocabulary canonical "Done" (never the binary mirror
+   * value — that would erase the plan vocabulary).
    */
   mdStatusStale: Array<{
     extid: string;
@@ -543,9 +545,14 @@ export function reconcile(
     report.foreignIssues.push({ hash: issue.hash, extid: issue.extid, title: issue.title });
   }
 
-  // 11. .md Status drift: the index is authoritative (existing fixes treat it
-  //     so) — flag .md files whose Status line disagrees while the linked
-  //     issue agrees with the index (or there is no linked issue).
+  // 11. .md Status drift: the index is authoritative for DONE-NESS only.
+  //     Git issues are binary (open/closed) while .md files carry the plan
+  //     vocabulary (6 terms), so a value difference between two non-done
+  //     states ("open" vs "In Progress") is not drift — rewriting it would
+  //     erase the vocabulary that `plan validate --fix` normalizes to and
+  //     the two fixers would oscillate. Flag only when the done
+  //     classification disagrees while the linked issue agrees with the
+  //     index (or there is no linked issue).
   for (const [extid, entry] of Object.entries(index)) {
     if (!entry.status) continue; // nothing authoritative recorded yet
     const indexStatus = normalizeStatus(entry.status);
@@ -553,7 +560,9 @@ export function reconcile(
     const tf = fileByExtid.get(extid);
     if (!tf) continue;
     const mdStatus = normalizeStatus(tf.status);
-    if (mdStatus === indexStatus) continue;
+    const mdDone = mdStatus === "done";
+    const idxDone = indexStatus === "done";
+    if (mdDone === idxDone) continue;
     const issue = entry.git_issue ? gitIssues.get(entry.git_issue) : undefined;
     let doneMdOpenIssue = false;
     if (issue) {
@@ -562,14 +571,17 @@ export function reconcile(
       // NOT a manual three-way conflict: the done marker outranks the stale
       // index, and indexStatusStale's fix closes the open issue in the same
       // pass. Everything else stays manual.
-      doneMdOpenIssue = mdStatus === "done" && indexStatus !== "done" && issueStatus === "open";
+      doneMdOpenIssue = mdDone && !idxDone && issueStatus === "open";
       if (issueStatus !== indexStatus && !doneMdOpenIssue) continue;
     }
-    if (
-      (tf.statusValues.length > 1 && mdStatus === "done") || doneMdOpenIssue
-    ) {
+    if (mdDone) {
+      // .md done-classified but the index lags behind: the done marker
+      // outranks the stale index — flip the index (and close a still-open
+      // linked issue in the same pass).
       report.indexStatusStale.push({ extid, indexStatus, source: tf.source });
     } else {
+      // Index done but the .md is not: rewrite every .md Status line to the
+      // plan-vocabulary canonical "Done" — never the binary mirror value.
       report.mdStatusStale.push({
         extid,
         mdStatus: tf.status,

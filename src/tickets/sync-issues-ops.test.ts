@@ -542,10 +542,10 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
 
     const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
 
-    expect(out).toContain("TASK-STALE-STATUS: .md status open → done");
+    expect(out).toContain("TASK-STALE-STATUS: .md status open → Done");
     const lines = readFileSync(join(root, ".plan/tickets/TASK-stale-status.md"), "utf8")
       .split("\n");
-    expect(lines.find((l) => l.startsWith("**Status:**"))).toBe("**Status:** done");
+    expect(lines.find((l) => l.startsWith("**Status:**"))).toBe("**Status:** Done");
     expect(exit).toBe(0);
   });
 
@@ -649,7 +649,7 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     expect(second.exit).toBe(0);
   });
 
-  test("multi-line non-done disagreement rewrites every Status line and converges", () => {
+  test("non-done vocabulary survives sync --fix when the index mirrors an open issue", () => {
     const root = makeRepo();
     const dir = join(root, ".plan/tickets");
     mkdirSync(dir, { recursive: true });
@@ -667,13 +667,78 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     });
 
     const first = runCaptured(() => runSync(root, { fix: true }));
-    expect(first.out).toContain("TASK-MULTI: .md status in_progress → open");
+    // open vs In Progress/blocked: same done-ness — no drift, and the
+    // binary mirror value must never leak into the .md vocabulary.
+    expect(first.out).toContain("No stale .md statuses");
     const text = readFileSync(join(dir, "TASK-multi.md"), "utf8");
+    expect(text).toContain("In Progress");
+    expect(text).toContain("blocked");
+    expect(text).not.toMatch(/\*\*Status\*\*?: open/);
+
+    const second = runCaptured(() => runSync(root, { fix: true }));
+    expect(second.exit).toBe(0);
+  });
+
+  test("index-done .md with non-done vocabulary lines rewrites every line to canonical Done", () => {
+    const root = makeRepo();
+    const dir = join(root, ".plan/tickets");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "TASK-multi.md"),
+      "# TASK: multi status\n\n**Status:** In Progress\n**Status**: blocked\n",
+    );
+    writeIndex(root, {
+      "TASK-MULTI": indexEntry({
+        extid: "TASK-MULTI",
+        status: "done",
+        title: "multi status",
+        source: ".plan/tickets/TASK-multi.md",
+      }),
+    });
+
+    const first = runCaptured(() => runSync(root, { fix: true }));
+    expect(first.out).toContain("TASK-MULTI: .md status in_progress → Done");
+    const text = readFileSync(join(dir, "TASK-multi.md"), "utf8");
+    expect((text.match(/\bDone\b/g) ?? []).length).toBe(2);
     expect(text).not.toContain("blocked");
     expect(text).not.toContain("In Progress");
 
     const second = runCaptured(() => runSync(root, { fix: true }));
     expect(second.exit).toBe(0);
+  });
+
+  test("In Progress ticket with an open issue survives the sync --fix ↔ plan-vocab round-trip", () => {
+    // Regression for BUG-sync-fix-rewrites-md-status-to-git-issue-state:
+    // sync --fix must not write the git-issue mirror value into a .md whose
+    // status is a valid non-done plan-vocabulary term.
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-vocab: in flight");
+    writeTicket(root, "TASK-vocab.md", "in flight", {
+      status: "In Progress",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-VOCAB": indexEntry({
+        extid: "TASK-VOCAB",
+        hash,
+        git_issue: hash,
+        status: "open",
+        title: "in flight",
+        source: ".plan/tickets/TASK-vocab.md",
+      }),
+    });
+
+    const fixed = runCaptured(() => runSync(root, { fix: true }));
+    expect(fixed.exit).toBe(0);
+    const text = readFileSync(join(root, ".plan/tickets/TASK-vocab.md"), "utf8");
+    expect(text).toContain("**Status:** In Progress");
+    expect(text).not.toMatch(/\*\*Status\*\*?: open/);
+
+    // Idempotent: the next pass stays green and keeps the vocabulary term.
+    const again = runCaptured(() => runSync(root, { fix: true }));
+    expect(again.exit).toBe(0);
+    expect(readFileSync(join(root, ".plan/tickets/TASK-vocab.md"), "utf8"))
+      .toContain("**Status:** In Progress");
   });
 
   test("phantom with a distinct non-plan source is left for manual handling", () => {

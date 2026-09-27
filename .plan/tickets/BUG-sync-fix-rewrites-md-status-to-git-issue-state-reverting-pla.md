@@ -3,7 +3,7 @@
 
 # BUG: sync --fix rewrites .md status to git issue state, reverting plan status-vocab normalization
 
-**Status:** ⬜ Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** status-vocab
@@ -48,10 +48,10 @@ A repo cannot be simultaneously `plan - validate` green and `sync` clean. Whoeve
 
 ## Acceptance
 
-- [ ] One authority is chosen for `.md` status and documented.
-- [ ] Running `sync --fix` then `plan validate --fix` (and the reverse) is idempotent — neither re-bricks the other.
-- [ ] `src/tickets/sync-issues-ops.test.ts:670-673` is updated to assert the agreed behaviour rather than the erasure.
-- [ ] Regression test: a ticket at `In Progress` with an open git issue survives a full `sync --fix` → `plan validate --fix` round-trip still at a vocabulary term.
+- [x] One authority is chosen for `.md` status and documented (index authoritative for done-ness only; plan vocabulary owns non-done values — AGENTS.md §7).
+- [x] Running `sync --fix` then `plan validate --fix` (and the reverse) is idempotent — neither re-bricks the other (regression test: "In Progress ticket with an open issue survives the sync --fix ↔ plan-vocab round-trip").
+- [x] `src/tickets/sync-issues-ops.test.ts` multi-line test now asserts vocabulary preservation instead of the erasure.
+- [x] Regression test: a ticket at `In Progress` with an open git issue survives a full `sync --fix` → `plan validate --fix` round-trip still at a vocabulary term.
 
 ## Related
 
@@ -60,6 +60,6 @@ A repo cannot be simultaneously `plan - validate` green and `sync` clean. Whoeve
 
 ## Acceptance Criteria
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing (bun test src/tickets/ 93 pass; full bun run check 911 pass)
+- [x] Documentation updated (AGENTS.md §7 sync contract wording)

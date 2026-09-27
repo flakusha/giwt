@@ -710,21 +710,26 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     }
 
     // .md Status drift: rewrite EVERY header Status line to the
-    // authoritative index status (the linked issue already agrees with the
-    // index) — rewriting only the first line would leave an appended line
-    // re-diverging the any-done aggregate on the next scan.
+    // authoritative index done-state in plan-vocabulary canonical form
+    // ("Done"). The index mirrors binary git-issue state (open/done); the
+    // classification (sync-ticket §11) only routes index-done/.md-not-done
+    // here, but the vocabulary mapping stays explicit so a raw mirror value
+    // can never leak into a .md and re-break `plan validate`'s status-vocab
+    // gate. Rewriting every line (not just the first) keeps an appended
+    // line from re-diverging the any-done aggregate on the next scan.
     for (const ms of report.mdStatusStale) {
       const tf = fileByExtid.get(ms.extid);
       if (!tf) continue;
       try {
         let text = readFileSync(tf.path, "utf8");
+        const target = ms.indexStatus === "done" ? "Done" : ms.indexStatus;
         text = text.replace(
           /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
-          `$1${ms.indexStatus}`,
+          `$1${target}`,
         );
         writeFileSync(tf.path, text);
         report.fixesApplied.push(
-          `${ms.extid}: .md status ${ms.mdStatus} → ${ms.indexStatus}`,
+          `${ms.extid}: .md status ${ms.mdStatus} → ${target}`,
         );
       } catch (e) {
         report.fixesApplied.push(
@@ -1007,7 +1012,9 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   }
 
   if (report.mdStatusStale.length > 0) {
-    raw(`\n🟡 .md status stale (index authoritative): ${report.mdStatusStale.length}`);
+    raw(
+      `\n🟡 .md status stale (index authoritative for done-ness): ${report.mdStatusStale.length}`,
+    );
     for (const m of report.mdStatusStale) {
       raw(`   ${m.extid}: .md="${m.mdStatus}" → ${m.indexStatus}`);
     }
