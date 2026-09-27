@@ -12,7 +12,7 @@
  *   code-map   — code map freshness
  *   links      — markdown internal link check
  *   spdx       — SPDX header compliance
- *   naming     — ticket filename convention
+ *   naming     — ticket filename convention incl. case-insensitive collision rejection
  *   epics-doc  — epics-index.md freshness
  *   status-vocab — ticket **Status:** value vocabulary (aliases via settings)
  *   matrix     — feature-matrix.md freshness (projected from index.json)
@@ -386,8 +386,24 @@ function checkNaming(ticketsDir: string): Finding[] {
   if (!existsSync(ticketsDir)) return findings;
 
   const pattern = /^[A-Z]+-[\w-]+\.md$/;
+  // Case-only filename collisions break consumers that derive identifiers
+  // from file paths (e.g. Vite/VitePress chunk naming: two chunks differing
+  // solely by case make the page→chunk map dangle and the build 404). Not
+  // auto-fixable: silently deleting one side could drop a real ticket.
+  const seenByLower = new Map<string, string>();
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
+    const lower = f.toLowerCase();
+    const prev = seenByLower.get(lower);
+    if (prev !== undefined) {
+      findings.push({
+        gate: "naming",
+        level: "error",
+        message: `${f}: case-insensitive filename collision with ${prev}`,
+      });
+    } else {
+      seenByLower.set(lower, f);
+    }
     if (!pattern.test(f)) {
       findings.push({
         gate: "naming",

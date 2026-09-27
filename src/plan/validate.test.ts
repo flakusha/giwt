@@ -582,6 +582,71 @@ describe("validate / naming gate", () => {
       fx.cleanup();
     }
   });
+
+  test("fails on a case-insensitive filename collision, naming both files", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-foo-bar.md");
+      // Case-only duplicate of the same ticket (loop-lore: 13 UPPERCASE
+      // strays beside their lowercase originals broke the docs build).
+      writeTicket(fx, "TASK-FOO-BAR.md");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["naming"],
+        runSync: () => 0,
+      });
+      const namingResult = result.results.find((r) => r.gate === "naming");
+      expect(namingResult!.pass).toBe(false);
+      const collision = namingResult!.findings.find((f) =>
+        f.message.includes("case-insensitive filename collision")
+      );
+      expect(collision).toBeDefined();
+      expect(collision!.level).toBe("error");
+      expect(collision!.message).toContain("TASK-FOO-BAR.md");
+      expect(collision!.message).toContain("TASK-foo-bar.md");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("passes when filenames differ beyond case", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-foo-bar.md");
+      writeTicket(fx, "TASK-foo-baz.md");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["naming"],
+        runSync: () => 0,
+      });
+      const namingResult = result.results.find((r) => r.gate === "naming");
+      expect(namingResult!.pass).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });
 
 // ── code-map gate ───────────────────────────────────────────────
