@@ -10,8 +10,6 @@
 
 ## Summary
 
-## Summary
-
 `giwt sync --fix` and `giwt plan validate --fix` impose contradictory status authorities on the same `.md` file. Running them in either order silently undoes the other, so a repo cannot stay green on both gates.
 
 ## Problem
