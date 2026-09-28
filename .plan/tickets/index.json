@@ -41,6 +41,23 @@
     "status": "done",
     "git_issue": "6c8b279"
   },
+  "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE": {
+    "hash": "23751b8",
+    "git_issue": "23751b8",
+    "extid": "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE",
+    "type": "BUG",
+    "title": "rebase guard checks only the source branch, not the target - rebasing dev onto feature tips rewrote protected history 51x",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "rebase",
+      "git",
+      "history-safety"
+    ],
+    "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md",
+    "status": "⬜ Not Started"
+  },
   "BUG-SYNC-FIX-REWRITES-MD-STATUS-TO-GIT-ISSUE-STATE-REVERTING-PLA": {
     "hash": "c72813b",
     "git_issue": "c72813b",
