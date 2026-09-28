@@ -388,7 +388,7 @@
       "tickets"
     ],
     "source": ".plan/tickets/FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas.md",
-    "status": "in_progress"
+    "status": "done"
   },
   "FIX-WIRE-PLANDIR-SETTING-INTO-PLAN-COMMAND": {
     "hash": "a13c536",

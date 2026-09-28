@@ -3,7 +3,7 @@
 
 # FIX: sync --fix reports one refusal for every registry failure class
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** sync, tickets
