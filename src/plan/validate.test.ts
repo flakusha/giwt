@@ -8,9 +8,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 import { STATUS_ENUM } from "./status-vocab";
 import {
   ALL_GATES,
@@ -1772,6 +1774,142 @@ describe("validate / status-vocab gate", () => {
       ]);
       // Already-annotated canonical form is valid as-is on re-run.
       expect(vocabGate(runValidate(statusOpts(fx, {}))).pass).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── diffBase scoping ────────────────────────────────────────────
+// TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas:
+// per-file gates must ignore foreign tickets that a concurrently-active
+// session committed to master, even after the branch merged master in.
+
+describe("validate / diffBase scoping", () => {
+  const VALID = (name: string) =>
+    `# TASK-${name}\n\n**Status:** In Progress\n**Priority:** high\n**Effort:** small\n**Summary:** s\n**Context:** c\n**Acceptance Criteria:** a\n`;
+  /** Missing required sections + out-of-vocab status (+ optional dangling epic ref). */
+  const BROKEN = (name: string, epic?: string) =>
+    `# TASK-${name}\n\n**Status:** bogus-value\n${epic ? `**Epic:** ${epic}\n` : ""}`;
+
+  function git(dir: string, ...args: string[]): string {
+    return execFileSync("git", args, { cwd: dir, env: isolatedGitEnv(), encoding: "utf8" });
+  }
+
+  interface MergedFixture extends Fixture {
+    diffBase: string;
+  }
+
+  /** Repo history mirroring the finalize hazard: a foreign session commits a
+   *  malformed ticket to master after the branch forked; the branch merges
+   *  master in (as finalize's rebase step would) so the foreign file IS on
+   *  disk — diff-scoped gates must still ignore it. */
+  function makeMergedFixture(): MergedFixture {
+    const fx = makeFixture();
+    const g = (...args: string[]) => git(fx.root, ...args);
+    g("init", "-q", "-b", "master");
+    g("config", "user.email", "giwt-test@example.com");
+    g("config", "user.name", "giwt test");
+    g("config", "commit.gpgsign", "false");
+    // This machine's global gitignore is `.*/` — without the override the
+    // fixture's .plan tree is invisible to `git add`/`ls-files`.
+    g("config", "core.excludesFile", "");
+    writeFileSync(join(fx.ticketsDir, "TASK-good.md"), VALID("good"));
+    g("add", "-A");
+    g("commit", "-q", "-m", "base");
+    // Branch forks here; the foreign session keeps committing to master.
+    g("branch", "wt");
+    writeFileSync(join(fx.ticketsDir, "TASK-foreign.md"), BROKEN("foreign", "epic-ghost.md"));
+    // A lowercase case-collision twin, for the global naming gate.
+    writeFileSync(join(fx.ticketsDir, "task-foreign.md"), VALID("collision"));
+    g("add", "-A");
+    g("commit", "-q", "-m", "foreign tickets");
+    // Branch work: a malformed own ticket (in-diff → must still fail), then
+    // merge master in (as finalize's rebase step would) so the foreign file
+    // IS physically on disk in the branch checkout.
+    g("checkout", "-q", "wt");
+    writeFileSync(join(fx.ticketsDir, "TASK-own-bad.md"), BROKEN("own-bad"));
+    g("add", "-A");
+    g("commit", "-q", "-m", "own work");
+    g("merge", "-q", "--no-edit", "master");
+    // Mirrors resolveDiffBase: after the merge HEAD contains the master tip,
+    // so diff(base, HEAD) contains only the branch's own changes.
+    return { ...fx, diffBase: g("merge-base", "HEAD", "master").trim() };
+  }
+
+  function scopeOpts(fx: MergedFixture, gates: GateName[], diffBase?: string) {
+    return {
+      projectRoot: fx.root,
+      worktreeRoot: fx.root,
+      ticketsDir: fx.ticketsDir,
+      epicsDir: fx.epicsDir,
+      backlogDir: fx.backlogDir,
+      planDir: fx.planDir,
+      srcDir: "src",
+      codeMapPath: fx.codeMapPath,
+      epicsIndexPath: fx.epicsIndexPath,
+      mapSources: [],
+      linkScanDirs: [],
+      backlogIndexFiles: [],
+      gates,
+      runSync: () => 0,
+      ...(diffBase !== undefined ? { diffBase } : {}),
+    };
+  }
+
+  function messages(result: { results: Array<{ findings: Array<{ message: string; }>; }>; }) {
+    return result.results.flatMap((r) => r.findings.map((f) => f.message));
+  }
+
+  test("foreign ticket findings are excluded when diffBase is set", () => {
+    const fx = makeMergedFixture();
+    try {
+      const result = runValidate(
+        scopeOpts(fx, ["format", "linkage", "status-vocab"], fx.diffBase),
+      );
+      const msgs = messages(result);
+      expect(msgs.some((m) => m.includes("TASK-foreign.md"))).toBe(false);
+      // The branch's own malformed ticket must still fail the gates.
+      expect(msgs.some((m) => m.includes("TASK-own-bad.md"))).toBe(true);
+      expect(result.pass).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("without diffBase the full directory is scanned (historic behavior)", () => {
+    const fx = makeMergedFixture();
+    try {
+      const msgs = messages(
+        runValidate(scopeOpts(fx, ["format", "linkage", "status-vocab"])),
+      );
+      expect(msgs.some((m) => m.includes("TASK-foreign.md"))).toBe(true);
+      expect(msgs.some((m) => m.includes("TASK-own-bad.md"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("untracked malformed ticket is still validated under scoping", () => {
+    const fx = makeMergedFixture();
+    try {
+      // `git diff` alone cannot see a fresh not-yet-committed ticket; the
+      // untracked union must keep it visible to the scoped gates.
+      writeFileSync(join(fx.ticketsDir, "TASK-untracked.md"), BROKEN("untracked"));
+      const msgs = messages(
+        runValidate(scopeOpts(fx, ["format", "status-vocab"], fx.diffBase)),
+      );
+      expect(msgs.some((m) => m.includes("TASK-untracked.md"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("naming gate stays global under scoping (cross-file collisions)", () => {
+    const fx = makeMergedFixture();
+    try {
+      const msgs = messages(runValidate(scopeOpts(fx, ["naming"], fx.diffBase)));
+      expect(msgs.some((m) => m.includes("case-insensitive filename collision"))).toBe(true);
     } finally {
       fx.cleanup();
     }

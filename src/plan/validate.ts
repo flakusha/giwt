@@ -23,7 +23,8 @@
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
+import { gitSync } from "../utils/git";
 import { applyFixes, reconcile as reconcileBacklog } from "./backlog-sync";
 import { runLinkCheck } from "./check-links";
 import { buildMap, collectMdFiles, verifyFresh, writeMap } from "./code-map";
@@ -131,7 +132,7 @@ const EPIC_REQUIRED_SECTIONS = [
   "Overview",
 ];
 
-function checkTicketFormat(ticketsDir: string): Finding[] {
+function checkTicketFormat(ticketsDir: string, include?: (f: string) => boolean): Finding[] {
   const findings: Finding[] = [];
   if (!existsSync(ticketsDir)) {
     findings.push({
@@ -143,6 +144,7 @@ function checkTicketFormat(ticketsDir: string): Finding[] {
   }
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
+    if (include && !include(f)) continue;
     const raw = readFileSync(join(ticketsDir, f), "utf8");
     for (const section of TICKET_REQUIRED_SECTIONS) {
       const re = new RegExp(`\\*\\*${section}:\\*\\*`, "i");
@@ -158,7 +160,7 @@ function checkTicketFormat(ticketsDir: string): Finding[] {
   return findings;
 }
 
-function checkEpicFormat(epicsDir: string): Finding[] {
+function checkEpicFormat(epicsDir: string, include?: (f: string) => boolean): Finding[] {
   const findings: Finding[] = [];
   if (!existsSync(epicsDir)) {
     findings.push({
@@ -170,6 +172,7 @@ function checkEpicFormat(epicsDir: string): Finding[] {
   }
   for (const f of readdirSync(epicsDir)) {
     if (!f.startsWith("epic-") || !f.endsWith(".md")) continue;
+    if (include && !include(f)) continue;
     const raw = readFileSync(join(epicsDir, f), "utf8");
     for (const section of EPIC_REQUIRED_SECTIONS) {
       const re = new RegExp(`\\*\\*${section}:\\*\\*`, "i");
@@ -187,7 +190,12 @@ function checkEpicFormat(epicsDir: string): Finding[] {
 
 // ── Linkage gate ────────────────────────────────────────────────
 
-function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
+function checkLinkage(
+  ticketsDir: string,
+  epicsDir: string,
+  includeTicket?: (f: string) => boolean,
+  includeEpic?: (f: string) => boolean,
+): Finding[] {
   const findings: Finding[] = [];
 
   if (!existsSync(ticketsDir) || !existsSync(epicsDir)) {
@@ -196,7 +204,10 @@ function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
 
   // Collect epic file names
   const epicFiles = new Set(
-    readdirSync(epicsDir).filter((f) => f.startsWith("epic-") && f.endsWith(".md")),
+    readdirSync(epicsDir).filter(
+      (f) =>
+        f.startsWith("epic-") && f.endsWith(".md") && (includeEpic === undefined || includeEpic(f)),
+    ),
   );
 
   // Check ticket → epic linkage. Also collects tickets with no **Epic:**
@@ -204,6 +215,7 @@ function checkLinkage(ticketsDir: string, epicsDir: string): Finding[] {
   const unbound: string[] = [];
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
+    if (includeTicket && !includeTicket(f)) continue;
     const raw = readFileSync(join(ticketsDir, f), "utf8");
     const epicMatch = raw.match(/\*\*Epic:\*\*\s*(.+)/);
     if (!epicMatch) {
@@ -420,12 +432,14 @@ function checkNaming(ticketsDir: string): Finding[] {
 function checkStatusVocab(
   ticketsDir: string,
   statusAliases: Record<string, string>,
+  include?: (f: string) => boolean,
 ): Finding[] {
   const findings: Finding[] = [];
   if (!existsSync(ticketsDir)) return findings;
 
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
+    if (include && !include(f)) continue;
     const path = join(ticketsDir, f);
     // scanHeaderStatusLines skips fenced code blocks — a `**Status:**` inside
     // a reproduction example is documentation, not metadata.
@@ -583,7 +597,40 @@ export interface ValidateOptions {
   runSync: TicketSyncFn;
   /** Extra freeform → canonical Status aliases ([status.aliases] in giwt.toml). */
   statusAliases?: Record<string, string>;
+  /**
+   * Diff-base ref: when set, the purely per-file gates (format, linkage,
+   * status-vocab) only inspect ticket/epic files changed relative to this
+   * ref — foreign tickets from concurrently-active sessions in the same
+   * repo no longer fail another branch's finalize. Cross-file and freshness
+   * gates (naming, links, backlog, tickets, code-map, matrix, epics-doc,
+   * spdx) stay global. Unset = full scan (historic behavior).
+   */
+  diffBase?: string;
   fix?: boolean;
+}
+
+/**
+ * Files under `planDirName` (repo-relative, forward slashes) changed vs
+ * `diffBase`, plus untracked files — `git diff` alone hides a freshly
+ * created not-yet-committed ticket, which would silently skip it from the
+ * scoped gates. Throws (never silently degrades to a full scan) when git
+ * fails: the caller already resolved the base ref, so a failure here is real.
+ */
+function changedPlanFiles(
+  worktreeRoot: string,
+  planDirName: string,
+  diffBase: string,
+): Set<string> {
+  const tracked = gitSync(worktreeRoot, "diff", "--name-only", diffBase, "--", planDirName);
+  const untracked = gitSync(
+    worktreeRoot,
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "--",
+    planDirName,
+  );
+  return new Set(`${tracked}\n${untracked}`.split("\n").filter((l) => l.length > 0));
 }
 
 export function runValidate(opts: ValidateOptions): ValidateResult {
@@ -596,13 +643,25 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
   }
   const results: GateResult[] = [];
   const backlogPath = join(opts.planDir, "backlog", "open.md");
+  // Diff-scoped per-file gates: only files changed vs opts.diffBase (plus
+  // untracked) are inspected. null = no scoping (full scan).
+  const planDirName = relative(opts.worktreeRoot, opts.planDir);
+  const scoped = opts.diffBase === undefined
+    ? null
+    : changedPlanFiles(opts.worktreeRoot, planDirName, opts.diffBase);
+  const includeTicket = scoped === null
+    ? undefined
+    : (f: string) => scoped.has(`${planDirName}/tickets/${f}`);
+  const includeEpic = scoped === null
+    ? undefined
+    : (f: string) => scoped.has(`${planDirName}/epics/${f}`);
 
   for (const gate of gates) {
     switch (gate) {
       case "format": {
         const findings = [
-          ...checkTicketFormat(opts.ticketsDir),
-          ...checkEpicFormat(opts.epicsDir),
+          ...checkTicketFormat(opts.ticketsDir, includeTicket),
+          ...checkEpicFormat(opts.epicsDir, includeEpic),
         ];
         results.push({
           gate,
@@ -612,7 +671,7 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
         break;
       }
       case "linkage": {
-        const findings = checkLinkage(opts.ticketsDir, opts.epicsDir);
+        const findings = checkLinkage(opts.ticketsDir, opts.epicsDir, includeTicket, includeEpic);
         results.push({
           gate,
           pass: findings.filter((f) => f.level === "error").length === 0,
@@ -801,7 +860,7 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
       }
       case "status-vocab": {
         const statusAliases = opts.statusAliases ?? {};
-        const findings = checkStatusVocab(opts.ticketsDir, statusAliases);
+        const findings = checkStatusVocab(opts.ticketsDir, statusAliases, includeTicket);
         let pass = findings.length === 0;
         let fixMsgs: string[] = [];
         if (opts.fix && !pass) {
@@ -810,7 +869,7 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
             // Rewriting is a cheap in-place file edit, so re-check like the
             // code-map gate: the post-fix findings are exactly the values
             // --fix could not resolve (green only when none remain).
-            const rechecked = checkStatusVocab(opts.ticketsDir, statusAliases);
+            const rechecked = checkStatusVocab(opts.ticketsDir, statusAliases, includeTicket);
             findings.length = 0;
             findings.push(...rechecked);
             pass = rechecked.length === 0;

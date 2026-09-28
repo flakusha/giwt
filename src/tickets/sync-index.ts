@@ -185,6 +185,10 @@ export interface SyncOptions {
    *  (dry-run or fix mode, any exit code). Not called on early refusals
    *  (missing tickets dir, --fix lock/CLI refusal). */
   onSummary?: (summary: SyncSummary) => void;
+  /** Ceiling for the `git issue ls --all` registry walk. Defaults to
+   *  ISSUE_LS_TIMEOUT_MS (60s); exposed so tests can exercise the
+   *  timed-out-vs-unavailable distinction without a real 60s sleep. */
+  issueLsTimeoutMs?: number;
 }
 
 /** Final ticket-sync counts, for run-record outcome summaries. */
@@ -224,7 +228,18 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     issues: Map<string, GitIssue>;
     /** False when the `git issue` CLI itself is unavailable (vs genuinely zero issues). */
     available: boolean;
+    /** True when the listing ran but exceeded ISSUE_LS_TIMEOUT — a slow
+     *  registry, not a missing tool. Message and remedy differ (below). */
+    timedOut: boolean;
   }
+
+  /** `git issue ls --all` walks the whole registry; large repos (3k+ issues)
+   *  exceed 10s, so the ceiling must sit well above registry size, not
+   *  process-start latency. */
+  const ISSUE_LS_TIMEOUT_MS = 60_000;
+
+  /** Ceiling for the registry walk (opts override → test injection). */
+  const issueLsTimeoutMs = opts.issueLsTimeoutMs ?? ISSUE_LS_TIMEOUT_MS;
 
   function readGitIssues(issuesRoot: string): GitIssueRead {
     const issues = new Map<string, GitIssue>();
@@ -232,7 +247,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     try {
       const output = execSync("git issue ls --all --format oneline 2>/dev/null", {
         encoding: "utf8",
-        timeout: 10_000,
+        timeout: issueLsTimeoutMs,
         cwd: issuesRoot,
         // Isolate from ambient GIT_* hook context (see isolatedGitEnv).
         env: isolatedGitEnv(),
@@ -255,12 +270,19 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
         issues.set(hash, { hash, status, title, extid });
       }
-    } catch {
-      // git issue not available — report explicitly so --fix can refuse safely
-      return { issues, available: false };
+    } catch (e) {
+      // execSync timeout kills the child with SIGTERM (Node sets killed=true;
+      // Bun leaves killed unset and reports signal=SIGTERM + status=null).
+      // Folding this into "CLI unavailable" made sync --fix blame a missing
+      // tool on repos with thousands of issues — reported distinctly instead.
+      const err = e as { killed?: boolean; signal?: string | null; status?: number | null; };
+      const timedOut = err.killed === true || (err.signal === "SIGTERM" && err.status === null);
+      // git issue not available (or too slow) — report explicitly so --fix
+      // can refuse safely.
+      return { issues, available: false, timedOut };
     }
 
-    return { issues, available: true };
+    return { issues, available: true, timedOut: false };
   }
 
   // ── Fix-mode lock (serializes concurrent --fix runs) ───────────
@@ -851,14 +873,22 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   const ticketFiles: TicketFile[] = scanTicketFiles();
 
-  const { issues: gitIssues, available: gitIssuesAvailable } = readGitIssues(repoRoot);
+  const {
+    issues: gitIssues,
+    available: gitIssuesAvailable,
+    timedOut: gitIssuesTimedOut,
+  } = readGitIssues(repoRoot);
   const index = readIndex(INDEX_PATH);
 
   raw(`\n📊 Scanning...`);
   raw(`   Ticket .md files:  ${ticketFiles.length}`);
   raw(
     `   Git issues:        ${gitIssues.size}${
-      gitIssuesAvailable ? "" : " (git issue CLI unavailable)"
+      gitIssuesAvailable
+        ? ""
+        : gitIssuesTimedOut
+        ? ` (git issue ls timed out after ${issueLsTimeoutMs / 1000}s)`
+        : " (git issue CLI unavailable)"
     }`,
   );
   raw(`   Index entries:     ${Object.keys(index).length}`);
@@ -1127,6 +1157,21 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     // With the issue registry unreadable, every non-commit hash looks like a
     // placeholder — --fix would mass-create issues. Refuse instead.
     if (!gitIssuesAvailable) {
+      if (gitIssuesTimedOut) {
+        log(
+          "error",
+          String(
+            `git issue ls exceeded ${issueLsTimeoutMs / 1000}s — refusing to --fix.`,
+          ).replace(/\n$/, ""),
+        );
+        log(
+          "error",
+          String(
+            "  The CLI is present but the registry is too large to list in time; fix mode cannot distinguish stale hashes without it.",
+          ).replace(/\n$/, ""),
+        );
+        return 1;
+      }
       log("error", String(`git issue CLI unavailable — refusing to --fix.`).replace(/\n$/, ""));
       log(
         "error",

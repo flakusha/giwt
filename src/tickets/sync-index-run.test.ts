@@ -17,7 +17,9 @@
  */
 
 import { describe, expect, spyOn, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -362,6 +364,40 @@ describe("runSync report and refusal paths", () => {
       expect(existsSync(join(root, ".plan/tickets/index.json"))).toBe(false);
       expect(residue(root)).toEqual([]);
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("--fix blames a slow registry, not a missing CLI, when ls times out", () => {
+    const dir = tempDir();
+    const shimDir = join(dir, "bin");
+    mkdirSync(shimDir, { recursive: true });
+    // `git` shim: the real CLI for everything except `git issue ls`, which
+    // sleeps past the injected timeout — reproducing a large-registry walk
+    // without needing thousands of real issues.
+    const realGit = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+    const shim = join(shimDir, "git");
+    writeFileSync(
+      shim,
+      "#!/bin/sh\nif [ \"$1\" = \"issue\" ]; then sleep 2; exit 0; fi\n"
+        + `exec "${realGit}" "$@"\n`,
+    );
+    chmodSync(shim, 0o755);
+    const prevPath = process.env.PATH;
+    process.env.PATH = `${shimDir}:${prevPath}`;
+    try {
+      const root = join(dir, "root");
+      writeTicket(root, "TASK-SLOW-REGISTRY.md", "slow registry", { epic: "EPIC-1" });
+
+      const { exit, out } = runCaptured(() => runSync(root, { fix: true, issueLsTimeoutMs: 100 }));
+
+      expect(exit).toBe(1);
+      expect(out).toContain("git issue ls exceeded 0.1s — refusing to --fix.");
+      expect(out).toContain("git issue ls timed out after 0.1s");
+      // The old misattribution must not appear on the timeout path.
+      expect(out).not.toContain("git issue CLI unavailable");
+    } finally {
+      process.env.PATH = prevPath;
       rmSync(dir, { recursive: true, force: true });
     }
   });

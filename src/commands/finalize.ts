@@ -1043,6 +1043,13 @@ async function runFinalize(
         linkScanDirs: ["docs", planDirName],
         backlogIndexFiles: ["priority.md", "open.md"],
         gates: gateNames as GateName[],
+        // Scope per-file gates (format/linkage/status-vocab) to the branch's
+        // changes: foreign tickets committed by concurrently-active sessions
+        // must not fail this finalize (TASK-plan-validate-scope-ticket-format-
+        // link-gates-to-the-diff-bas). Opt-out: [commands] diff_base = false.
+        ...(config.settings.commands.diffBase !== false
+          ? { diffBase: resolveDiffBase(wtPath, targetBranch) }
+          : {}),
         runSync: (root, opts) =>
           runSync(root, {
             fix: opts.fix,
