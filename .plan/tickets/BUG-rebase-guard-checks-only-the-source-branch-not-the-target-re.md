@@ -25,6 +25,16 @@ loop-lore `dev@{0..50}` shows 51 `rebase (finish): refs/heads/dev onto <sha>` re
 
 The alternative reconciliation (rebase the change, not the branch: cherry-pick onto current `dev`) is what actually landed the 022/023 migration renumber, avoiding a 13-file add/add conflict in `.plan/tickets/`.
 
+## Verification of the landed migration renumber (2026-09-28)
+
+The 022/023 renumber this ticket's sibling work enabled was landed via cherry-pick as `be08895c4`. Its safety rests on the same `assertMigrationsNotStale` path this bug is adjacent to:
+
+- `migrations - ordering` gate PASSED (24 files, 24 unique prefixes, duplicate `021` resolved)
+- `db - schema gate` PASSED, `typecheck - backend` PASSED
+- `migrations.test.ts` + `migration-roundtrip.test.ts`: 94 pass / 0 fail, including `passes on a fresh database without a kysely_migration table`
+- Both live loop-lore databases (`loop-lore-data/loop-lore.db`, `data/loop-lore.db`) were queried directly: neither has the workflow migrations in `kysely_migration`, so no `kysely_migration` row is orphaned by the rename
+- No dangling references to the old filenames anywhere in `src/`, `tests/`, `scripts/`, `docs/`
+
 ## Acceptance Criteria
 
 - [ ] `rebase.ts` refuses when the **target** is protected (`cannot rebase onto protected branch`), not just the source
