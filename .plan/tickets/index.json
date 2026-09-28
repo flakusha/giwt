@@ -493,7 +493,7 @@
       "parallel-sessions"
     ],
     "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md",
-    "status": "in_progress"
+    "status": "done"
   },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {
     "hash": "1ebe6f9",

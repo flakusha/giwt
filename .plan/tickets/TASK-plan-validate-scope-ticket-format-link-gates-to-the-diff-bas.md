@@ -1,6 +1,6 @@
 # TASK: plan validate: scope ticket-format/link gates to the diff base
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** high
 **Effort:** medium
 **Epic:**
