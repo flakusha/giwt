@@ -226,11 +226,16 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   interface GitIssueRead {
     issues: Map<string, GitIssue>;
-    /** False when the `git issue` CLI itself is unavailable (vs genuinely zero issues). */
+    /** False when the `git issue` listing could not be read (vs genuinely zero issues). */
     available: boolean;
-    /** True when the listing ran but exceeded ISSUE_LS_TIMEOUT — a slow
-     *  registry, not a missing tool. Message and remedy differ (below). */
-    timedOut: boolean;
+    /** Why the listing failed, when available is false. Message and remedy
+     *  differ per class (scan header + --fix refusal below):
+     *  - "timeout": CLI present, registry walk exceeded the ceiling.
+     *  - "missing": git absent — command-not-found (127) or spawn ENOENT.
+     *  - "failed": the CLI ran but exited nonzero — corrupt store, bad args. */
+    reason?: "timeout" | "missing" | "failed";
+    /** Short failure detail for "failed" (exit status + stderr tail). */
+    detail?: string;
   }
 
   /** `git issue ls --all` walks the whole registry; large repos (3k+ issues)
@@ -245,10 +250,13 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     const issues = new Map<string, GitIssue>();
 
     try {
-      const output = execSync("git issue ls --all --format oneline 2>/dev/null", {
+      // stderr is piped (not inherited, not /dev/null) so the failure path
+      // can quote it in the "failed" remedy while successful runs drop it.
+      const output = execSync("git issue ls --all --format oneline", {
         encoding: "utf8",
         timeout: issueLsTimeoutMs,
         cwd: issuesRoot,
+        stdio: ["ignore", "pipe", "pipe"],
         // Isolate from ambient GIT_* hook context (see isolatedGitEnv).
         env: isolatedGitEnv(),
       });
@@ -271,18 +279,43 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         issues.set(hash, { hash, status, title, extid });
       }
     } catch (e) {
-      // execSync timeout kills the child with SIGTERM (Node sets killed=true;
-      // Bun leaves killed unset and reports signal=SIGTERM + status=null).
-      // Folding this into "CLI unavailable" made sync --fix blame a missing
-      // tool on repos with thousands of issues — reported distinctly instead.
-      const err = e as { killed?: boolean; signal?: string | null; status?: number | null; };
-      const timedOut = err.killed === true || (err.signal === "SIGTERM" && err.status === null);
-      // git issue not available (or too slow) — report explicitly so --fix
-      // can refuse safely.
-      return { issues, available: false, timedOut };
+      // Classify so messages and remedies can name the actual failure:
+      // - timeout: execSync kills the child with SIGTERM (Node sets killed=true;
+      //   Bun leaves killed unset and reports signal=SIGTERM + status=null).
+      // - missing: the shell could not find git (exit 127) or spawn ENOENT.
+      // - failed: the CLI ran and exited nonzero (corrupt store, bad args).
+      // Previously every class reported "git issue CLI unavailable", so --fix
+      // blamed a missing tool on repos whose registry was merely slow or
+      // whose store was damaged.
+      const err = e as {
+        killed?: boolean;
+        signal?: string | null;
+        status?: number | null;
+        code?: string | null;
+        stderr?: string | Buffer;
+      };
+      if (err.killed === true || (err.signal === "SIGTERM" && err.status === null)) {
+        return { issues, available: false, reason: "timeout" };
+      }
+      if (err.code === "ENOENT" || err.status === 127) {
+        return { issues, available: false, reason: "missing" };
+      }
+      const status = err.status ?? (typeof err.code === "number" ? err.code : null);
+      const stderrTail = typeof err.stderr === "string" || Buffer.isBuffer(err.stderr)
+        ? err.stderr.toString("utf8").trim().split("\n").pop() ?? ""
+        : "";
+      const detail = stderrTail.slice(0, 160);
+      return {
+        issues,
+        available: false,
+        reason: "failed",
+        ...(detail !== "" || status !== null
+          ? { detail: detail === "" ? `exit ${status}` : `exit ${status}: ${detail}` }
+          : {}),
+      };
     }
 
-    return { issues, available: true, timedOut: false };
+    return { issues, available: true };
   }
 
   // ── Fix-mode lock (serializes concurrent --fix runs) ───────────
@@ -876,7 +909,8 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   const {
     issues: gitIssues,
     available: gitIssuesAvailable,
-    timedOut: gitIssuesTimedOut,
+    reason: gitIssueFailReason,
+    detail: gitIssueFailDetail,
   } = readGitIssues(repoRoot);
   const index = readIndex(INDEX_PATH);
 
@@ -886,9 +920,11 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     `   Git issues:        ${gitIssues.size}${
       gitIssuesAvailable
         ? ""
-        : gitIssuesTimedOut
+        : gitIssueFailReason === "timeout"
         ? ` (git issue ls timed out after ${issueLsTimeoutMs / 1000}s)`
-        : " (git issue CLI unavailable)"
+        : gitIssueFailReason === "missing"
+        ? " (git executable not found)"
+        : ` (git issue ls failed${gitIssueFailDetail ? ` — ${gitIssueFailDetail}` : ""})`
     }`,
   );
   raw(`   Index entries:     ${Object.keys(index).length}`);
@@ -1157,7 +1193,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     // With the issue registry unreadable, every non-commit hash looks like a
     // placeholder — --fix would mass-create issues. Refuse instead.
     if (!gitIssuesAvailable) {
-      if (gitIssuesTimedOut) {
+      if (gitIssueFailReason === "timeout") {
         log(
           "error",
           String(
@@ -1172,13 +1208,29 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         );
         return 1;
       }
-      log("error", String(`git issue CLI unavailable — refusing to --fix.`).replace(/\n$/, ""));
+      if (gitIssueFailReason === "missing") {
+        log("error", String(`git executable not found — refusing to --fix.`).replace(/\n$/, ""));
+        log(
+          "error",
+          String(
+            "  Fix mode reconciles against the git-issue registry; install git (or fix PATH) and re-run.",
+          ).replace(/\n$/, ""),
+        );
+        return 1;
+      }
       log(
         "error",
-        String("  Fix mode cannot distinguish a missing tool from stale hashes.").replace(
-          /\n$/,
-          "",
-        ),
+        String(
+          `git issue ls failed${
+            gitIssueFailDetail ? ` (${gitIssueFailDetail})` : ""
+          } — refusing to --fix.`,
+        ).replace(/\n$/, ""),
+      );
+      log(
+        "error",
+        String(
+          "  The CLI ran but the registry could not be listed — run 'git issue ls --all' manually to inspect the store.",
+        ).replace(/\n$/, ""),
       );
       return 1;
     }

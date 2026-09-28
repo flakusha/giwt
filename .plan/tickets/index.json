@@ -374,6 +374,22 @@
     "source": ".plan/tickets/FIX-stale-worktree-registry-list-shows-removed-worktrees-and-bra.md",
     "status": "done"
   },
+  "FIX-SYNC-FIX-REPORTS-ONE-REFUSAL-FOR-EVERY-REGISTRY-FAILURE-CLAS": {
+    "hash": "704d7d5",
+    "git_issue": "704d7d5",
+    "extid": "FIX-SYNC-FIX-REPORTS-ONE-REFUSAL-FOR-EVERY-REGISTRY-FAILURE-CLAS",
+    "type": "FIX",
+    "title": "sync --fix reports one refusal for every registry failure class",
+    "label": "fix",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "sync",
+      "tickets"
+    ],
+    "source": ".plan/tickets/FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas.md",
+    "status": "in_progress"
+  },
   "FIX-WIRE-PLANDIR-SETTING-INTO-PLAN-COMMAND": {
     "hash": "a13c536",
     "git_issue": "a13c536",

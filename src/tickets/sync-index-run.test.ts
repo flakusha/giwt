@@ -359,8 +359,11 @@ describe("runSync report and refusal paths", () => {
 
       expect(exit).toBe(1);
       expect(summaries).toEqual([]);
-      expect(out).toContain("git issue CLI unavailable — refusing to --fix.");
-      expect(out).toContain("Fix mode cannot distinguish a missing tool from stale hashes.");
+      // Not a git repo → the CLI exits 128; the "failed" class names the
+      // exit status and points at manual inspection, not a missing tool.
+      expect(out).toContain("git issue ls failed (exit 128");
+      expect(out).toContain("git issue ls failed");
+      expect(out).toContain("run 'git issue ls --all' manually to inspect the store.");
       expect(existsSync(join(root, ".plan/tickets/index.json"))).toBe(false);
       expect(residue(root)).toEqual([]);
     } finally {
@@ -396,6 +399,69 @@ describe("runSync report and refusal paths", () => {
       expect(out).toContain("git issue ls timed out after 0.1s");
       // The old misattribution must not appear on the timeout path.
       expect(out).not.toContain("git issue CLI unavailable");
+    } finally {
+      process.env.PATH = prevPath;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("--fix blames a missing git, not a broken registry, when git is absent", () => {
+    const dir = tempDir();
+    // PATH without any git: the shell's command lookup exits 127 — the
+    // "missing" class, distinct from both timeout and nonzero CLI exit.
+    const emptyBin = join(dir, "empty-bin");
+    mkdirSync(emptyBin, { recursive: true });
+    const prevPath = process.env.PATH;
+    process.env.PATH = emptyBin;
+    try {
+      const root = join(dir, "root");
+      writeTicket(root, "TASK-NO-GIT.md", "no git", { epic: "EPIC-1" });
+
+      const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
+
+      expect(exit).toBe(1);
+      expect(out).toContain("git executable not found — refusing to --fix.");
+      expect(out).toContain("(git executable not found)");
+      expect(out).toContain("install git (or fix PATH) and re-run.");
+      // Neither sibling class may bleed into this message.
+      expect(out).not.toContain("git issue ls failed");
+      expect(out).not.toContain("timed out");
+    } finally {
+      process.env.PATH = prevPath;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("--fix blames a failing CLI, not a missing tool, when ls exits nonzero", () => {
+    const dir = tempDir();
+    const shimDir = join(dir, "bin");
+    mkdirSync(shimDir, { recursive: true });
+    // `git` shim: `git issue ls` dies with a nonzero status and a stderr
+    // line — a corrupt/damaged store, present but unusable.
+    const realGit = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+    const shim = join(shimDir, "git");
+    writeFileSync(
+      shim,
+      "#!/bin/sh\nif [ \"$1\" = \"issue\" ]; then echo 'fatal: corrupted issue store' >&2; exit 3; fi\n"
+        + `exec "${realGit}" "$@"\n`,
+    );
+    chmodSync(shim, 0o755);
+    const prevPath = process.env.PATH;
+    process.env.PATH = `${shimDir}:${prevPath}`;
+    try {
+      const root = join(dir, "root");
+      writeTicket(root, "TASK-BROKEN-STORE.md", "broken store", { epic: "EPIC-1" });
+
+      const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
+
+      expect(exit).toBe(1);
+      expect(out).toContain(
+        "git issue ls failed (exit 3: fatal: corrupted issue store) — refusing to --fix.",
+      );
+      expect(out).toContain("run 'git issue ls --all' manually to inspect the store.");
+      // Neither sibling class may bleed into this message.
+      expect(out).not.toContain("git executable not found");
+      expect(out).not.toContain("timed out");
     } finally {
       process.env.PATH = prevPath;
       rmSync(dir, { recursive: true, force: true });
