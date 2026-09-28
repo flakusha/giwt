@@ -58,6 +58,22 @@
     "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md",
     "status": "⬜ Not Started"
   },
+  "BUG-REBASE-LACKS-ALREADY-CONTAINED-GUARD-COMPOUNDING-AN-EMPTY-DI": {
+    "hash": "8dc674e",
+    "git_issue": "8dc674e",
+    "extid": "BUG-REBASE-LACKS-ALREADY-CONTAINED-GUARD-COMPOUNDING-AN-EMPTY-DI",
+    "type": "BUG",
+    "title": "rebase lacks already-contained guard, compounding an empty-diff rewrite loop",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "git",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
+    "status": "Not Started"
+  },
   "BUG-SYNC-FIX-REWRITES-MD-STATUS-TO-GIT-ISSUE-STATE-REVERTING-PLA": {
     "hash": "c72813b",
     "git_issue": "c72813b",
