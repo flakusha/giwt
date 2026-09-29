@@ -216,12 +216,16 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     log("error", `--timeout must be an integer >= 1 (got ${timeoutMs})`);
     process.exit(1);
   }
+  // Per-check timings land in the run record, so `giwt runs --json` shows which
+  // gate was slow and what it cost.
+  const rec = activeRun();
   const report = await runDoctorChecks(
     root,
     {
       ...(checks ? { checks } : {}),
       jobs: jobs ?? config.settings.doctor.jobs,
       timeoutMs: timeoutMs ?? config.settings.doctor.timeoutMs,
+      ...(rec ? { recorder: rec } : {}),
       scratch: {
         config: config.settings.scratch,
         thresholds: {

@@ -18,6 +18,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { RunRecorder } from "../utils/runlog.ts";
 import {
   DEFAULT_SCRATCH_CONFIG,
   DEFAULT_SCRATCHPAD_THRESHOLDS,
@@ -983,6 +984,57 @@ describe("check subprocess timeout", () => {
       // Give SIGKILL a beat to land and any reaping to settle.
       await Bun.sleep(400);
       expect(alive()).toBe(false);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  // durationMs was shipped with no production caller: `.event()` was invoked
+  // only from runlog.test.ts, so `giwt runs --json` never carried a duration
+  // for any real run. The pool is the one place with steps worth timing, so it
+  // records each completed check. This pins that wiring.
+  it("records each completed check as a run event", async () => {
+    const root = tsRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "bun test" } }));
+      const events: { step: string; status: string; detail?: string; }[] = [];
+      const recorder = {
+        event: (step: string, status: string, detail?: string) =>
+          events.push({ step, status, ...(detail !== undefined ? { detail } : {}) }),
+      } as unknown as RunRecorder;
+      await runDoctorChecks(root, {
+        checks: ["typecheck", "tests"],
+        jobs: 1,
+        spawn: () => ({ exitCode: 0, stdout: "", stderr: "" }),
+        recorder,
+      });
+      // One event per completed check, named by check id.
+      expect(events.map((e) => e.step).sort()).toEqual(["check:tests", "check:typecheck"]);
+      expect(events.every((e) => e.status === "ok")).toBe(true);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("records a failed check as a fail event carrying its error", async () => {
+    const root = tsRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "bun test" } }));
+      const events: { step: string; status: string; detail?: string; }[] = [];
+      const recorder = {
+        event: (step: string, status: string, detail?: string) =>
+          events.push({ step, status, ...(detail !== undefined ? { detail } : {}) }),
+      } as unknown as RunRecorder;
+      await runDoctorChecks(root, {
+        checks: ["tests"],
+        timeoutMs: 30,
+        spawn: () => new Promise<never>(() => {}), // wedged -> timeout
+        recorder,
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0]!.step).toBe("check:tests");
+      expect(events[0]!.status).toBe("fail");
+      expect(events[0]!.detail).toContain("timed out after 30ms");
     } finally {
       cleanup(root);
     }

@@ -36,6 +36,7 @@
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import type { RunRecorder } from "../utils/runlog.ts";
 import {
   DEFAULT_SCRATCH_CONFIG,
   DEFAULT_SCRATCHPAD_THRESHOLDS,
@@ -1142,6 +1143,9 @@ export interface DoctorCheckOptions {
   timeoutMs?: number;
   /** Spawn injector (tests stub tools without subprocesses). */
   spawn?: SpawnFn;
+  /** Run recorder; each completed check is recorded as an event so
+   *  `giwt runs --json` shows per-check durationMs. Omitted in tests. */
+  recorder?: RunRecorder;
   /** Scratchpad check inputs (settings-derived). When absent the check uses
    *  DEFAULT_SCRATCH_CONFIG / DEFAULT_SCRATCHPAD_THRESHOLDS and rootDir
    *  ".tmp". */
@@ -1234,7 +1238,17 @@ export async function runDoctorChecks(
   const worker = async (): Promise<void> => {
     while (next < tasks.length) {
       const task = tasks[next++]!;
-      checks[task.at] = await task.run();
+      const result = await task.run();
+      checks[task.at] = result;
+      // Record each check so `giwt runs --json` shows which gate was slow and
+      // what it cost -- the reason durationMs exists. These are the slowest
+      // steps in the tool (tsc, the test runner, knip), so they are the ones
+      // worth timing. Concurrency means completion order, not check order.
+      opts.recorder?.event(
+        `check:${result.id}`,
+        result.ok ? "ok" : "fail",
+        result.error ?? result.skipped ?? `${result.findings.length} finding(s)`,
+      );
     }
   };
   await Promise.all(Array.from({ length: Math.min(jobs, tasks.length) }, worker));
