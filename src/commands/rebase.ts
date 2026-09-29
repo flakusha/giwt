@@ -3,7 +3,7 @@
 
 import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
-import { getRootBranch, gitSync, isProtected } from "../utils/git";
+import { gitSync, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
 
 export async function rebase(
@@ -11,7 +11,7 @@ export async function rebase(
   config: WorktreeConfig,
 ): Promise<void> {
   const [branch, onto] = args;
-  const target = onto || getRootBranch(config.repoRoot);
+  const target = onto || config.settings.branches.root;
 
   if (!branch) {
     log("error", "branch name required");
@@ -21,6 +21,16 @@ export async function rebase(
 
   if (isProtected(branch, config.settings.branches.protected)) {
     log("error", `cannot rebase protected branch '${branch}'`);
+    process.exit(1);
+  }
+
+  if (isProtected(target, config.settings.branches.protected)) {
+    log("error", `cannot rebase onto protected branch '${target}'`);
+    process.exit(1);
+  }
+
+  if (target === branch) {
+    log("error", `cannot rebase '${branch}' onto itself`);
     process.exit(1);
   }
 

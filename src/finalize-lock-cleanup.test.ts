@@ -26,11 +26,11 @@
  * test runs do not collide.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { acquireFinalizeLock } from "./commands/finalize";
+import { acquireFinalizeLock, lockRetryDelayMs } from "./commands/finalize";
 
 let tmp: string;
 
@@ -152,5 +152,126 @@ describe("finalize lock stale-reap", () => {
 
   it("reaps a lockfile whose owner PID is gone", () => {
     acquireOverStale("4194303")();
+  });
+});
+
+describe("finalize lock retry jitter", () => {
+  /**
+   * A fixed 20ms retry interval makes contending processes wake in
+   * lockstep, so every collision happens in the same window and the
+   * herd never spreads out. `lockRetryDelayMs` draws full jitter over
+   * [0, 20ms] instead.
+   *
+   * Sampling is probabilistic, so the assertion is deliberately coarse:
+   * many draws, more than one distinct value, every value inside the
+   * per-attempt cap. We never pin a specific draw — only the invariant
+   * (bounded, non-constant) that makes lockstep impossible.
+   */
+  const SAMPLES = 200;
+
+  it("draws varying backoffs, each within the 20ms per-attempt cap", () => {
+    const samples = Array.from({ length: SAMPLES }, () => lockRetryDelayMs());
+
+    // Non-lockstep: 200 independent draws from 21 values are all-but
+    // guaranteed to differ somewhere.
+    expect(new Set(samples).size).toBeGreaterThan(1);
+    // Bounded above by the per-attempt cap so the 1s acquisition
+    // ceiling over 50 attempts is preserved.
+    for (const ms of samples) {
+      expect(Number.isInteger(ms)).toBe(true);
+      expect(ms).toBeGreaterThanOrEqual(0);
+      expect(ms).toBeLessThanOrEqual(20);
+    }
+  });
+
+  /**
+   * Drive `acquireFinalizeLock` against a lock owned by a process that is
+   * genuinely alive, so the lock is never reapable and the retry loop runs
+   * to exhaustion. `Bun.sleepSync` is stubbed to record the requested delay
+   * without really sleeping, so the loop costs microseconds instead of the
+   * full 1s ceiling.
+   *
+   * Resource contract — this stubs process-wide globals, so it is only safe
+   * because the stub window is strictly synchronous:
+   *   - The stub is installed and restored inside one synchronous block with
+   *     no `await` in between, so no other test in this file (or any other
+   *     file) can observe it. Verified empirically: a second test file's real
+   *     `Bun.sleepSync(80)` still slept the full 80ms while a stub was held
+   *     for 600ms of blocking CPU. bun also loads each test file in its own
+   *     scope, so there is no cross-file stub sharing to reason about.
+   *   - Owns exactly one thing: a unique lockfile inside this test's own
+   *     `mkdtemp` tmp dir (from the file-level `beforeEach`), removed by the
+   *     `afterEach`. No fixed path, no shared repo, no port.
+   *   - The holder child process is killed in `finally`, so a failing
+   *     assertion cannot leak a process into the rest of the run.
+   *   - Each of the two tests below creates its own holder and its own
+   *     lockfile, so neither depends on the other's state or their order.
+   *
+   * Returns the recorded sleep arguments, or `null` if the lock was
+   * unexpectedly acquired (i.e. the holder was reaped).
+   */
+  function drainRetriesAgainstLiveHolder(): { delays: number[]; exited: number | null; } | null {
+    const holder = Bun.spawn(["bun", "-e", "setInterval(() => {}, 1000)"], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    const delays: number[] = [];
+    const sleepSpy = spyOn(Bun, "sleepSync").mockImplementation(
+      ((ms: number) => {
+        delays.push(ms);
+      }) as unknown as typeof Bun.sleepSync,
+    );
+    const outSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
+    let exited: number | null = null;
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        exited = code ?? 0;
+        throw new Error(`__exit__:${code}`);
+      }) as never,
+    );
+    try {
+      writeFileSync(join(tmp, ".worktree-finalize.lock"), String(holder.pid));
+      let acquired = false;
+      try {
+        acquireFinalizeLock(tmp)();
+        acquired = true;
+      } catch (err) {
+        if (!(err instanceof Error) || !err.message.startsWith("__exit__")) throw err;
+      }
+      return acquired ? null : { delays, exited };
+    } finally {
+      exitSpy.mockRestore();
+      outSpy.mockRestore();
+      sleepSpy.mockRestore();
+      holder.kill();
+    }
+  }
+
+  it("jitters the real retry loop instead of sleeping a fixed 20ms", () => {
+    const run = drainRetriesAgainstLiveHolder();
+    // The holder was alive, so the lock must NOT have been reaped — a null
+    // return means the loop never ran, which would make the rest vacuous.
+    expect(run).not.toBeNull();
+    const { delays, exited } = run!;
+
+    // A held lock is still reported, not silently abandoned.
+    expect(exited).toBe(1);
+    // The wiring: these are the delays the loop actually requested. Reverting
+    // the loop to a fixed `Bun.sleepSync(20)` makes every entry 20 and fails
+    // the distinctness check below — that is the regression this guards.
+    expect(delays.length).toBeGreaterThan(1);
+    expect(new Set(delays).size).toBeGreaterThan(1);
+    for (const ms of delays) {
+      expect(ms).toBeGreaterThanOrEqual(0);
+      expect(ms).toBeLessThanOrEqual(20);
+    }
+  });
+
+  it("keeps the acquisition ceiling at 50 attempts", () => {
+    const run = drainRetriesAgainstLiveHolder();
+    expect(run).not.toBeNull();
+    // 50 sleeps recorded = 50 attempts against a lock that is never reapable.
+    // With each sleep at most 20ms this is the documented 1s worst case.
+    expect(run!.delays.length).toBe(50);
   });
 });

@@ -10,7 +10,7 @@
 
 import { type WorktreeConfig } from "../utils/config";
 import { colorize, log, raw } from "../utils/output";
-import { formatOutcome, listRuns } from "../utils/runlog";
+import { formatOutcome, listRuns, readRunEvents } from "../utils/runlog";
 
 export async function runs(
   args: string[],
@@ -38,7 +38,16 @@ export async function runs(
 
   const records = listRuns(config, last);
   if (json) {
-    raw(JSON.stringify(records, null, 2));
+    // Per-step durations live in each run's events.jsonl, not in meta.json,
+    // so the --json projection reads them here rather than carrying a
+    // duplicated summary inside the meta record.
+    raw(
+      JSON.stringify(
+        records.map((record) => ({ ...record, events: readRunEvents(record.dir) })),
+        null,
+        2,
+      ),
+    );
     return;
   }
   if (records.length === 0) {

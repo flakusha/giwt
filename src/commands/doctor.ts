@@ -164,6 +164,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
   let root = config.worktreeRoot;
   let checks: CheckId[] | undefined;
   let jobs: number | undefined;
+  let timeoutMs: number | undefined;
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     if (a === "--json") {
@@ -177,17 +178,25 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     } else if (a === "--jobs" || a.startsWith("--jobs=")) {
       const v = a.startsWith("--jobs=") ? a.slice(7) : args[++i];
       if (v) jobs = Number(v);
+    } else if (a === "--timeout" || a.startsWith("--timeout=")) {
+      const v = a.startsWith("--timeout=") ? a.slice(10) : args[++i];
+      if (v) timeoutMs = Number(v);
     } else if (a === "--help" || a === "-h") {
-      raw("Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
+      raw(
+        "Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
+      );
       raw("");
       raw("Run repo-health checks: lint, typecheck, tests, knip, jscpd, todo, scratchpad.");
       raw("Checks run through a bounded pool (default 4 concurrent; override with --jobs).");
+      raw("Each check subprocess is killed after --timeout ms (default: [doctor] timeout_ms).");
       raw("Prints human-readable findings, or JSON with --json.");
       raw("Exit code is 1 on any error-severity finding or failed check.");
       return;
     } else {
       log("error", `unknown flag '${a}'`);
-      raw("  Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
+      raw(
+        "  Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
+      );
       process.exit(1);
     }
   }
@@ -203,11 +212,16 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     log("error", `--jobs must be an integer >= 1 (got ${jobs})`);
     process.exit(1);
   }
+  if (timeoutMs !== undefined && (!Number.isInteger(timeoutMs) || timeoutMs < 1)) {
+    log("error", `--timeout must be an integer >= 1 (got ${timeoutMs})`);
+    process.exit(1);
+  }
   const report = await runDoctorChecks(
     root,
     {
       ...(checks ? { checks } : {}),
       jobs: jobs ?? config.settings.doctor.jobs,
+      timeoutMs: timeoutMs ?? config.settings.doctor.timeoutMs,
       scratch: {
         config: config.settings.scratch,
         thresholds: {
@@ -273,7 +287,9 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
 
 function printHelp(): void {
   raw("Usage: giwt doctor [--apply] [--tool <csv>] [--root <dir>]");
-  raw("       giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--root <dir>]");
+  raw(
+    "       giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
+  );
   raw("       giwt doctor scratchpad [--json] [--root <dir>]");
   raw("");
   raw("Detect project structure and set up dev tooling.");
@@ -289,6 +305,9 @@ function printHelp(): void {
   raw("  --json              (check only) machine-readable report on stdout");
   raw("  --checks <csv>      (check only) restrict to specific check ids");
   raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)");
+  raw("  --timeout <ms>      (check only) per-check subprocess budget; a check that");
+  raw("                        exceeds it is killed and reported (default:");
+  raw("                        [doctor] timeout_ms, 120000)");
   raw("  -h, --help          this help");
   raw("");
   raw("Tool ids: oxlint, eslint, biome, knip, jscpd, dprint, stylelint,");

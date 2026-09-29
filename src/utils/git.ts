@@ -123,16 +123,44 @@ export function assertNotInWorktree(command: string): void {
 }
 
 /**
- * GIT_* context vars (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, …) leak into
- * giwt whenever it runs inside a git hook — and giwt's job is to run inside
- * hooks. gitSync always targets an explicit repo via `-C`, so inherited
- * context is at best redundant and at worst fatal (e.g. a relative
- * GIT_INDEX_FILE resolved against a tmp worktree). Strip it per call.
+ * Env prefixes stripped from every child process giwt spawns. Two unrelated
+ * families, two unrelated reasons:
+ *
+ * 1. `GIT_` — git exports this into a hook, and giwt's job is to run inside
+ *    hooks. gitSync always targets an explicit repo via `-C`, so inherited
+ *    context is at best redundant and at worst fatal (e.g. a relative
+ *    GIT_INDEX_FILE resolved against a tmp worktree).
+ * 2. `OMP_`/`PI_`/`ENGRAM_`/`MNEMO_` — agent-harness session context. giwt is
+ *    invoked by omp plugins and by agents, so these vars flow in with the
+ *    invocation and back out through every gitSync, every Bun.spawnSync and
+ *    every dispatched check subprocess. A check that reads a session var takes
+ *    a path a human shell never takes, so the local verdict diverges from CI.
+ *
+ * Matched as prefixes, not fixed names, so a new harness var is covered
+ * without editing this list. Mirrors the sibling omp-plugins hook
+ * (`.githooks/gate-env.sh`); the two must not drift.
  */
+export const ISOLATED_ENV_STRIPPED_PREFIXES: readonly string[] = [
+  "GIT_",
+  "OMP_",
+  "PI_",
+  "ENGRAM_",
+  "MNEMO_",
+];
+
+/** Build the env for a child git/process: `process.env` minus the stripped prefixes. */
 export function isolatedGitEnv(): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined && !key.startsWith("GIT_")) env[key] = value;
+    if (value === undefined) continue;
+    let stripped = false;
+    for (const prefix of ISOLATED_ENV_STRIPPED_PREFIXES) {
+      if (key.startsWith(prefix)) {
+        stripped = true;
+        break;
+      }
+    }
+    if (!stripped) env[key] = value;
   }
   return env;
 }

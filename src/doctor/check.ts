@@ -23,10 +23,14 @@
  *   warning/task = hygiene. Exit code is 1 when any error-severity finding
  *   exists or a check fails to run, else 0 — warnings alone never fail.
  *
- * Runners shell out via Bun.spawnSync (giwt convention: no timeouts, the
- * operator owns cancellation). Every runner is best-effort: a nonzero exit
- * with parseable findings still yields tickets; a nonzero exit with none
- * becomes a check error carrying the output tail.
+ * Runners shell out via Bun.spawn under a hard budget
+ * (CHECK_TIMEOUT_DEFAULT_MS, overridable via `[doctor] timeout_ms` or
+ * `doctor check --timeout <ms>`). A child exceeding the budget is killed
+ * and its check reports a timeout error naming the command and the
+ * budget, so a wedged tool cannot hold a worker slot forever. Every
+ * runner is best-effort: a nonzero exit with parseable findings still
+ * yields tickets; a nonzero exit with none becomes a check error
+ * carrying the output tail.
  */
 
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
@@ -222,11 +226,9 @@ function relToRoot(root: string, file: string): string {
   const f = file.trim();
   if (!f) return f;
   if (f.startsWith(`${root}/`)) return f.slice(root.length + 1);
-  try {
-    return relative(root, join(root, f));
-  } catch {
-    return f;
-  }
+  // Both args are strings, so neither `join` nor `relative` can throw here —
+  // no defensive catch; a wrapped try would be unreachable, not defensive.
+  return relative(root, join(root, f));
 }
 
 /**
@@ -633,25 +635,71 @@ function scanTodoFile(abs: string): TodoMatch[] {
 // Runners (spawn tools; best-effort, never throw on findings)
 // ---------------------------------------------------------------------------
 
+/** Per-check subprocess budget in ms. A wedged child must not hold a
+ *  worker slot forever; override via `[doctor] timeout_ms` / `--timeout`. */
+export const CHECK_TIMEOUT_DEFAULT_MS = 120_000;
+
+interface SpawnResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  /** Set when the budget expired before the child finished. */
+  timedOut?: string;
+}
+
 export interface SpawnFn {
   (
     cmd: string[],
     cwd: string,
-  ):
-    | { exitCode: number; stdout: string; stderr: string; }
-    | Promise<{ exitCode: number; stdout: string; stderr: string; }>;
+    timeoutMs?: number,
+  ): SpawnResult | Promise<SpawnResult>;
+}
+
+function timeoutError(cmd: string[], timeoutMs: number): string {
+  return `timed out after ${timeoutMs}ms: ${cmd.join(" ")}`;
 }
 
 async function defaultSpawn(
   cmd: string[],
   cwd: string,
-): Promise<{ exitCode: number; stdout: string; stderr: string; }> {
-  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", cwd });
+  timeoutMs = CHECK_TIMEOUT_DEFAULT_MS,
+): Promise<SpawnResult> {
+  // AbortSignal.timeout kills the child (SIGTERM, exit 143) at the deadline —
+  // verified on Bun 1.4: `exited` resolves, so the pool slot is freed. The
+  // signal's job is the kill, not the report: boundedSpawn arms its budget
+  // timer before calling us with the same deadline, so the budget always wins
+  // the race. Checking `signal.aborted` here would be unreachable.
+  const signal = AbortSignal.timeout(timeoutMs);
+  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", cwd, signal });
   const [stdout, stderr] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
   ]);
-  return { exitCode: await proc.exited, stdout, stderr };
+  const exitCode = await proc.exited;
+  return { exitCode, stdout, stderr };
+}
+
+/** Race a spawn against the budget. defaultSpawn kills the child itself via the
+ *  abort signal; this covers injected spawns (tests, custom runners) so a wedged
+ *  check always resolves into a report instead of holding a pool slot. */
+function boundedSpawn(raw: SpawnFn, timeoutMs: number): SpawnFn {
+  return (cmd, cwd) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const budget = new Promise<SpawnResult>((resolve) => {
+      timer = setTimeout(
+        () =>
+          resolve({
+            exitCode: -1,
+            stdout: "",
+            stderr: "",
+            timedOut: timeoutError(cmd, timeoutMs),
+          }),
+        timeoutMs,
+      );
+    });
+    return Promise.race([Promise.resolve(raw(cmd, cwd, timeoutMs)), budget])
+      .finally(() => clearTimeout(timer));
+  };
 }
 
 /** Cap an output tail for error fields (keeps JSON reports small). */
@@ -696,6 +744,7 @@ async function runLint(root: string, spawn: SpawnFn): Promise<CheckResult> {
     ? [bin, "--format", "json", "."]
     : [bin, "check", "--max-diagnostics=30", "."];
   const res = await spawn(argv, root);
+  if (res.timedOut) return { ...base, tool, ok: false, error: res.timedOut };
   const out = res.stdout;
   try {
     const findings = tool === "eslint"
@@ -723,6 +772,7 @@ async function runTypecheck(root: string, spawn: SpawnFn): Promise<CheckResult> 
     findings: [] as CheckFinding[],
   };
   const res = await spawn([toolBin(root, "tsc"), "--noEmit", "-p", root], root);
+  if (res.timedOut) return { ...base, ok: false, error: res.timedOut };
   const out = res.stdout + res.stderr;
   const errors = parseTscOutput(out, root);
   if (errors.length > 0) {
@@ -762,6 +812,7 @@ async function runTests(
   };
   if (words.length === 0) return { ...base, ok: false, error: "empty test command" };
   const res = await spawn(words, root);
+  if (res.timedOut) return { ...base, ok: false, error: res.timedOut };
   const out = res.stdout + res.stderr;
   const failures = parseTestOutput(out);
   if (failures.length > 0) {
@@ -802,6 +853,7 @@ async function runKnip(root: string, spawn: SpawnFn): Promise<CheckResult> {
     ],
     root,
   );
+  if (res.timedOut) return { ...base, ok: false, error: res.timedOut };
   let data: unknown;
   try {
     data = JSON.parse(res.stdout);
@@ -846,6 +898,7 @@ async function runJscpd(root: string, spawn: SpawnFn): Promise<CheckResult> {
       ],
       root,
     );
+    if (res.timedOut) return { ...base, ok: false, error: res.timedOut };
     let data: unknown;
     try {
       data = JSON.parse(readFileSync(join(outDir, "jscpd-report.json"), "utf8"));
@@ -1044,6 +1097,10 @@ export interface DoctorCheckOptions {
   testCommand?: string;
   /** Max checks executing concurrently (integer >= 1; default 4). */
   jobs?: number;
+  /** Per-check subprocess budget in ms (integer >= 1; default
+   *  CHECK_TIMEOUT_DEFAULT_MS). A check exceeding it is killed and reported
+   *  as a check error. */
+  timeoutMs?: number;
   /** Spawn injector (tests stub tools without subprocesses). */
   spawn?: SpawnFn;
   /** Scratchpad check inputs (settings-derived). When absent the check uses
@@ -1054,8 +1111,9 @@ export interface DoctorCheckOptions {
 
 /**
  * Run the requested health checks against root. Throws on a nonexistent
- * root (matches detectProject) and on a `jobs` value that is not an
- * integer >= 1; per-check failures are captured in the report, never
+ * root (matches detectProject) and on a `jobs` or `timeoutMs` value that
+ * is not an integer >= 1; per-check failures — including a check whose
+ * subprocess blew the timeout budget — are captured in the report, never
  * thrown.
  *
  * Checks execute through a bounded worker pool of at most `jobs`
@@ -1073,9 +1131,13 @@ export async function runDoctorChecks(
   if (!Number.isInteger(jobs) || jobs < 1) {
     throw new Error(`doctor check: jobs must be an integer >= 1 (got ${jobs})`);
   }
+  const timeoutMs = opts.timeoutMs ?? CHECK_TIMEOUT_DEFAULT_MS;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+    throw new Error(`doctor check: timeoutMs must be an integer >= 1 (got ${timeoutMs})`);
+  }
   const applicable = new Set(applicableChecks(root));
   const wanted = opts.checks ?? CHECK_IDS;
-  const spawn = opts.spawn ?? defaultSpawn;
+  const spawn = boundedSpawn(opts.spawn ?? defaultSpawn, timeoutMs);
   const ids = wanted.filter((id): id is CheckId => (CHECK_IDS as readonly string[]).includes(id));
   const checks: CheckResult[] = new Array(ids.length);
   const tasks: Array<{

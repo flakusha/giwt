@@ -7,7 +7,7 @@
 **Context:** Reported from loop-lore, where repeated `giwt rebase` runs against a ~2400-commit-stale branch compounded duplicate empty-diff commits. Distinct from issue `23751b8`, which covers target *validation* (protected target, self-rebase, default-target derivation) rather than no-op *detection*.
 **Acceptance Criteria:** `isAncestorOf` implemented via `git merge-base --is-ancestor`; `rebaseWithPlanReconciliation` short-circuits to `{ exitCode: 0 }` on a contained target; an unknown ref returns `false` rather than success; new `src/commands/rebase.test.ts` covers contained, diverged, and unknown-ref cases plus a HEAD-unchanged integration assertion; `bunx tsc --noEmit` clean and full `bun test` green.
 
-**Status:** Not Started
+**Status:** Done (shipped: isAncestorOf guard; contained target short-circuits without spawning rebase)
 **Priority:** high
 **Effort:** Small
 **Tags:** git, worktree
@@ -117,13 +117,13 @@ test file is called out as a deliverable.
 
 ## Acceptance Criteria
 
-- [ ] `isAncestorOf` implemented via `git merge-base --is-ancestor`
-- [ ] `rebaseWithPlanReconciliation` short-circuits to `{ exitCode: 0 }` without
+- [x] `isAncestorOf` implemented via `git merge-base --is-ancestor`
+- [x] `rebaseWithPlanReconciliation` short-circuits to `{ exitCode: 0 }` without invoking rebase when the target is already contained
       invoking rebase when the target is already contained
-- [ ] An unknown ref returns `false` rather than reporting success
-- [ ] New `src/commands/rebase.test.ts` covers: contained target (no-op), diverged
+- [x] An unknown ref returns `false` rather than reporting success
+- [x] New `src/commands/rebase.test.ts` covers: contained target (no-op), diverged branches (real move still allowed), unknown ref
       branches (real move still allowed), unknown ref
-- [ ] Integration assertion that a contained-target rebase leaves HEAD unchanged
-- [ ] `bunx tsc --noEmit` clean and full `bun test` green
+- [x] Integration assertion that a contained-target rebase leaves HEAD unchanged
+- [x] `bunx tsc --noEmit` clean and full `bun test` green
 
 git issue: 8dc674e

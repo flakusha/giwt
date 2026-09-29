@@ -3,11 +3,12 @@
 
 # BUG: rebase guard checks only the source branch, not the target - rebasing dev onto feature tips rewrote protected history 51x
 
-**Status:** ⬜ Not Started
+**Status:** Done (shipped: target-protected + self-rebase guards, default target from settings)
 **Priority:** high
 **Effort:** Medium
+**Tags:** rebase, git, history-safety
 
-## Summary
+**Summary:**
 
 The protected-branch guard in src/commands/rebase.ts:22 runs isProtected(branch) but never checks the target. Two concrete failure paths, both observed in loop-lore.
 
@@ -15,7 +16,7 @@ The protected-branch guard in src/commands/rebase.ts:22 runs isProtected(branch)
 
 2) The default target is derived from the MAIN CHECKOUT, not from config. rebase.ts:14 computes target = onto || getRootBranch(config.repoRoot), and getRootBranch (src/utils/git.ts:45) is 'git branch --show-current' of the repo root || 'master'. When the main checkout is detached, it falls back to 'master' - an unrelated or absent target.
 
-**Tags:** rebase, git, history-safety
+**Context:**
 
 ## Impact
 
@@ -35,14 +36,14 @@ The 022/023 renumber this ticket's sibling work enabled was landed via cherry-pi
 - Both live loop-lore databases (`loop-lore-data/loop-lore.db`, `data/loop-lore.db`) were queried directly: neither has the workflow migrations in `kysely_migration`, so no `kysely_migration` row is orphaned by the rename
 - No dangling references to the old filenames anywhere in `src/`, `tests/`, `scripts/`, `docs/`
 
-## Acceptance Criteria
+**Acceptance Criteria:**
 
-- [ ] `rebase.ts` refuses when the **target** is protected (`cannot rebase onto protected branch`), not just the source
-- [ ] `rebase.ts` refuses when `target === branch` (self-rebase)
-- [ ] Default target comes from `config.settings.branches.root`, not `getRootBranch(repoRoot)`; a detached main checkout no longer falls back to `master`
-- [ ] Every refusal happens **before** any git mutation
-- [ ] `src/commands/rebase.test.ts` exists, covering both refusals plus a happy path
-- [ ] Regression test fails against the current code
-- [ ] `bun test src/commands/` green
+- [x] `rebase.ts` refuses when the **target** is protected (`cannot rebase onto protected branch`), not just the source
+- [x] `rebase.ts` refuses when `target === branch` (self-rebase)
+- [x] Default target comes from `config.settings.branches.root`, not `getRootBranch(repoRoot)`; a detached main checkout no longer falls back to `master`
+- [x] Every refusal happens **before** any git mutation
+- [x] `src/commands/rebase.test.ts` exists, covering both refusals plus a happy path
+- [x] Regression test fails against the current code
+- [x] `bun test src/commands/` green
 
 git issue: 23751b8

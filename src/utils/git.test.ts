@@ -239,24 +239,64 @@ describe("assertNotInWorktree", () => {
 });
 
 describe("isolatedGitEnv", () => {
-  test("strips GIT_* context and keeps everything else", () => {
-    const prevDir = process.env.GIT_DIR;
-    const prevKeep = process.env.GIWT_TEST_KEEP;
-    process.env.GIT_DIR = "/tmp/poison";
-    process.env.GIT_INDEX_FILE = "/tmp/poison-index";
-    process.env.GIWT_TEST_KEEP = "yes";
+  /** Seed `name` and return the undo for the finally block. */
+  function seed(name: string, value: string): () => void {
+    const prev = process.env[name];
+    process.env[name] = value;
+    return () => {
+      if (prev === undefined) delete process.env[name];
+      else process.env[name] = prev;
+    };
+  }
+
+  test("strips GIT_* and agent-harness session vars, keeps everything else", () => {
+    // One var per stripped prefix. OMP_WORKTREE_DIR and PI_RECEIPT_DISABLE are
+    // the two omp-plugins reads by name, so they get their own coverage.
+    const seeded = [
+      seed("GIT_DIR", "/tmp/poison"),
+      seed("GIT_INDEX_FILE", "/tmp/poison-index"),
+      seed("OMP_SOMETHING", "/tmp/session"),
+      seed("OMP_WORKTREE_DIR", "/tmp/session/tree"),
+      seed("PI_SOMETHING", "/tmp/session"),
+      seed("PI_RECEIPT_DISABLE", "1"),
+      seed("ENGRAM_SOMETHING", "/tmp/session"),
+      seed("MNEMO_SOMETHING", "/tmp/session"),
+      seed("GIWT_TEST_KEEP", "yes"),
+    ];
     try {
       const env = isolatedGitEnv();
-      expect(env.GIT_DIR).toBeUndefined();
-      expect(env.GIT_INDEX_FILE).toBeUndefined();
+      for (
+        const name of [
+          "GIT_DIR",
+          "GIT_INDEX_FILE",
+          "OMP_SOMETHING",
+          "OMP_WORKTREE_DIR",
+          "PI_SOMETHING",
+          "PI_RECEIPT_DISABLE",
+          "ENGRAM_SOMETHING",
+          "MNEMO_SOMETHING",
+        ]
+      ) {
+        expect(env[name]).toBeUndefined();
+      }
       expect(env.GIWT_TEST_KEEP).toBe("yes");
       expect(env.PATH).toBe(process.env.PATH as string);
     } finally {
-      if (prevDir === undefined) delete process.env.GIT_DIR;
-      else process.env.GIT_DIR = prevDir;
-      delete process.env.GIT_INDEX_FILE;
-      if (prevKeep === undefined) delete process.env.GIWT_TEST_KEEP;
-      else process.env.GIWT_TEST_KEEP = prevKeep;
+      for (const undo of seeded) undo();
+    }
+  });
+
+  test("matches a prefix only at the start of the name", () => {
+    // Real developer machines carry vars that merely CONTAIN a stripped
+    // prefix mid-name (GEMINI_API_BASE_URL, __PI_NATIVE_VARIANT_CACHE). A
+    // substring match would silently drop them from every child git call.
+    const seeded = [seed("GEMINI_API_BASE_URL", "http://127.0.0.1:1"), seed("MY_PI_TOKEN", "x")];
+    try {
+      const env = isolatedGitEnv();
+      expect(env.GEMINI_API_BASE_URL).toBe("http://127.0.0.1:1");
+      expect(env.MY_PI_TOKEN).toBe("x");
+    } finally {
+      for (const undo of seeded) undo();
     }
   });
 });

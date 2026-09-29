@@ -30,6 +30,7 @@
  *   root = ".tmp"
  *   [doctor]
  *   jobs = 4
+ *   timeout_ms = 120000      # per-check subprocess budget (child killed on expiry)
  *   scratchpad_warn_mb = 100 / scratchpad_error_mb = 500
  *   scratchpad_orphan_warn = 100 / scratchpad_oldest_warn_days = 30
  *   [status.aliases]
@@ -40,6 +41,8 @@
  *   test  = "bun run test:unit"
  *   [doctor]
  *   jobs = 4                  # max concurrent `doctor check` executions
+ *   timeout_ms = 120000       # per-check subprocess budget; over it the
+ *                             # child is killed and the check reports an error
  *   [runlog]
  *   max_runs = 200
  *   [output]
@@ -65,6 +68,7 @@ export interface GiwtSettings {
   commands: { check: string; test: string; diffBase: boolean; };
   doctor: {
     jobs: number;
+    timeoutMs: number;
     scratchpadWarnMb: number;
     scratchpadErrorMb: number;
     scratchpadOrphanWarn: number;
@@ -94,6 +98,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   commands: { check: "bun run check", test: "bun run test:unit", diffBase: true },
   doctor: {
     jobs: 4,
+    timeoutMs: 120_000,
     scratchpadWarnMb: DEFAULT_SCRATCHPAD_THRESHOLDS.warnMb,
     scratchpadErrorMb: DEFAULT_SCRATCHPAD_THRESHOLDS.errorMb,
     scratchpadOrphanWarn: DEFAULT_SCRATCHPAD_THRESHOLDS.orphanWarn,
@@ -118,6 +123,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   commands: { check: "check", test: "test", diff_base: "diffBase" },
   doctor: {
     jobs: "jobs",
+    timeout_ms: "timeoutMs",
     scratchpad_warn_mb: "scratchpadWarnMb",
     scratchpad_error_mb: "scratchpadErrorMb",
     scratchpad_orphan_warn: "scratchpadOrphanWarn",
@@ -150,6 +156,7 @@ const EXPECTED: Record<
   commands: { check: "string", test: "string", diffBase: "boolean" },
   doctor: {
     jobs: "number",
+    timeoutMs: "number",
     scratchpadWarnMb: "number",
     scratchpadErrorMb: "number",
     scratchpadOrphanWarn: "number",

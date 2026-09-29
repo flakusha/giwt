@@ -41,6 +41,18 @@ function runGit(root: string, ...args: string[]): GitResult {
   };
 }
 
+/**
+ * True when `ancestor` is already contained in `descendant`.
+ *
+ * `git merge-base --is-ancestor` exits 0 for "is an ancestor", 1 for "is not",
+ * and 128 for a bad/unknown ref. An unknown ref must not read as a no-op, so
+ * anything other than exit 0 is false and the caller's normal flow surfaces
+ * the error.
+ */
+export function isAncestorOf(root: string, ancestor: string, descendant: string): boolean {
+  return runGit(root, "merge-base", "--is-ancestor", ancestor, descendant).exitCode === 0;
+}
+
 function asRecord(value: string): JsonRecord {
   try {
     const parsed: unknown = JSON.parse(value);
@@ -211,6 +223,19 @@ export function rebaseWithPlanReconciliation(
   planDir: string,
   ticketsPath: string,
 ): RebaseResult {
+  // A contained target means there is nothing to replay, but `git rebase` still
+  // rewrites and re-signs the branch's whole tail byte-identically - and each
+  // round feeds its own rewritten SHAs back as the next round's range.
+  if (isAncestorOf(root, target, "HEAD")) {
+    const branch = runGit(root, "rev-parse", "--abbrev-ref", "HEAD").stdout.trim();
+    log("info", `'${target}' is already contained in '${branch}' - nothing to rebase.`);
+    return {
+      exitCode: 0,
+      output: `Already up to date: '${target}' is contained in HEAD. Rebase skipped.`,
+      generatedConflicts: [],
+    };
+  }
+
   let result = runGit(root, "rebase", target);
   let output = result.stdout + result.stderr;
   const generatedConflicts: string[] = [];

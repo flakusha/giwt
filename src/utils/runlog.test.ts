@@ -13,8 +13,9 @@
  *   - finishActiveRun — the process exit hook body — backfills
  *     end/exitCode for runs the handler never finished (process.exit
  *     paths); finish is idempotent, so the hook never overwrites one.
- *   - events append to events.jsonl; capturePath stays inside the run dir;
- *     pruning keeps the newest maxRuns dirs.
+ *   - events append to events.jsonl with `durationMs` measured from the
+ *     previous event (the first event omits the key); capturePath stays
+ *     inside the run dir; pruning keeps the newest maxRuns dirs.
  *
  * Resource contract (parallel-safe): each test gets its own mkdtemp
  * "repo root"; run dirs are timestamp+pid unique, so parallel begins
@@ -23,6 +24,7 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -33,7 +35,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beginRun, finishActiveRun, formatOutcome, listRuns } from "./runlog";
+import { beginRun, finishActiveRun, formatOutcome, listRuns, readRunEvents } from "./runlog";
 import { DEFAULT_SETTINGS } from "./settings";
 
 function makeConfig(maxRuns = 200): {
@@ -60,6 +62,27 @@ function makeConfig(maxRuns = 200): {
       },
     },
   };
+}
+
+/**
+ * Drive the process' registered `exit` listeners in-process, the way node/bun
+ * do at real process exit. A test file never exits, so the hook beginRun()
+ * installs would otherwise never run. Returns how many listeners were called.
+ *
+ * Bun's process.exitCode is non-configurable and ignores `= undefined`, so the
+ * value is always reset to 0 — a stale 1 here would fail an otherwise green run.
+ */
+function fireExitListeners(exitCode: number): number {
+  process.exitCode = exitCode;
+  let called = 0;
+  for (const listener of process.listeners("exit")) {
+    if (typeof listener === "function") {
+      listener(exitCode);
+      called++;
+    }
+  }
+  process.exitCode = 0;
+  return called;
 }
 
 describe("beginRun", () => {
@@ -155,18 +178,27 @@ describe("beginRun", () => {
     }
   });
 
-  test("events append to events.jsonl", () => {
+  test("events append to events.jsonl, timing each step from the previous one", () => {
     const { config, root } = makeConfig();
     try {
       const run = beginRun(config, "ev-cmd", [], null, "dev");
       run!.event("step1", "ok");
+      Bun.sleepSync(10);
       run!.event("step2", "fail", "because");
       const lines = readFileSync(join(run!.dir, "events.jsonl"), "utf8").trim().split("\n");
       expect(lines.length).toBe(2);
+      const first = JSON.parse(lines[0]!);
+      expect(first.step).toBe("step1");
+      // First event of a run: no predecessor, so the key is ABSENT, never 0.
+      expect(Object.hasOwn(first, "durationMs")).toBe(false);
       const second = JSON.parse(lines[1]!);
       expect(second.step).toBe("step2");
       expect(second.status).toBe("fail");
       expect(second.detail).toBe("because");
+      // Measured at write time, not derived by the reader: the persisted
+      // delta covers the sleep above.
+      expect(Number.isInteger(second.durationMs)).toBe(true);
+      expect(second.durationMs).toBeGreaterThanOrEqual(10);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -180,6 +212,57 @@ describe("beginRun", () => {
       expect(p.startsWith(run!.dir)).toBe(true);
       writeFileSync(p, "out");
       expect(existsSync(p)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("returns null and keeps the existing record when the run dir already exists", () => {
+    const { config, root } = makeConfig();
+    try {
+      // runId() is `<second-precision timestamp>-<pid>-<cmd>`, so a second
+      // beginRun in the same second for the same command targets the same dir.
+      // mkdirSync (non-recursive) must refuse it rather than reuse the dir and
+      // clobber the in-flight record's meta.json.
+      const first = beginRun(config, "dup-cmd", [], null, "dev");
+      expect(first).not.toBeNull();
+      first!.outcome({ mergeCommit: "firstrun" });
+      const second = beginRun(config, "dup-cmd", [], null, "dev");
+      expect(second).toBeNull();
+      // The first record is intact: the refused begin did not overwrite it.
+      const rows = listRuns(config, 20);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.cmd).toBe("dup-cmd");
+      expect(rows[0]!.outcome?.mergeCommit).toBe("firstrun");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("the installed exit hook backfills the run it finds active", () => {
+    const { config, root } = makeConfig();
+    try {
+      // beginRun installs the hook once per process; nothing in this file ever
+      // exits, so the installed listener is driven directly — exactly what
+      // node/bun do at process exit. It must backfill the in-flight run.
+      const run = beginRun(config, "hook-cmd", [], null, "dev");
+      expect(run).not.toBeNull();
+      const before = process.exitCode;
+      // The hook reads process.exitCode, which the runner only sets on a real
+      // failure, so seed it: that is the whole point of the backfill — a
+      // handler that died via process.exit(1) never called finish().
+      expect(before).not.toBe(1);
+      const fired = fireExitListeners(1);
+      expect(fired).toBeGreaterThan(0);
+      const done = JSON.parse(readFileSync(join(run!.dir, "meta.json"), "utf8"));
+      expect(done.exitCode).toBe(1);
+      expect(done.end).toBeDefined();
+      // Firing again must not resurrect the finished run or overwrite its code.
+      fireExitListeners(9);
+      const again = JSON.parse(readFileSync(join(run!.dir, "meta.json"), "utf8"));
+      expect(again.exitCode).toBe(1);
+      // Left clean, so this test cannot fail the run it lives in.
+      expect(process.exitCode).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -225,6 +308,50 @@ describe("listRuns", () => {
       const rows = listRuns(config, 20);
       expect(rows.length).toBe(1);
       expect(rows[0]!.cmd).toBe("good");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("returns empty when the runs root is not a directory", () => {
+    const { config, root } = makeConfig();
+    try {
+      // A stray file where the runs dir belongs: existsSync() passes, then the
+      // readdirSync throws. `giwt runs` must report nothing rather than crash.
+      mkdirSync(join(root, ".tmp/giwt"), { recursive: true });
+      writeFileSync(join(root, ".tmp/giwt/runs"), "not a directory");
+      expect(listRuns(config, 20)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("readRunEvents", () => {
+  test("reads events in write order and tolerates a torn tail line", () => {
+    const { config, root } = makeConfig();
+    try {
+      const run = beginRun(config, "ev-read", [], null, "dev");
+      run!.event("step1", "ok");
+      run!.event("step2", "fail");
+      // A process killed mid-append leaves a half-written last line.
+      appendFileSync(join(run!.dir, "events.jsonl"), "{\"v\":1,\"ts\":\"x\",\"ste");
+      const events = readRunEvents(run!.dir);
+      expect(events.length).toBe(2);
+      expect(events.map((e) => e.step)).toEqual(["step1", "step2"]);
+      expect(Object.hasOwn(events[0]!, "durationMs")).toBe(false);
+      expect(events[1]!.durationMs).toBeGreaterThanOrEqual(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("returns empty when the run recorded no events", () => {
+    const { config, root } = makeConfig();
+    try {
+      const run = beginRun(config, "ev-none", [], null, "dev");
+      expect(readRunEvents(run!.dir)).toEqual([]);
+      expect(readRunEvents(join(root, "does-not-exist"))).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

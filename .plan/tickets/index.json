@@ -56,7 +56,7 @@
       "history-safety"
     ],
     "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md",
-    "status": "⬜ Not Started"
+    "status": "done"
   },
   "BUG-REBASE-LACKS-ALREADY-CONTAINED-GUARD-COMPOUNDING-AN-EMPTY-DI": {
     "hash": "8dc674e",
@@ -72,7 +72,7 @@
       "worktree"
     ],
     "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-SYNC-FIX-REWRITES-MD-STATUS-TO-GIT-ISSUE-STATE-REVERTING-PLA": {
     "hash": "c72813b",
@@ -87,6 +87,23 @@
       "status-vocab"
     ],
     "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md",
+    "status": "done"
+  },
+  "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
+    "hash": "7968809",
+    "git_issue": "7968809",
+    "extid": "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT",
+    "type": "FEAT",
+    "title": "bound doctor check subprocesses with a configurable timeout",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "doctor",
+      "reliability",
+      "timeout"
+    ],
+    "source": ".plan/tickets/FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout.md",
     "status": "done"
   },
   "FEAT-BOUNDED-OUTPUT-MODE-FOR-CHECK-AND-TEST-STREAMS": {
@@ -158,6 +175,23 @@
     "source": ".plan/tickets/FEAT-gen-docs-check-freshness-gate.md",
     "status": "done"
   },
+  "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
+    "hash": "52e9b13",
+    "git_issue": "52e9b13",
+    "extid": "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS",
+    "type": "FEAT",
+    "title": "isolatedGitEnv also strips agent-harness session vars",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "isolation",
+      "hooks",
+      "environment"
+    ],
+    "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md",
+    "status": "done"
+  },
   "FEAT-PLAN-STATUS-SUBCOMMAND": {
     "hash": "4096091",
     "git_issue": "4096091",
@@ -182,6 +216,22 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-public-api-exports-for-plan-modules.md",
+    "status": "done"
+  },
+  "FEAT-RECORD-PER-STEP-DURATIONMS-IN-RUN-EVENTS": {
+    "hash": "d7a60af",
+    "git_issue": "d7a60af",
+    "extid": "FEAT-RECORD-PER-STEP-DURATIONMS-IN-RUN-EVENTS",
+    "type": "FEAT",
+    "title": "record per-step durationMs in run events",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "runlog",
+      "observability"
+    ],
+    "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
     "status": "done"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
@@ -221,6 +271,23 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FIX-abort-leaves-stale-rebase-head-and-finalize-is-blocked-by-th.md",
+    "status": "done"
+  },
+  "FIX-ADD-JITTER-TO-THE-FINALIZE-LOCK-RETRY-BACKOFF": {
+    "hash": "7860800",
+    "git_issue": "7860800",
+    "extid": "FIX-ADD-JITTER-TO-THE-FINALIZE-LOCK-RETRY-BACKOFF",
+    "type": "FIX",
+    "title": "add jitter to the finalize lock retry backoff",
+    "label": "fix",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "locking",
+      "concurrency"
+    ],
+    "source": ".plan/tickets/FIX-add-jitter-to-the-finalize-lock-retry-backoff.md",
     "status": "done"
   },
   "FIX-ADD-PLAN-TO-LEDGER-SILENT-COMMANDS": {

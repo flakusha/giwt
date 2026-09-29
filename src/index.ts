@@ -55,7 +55,14 @@ export {
 export type { LedgerRecord, SayArgs } from "./utils/ledger";
 
 // Run records (<repoRoot>/.tmp/giwt/runs/ — they must survive worktree removal)
-export { activeRun, beginRun, finishActiveRun, formatOutcome, listRuns } from "./utils/runlog";
+export {
+  activeRun,
+  beginRun,
+  finishActiveRun,
+  formatOutcome,
+  listRuns,
+  readRunEvents,
+} from "./utils/runlog";
 export type { RunEvent, RunMeta, RunOutcome, RunRecorder, SyncOutcome } from "./utils/runlog";
 
 // Ticket-index sync (`.plan/tickets/index.json` reconciliation)

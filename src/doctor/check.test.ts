@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -25,6 +25,7 @@ import {
 } from "../utils/scratch.ts";
 import {
   applicableChecks,
+  CHECK_TIMEOUT_DEFAULT_MS,
   checkExitCode,
   type DoctorCheckReport,
   parseBiomeOutput,
@@ -455,6 +456,50 @@ describe("todo precision", () => {
       cleanup(root);
     }
   });
+
+  it("skips an unreadable source file but still reports the readable ones", async () => {
+    // chmod 000 cannot fail to be created as root, and root reads everything,
+    // so the EACCES path is unreachable there. Same guard as clean.test.ts.
+    if (typeof process.getuid === "function" && process.getuid() === 0) return;
+    const root = makeRepo();
+    const hidden = join(root, "src", "b.ts");
+    try {
+      write(root, "src/a.ts", "// TODO: readable one here\n");
+      write(root, "src/b.ts", "// TODO: hidden one here\n");
+      chmodSync(hidden, 0o000);
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
+      const findings = report.checks[0]?.findings ?? [];
+      // The unreadable file is dropped, not fatal: the check still reports and
+      // the rest of the tree still gets scanned.
+      expect(findings.map((f) => f.message)).toEqual(["readable one here"]);
+      expect(report.checks[0]?.ok).toBe(true);
+      expect(checkExitCode(report)).toBe(0);
+    } finally {
+      chmodSync(hidden, 0o600);
+      cleanup(root);
+    }
+  });
+
+  it("skips an unreadable directory and still reports the readable tree", async () => {
+    if (typeof process.getuid === "function" && process.getuid() === 0) return;
+    const root = makeRepo();
+    const locked = join(root, "src", "locked");
+    try {
+      write(root, "src/a.ts", "// TODO: visible one here\n");
+      write(root, "src/locked/b.ts", "// TODO: hidden one here\n");
+      chmodSync(locked, 0o000);
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
+      const findings = report.checks[0]?.findings ?? [];
+      // The walk skips the directory it cannot read instead of aborting: the
+      // sibling file is still found and the check is not a failure.
+      expect(findings.map((f) => f.message)).toEqual(["visible one here"]);
+      expect(report.checks[0]?.ok).toBe(true);
+      expect(checkExitCode(report)).toBe(0);
+    } finally {
+      chmodSync(locked, 0o755);
+      cleanup(root);
+    }
+  });
 });
 
 describe("scratchpad check", () => {
@@ -569,6 +614,33 @@ describe("scratchpad check", () => {
       expect(res.ok).toBe(true);
       expect(res.skipped).toContain("no scratchpad dir at");
       expect(res.findings).toEqual([]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("reports a lint check whose repo vanished between detection and the run", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "eslint.config.js", "export default [];\n");
+      write(root, "package.json", JSON.stringify({ scripts: { test: "true" } }));
+      // applicableChecks() detected lint, then the tests check's spawn pulls
+      // the repo out from under runLint's own detectProject() call. Detection
+      // failure must become a failed lint row, not an unhandled throw.
+      const report = await runDoctorChecks(root, {
+        checks: ["tests", "lint"],
+        jobs: 1,
+        spawn: () => {
+          rmSync(root, { recursive: true, force: true });
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      const lint = report.checks[1]!;
+      expect(lint.id).toBe("lint");
+      expect(lint.ok).toBe(false);
+      expect(lint.error).toContain("detection failed");
+      expect(lint.error).toContain("is not a directory");
+      expect(checkExitCode(report)).toBe(1);
     } finally {
       cleanup(root);
     }
@@ -809,6 +881,92 @@ describe("runner failure and report paths", () => {
       expect(jscpd.findings[0]?.line).toBe(4);
       expect(jscpd.findings[0]?.rule).toBe("duplication");
       expect(jscpd.findings[0]?.message).toContain("src/a.ts:4 ↔ src/b.ts:30");
+    } finally {
+      cleanup(root);
+    }
+  });
+});
+
+describe("check subprocess timeout", () => {
+  const tsRepo = () => {
+    const root = makeRepo();
+    write(root, "tsconfig.json", "{}\n");
+    write(root, "src/a.ts", "export const x = 1;\n");
+    return root;
+  };
+
+  it("reports a timeout check error naming the command and budget, without hanging", async () => {
+    const root = tsRepo();
+    try {
+      let seen: number | undefined;
+      const report = await runDoctorChecks(root, {
+        checks: ["typecheck"],
+        timeoutMs: 25,
+        spawn: (_cmd, _cwd, timeoutMs) => {
+          seen = timeoutMs;
+          return new Promise<never>(() => {}); // wedged forever
+        },
+      });
+      const typecheck = report.checks[0]!;
+      expect(seen).toBe(25);
+      expect(typecheck.ok).toBe(false);
+      expect(typecheck.error).toContain("timed out after 25ms");
+      expect(typecheck.error).toContain("tsc");
+      expect(typecheck.findings).toEqual([]);
+      expect(checkExitCode(report)).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("passes the configured budget to the injected spawn, defaulting to 120s", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "bun test" } }));
+      const seen: number[] = [];
+      const record = (n: number) => {
+        seen.push(n);
+        return { exitCode: 0, stdout: "", stderr: "" };
+      };
+      await runDoctorChecks(root, {
+        checks: ["tests"],
+        timeoutMs: 250,
+        spawn: (_cmd, _cwd, timeoutMs) => record(timeoutMs ?? -1),
+      });
+      await runDoctorChecks(root, { checks: ["tests"], spawn: (_c, _w, t) => record(t ?? -1) });
+      expect(seen).toEqual([250, CHECK_TIMEOUT_DEFAULT_MS]);
+      expect(CHECK_TIMEOUT_DEFAULT_MS).toBe(120_000);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("kills a real wedged subprocess and reports the timeout", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "package.json", JSON.stringify({ scripts: { test: "sleep" } }));
+      const started = Date.now();
+      const report = await runDoctorChecks(root, { checks: ["tests"], timeoutMs: 300 }, "sleep 30");
+      const tests = report.checks[0]!;
+      expect(Date.now() - started).toBeLessThan(5000);
+      expect(tests.ok).toBe(false);
+      expect(tests.error).toContain("timed out after 300ms");
+      expect(tests.error).toContain("sleep 30");
+      expect(checkExitCode(report)).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("throws on an invalid timeoutMs", () => {
+    const root = tsRepo();
+    try {
+      expect(() => runDoctorChecks(root, { checks: ["typecheck"], timeoutMs: 0 })).toThrow(
+        /timeoutMs must be an integer >= 1/,
+      );
+      expect(() => runDoctorChecks(root, { checks: ["typecheck"], timeoutMs: 1.5 })).toThrow(
+        /timeoutMs must be an integer >= 1/,
+      );
     } finally {
       cleanup(root);
     }

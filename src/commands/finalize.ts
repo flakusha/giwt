@@ -194,6 +194,25 @@ export function reportHeldLock(lockPath: string, now: number = Date.now()): void
   raw("  Recovery: run 'giwt abort' — it rolls back the in-progress merge and releases the lock.");
 }
 
+// Finalize lock acquisition: retry budget. Ceiling stays 50 attempts,
+// each sleeping at most 20ms — 1s worst case, unchanged by the jitter.
+const LOCK_RETRY_ATTEMPTS = 50;
+const LOCK_RETRY_MAX_MS = 20;
+
+/**
+ * Full-jitter backoff draw for one failed `acquireFinalizeLock` attempt.
+ *
+ * Contenders that retry on a fixed interval stay in lockstep and keep
+ * colliding; drawing uniformly from [0, 20ms] de-phases them without
+ * raising the worst case (still ≤20ms per attempt, 1s over 50 attempts).
+ *
+ * Exported so `finalize-lock-cleanup.test.ts` can assert the draw is
+ * non-constant and bounded.
+ */
+export function lockRetryDelayMs(): number {
+  return Math.floor(Math.random() * LOCK_RETRY_MAX_MS);
+}
+
 /**
  * Acquire an exclusive finalize lock on the dev checkout.
  *
@@ -208,6 +227,11 @@ export function reportHeldLock(lockPath: string, now: number = Date.now()): void
  * the PID, so a stale lock from a crashed prior run is detected via
  * `kill -0` and reaped automatically. An empty or corrupt lockfile
  * (SIGKILL between create and PID write) reaps the same way.
+ *
+ * Retry backoff is jittered, not fixed: contenders that retry on an
+ * identical interval stay in lockstep, collide in the same window, and
+ * keep colliding for as long as the winner holds the lock (the whole
+ * merge sequence). A per-attempt random draw de-phases them.
  *
  * Returns a release function the caller MUST invoke in a finally block.
  *
@@ -276,11 +300,13 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
     } catch { /* best-effort */ }
   };
 
-  for (let attempt = 0; attempt < 50; attempt++) {
+  for (let attempt = 0; attempt < LOCK_RETRY_ATTEMPTS; attempt++) {
     if (tryCreate()) return release;
     if (reapStale()) return release;
-    // Brief backoff before retry. 50 × 20ms = 1s ceiling.
-    Bun.sleepSync(20);
+    // Jittered backoff: full jitter over [0, 20ms] so contenders
+    // de-phase instead of retrying in lockstep. Ceiling unchanged at
+    // 50 attempts × ≤20ms = 1s worst case.
+    Bun.sleepSync(lockRetryDelayMs());
   }
   reportHeldLock(lockPath);
   process.exit(1);

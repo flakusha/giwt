@@ -22,7 +22,8 @@
  *                 via the module exit hook.
  *   outcome       an optional outcome summary (failing gates, merge commit,
  *                 sync counts, doctor line) attached by the command.
- *   events.jsonl  append-only structured step events (recorder.event).
+ *   events.jsonl  append-only structured step events (recorder.event); each
+ *                 carries `durationMs` measured from the previous event.
  *   <name>.log    raw captures a command opts into (e.g. check.log).
  *
  * Best-effort by contract: if the run dir cannot be created (read-only
@@ -90,6 +91,12 @@ export interface RunEvent {
   ts: string;
   step: string;
   status: string;
+  /** Milliseconds since the PREVIOUS event of the same run, measured at
+   *  write time where the step boundary is already known. Optional by
+   *  design: the first event of a run has no predecessor and omits the
+   *  field (never 0), and events.jsonl lines written before it existed
+   *  still parse. */
+  durationMs?: number;
   detail?: string;
 }
 
@@ -211,15 +218,25 @@ export function beginRun(
   log("info", `Run record: ${dir}`);
 
   let finished = false;
+  /** Wall clock of the previous event of THIS run; undefined until the first
+   *  one lands, which is why the first event omits durationMs. */
+  let lastEventMs: number | undefined;
   const recorder: RunRecorder = {
     dir,
     capturePath: (name: string) => join(dir, name),
     event: (step: string, status: string, detail?: string) => {
+      const nowMs = Date.now();
+      // Same ms as Date.parse of the ISO ts below (toISOString truncates to
+      // ms). Clamped at 0 so a backwards wall clock can never record a
+      // negative step cost.
+      const durationMs = lastEventMs === undefined ? undefined : Math.max(0, nowMs - lastEventMs);
+      lastEventMs = nowMs;
       const ev: RunEvent = {
         v: 1,
-        ts: new Date().toISOString(),
+        ts: new Date(nowMs).toISOString(),
         step,
         status,
+        ...(durationMs !== undefined ? { durationMs } : {}),
         ...(detail !== undefined ? { detail } : {}),
       };
       try {
@@ -253,6 +270,29 @@ function pruneRuns(root: string, maxRuns: number): void {
       rmSync(join(root, name), { recursive: true, force: true });
     }
   } catch { /* best-effort */ }
+}
+
+/**
+ * Read one run's structured step events in write order. Corrupt rows are
+ * skipped, so a torn last line (process killed mid-append) costs the tail
+ * and nothing else. Empty when the run recorded no events.
+ */
+export function readRunEvents(dir: string): RunEvent[] {
+  let raw: string;
+  try {
+    raw = readFileSync(join(dir, "events.jsonl"), "utf8");
+  } catch {
+    return [];
+  }
+  const out: RunEvent[] = [];
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const parsed = JSON.parse(line) as RunEvent;
+      if (parsed && parsed.v === 1 && typeof parsed.step === "string") out.push(parsed);
+    } catch { /* skip corrupt row */ }
+  }
+  return out;
 }
 
 /**
