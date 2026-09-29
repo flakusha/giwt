@@ -958,6 +958,36 @@ describe("check subprocess timeout", () => {
     }
   });
 
+  // Regression: the test above only proves the REPORT came back on time, which
+  // a bare Promise.race guarantees even if the child keeps running — so it
+  // passed while `sleep 30` outlived the 300ms budget by ~29.7s. Assert on the
+  // process, not the report: this is what "kills the child on expiry" means.
+  it("actually kills the child process, it does not merely stop waiting", async () => {
+    const root = makeRepo();
+    try {
+      // The fixture path is unique per test (mkdtemp), so pgrep cannot match
+      // another test's child — and `pgrep` never matches itself.
+      const script = join(root, "wedge.sh");
+      write(root, "package.json", JSON.stringify({ scripts: { test: script } }));
+      write(root, "wedge.sh", "#!/bin/sh\nsleep 20\n");
+      chmodSync(script, 0o755);
+
+      const alive = () => Bun.spawnSync(["pgrep", "-f", script]).stdout.toString().trim() !== "";
+
+      const report = await runDoctorChecks(
+        root,
+        { checks: ["tests"], timeoutMs: 300 },
+        script,
+      );
+      expect(report.checks[0]!.error).toContain("timed out after 300ms");
+      // Give SIGKILL a beat to land and any reaping to settle.
+      await Bun.sleep(400);
+      expect(alive()).toBe(false);
+    } finally {
+      cleanup(root);
+    }
+  });
+
   it("throws on an invalid timeoutMs", () => {
     const root = tsRepo();
     try {
