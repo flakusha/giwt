@@ -115,9 +115,9 @@ export function generateIndex(epics: Epic[], backlogPath: string): string {
   md += "\n---\n\n";
 
   // Per-epic sections
-  md += "## Epics\n\n";
+  md += "## Epics\n";
   for (const e of epics) {
-    md += `### ${e.title}\n\n`;
+    md += `\n### ${e.title}\n\n`;
     md += `- **Status:** ${e.status}\n`;
     md += `- **Priority:** ${e.priority}\n`;
     md += `- **Effort:** ${e.effort}\n`;
@@ -129,7 +129,6 @@ export function generateIndex(epics: Epic[], backlogPath: string): string {
     if (e.overview) {
       md += `\n${e.overview}\n`;
     }
-    md += "\n";
   }
 
   // Backlog reference
