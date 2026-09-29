@@ -320,6 +320,27 @@ describe("collectSrcFiles", () => {
       fx.cleanup();
     }
   });
+
+  // Test bodies write fixture plans into temp dirs; scanning their comments
+  // would resolve fixture paths against the real project root. Excluded stems
+  // match .jscpd.json / oxlint / knip / type-coverage. `b.spec.ts` is pinned
+  // here as still-scanned: no `.spec.ts` file exists in this repo and widening
+  // the exclusion would silently skip a real source file.
+  test("skips the test stems the toolchain excludes", () => {
+    const fx = makeFixture();
+    try {
+      writePath(fx.root, "src/a.test.ts", "export const a = 1;");
+      writePath(fx.root, "src/b.test-helpers.ts", "export const b = 2;");
+      writePath(fx.root, "src/c.spec.ts", "export const c = 3;");
+      writePath(fx.root, "src/d.ts", "export const d = 4;");
+      expect(collectSrcFiles(fx.root, "src")).toEqual([
+        join(fx.root, "src/c.spec.ts"),
+        join(fx.root, "src/d.ts"),
+      ]);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });
 
 // ── checkFile ───────────────────────────────────────────────────

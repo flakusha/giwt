@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->
+
 # TASK: plan validate: scope ticket-format/link gates to the diff base
 
 **Status:** Done
@@ -6,15 +9,15 @@
 **Epic:**
 **Tags:** plan,validate,finalize,parallel-sessions
 
-## Summary
+**Summary:**
 
 plan validate runs every gate over the entire .plan/tickets/ directory on every invocation — there is no diff-scoping. This makes `giwt finalize --plan-gates` fail on foreign tickets written by concurrently-active sessions in the same repository, even on branches that never touched .plan/.
 
-## Context
+**Context:**
 
 `runValidate` (src/plan/validate.ts) accepts only fixed-directory options. `src/commands/finalize.ts` already resolves a merge-base via `resolveDiffBase` and forwards it to the project check command, but never to the in-process `runValidate` call. Observed twice on loop-lore 2026-09-26.
 
-## Acceptance Criteria
+**Acceptance Criteria:**
 
 - [x] `runValidate` accepts an optional `diffBase`; when set, per-file gates (format, linkage, status-vocab) inspect only ticket/epic files changed vs that ref plus untracked files.
 - [x] Freshness/cross-file gates (code-map, matrix, epics-doc, naming, links, backlog, tickets, spdx) stay global.

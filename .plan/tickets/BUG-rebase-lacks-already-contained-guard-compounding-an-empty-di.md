@@ -12,7 +12,7 @@
 **Effort:** Small
 **Tags:** git, worktree
 
-## Context
+**Context:**
 
 `giwt rebase <branch> [onto]` calls `rebaseWithPlanReconciliation`, which invokes
 `git rebase` unconditionally. There is no precondition that detects a target already
@@ -20,7 +20,7 @@ contained in the branch, so a rebase against a stale-relative target silently do
 harmful work instead of being a no-op. Reported from loop-lore, where repeated runs
 against a ~2400-commit-stale branch compounded into duplicate empty-diff commits.
 
-## Summary
+**Summary:**
 
 Rebasing onto an already-contained target is not a no-op — it rewrites and re-signs
 the branch's entire tail with byte-identical content, and each round feeds its own
@@ -115,7 +115,7 @@ the second one to land should extend rather than duplicate the first's fixture.
 `src/commands/` with no `*.test.ts` sibling. That is confirmed here and is why the
 test file is called out as a deliverable.
 
-## Acceptance Criteria
+**Acceptance Criteria:**
 
 - [x] `isAncestorOf` implemented via `git merge-base --is-ancestor`
 - [x] `rebaseWithPlanReconciliation` short-circuits to `{ exitCode: 0 }` without invoking rebase when the target is already contained

@@ -14,6 +14,7 @@
  * - Relative paths resolved against the containing file or repo root
  * - Anchors have their `#fragment` stripped before file resolution
  * - Bare `TASK-xxx` refs in .plan/ files resolve against tickets dir
+ * - Source comments (`//` and `/** *\/`) in `src/**`, excluding test files
  *
  * What is skipped:
  * - Absolute web URLs (`http://`, `https://`, `mailto:`, `ftp://`)
@@ -42,6 +43,12 @@ const SKIP_DIRS = new Set([
 
 const SRC_EXTS = new Set([".ts", ".tsx"]);
 
+// Test files hold fixture paths, not real citations, not real links. Same two
+// stems .jscpd.json ignores (and oxlint/knip/type-coverage ignore for
+// `**/*.test.ts`); the repo runner is bun:test, so `*.test.ts` is the only
+// test stem that exists here.
+export const TEST_FILE_RE = /\.test(?:-helpers)?\.[tj]sx?$/;
+
 /** Recursively collect TypeScript source files under src/. */
 export function collectSrcFiles(projectRoot: string, srcDir: string): string[] {
   const out: string[] = [];
@@ -51,7 +58,7 @@ export function collectSrcFiles(projectRoot: string, srcDir: string): string[] {
       const p = join(d, entry);
       if (statSync(p).isDirectory()) {
         walk(p);
-      } else if (SRC_EXTS.has(p.slice(p.lastIndexOf(".")))) {
+      } else if (SRC_EXTS.has(p.slice(p.lastIndexOf("."))) && !TEST_FILE_RE.test(entry)) {
         out.push(p);
       }
     }
@@ -207,6 +214,7 @@ export interface LinkCheckResult {
   orphanRefs: OrphanTaskRef[];
   brokenComments: BrokenCommentCitation[];
   fileCount: number;
+  /** Source files whose comments were scanned (test files excluded). */
   srcFileCount: number;
 }
 

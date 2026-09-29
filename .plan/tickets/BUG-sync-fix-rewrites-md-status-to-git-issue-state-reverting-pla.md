@@ -8,11 +8,11 @@
 **Effort:** Medium
 **Tags:** status-vocab
 
-## Summary
+**Summary:**
 
 `giwt sync --fix` and `giwt plan validate --fix` impose contradictory status authorities on the same `.md` file. Running them in either order silently undoes the other, so a repo cannot stay green on both gates.
 
-## Problem
+**Context:**
 
 Two `--fix` implementations in the same tool write the same field with incompatible value spaces:
 
@@ -58,7 +58,7 @@ A repo cannot be simultaneously `plan - validate` green and `sync` clean. Whoeve
 - `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` (giwt, Done) — same class of problem, different axis: giwt vs omp-plugins agreement on *what counts as done*, rather than who owns the value.
 - omp-plugins `BUG-find-work-closed-epic-reconciliation-stubs-leak-into-roster` (Done).
 
-## Acceptance Criteria
+**Acceptance Criteria:**
 
 - [x] Implementation complete
 - [x] Tests passing (bun test src/tickets/ 93 pass; full bun run check 911 pass)

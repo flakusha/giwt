@@ -28,6 +28,22 @@
     "source": ".plan/tickets/BUG-giwt-ticket-extid-double-prefix-resolved.md",
     "status": "done"
   },
+  "BUG-GIWT-TICKET-GENERATES-A-STATUS-THE-STATUS-VOCAB-GATE-THEN-RE": {
+    "hash": "79c0830",
+    "git_issue": "79c0830",
+    "extid": "BUG-GIWT-TICKET-GENERATES-A-STATUS-THE-STATUS-VOCAB-GATE-THEN-RE",
+    "type": "BUG",
+    "title": "giwt ticket generates a Status the status-vocab gate then rejects",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "status-vocab",
+      "ticket"
+    ],
+    "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
+    "status": "⬜ Not Started"
+  },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
     "extid": "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK",
@@ -233,6 +249,23 @@
     ],
     "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
     "status": "done"
+  },
+  "FEAT-SIZE-THE-GATE-FAN-OUT-BY-AVAILABLE-MEMORY-NOT-ONLY-BY-CORE-C": {
+    "hash": "fd9c248",
+    "git_issue": "fd9c248",
+    "extid": "FEAT-SIZE-THE-GATE-FAN-OUT-BY-AVAILABLE-MEMORY-NOT-ONLY-BY-CORE-C",
+    "type": "FEAT",
+    "title": "size the gate fan-out by available memory, not only by core count",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "lifecycle",
+      "memory",
+      "concurrency"
+    ],
+    "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
+    "status": "Not Started"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
     "hash": "c42bc39",
