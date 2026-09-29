@@ -11,7 +11,7 @@ type TicketType = typeof VALID_TYPES[number];
 
 const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
 
-interface TicketFlags {
+export interface TicketFlags {
   labels: string[];
   priority: string;
   epic: string;
@@ -56,6 +56,43 @@ export function stripTypePrefix(type: string, title: string): string {
     return title.slice(prefix.length + 1).trimStart();
   }
   return title;
+}
+
+/**
+ * Render the ticket .md body written by `giwt ticket`.
+ *
+ * The shape is load-bearing: `plan validate`'s format gate requires the
+ * `**Section:**` metadata markers, and its status-vocab gate requires a
+ * canonical `**Status:**` value. The template must emit exactly what those
+ * gates accept — a generated ticket that fails its own repo's gates is the
+ * BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re defect.
+ * ticket.test.ts pins this template against both gates' constants.
+ */
+export function renderTicketFile(
+  type: string,
+  title: string,
+  flags: TicketFlags,
+  body: string,
+): string {
+  let content =
+    `<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->\n\n# ${type}: ${title}\n\n`;
+  content += `**Status:** Not Started\n`;
+  content += `**Priority:** ${flags.priority || "Medium"}\n`;
+  content += `**Effort:** ${flags.effort}\n`;
+  if (flags.epic) {
+    content += `**Epic:** ${flags.epic}\n`;
+  }
+  if (flags.tags.length > 0) {
+    content += `**Tags:** ${flags.tags.join(", ")}\n`;
+  }
+  content += `\n**Summary:**\n\n${body || "No description provided."}\n\n`;
+  content +=
+    `**Context:**\n\n(fill in before starting: why this change, constraints, alternatives considered.)\n\n`;
+  content += `**Acceptance Criteria:**\n\n`;
+  content += `- [ ] Implementation complete\n`;
+  content += `- [ ] Tests passing\n`;
+  content += `- [ ] Documentation updated\n`;
+  return content;
 }
 
 export async function ticket(args: string[], config: WorktreeConfig): Promise<void> {
@@ -111,25 +148,7 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
     log("warn", `ticket file already exists: ${ticketFile}`);
   } else {
     log("info", `creating ticket file: ${ticketFile}`);
-
-    let content =
-      `<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->\n\n# ${type}: ${title}\n\n`;
-    content += `**Status:** ⬜ Not Started\n`;
-    content += `**Priority:** ${flags.priority || "Medium"}\n`;
-    content += `**Effort:** ${flags.effort}\n`;
-    if (flags.epic) {
-      content += `**Epic:** ${flags.epic}\n`;
-    }
-    if (flags.tags.length > 0) {
-      content += `**Tags:** ${flags.tags.join(", ")}\n`;
-    }
-    content += `\n## Summary\n\n${body || "No description provided."}\n\n`;
-    content += `## Acceptance Criteria\n\n`;
-    content += `- [ ] Implementation complete\n`;
-    content += `- [ ] Tests passing\n`;
-    content += `- [ ] Documentation updated\n`;
-
-    await Bun.write(ticketPath, content);
+    await Bun.write(ticketPath, renderTicketFile(type, title, flags, body));
     log("success", `created ticket file: ${ticketFile}`);
   }
 

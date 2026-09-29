@@ -114,7 +114,8 @@ export interface ValidateResult {
 
 // ── Format gate ─────────────────────────────────────────────────
 
-const TICKET_REQUIRED_SECTIONS = [
+/** Required metadata markers for ticket files (format gate contract). */
+export const TICKET_REQUIRED_SECTIONS = [
   "Status",
   "Priority",
   "Effort",

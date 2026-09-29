@@ -42,7 +42,7 @@
       "ticket"
     ],
     "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
-    "status": "⬜ Not Started"
+    "status": "Not Started"
   },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
@@ -56,6 +56,23 @@
     "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md",
     "status": "done",
     "git_issue": "6c8b279"
+  },
+  "BUG-REBASE-DEFAULT-TARGET-IS-THE-ROOT-BRANCH-WHICH-IS-ALSO-PROTE": {
+    "hash": "87eaed2",
+    "git_issue": "87eaed2",
+    "extid": "BUG-REBASE-DEFAULT-TARGET-IS-THE-ROOT-BRANCH-WHICH-IS-ALSO-PROTE",
+    "type": "BUG",
+    "title": "rebase default target is the root branch, which is also protected, so the no-onto form always fails",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "rebase",
+      "git",
+      "history-safety"
+    ],
+    "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md",
+    "status": "Not Started"
   },
   "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE": {
     "hash": "23751b8",
@@ -643,6 +660,24 @@
     ],
     "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md",
     "status": "done"
+  },
+  "TASK-REACH-PARITY-WITH-THE-LOOP-LORE-WORKTREE-FORK-SO-IT-CAN-BE-D": {
+    "hash": "c750cd1",
+    "git_issue": "c750cd1",
+    "extid": "TASK-REACH-PARITY-WITH-THE-LOOP-LORE-WORKTREE-FORK-SO-IT-CAN-BE-D",
+    "type": "TASK",
+    "title": "reach parity with the loop-lore worktree fork so it can be deleted",
+    "label": "task",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "worktree",
+      "migration",
+      "isolation",
+      "history-safety"
+    ],
+    "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
+    "status": "Not Started"
   },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {
     "hash": "1ebe6f9",

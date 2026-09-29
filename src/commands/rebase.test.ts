@@ -228,6 +228,30 @@ describe("rebase target validation (23751b8)", () => {
   });
 });
 
+describe("rebase default target (BUG-rebase-default-target-is-the-root-branch-which-is-also-prote)", () => {
+  test("no-onto form succeeds on the default config where root 'dev' is protected", async () => {
+    const config = makeRepo();
+    // DEFAULT_SETTINGS.root is "dev" and DEFAULT_SETTINGS.protected includes
+    // it; the guard regression made this documented form exit 1 every time.
+    git(["branch", "dev", "main"]);
+
+    const out = await runExpectSuccess(() => rebase(["feature"], config));
+    expect(out).toContain("Rebased 'feature' onto 'dev'");
+    // dev == main, which feature still contains: no-op rebase, HEAD unmoved.
+    expect(gitExit(["merge-base", "--is-ancestor", "dev", "HEAD"], wtPath)).toBe(0);
+  });
+
+  test("explicitly naming the same protected target is still refused", async () => {
+    const config = makeRepo();
+    git(["branch", "dev", "main"]);
+    const before = git(["rev-parse", "feature"]).trim();
+
+    const out = await runExpectExit1(() => rebase(["feature", "dev"], config));
+    expect(out).toContain("cannot rebase onto protected branch 'dev'");
+    expect(git(["rev-parse", "feature"]).trim()).toBe(before);
+  });
+});
+
 describe("rebase happy path", () => {
   test("rebases a diverged feature branch onto a non-protected target", async () => {
     const config = makeRepo();

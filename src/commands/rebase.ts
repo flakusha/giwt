@@ -24,7 +24,18 @@ export async function rebase(
     process.exit(1);
   }
 
-  if (isProtected(target, config.settings.branches.protected)) {
+  // Target guard applies to EXPLICITLY named targets only. The no-onto form
+  // defaults to branches.root — the integration branch every feature rebases
+  // onto — and on default configs that root is itself protected, so a
+  // blanket guard rejected the documented default form every time
+  // (BUG-rebase-default-target-is-the-root-branch-which-is-also-prote).
+  // Hand-typing a protected branch stays refused: that is the history
+  // rewrite the guard exists to block, and the default target is by
+  // construction never the source branch (self-rebase guard below).
+  if (
+    onto !== undefined
+    && isProtected(target, config.settings.branches.protected)
+  ) {
     log("error", `cannot rebase onto protected branch '${target}'`);
     process.exit(1);
   }

@@ -28,9 +28,11 @@ import { describe, expect, it, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { resolveStatus } from "../plan/status-vocab";
+import { TICKET_REQUIRED_SECTIONS } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
 import { loadConfig } from "../utils/config";
-import { stripTypePrefix, ticket } from "./ticket";
+import { renderTicketFile, stripTypePrefix, ticket, type TicketFlags } from "./ticket";
 
 /** Hermetic env for fixture git calls: concurrent test files may mutate
  * process.env (e.g. GNUPGHOME); spawned git must not inherit that. */
@@ -120,6 +122,40 @@ describe("stripTypePrefix — broader duplicate-prefix (literal no-op)", () => {
       ).toBe("giwt ticket extid double prefix on duplicate type slug");
     },
   );
+});
+
+describe("renderTicketFile — generated template is gate-clean", () => {
+  const FLAGS: TicketFlags = {
+    labels: [],
+    priority: "high",
+    epic: "some-epic",
+    tags: ["a", "b"],
+    effort: "Small",
+  };
+
+  it("emits a Status the status-vocab gate accepts as already canonical", () => {
+    const m = renderTicketFile("BUG", "some title", FLAGS, "body").match(
+      /\*\*Status:\*\* (.+)/,
+    );
+    expect(m).not.toBeNull();
+    expect(resolveStatus(m![1] ?? "", {})).toEqual({
+      value: "Not Started",
+      action: "valid",
+    });
+  });
+
+  it("carries every metadata marker the format gate requires", () => {
+    const content = renderTicketFile("FEAT", "some title", FLAGS, "");
+    for (const section of TICKET_REQUIRED_SECTIONS) {
+      expect(content).toMatch(new RegExp(`\\*\\*${section}:\\*\\*`, "i"));
+    }
+  });
+
+  it("does not regress to the rejected H2-heading or emoji-decorated shapes", () => {
+    const content = renderTicketFile("TASK", "some title", FLAGS, "body");
+    expect(content).not.toMatch(/^## (Summary|Context|Acceptance Criteria)$/m);
+    expect(content).not.toContain("⬜");
+  });
 });
 
 describe("ticket command inside a linked worktree", () => {
