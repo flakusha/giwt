@@ -68,6 +68,12 @@ import { beginRun } from "../utils/runlog";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { finalize } from "./finalize";
 
+// Check-fanout slots must stay hermetic: these tests drive the real
+// finalize() in-process, so Step 2's slot acquisition would otherwise write
+// into the developer's ~/.cache. Fixed throwaway slot root + zero wait.
+process.env.GIWT_CHECK_SLOT_DIR = join(tmpdir(), "giwt-check-slots-test");
+process.env.GIWT_CHECK_SLOT_WAIT_MS = "0";
+
 const GPG_UID = "giwt-finalize-test@example.local";
 const gpgTooling = Boolean(Bun.which("gpg") && Bun.which("gpgconf"));
 
@@ -685,6 +691,45 @@ describe("finalize check gate", () => {
     expect(run.exitCode).toBeNull();
   });
 
+  test("check gate holds and releases a cross-instance fan-out slot", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    const slotRoot = process.env.GIWT_CHECK_SLOT_DIR!;
+    const acquired = join(toolsDir, "slot-acquired");
+    rmSync(slotRoot, { recursive: true, force: true });
+    // The check child is a separate process and the parent blocks in
+    // Bun.spawnSync, so the CHILD is the only witness that the slot was held
+    // during the gate storm; the post-run assertions prove the release.
+    configureCommands(`[ -d "${slotRoot}/0" ] && touch "${acquired}"`);
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(existsSync(acquired)).toBe(true);
+    expect(existsSync(join(slotRoot, "0"))).toBe(false);
+  });
+
+  test("proceeds with a warn when all check-fanout slots are busy", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands("exit 0");
+    // Capacity 1 (4096 MB / 4096 MB per tree): the pre-held slot exhausts it.
+    config.settings.doctor.memoryBudgetMb = 4096;
+    const slotRoot = process.env.GIWT_CHECK_SLOT_DIR!;
+    rmSync(slotRoot, { recursive: true, force: true });
+    mkdirSync(join(slotRoot, "0"), { recursive: true });
+
+    const run = await driveFinalize(["feature/x"]);
+
+    // Contention shapes, it never blocks: the check gate still runs and the
+    // finalize completes.
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("check-fanout slots busy");
+    expect(run.output).toContain("Checks passed");
+    // The pre-held foreign slot is left alone (not ours to release).
+    expect(existsSync(join(slotRoot, "0"))).toBe(true);
+  });
+
   test("fails the run and tails the runner output when no report exists", async () => {
     const wtPath = featureWorktree();
     withBunLock(wtPath);
@@ -1164,6 +1209,26 @@ describe("finalize direct strategy", () => {
       env: { ...isolatedGitEnv(), GNUPGHOME: gpgHome },
     });
     expect(verdict.stdout.toString().trim()).toBe("G");
+  });
+});
+
+describe("finalize detached root guard", () => {
+  test("refuses when the main checkout HEAD is detached", async () => {
+    const wtPath = featureWorktree();
+    const branchSha = git(["rev-parse", "feature/x"]).trim();
+    git(["checkout", "-q", "--detach"]);
+    const headSha = git(["rev-parse", "HEAD"]).trim();
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("main checkout is detached at");
+    expect(run.output).toContain(headSha);
+    expect(run.output).toContain("checkout the root branch (or stash) before finalizing");
+    // Preflight refusal: no lock taken, feature branch untouched.
+    expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
+    expect(git(["rev-parse", "feature/x"]).trim()).toBe(branchSha);
+    expect(existsSync(wtPath)).toBe(true);
   });
 });
 
