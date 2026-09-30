@@ -10,7 +10,7 @@ import {
   type WorktreeConfig,
 } from "../utils/config";
 import { reportMissingBase } from "../utils/errors";
-import { gitSync, isProtected } from "../utils/git";
+import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
 
@@ -63,10 +63,17 @@ export async function execute(
 
   // Branch off `base` (the caller-supplied ref, or the default `dev`). Using
   // the resolved ref directly works whether `base` is a branch, tag, or commit.
-  const result = Bun.spawnSync(
-    ["git", "-C", config.repoRoot, "worktree", "add", "-b", branch, wtPath, base],
-    { stdout: "pipe", stderr: "pipe" },
-  );
+  const result = Bun.spawnSync([
+    "git",
+    "-C",
+    config.repoRoot,
+    "worktree",
+    "add",
+    "-b",
+    branch,
+    wtPath,
+    base,
+  ], { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" });
   if (result.exitCode !== 0) {
     log("error", `worktree add failed (exit ${result.exitCode})`);
     log("error", String(result.stderr.toString()).replace(/\n$/, ""));

@@ -10,7 +10,7 @@ import {
   type WorktreeConfig,
 } from "../utils/config";
 import { reportMissingBranch } from "../utils/errors";
-import { gitSync, isProtected } from "../utils/git";
+import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
 import {
@@ -89,10 +89,11 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
 
   log("info", `Creating worktree for branch: ${branch}`);
 
-  const result = Bun.spawnSync(
-    ["git", "-C", config.repoRoot, "worktree", "add", wtPath, branch],
-    { stdout: "pipe", stderr: "pipe" },
-  );
+  const result = Bun.spawnSync(["git", "-C", config.repoRoot, "worktree", "add", wtPath, branch], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   if (result.exitCode !== 0) {
     log("error", `worktree add failed (exit ${result.exitCode})`);
     log("error", String(result.stderr.toString()).replace(/\n$/, ""));

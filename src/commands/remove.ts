@@ -3,6 +3,7 @@
 
 import { resolve } from "path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
+import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { hasWorktreeDir, pruneStaleRegistrations, registrationFor } from "./worktree-registry";
 
@@ -36,14 +37,16 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
   }
 
   // Check for dirty state
-  const dirty = Bun.spawnSync(
-    ["git", "-C", wtPath, "diff", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
-  const staged = Bun.spawnSync(
-    ["git", "-C", wtPath, "diff", "--cached", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
+  const dirty = Bun.spawnSync(["git", "-C", wtPath, "diff", "--quiet"], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const staged = Bun.spawnSync(["git", "-C", wtPath, "diff", "--cached", "--quiet"], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
     log("error", `worktree has uncommitted changes`);
     raw(`  Stash or commit first: cd ${wtPath} && git stash`);
@@ -52,10 +55,11 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
 
   log("info", `Removing worktree: ${wtPath}`);
 
-  const result = Bun.spawnSync(
-    ["git", "-C", config.repoRoot, "worktree", "remove", wtPath],
-    { stdout: "pipe", stderr: "pipe" },
-  );
+  const result = Bun.spawnSync(["git", "-C", config.repoRoot, "worktree", "remove", wtPath], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   if (result.exitCode !== 0) {
     log("error", `worktree remove failed (exit ${result.exitCode})`);
     log("error", String(result.stderr.toString()).replace(/\n$/, ""));

@@ -11,6 +11,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import type { Dirent } from "node:fs";
 import { join } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 
 export interface ProjectReport {
   root: string;
@@ -315,6 +316,7 @@ function detectGitHygiene(root: string): GitHygiene {
     const out = Bun.spawnSync(["git", "-C", root, "config", "core.hooksPath"], {
       stdout: "pipe",
       stderr: "pipe",
+      env: isolatedGitEnv(),
     });
     if (out.exitCode === 0) {
       const value = out.stdout.toString().trim();
@@ -345,7 +347,7 @@ function detectGitHygiene(root: string): GitHygiene {
         "--get-regexp",
         "^(pull\\.ff|branch\\..*\\.rebase)$",
       ],
-      { stdout: "pipe", stderr: "pipe" },
+      { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
     );
     const stdout = out.stdout.toString();
     // `git config --get-regexp` prints "key value", unlike `--list` ("key=value").

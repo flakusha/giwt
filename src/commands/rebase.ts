@@ -3,7 +3,7 @@
 
 import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
-import { gitSync, isProtected } from "../utils/git";
+import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
 
 export async function rebase(
@@ -60,14 +60,16 @@ export async function rebase(
   }
 
   // Check worktree clean
-  const dirty = Bun.spawnSync(
-    ["git", "-C", wtPath, "diff", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
-  const staged = Bun.spawnSync(
-    ["git", "-C", wtPath, "diff", "--cached", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
+  const dirty = Bun.spawnSync(["git", "-C", wtPath, "diff", "--quiet"], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const staged = Bun.spawnSync(["git", "-C", wtPath, "diff", "--cached", "--quiet"], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
     log("error", `uncommitted changes in worktree '${branch}'`);
     process.exit(1);

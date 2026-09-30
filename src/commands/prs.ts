@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { branchToPath } from "../utils/config";
+import { isolatedGitEnv } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
 
@@ -71,10 +72,15 @@ export async function execute(
 
     log("info", `Creating worktree for PR #${pr.number}: ${pr.title}`);
 
-    const addResult = Bun.spawnSync(
-      ["git", "-C", config.repoRoot, "worktree", "add", wtPath, `origin/${pr.headRefName}`],
-      { stdout: "pipe", stderr: "pipe" },
-    );
+    const addResult = Bun.spawnSync([
+      "git",
+      "-C",
+      config.repoRoot,
+      "worktree",
+      "add",
+      wtPath,
+      `origin/${pr.headRefName}`,
+    ], { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" });
     if (addResult.exitCode === 0) {
       log("success", `Created: ${wtPath}`);
 

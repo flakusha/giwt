@@ -3,7 +3,7 @@
 
 import { existsSync, readdirSync, rmSync } from "fs";
 import { resolve } from "path";
-import { getWorktrees, gitSync } from "../utils/git";
+import { getWorktrees, gitSync, isolatedGitEnv } from "../utils/git";
 import { colorize, log, raw } from "../utils/output";
 
 export async function execute(
@@ -39,10 +39,11 @@ export async function execute(
       raw(`  ${colorize("Kept:", "green")} ${wtPath} (branch '${branch}' exists)`);
     } catch {
       raw(`  ${colorize("Removing stale:", "red")} ${wtPath} (branch '${branch}' deleted)`);
-      const result = Bun.spawnSync(
-        ["git", "-C", config.repoRoot, "worktree", "remove", wtPath],
-        { stdout: "pipe", stderr: "pipe" },
-      );
+      const result = Bun.spawnSync(["git", "-C", config.repoRoot, "worktree", "remove", wtPath], {
+        env: isolatedGitEnv(),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
       if (result.exitCode === 0) {
         removed++;
       }

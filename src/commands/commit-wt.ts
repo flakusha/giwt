@@ -9,7 +9,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { credentials } from "../utils/credentials";
-import { gitSyncQuiet, isProtected, stagedDependencyPaths } from "../utils/git";
+import { gitSyncQuiet, isolatedGitEnv, isProtected, stagedDependencyPaths } from "../utils/git";
 import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
@@ -52,7 +52,7 @@ export async function commitWt(
   // Check staged changes — git diff --quiet exits 1 when differences exist
   const diffResult = Bun.spawnSync(
     ["git", "-C", wtPath, "diff", "--cached", "--quiet"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
   if (diffResult.exitCode === 0) {
     // Exit 0 = no staged changes
@@ -116,7 +116,7 @@ export async function commitWt(
       stdout: "pipe",
       stderr: "pipe",
       env: {
-        ...process.env,
+        ...isolatedGitEnv(),
         GIT_COMMITTER_NAME: credentials.name,
         GIT_COMMITTER_EMAIL: credentials.email,
       },
@@ -132,7 +132,7 @@ export async function commitWt(
   // Verify signature
   const verify = Bun.spawnSync(
     ["git", "-C", wtPath, "log", "--show-signature", "-1"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
   const output = verify.stdout.toString();
 
