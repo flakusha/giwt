@@ -1,0 +1,280 @@
+{
+  "src/commands/clean.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-clean-age-size-capped-tmp-pruning.md"
+    }
+  ],
+  "src/commands/doctor.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    }
+  ],
+  "src/commands/finalize.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/commands/finalize.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-check-failure-report-never-names-failed-gates-check.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-add-jitter-to-the-finalize-lock-retry-backoff.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-finalize-does-not-surface-gate-results-on-failure.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md"
+    }
+  ],
+  "src/commands/issues.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac.md"
+    }
+  ],
+  "src/commands/plan.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    }
+  ],
+  "src/commands/rebase.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/commands/rebase.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/commands/ticket.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-ticket-extid-double-prefix-resolved.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
+    }
+  ],
+  "src/commands/ticket.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/doctor/check.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md"
+    }
+  ],
+  "src/finalize-signal-safety.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
+    }
+  ],
+  "src/plan/feature-matrix.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    }
+  ],
+  "src/plan/feature-matrix.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    }
+  ],
+  "src/plan/gen-docs.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/plan/reconcile-conflicts.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/plan/status-vocab.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-plan-validate-status-vocab-gate.md"
+    }
+  ],
+  "src/plan/validate.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-plan-validate-status-vocab-gate.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-plan-validate-reject-case-insensitive-ticket-filename-collis.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/resolve-diff-base.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/tickets/sync-index.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree.md"
+    }
+  ],
+  "src/tickets/sync-issues-ops.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    }
+  ],
+  "src/tickets/sync-ticket-index.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    }
+  ],
+  "src/tickets/sync-ticket.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/utils/errors.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f.md"
+    }
+  ],
+  "src/utils/git.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md"
+    }
+  ],
+  "src/utils/output.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-json-output-polluted-by-run-record-announcement.md"
+    }
+  ],
+  "src/utils/runlog.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-json-output-polluted-by-run-record-announcement.md"
+    }
+  ],
+  "src/utils/scratch.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-clean-age-size-capped-tmp-pruning.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md"
+    }
+  ],
+  "src/utils/worktree-root.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f.md"
+    }
+  ]
+}
