@@ -13,7 +13,8 @@
  * is atomic, the holder count is readdir-free (capacity-indexed dirs), and
  * release is an idempotent rmdir that survives crashes (a stale slot from a
  * SIGKILLed holder narrows capacity until reboot — acceptable for a perf
- * heuristic; the wait path times out and proceeds regardless).
+ * heuristic; the wait path times out and proceeds regardless. Manual
+ * recovery: `rm -rf ~/.cache/giwt/check-slots` between agent crashes).
  *
  * Memory-derived capacity: one check tree is budgeted at
  * CHECK_TREE_MEM_BUDGET_MB — deliberately larger than the doctor pool's

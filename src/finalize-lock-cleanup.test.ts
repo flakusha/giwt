@@ -27,7 +27,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { acquireFinalizeLock, lockRetryDelayMs } from "./commands/finalize";
@@ -57,8 +57,9 @@ describe("finalize lock cleanup", () => {
   const FIXTURE_PATH = join(import.meta.dirname, "finalize-lock-fixture.ts");
 
   async function runFixture(
-    mode: "exit" | "signal" | "normal",
-  ): Promise<{ exitCode: number; leaked: boolean; }> {
+    mode: "exit" | "signal" | "normal" | "slot",
+    slotDir?: string,
+  ): Promise<{ exitCode: number; leaked: boolean; slotLeaked: boolean; }> {
     if (mode === "signal") {
       // For the signal case we run the fixture, then send SIGUSR1 to its
       // pid with SIGHUP, then await its exit. Done inline here (not in the fixture)
@@ -96,17 +97,18 @@ describe("finalize lock cleanup", () => {
       }
       buffer += decoder.decode();
       const leaked = buffer.includes("LEAK");
-      return { exitCode: code, leaked };
+      return { exitCode: code, leaked, slotLeaked: false };
     }
-    const proc = Bun.spawn(["bun", "run", FIXTURE_PATH, tmp, mode], {
+    const proc = Bun.spawn(["bun", "run", FIXTURE_PATH, tmp, mode, ...(slotDir ? [slotDir] : [])], {
       stdout: "pipe",
       stderr: "pipe",
       env: { ...process.env, NODE_ENV: "test" },
     });
     const code = await proc.exited;
     const out = await new Response(proc.stdout).text();
-    const leaked = out.includes("LEAK");
-    return { exitCode: code, leaked };
+    const leaked = out.includes("LEAK") && !out.includes("SLOT-LEAK");
+    const slotLeaked = out.includes("SLOT-LEAK");
+    return { exitCode: code, leaked, slotLeaked };
   }
 
   it("releases the lock when finalize calls process.exit(1)", async () => {
@@ -125,6 +127,23 @@ describe("finalize lock cleanup", () => {
     const r = await runFixture("normal");
     expect(r.exitCode).toBe(0);
     expect(r.leaked).toBe(false);
+  });
+
+  it("releases the check-fanout slot on process.exit(1)", async () => {
+    // Real-child proof for the slot half of the exit hook: a process dying
+    // while holding a slot must free it, or a SIGKILLed agent's slot would
+    // narrow the machine-wide capacity until reboot.
+    const slotRoot = mkdtempSync(join(tmpdir(), "giwt-check-slots-fixture-"));
+    try {
+      const r = await runFixture("slot", slotRoot);
+      expect(r.exitCode).toBe(1);
+      expect(r.slotLeaked).toBe(false);
+      // Belt and suspenders: assert the directory itself, not just the
+      // fixture's self-report.
+      expect(readdirSync(slotRoot)).toEqual([]);
+    } finally {
+      rmSync(slotRoot, { recursive: true, force: true });
+    }
   });
 });
 

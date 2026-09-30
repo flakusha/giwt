@@ -19,10 +19,12 @@ import { join } from "node:path";
 
 import { LOCK_FILENAME } from "./commands/abort";
 import { acquireFinalizeLock } from "./commands/finalize";
+import { acquireCheckSlot, CHECK_TREE_MEM_BUDGET_MB } from "./utils/check-slots";
 import { log, raw } from "./utils/output";
 
 const tmp = process.argv[2]!;
 const mode = process.argv[3]!;
+const slotDir = process.argv[4];
 const lockPath = join(tmp, LOCK_FILENAME);
 
 const release = acquireFinalizeLock(tmp);
@@ -42,7 +44,30 @@ process.on("exit", () => {
     raw("OK");
   }
 });
-if (mode === "signal") {
+if (mode === "slot") {
+  // Check-fanout slot contract (cd362fe): a process dying while holding a
+  // slot must free it. The slot release in production rides the same
+  // `process.on('exit')` hook as the lock (finalize's releaseLockOnExit);
+  // this fixture exercises exactly that mechanism — a real process exit
+  // with a held slot — where in-process tests cannot (process.exit kills
+  // the runner). Mirrors the production hook shape on purpose.
+  const slot = acquireCheckSlot({ dir: slotDir!, availableMemMb: CHECK_TREE_MEM_BUDGET_MB });
+  if (!slot) {
+    log("error", "fixture could not acquire slot");
+    process.exit(2);
+  }
+  process.on("exit", () => {
+    try {
+      slot.release();
+    } catch { /* best-effort */ }
+    if (existsSync(join(slotDir!, "0"))) {
+      raw("SLOT-LEAK");
+    } else {
+      raw("SLOT-OK");
+    }
+  });
+  process.exit(1);
+} else if (mode === "signal") {
   // Signal-triggered exit: install a handler that exits. The
   // production code does rollback work first; we skip that here
   // because the test is about the cleanup contract. Print a marker
