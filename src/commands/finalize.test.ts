@@ -71,7 +71,7 @@ import { finalize } from "./finalize";
 // Check-fanout slots must stay hermetic: these tests drive the real
 // finalize() in-process, so Step 2's slot acquisition would otherwise write
 // into the developer's ~/.cache. Fixed throwaway slot root + zero wait.
-process.env.GIWT_CHECK_SLOT_DIR = join(tmpdir(), "giwt-check-slots-test");
+process.env.GIWT_CHECK_SLOT_DIR = join(tmpdir(), `giwt-check-slots-test-${process.pid}`);
 process.env.GIWT_CHECK_SLOT_WAIT_MS = "0";
 
 const GPG_UID = "giwt-finalize-test@example.local";
@@ -574,7 +574,9 @@ describe("finalize lock", () => {
       try {
         for (const hook of hooks) (hook as () => void)();
       } finally {
-        process.exitCode = savedExitCode;
+        // Bun ignores `process.exitCode = undefined` (runlog.test.ts quirk
+        // note), so a plain restore leaks the 1 into the runner's exit code.
+        process.exitCode = typeof savedExitCode === "number" ? savedExitCode : 0;
       }
       lockReleasedWhileHeld = !existsSync(lockPath);
     });
