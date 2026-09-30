@@ -3,7 +3,7 @@
 
 # BUG: sync --fix statusMismatches branch writes raw git state into .md, bypassing the status-vocab map
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** status-vocab, sync
@@ -26,6 +26,6 @@ Acceptance: (1) the statusMismatches .md rewrite maps git state through the plan
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete (commit 9545a7e: shared `vocabStatusTarget()` routes statusMismatches, mdStatusStale, and import-back writers; index keeps raw git state)
+- [x] Tests passing (bun test src/tickets/ 99 pass; full bun run check 987 pass, coverage-gate PASS — reviewer-verified)
+- [x] Documentation updated (AGENTS.md §7 contract unchanged — this fix restores conformance)
