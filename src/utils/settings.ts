@@ -31,6 +31,7 @@
  *   [doctor]
  *   jobs = 4
  *   timeout_ms = 120000      # per-check subprocess budget (child killed on expiry)
+ *   memory_budget_mb = 0     # MB the doctor pool may assume; 0 = auto (free RAM)
  *   scratchpad_warn_mb = 100 / scratchpad_error_mb = 500
  *   scratchpad_orphan_warn = 100 / scratchpad_oldest_warn_days = 30
  *   [status.aliases]
@@ -69,6 +70,8 @@ export interface GiwtSettings {
   doctor: {
     jobs: number;
     timeoutMs: number;
+    /** MB of memory the doctor pool may assume. 0 = auto (OS free memory). */
+    memoryBudgetMb: number;
     scratchpadWarnMb: number;
     scratchpadErrorMb: number;
     scratchpadOrphanWarn: number;
@@ -99,6 +102,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   doctor: {
     jobs: 4,
     timeoutMs: 120_000,
+    memoryBudgetMb: 0,
     scratchpadWarnMb: DEFAULT_SCRATCHPAD_THRESHOLDS.warnMb,
     scratchpadErrorMb: DEFAULT_SCRATCHPAD_THRESHOLDS.errorMb,
     scratchpadOrphanWarn: DEFAULT_SCRATCHPAD_THRESHOLDS.orphanWarn,
@@ -124,6 +128,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   doctor: {
     jobs: "jobs",
     timeout_ms: "timeoutMs",
+    memory_budget_mb: "memoryBudgetMb",
     scratchpad_warn_mb: "scratchpadWarnMb",
     scratchpad_error_mb: "scratchpadErrorMb",
     scratchpad_orphan_warn: "scratchpadOrphanWarn",
@@ -157,6 +162,7 @@ const EXPECTED: Record<
   doctor: {
     jobs: "number",
     timeoutMs: "number",
+    memoryBudgetMb: "number",
     scratchpadWarnMb: "number",
     scratchpadErrorMb: "number",
     scratchpadOrphanWarn: "number",

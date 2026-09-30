@@ -17,8 +17,14 @@
  */
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { freemem } from "node:os";
 import { dirname, join } from "node:path";
-import { CHECK_IDS, checkExitCode, runDoctorChecks } from "../doctor/check.ts";
+import {
+  CHECK_IDS,
+  checkExitCode,
+  DOCTOR_PER_WORKER_MEM_MB,
+  runDoctorChecks,
+} from "../doctor/check.ts";
 import type { CheckId } from "../doctor/check.ts";
 import { detectProject } from "../doctor/detect.ts";
 import { generateActionlint } from "../doctor/generators/actionlint.ts";
@@ -181,17 +187,6 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     } else if (a === "--timeout" || a.startsWith("--timeout=")) {
       const v = a.startsWith("--timeout=") ? a.slice(10) : args[++i];
       if (v) timeoutMs = Number(v);
-    } else if (a === "--help" || a === "-h") {
-      raw(
-        "Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
-      );
-      raw("");
-      raw("Run repo-health checks: lint, typecheck, tests, knip, jscpd, todo, scratchpad.");
-      raw("Checks run through a bounded pool (default 4 concurrent; override with --jobs).");
-      raw("Each check subprocess is killed after --timeout ms (default: [doctor] timeout_ms).");
-      raw("Prints human-readable findings, or JSON with --json.");
-      raw("Exit code is 1 on any error-severity finding or failed check.");
-      return;
     } else {
       log("error", `unknown flag '${a}'`);
       raw(
@@ -219,12 +214,17 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
   // Per-check timings land in the run record, so `giwt runs --json` shows which
   // gate was slow and what it cost.
   const rec = activeRun();
+  // Budget override beats the OS free-memory auto default; the cap itself is
+  // applied inside runDoctorChecks at dispatch time.
+  const budgetMb = config.settings.doctor.memoryBudgetMb;
+  const availableMemMb = budgetMb > 0 ? budgetMb : Math.floor(freemem() / 2 ** 20);
   const report = await runDoctorChecks(
     root,
     {
       ...(checks ? { checks } : {}),
       jobs: jobs ?? config.settings.doctor.jobs,
       timeoutMs: timeoutMs ?? config.settings.doctor.timeoutMs,
+      availableMemMb,
       ...(rec ? { recorder: rec } : {}),
       scratch: {
         config: config.settings.scratch,
@@ -239,6 +239,15 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
     },
     config.settings.commands.test,
   );
+  // Low-memory clamp is reported, not silently swallowed. Every number comes
+  // from the report — the applied sizing, not a local recomputation.
+  if (report.jobs?.clamped) {
+    log(
+      "warn",
+      `memory cap: doctor pool clamped ${report.jobs.requested} -> ${report.jobs.effective}`
+        + ` (${report.jobs.availableMemMb} MB available, ${DOCTOR_PER_WORKER_MEM_MB} MB/worker)`,
+    );
+  }
   // Outcome summary on the run record: the same numbers the human report
   // and checkExitCode are built from, for `giwt runs` without opening files.
   const failedIds = report.checks
@@ -308,7 +317,8 @@ function printHelp(): void {
   raw("                        scratchpad`; shares --json/--root with check");
   raw("  --json              (check only) machine-readable report on stdout");
   raw("  --checks <csv>      (check only) restrict to specific check ids");
-  raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)");
+  raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4;");
+  raw("                        pool also capped by memory, see [doctor] memory_budget_mb)");
   raw("  --timeout <ms>      (check only) per-check subprocess budget; a check that");
   raw("                        exceeds it is killed and reported (default:");
   raw("                        [doctor] timeout_ms, 120000)");

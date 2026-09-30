@@ -128,6 +128,22 @@ describe("loadSettings", () => {
     }
   });
 
+  test("doctor memory_budget_mb parses from [doctor] and defaults to 0", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.doctor.memoryBudgetMb).toBe(0);
+      writeFileSync(fx.localPath, `[doctor]\nmemory_budget_mb = 2048\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.doctor.memoryBudgetMb).toBe(2048);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("output.stream_tail parses from [output] and defaults to 25", () => {
     const fx = makeFixture();
     try {

@@ -89,6 +89,15 @@ export interface DoctorCheckReport {
   version: 1;
   root: string;
   checks: CheckResult[];
+  /** Pool sizing actually applied. Present only when the caller supplied
+   *  `availableMemMb` (memory-capped run); additive, so consumers that
+   *  ignore unknown fields stay compatible. */
+  jobs?: {
+    requested: number;
+    effective: number;
+    availableMemMb: number;
+    clamped: boolean;
+  };
 }
 
 /** Max findings kept per check (bounds JSON + human output). */
@@ -1130,6 +1139,23 @@ export function runScratchpad(
  *  (tests, tsc, knip, jscpd each spawn their own heavy toolchain). */
 export const DOCTOR_JOBS_DEFAULT = 4;
 
+/** Assumed peak RSS per concurrent check worker (tests, tsc, knip, jscpd
+ *  each spawn their own heavy toolchain, ~0.5-1 GB observed). */
+export const DOCTOR_PER_WORKER_MEM_MB = 1024;
+
+/**
+ * Pure pool sizing: cap the requested job count by the memory budget.
+ * `max(1, ...)` floors at one worker, so a starved box still runs checks
+ * serially instead of refusing to run at all.
+ */
+export function effectiveJobs(
+  opts: { jobs: number; availableMemMb: number; perWorkerMb?: number; },
+): { jobs: number; clamped: boolean; } {
+  const perWorkerMb = opts.perWorkerMb ?? DOCTOR_PER_WORKER_MEM_MB;
+  const effective = Math.min(opts.jobs, Math.max(1, Math.floor(opts.availableMemMb / perWorkerMb)));
+  return { jobs: effective, clamped: effective < opts.jobs };
+}
+
 export interface DoctorCheckOptions {
   /** Subset of checks to run. Undefined = all applicable. */
   checks?: CheckId[];
@@ -1137,6 +1163,9 @@ export interface DoctorCheckOptions {
   testCommand?: string;
   /** Max checks executing concurrently (integer >= 1; default 4). */
   jobs?: number;
+  /** Available memory budget in MB. When set, the pool width is also capped
+   *  by it (see effectiveJobs); absent = no memory cap. */
+  availableMemMb?: number;
   /** Per-check subprocess budget in ms (integer >= 1; default
    *  CHECK_TIMEOUT_DEFAULT_MS). A check exceeding it is killed and reported
    *  as a check error. */
@@ -1162,8 +1191,10 @@ export interface DoctorCheckOptions {
  * Checks execute through a bounded worker pool of at most `jobs`
  * concurrent tasks — the safe default (4) keeps peak memory bounded on
  * big projects where tests + tsc + knip + jscpd each spawn heavy
- * toolchains. The report preserves the requested check order regardless
- * of completion order.
+ * toolchains. When `availableMemMb` is supplied the pool is additionally
+ * capped by that budget (see effectiveJobs) and the applied sizing is
+ * reported as `report.jobs`. The report preserves the requested check
+ * order regardless of completion order.
  */
 export async function runDoctorChecks(
   root: string,
@@ -1174,6 +1205,15 @@ export async function runDoctorChecks(
   if (!Number.isInteger(jobs) || jobs < 1) {
     throw new Error(`doctor check: jobs must be an integer >= 1 (got ${jobs})`);
   }
+  // Memory cap is computed at dispatch time (not module load) so a run sees
+  // the box state it actually executes under.
+  const sizing = opts.availableMemMb === undefined
+    ? undefined
+    : {
+      ...effectiveJobs({ jobs, availableMemMb: opts.availableMemMb }),
+      availableMemMb: opts.availableMemMb,
+    };
+  const poolWidth = sizing?.jobs ?? jobs;
   const timeoutMs = opts.timeoutMs ?? CHECK_TIMEOUT_DEFAULT_MS;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw new Error(`doctor check: timeoutMs must be an integer >= 1 (got ${timeoutMs})`);
@@ -1251,8 +1291,22 @@ export async function runDoctorChecks(
       );
     }
   };
-  await Promise.all(Array.from({ length: Math.min(jobs, tasks.length) }, worker));
-  return { version: 1, root, checks };
+  await Promise.all(Array.from({ length: Math.min(poolWidth, tasks.length) }, worker));
+  return {
+    version: 1,
+    root,
+    checks,
+    ...(sizing
+      ? {
+        jobs: {
+          requested: jobs,
+          effective: sizing.jobs,
+          availableMemMb: sizing.availableMemMb,
+          clamped: sizing.clamped,
+        },
+      }
+      : {}),
+  };
 }
 
 /** Exit code for a report: 1 on any error finding or failed check. */

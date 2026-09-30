@@ -29,6 +29,7 @@ import {
   CHECK_TIMEOUT_DEFAULT_MS,
   checkExitCode,
   type DoctorCheckReport,
+  effectiveJobs,
   parseBiomeOutput,
   parseEslintJson,
   parseJscpdReport,
@@ -296,6 +297,31 @@ describe("runDoctorChecks", () => {
   });
 });
 
+describe("effectiveJobs", () => {
+  it("leaves ample memory unclamped", () => {
+    expect(effectiveJobs({ jobs: 4, availableMemMb: 8192 })).toEqual({ jobs: 4, clamped: false });
+  });
+
+  it("does not clamp at the exact boundary", () => {
+    expect(effectiveJobs({ jobs: 8, availableMemMb: 8192 })).toEqual({ jobs: 8, clamped: false });
+  });
+
+  it("floors to one worker on a starved box", () => {
+    expect(effectiveJobs({ jobs: 4, availableMemMb: 10 })).toEqual({ jobs: 1, clamped: true });
+  });
+
+  it("honors a perWorkerMb override", () => {
+    expect(effectiveJobs({ jobs: 4, availableMemMb: 1500, perWorkerMb: 512 })).toEqual({
+      jobs: 2,
+      clamped: true,
+    });
+  });
+
+  it("floors fractional worker budgets", () => {
+    expect(effectiveJobs({ jobs: 4, availableMemMb: 2560 })).toEqual({ jobs: 2, clamped: true });
+  });
+});
+
 describe("runDoctorChecks concurrency", () => {
   const makeApplicableRepo = () => {
     const root = makeRepo();
@@ -375,6 +401,65 @@ describe("runDoctorChecks concurrency", () => {
         "knip",
         "jscpd",
       ]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("clamps pool width by availableMemMb and reports the sizing", async () => {
+    const root = makeApplicableRepo();
+    try {
+      const state = { inFlight: 0, max: 0 };
+      let spawned = 0;
+      const report = await runDoctorChecks(root, {
+        checks: ["lint", "typecheck", "tests", "knip", "jscpd"],
+        jobs: 4,
+        availableMemMb: 1500, // 1500 / 1024 -> a single worker fits the budget
+        spawn: async () => {
+          spawned++;
+          state.inFlight++;
+          state.max = Math.max(state.max, state.inFlight);
+          await new Promise((r) => setTimeout(r, 5));
+          state.inFlight--;
+          return { exitCode: 0, stdout: "", stderr: "" };
+        },
+      });
+      expect(report.jobs).toEqual({
+        requested: 4,
+        effective: 1,
+        availableMemMb: 1500,
+        clamped: true,
+      });
+      expect(state.max).toBe(1);
+      expect(spawned).toBe(5); // every check still ran, just serially
+      expect(report.checks).toHaveLength(5); // and the pool completed: every slot filled
+      expect(report.checks.map((c) => c.id)).toEqual([
+        "lint",
+        "typecheck",
+        "tests",
+        "knip",
+        "jscpd",
+      ]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("reports unclamped sizing when memory is ample", async () => {
+    const root = makeApplicableRepo();
+    try {
+      const report = await runDoctorChecks(root, {
+        checks: ["lint"],
+        jobs: 4,
+        availableMemMb: 8192,
+        spawn: () => ({ exitCode: 0, stdout: "", stderr: "" }),
+      });
+      expect(report.jobs).toEqual({
+        requested: 4,
+        effective: 4,
+        availableMemMb: 8192,
+        clamped: false,
+      });
     } finally {
       cleanup(root);
     }
