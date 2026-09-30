@@ -4,8 +4,11 @@
 import { existsSync } from "fs";
 import {
   closeSync,
+  mkdirSync,
   openSync,
+  readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   unlinkSync,
   writeFileSync,
@@ -287,6 +290,36 @@ export function lockRetryDelayMs(): number {
   return Math.floor(Math.random() * LOCK_RETRY_MAX_MS);
 }
 
+// FIFO wait queue for contending finalizes. The lockfile stays the sole
+// mutual-exclusion authority; the queue only decides WHO tries next, so a
+// concurrent queue-unaware giwt binary is still safe — it merely doesn't
+// take a ticket and keeps racing the fast path.
+const QUEUE_SUFFIX = ".queue";
+const QUEUE_WAIT_MS_DEFAULT = 30 * 60 * 1000;
+
+/**
+ * Full-jitter poll draw while waiting in the finalize queue ([40, 160) ms).
+ * Exported so the queue tests can assert the draw is non-constant and
+ * bounded, mirroring `lockRetryDelayMs`.
+ */
+export function queuePollDelayMs(): number {
+  return 40 + Math.floor(Math.random() * 120);
+}
+
+/** Wait budget for the finalize queue, overridable via env seam (house
+ * pattern: GIWT_CHECK_SLOT_WAIT_MS / REPO_ROOT). Tests zero or shrink it;
+ * production default gives a queued finalize a whole gate-storm's worth of
+ * patience (30 min) instead of dying after the 1s fast-path budget.
+ * Exported so tests can pin the default without waiting for it. */
+export function queueWaitMs(): number {
+  const envMs = process.env.GIWT_FINALIZE_QUEUE_WAIT_MS;
+  if (envMs !== undefined && envMs !== "") {
+    const parsed = Number(envMs);
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+  }
+  return QUEUE_WAIT_MS_DEFAULT;
+}
+
 /**
  * Acquire an exclusive finalize lock on the dev checkout.
  *
@@ -306,6 +339,19 @@ export function lockRetryDelayMs(): number {
  * identical interval stay in lockstep, collide in the same window, and
  * keep colliding for as long as the winner holds the lock (the whole
  * merge sequence). A per-attempt random draw de-phases them.
+ *
+ * When the fast-path budget (1s) is exhausted under real contention — the
+ * lock is held for a whole finalize including the minute-scale gate storm —
+ * the loser no longer dies: it takes a FIFO ticket in `${lockPath}.queue/`
+ * and waits for its turn, polling with jitter. Only the min-seq ALIVE ticket
+ * attempts the lockfile, so acquisition follows arrival order and the herd
+ * never thunder against the lockfile. Crashed waiters (SIGKILL leaves the
+ * ticket behind) are reaped by PID liveness, same ESRCH semantics as the
+ * stale-lockfile reap. A waiter killed while waiting (no signal handlers
+ * are installed until after acquisition) leaks its ticket; the next waiter's
+ * reap cleans it up. Wait budget: GIWT_FINALIZE_QUEUE_WAIT_MS (default
+ * 30 min); on expiry the held-lock report is printed and we exit 1 — same
+ * failure contract as before, just bounded by a real budget instead of 1s.
  *
  * Returns a release function the caller MUST invoke in a finally block.
  *
@@ -374,16 +420,115 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
     } catch { /* best-effort */ }
   };
 
+  // --- FIFO wait queue --------------------------------------------------
+  const queueDir = `${lockPath}${QUEUE_SUFFIX}`;
+  let myEntry: string | null = null;
+
+  const readQueue = (): Array<{ name: string; seq: number; pid: number; }> => {
+    let names: string[];
+    try {
+      names = readdirSync(queueDir);
+    } catch {
+      return []; // Queue dir absent — nobody has ever queued.
+    }
+    return names
+      .map((name) => {
+        const m = /^(\d{6})-(\d+)$/.exec(name);
+        return m ? { name, seq: parseInt(m[1]!, 10), pid: parseInt(m[2]!, 10) } : null;
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .sort((a, b) => a.seq - b.seq);
+  };
+
+  const enqueue = (): void => {
+    mkdirSync(queueDir, { recursive: true });
+    for (;;) {
+      const maxSeq = readQueue().reduce((max, e) => Math.max(max, e.seq), 0);
+      const name = `${String(maxSeq + 1).padStart(6, "0")}-${myPid}`;
+      try {
+        mkdirSync(join(queueDir, name));
+        myEntry = name;
+        return;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+        // Lost a seq race against a concurrent enqueuer — recompute.
+      }
+    }
+  };
+
+  const dequeue = (): void => {
+    if (myEntry === null) return;
+    const entry = myEntry;
+    myEntry = null;
+    try {
+      rmSync(join(queueDir, entry), { recursive: true, force: true });
+    } catch { /* best-effort */ }
+  };
+
+  const reapQueue = (): void => {
+    for (const e of readQueue()) {
+      if (e.pid === myPid || pidAlive(e.pid)) continue;
+      try {
+        rmSync(join(queueDir, e.name), { recursive: true, force: true });
+      } catch { /* best-effort */ }
+    }
+  };
+
+  // Release covers BOTH artifacts: the lockfile (authority) and our ticket.
+  // Idempotent like `release` — the finally block and the `exit` hook may
+  // both call it, and a waiter that won the lock still owns its ticket name.
+  const releaseAll = (): void => {
+    dequeue();
+    release();
+  };
+
   for (let attempt = 0; attempt < LOCK_RETRY_ATTEMPTS; attempt++) {
-    if (tryCreate()) return release;
-    if (reapStale()) return release;
+    // Fairness: if alive tickets are already queued, a fresh arrival must
+    // not steal the lock through the fast path — it queues behind them.
+    // (A queue-unaware OLD binary still races here; see the queue comment.)
+    if (readQueue().some((e) => e.pid !== myPid && pidAlive(e.pid))) break;
+    if (tryCreate()) return releaseAll;
+    if (reapStale()) return releaseAll;
     // Jittered backoff: full jitter over [0, 20ms] so contenders
     // de-phase instead of retrying in lockstep. Ceiling unchanged at
     // 50 attempts × ≤20ms = 1s worst case.
     Bun.sleepSync(lockRetryDelayMs());
   }
-  reportHeldLock(lockPath);
-  process.exit(1);
+
+  // Fast path exhausted: the holder is mid-finalize (gate storm = minutes).
+  // Take a ticket and wait our turn instead of dying at the 1s budget.
+  enqueue();
+  const ahead = readQueue().filter((e) => e.pid !== myPid).length;
+  log("info", `finalize lock busy — queued (position ${ahead + 1})`);
+  const deadline = Date.now() + queueWaitMs();
+  for (;;) {
+    reapQueue();
+    // Strict FIFO: only the oldest ALIVE ticket may touch the lockfile.
+    // Everyone else sleeps — no thundering herd, no seq-order inversions.
+    const head = readQueue()[0];
+    if (head === undefined || head.pid === myPid) {
+      if (tryCreate()) {
+        dequeue();
+        return releaseAll;
+      }
+      if (reapStale()) {
+        dequeue();
+        return releaseAll;
+      }
+    }
+    if (Date.now() >= deadline) {
+      dequeue();
+      reportHeldLock(lockPath);
+      log(
+        "error",
+        `gave up after ${
+          formatLockAge(Date.now() - (deadline - queueWaitMs()))
+        } in the finalize queue (budget: GIWT_FINALIZE_QUEUE_WAIT_MS=${queueWaitMs()})`,
+      );
+      process.exit(1);
+    }
+    Bun.sleepSync(queuePollDelayMs());
+  }
 }
 
 /**

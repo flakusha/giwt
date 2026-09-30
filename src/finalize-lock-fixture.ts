@@ -87,6 +87,23 @@ if (mode === "slot") {
   // route. Before the fix this leaked the lock because `process.exit`
   // aborts the call stack before the outer finally runs.
   process.exit(1);
+} else if (mode.startsWith("hold:")) {
+  // Queue-test holder: keep the lock for <ms>, then release via the normal
+  // path. The test synchronizes on the "started" marker, never timers.
+  raw("started");
+  Bun.sleepSync(Number(mode.slice("hold:".length)) || 100);
+  release();
+  process.exit(0);
+} else if (mode === "queue") {
+  // Queue-test waiter: the TOP-LEVEL acquireFinalizeLock above already
+  // queued behind the holder and blocked until it won the lock. Record
+  // the acquisition order for the FIFO assertion, release, exit. (Must
+  // NOT acquire again — a second call would self-deadlock on our own
+  // lockfile, which reapStale deliberately never reaps.)
+  const { appendFileSync } = await import("node:fs");
+  appendFileSync(join(tmp, "order.log"), `${process.pid}\n`);
+  release();
+  process.exit(0);
 } else if (mode === "normal") {
   // Happy path: the outer finally would release the lock and clear
   // state. We mimic it inline so the `exit` handler still fires the

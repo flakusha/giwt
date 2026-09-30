@@ -250,6 +250,11 @@ describe("finalize lock retry jitter", () => {
     );
     try {
       writeFileSync(join(tmp, ".worktree-finalize.lock"), String(holder.pid));
+      // Exhaustion contract: after the 50-attempt fast path the acquirer
+      // takes a queue ticket; a zero wait budget (env seam) makes the queue
+      // give up immediately, so the stubbed-sleep loop cannot spin forever
+      // and the held-lock report + exit(1) below stay the pinned behavior.
+      process.env.GIWT_FINALIZE_QUEUE_WAIT_MS = "0";
       let acquired = false;
       try {
         acquireFinalizeLock(tmp)();
@@ -259,6 +264,7 @@ describe("finalize lock retry jitter", () => {
       }
       return acquired ? null : { delays, exited };
     } finally {
+      delete process.env.GIWT_FINALIZE_QUEUE_WAIT_MS;
       exitSpy.mockRestore();
       outSpy.mockRestore();
       sleepSpy.mockRestore();

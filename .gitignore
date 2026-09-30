@@ -118,7 +118,8 @@ bin/
 # giwt working state (managed repos create these; never commit)
 tree/
 .credentials.env
-.worktree-finalize.lock
+.worktree-finalize.lock*
+!.plan
 .plan/tickets/.index-sync.lock
 
 # hooks ship with the repo (override the global .*/ ignore)

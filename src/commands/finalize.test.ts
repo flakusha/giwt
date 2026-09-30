@@ -53,6 +53,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -541,12 +542,27 @@ describe("finalize lock", () => {
     // both mean "holder alive" to the stale-reap policy.
     writeFileSync(join(root, ".worktree-finalize.lock"), "1");
 
-    const run = await driveFinalize(["feature/x"]);
+    // Exhaustion contract: after the 1s fast path the refuser takes a queue
+    // ticket; a zero wait budget makes the queue give up immediately (the
+    // pre-queue behavior) instead of waiting the 30min production default
+    // behind the eternally-alive PID 1.
+    process.env.GIWT_FINALIZE_QUEUE_WAIT_MS = "0";
+    let run: FinalizeRun;
+    try {
+      run = await driveFinalize(["feature/x"]);
+    } finally {
+      delete process.env.GIWT_FINALIZE_QUEUE_WAIT_MS;
+    }
 
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("could not acquire finalize lock");
     expect(run.output).toContain("Holder: PID 1 (alive)");
+    expect(run.output).toContain("gave up after");
     expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(true);
+    // The refuser's own ticket is dequeued on the give-up path; only the
+    // untouched holder lockfile remains (the queue dir may linger, empty).
+    const queueDir = join(root, ".worktree-finalize.lock.queue");
+    expect(existsSync(queueDir) ? readdirSync(queueDir) : []).toEqual([]);
   });
 
   test("releases the lock on the success path", async () => {
