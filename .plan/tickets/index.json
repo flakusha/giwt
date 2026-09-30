@@ -122,6 +122,22 @@
     "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md",
     "status": "done"
   },
+  "BUG-SYNC-FIX-STATUSMISMATCHES-BRANCH-WRITES-RAW-GIT-STATE-INTO-M": {
+    "hash": "5b1dd8c",
+    "git_issue": "5b1dd8c",
+    "extid": "BUG-SYNC-FIX-STATUSMISMATCHES-BRANCH-WRITES-RAW-GIT-STATE-INTO-M",
+    "type": "BUG",
+    "title": "sync --fix statusMismatches branch writes raw git state into .md, bypassing the status-vocab map",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "status-vocab",
+      "sync"
+    ],
+    "source": ".plan/tickets/BUG-sync-fix-statusmismatches-branch-writes-raw-git-state-into-m.md",
+    "status": "done"
+  },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
     "git_issue": "7968809",
