@@ -53,7 +53,9 @@ export const TEST_FILE_RE = /\.test(?:-helpers)?\.[tj]sx?$/;
 export function collectSrcFiles(projectRoot: string, srcDir: string): string[] {
   const out: string[] = [];
   const walk = (d: string): void => {
-    for (const entry of readdirSync(d)) {
+    // Sorted: readdirSync order is filesystem-dependent, and consumers
+    // (link diffs, generated docs) need a stable file list.
+    for (const entry of readdirSync(d).sort()) {
       if (SKIP_DIRS.has(entry)) continue;
       const p = join(d, entry);
       if (statSync(p).isDirectory()) {
@@ -65,7 +67,7 @@ export function collectSrcFiles(projectRoot: string, srcDir: string): string[] {
   };
   const srcRoot = join(projectRoot, srcDir);
   if (existsSync(srcRoot)) walk(srcRoot);
-  return out;
+  return out.sort();
 }
 
 // ── Markdown parsing ────────────────────────────────────────────
