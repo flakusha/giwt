@@ -27,7 +27,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runSync } from "./sync-index";
+import { runValidate } from "../plan/validate";
+import { runSync, vocabStatusTarget } from "./sync-index";
 import { type IndexEntry } from "./sync-ticket";
 
 // ── Fixture helpers (unique per test; hermetic git env) ────────
@@ -775,5 +776,97 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     const report = runCaptured(() => runSync(root, { ticketsPath: ".plan/custom" }));
     expect(report.out).toContain("No phantom entries");
     expect(report.exit).toBe(0);
+  });
+
+  test("statusMismatches fix maps closed-issue git state to vocabulary Done in the .md, keeps raw done in the index", () => {
+    // Regression for BUG-sync-fix-statusmismatches-branch-writes-raw-git-state:
+    // the rebase scenario — issue closed in the registry without the .md
+    // following — used to make the statusMismatches writer emit
+    // "**Status:** done", which plan validate's status-vocab gate rejects.
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-MISMATCH: closed behind the .md's back");
+    gitOut(root, "issue", "state", hash, "--close", "-m", "fixture close");
+    writeTicket(root, "TASK-mismatch.md", "closed behind the .md's back", {
+      status: "In Progress",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-MISMATCH": indexEntry({
+        extid: "TASK-MISMATCH",
+        hash,
+        git_issue: hash,
+        status: "In Progress",
+        title: "closed behind the .md's back",
+        source: ".plan/tickets/TASK-mismatch.md",
+      }),
+    });
+
+    const fixed = runCaptured(() => runSync(root, { fix: true }));
+    expect(fixed.out).toContain("status in_progress → done");
+
+    // The .md carries the canonical vocabulary term…
+    const text = readFileSync(join(root, ".plan/tickets/TASK-mismatch.md"), "utf8");
+    expect(text).toContain("**Status:** Done");
+    expect(text).not.toMatch(/\*\*Status\*\*?: done\b/);
+    // …while the index still mirrors the raw git state by design.
+    expect(readIndex(root)["TASK-MISMATCH"]?.status).toBe("done");
+
+    const second = runCaptured(() => runSync(root, { fix: true }));
+    expect(second.exit).toBe(0);
+  });
+
+  test("round-trip: sync --fix after a registry-side close leaves the .md green under plan validate's status-vocab gate", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-ROUNDTRIP: closed out from under");
+    gitOut(root, "issue", "state", hash, "--close", "-m", "fixture close");
+    writeTicket(root, "TASK-roundtrip.md", "closed out from under", {
+      status: "In Progress",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-ROUNDTRIP": indexEntry({
+        extid: "TASK-ROUNDTRIP",
+        hash,
+        git_issue: hash,
+        status: "In Progress",
+        title: "closed out from under",
+        source: ".plan/tickets/TASK-roundtrip.md",
+      }),
+    });
+
+    const fixed = runCaptured(() => runSync(root, { fix: true }));
+    expect(fixed.exit).toBe(0);
+
+    // No manual edit: the status-vocab gate must accept the .md as-is.
+    const planDir = join(root, ".plan");
+    const result = runValidate({
+      projectRoot: root,
+      worktreeRoot: root,
+      ticketsDir: join(planDir, "tickets"),
+      epicsDir: join(planDir, "epics"),
+      backlogDir: join(planDir, "backlog"),
+      planDir,
+      srcDir: "src",
+      codeMapPath: join(planDir, "code-map.json"),
+      epicsIndexPath: join(planDir, "epics-index.md"),
+      mapSources: [],
+      linkScanDirs: [],
+      backlogIndexFiles: [],
+      gates: ["status-vocab"],
+      runSync: () => 0,
+    });
+    const gate = result.results.find((r) => r.gate === "status-vocab");
+    expect(gate?.pass).toBe(true);
+    expect(gate?.findings).toEqual([]);
+  });
+
+  test("vocabStatusTarget resolves both git mirror states through the shared alias table", () => {
+    // The statusMismatches gate only fires for done issues, so the open
+    // side of the mapping is covered here: both binary states must land
+    // on status-vocab-accepted terms via the same helper.
+    expect(vocabStatusTarget("done")).toBe("Done");
+    expect(vocabStatusTarget("open")).toBe("Not Started");
+    // Freeform pass-through stays untouched (reclassify-nothing).
+    expect(vocabStatusTarget("in_progress")).toBe("in_progress");
   });
 });

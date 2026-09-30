@@ -39,6 +39,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
+import { resolveStatus } from "../plan/status-vocab";
 import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import {
@@ -143,6 +144,18 @@ function guessType(filename: string): string {
     return prefix!;
   }
   return "TASK";
+}
+
+/**
+ * Map a raw git/index status value to a plan-vocabulary term for .md
+ * Status-line rewrites. Both fix writers (statusMismatches, mdStatusStale)
+ * share this single mapping so a binary mirror value ("open"/"done") can
+ * never leak into a .md and re-break `plan validate`'s status-vocab gate.
+ * Unresolvable freeform values pass through untouched (reclassify-nothing).
+ */
+export function vocabStatusTarget(raw: string): string {
+  const r = resolveStatus(raw, {});
+  return r.action === "invalid" ? raw : r.value;
 }
 
 // ── Entry ─────────────────────────────────────────────────────
@@ -440,12 +453,14 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         );
         // Converge in one pass: rewrite the .md Status line too, so the
         // post-fix re-scan does not re-surface it as a new .md-status fix.
+        // Route the raw git state through the shared vocabulary mapping —
+        // the .md carries plan-vocab terms, the index keeps the raw value.
         const tf = fileByExtid.get(mismatch.extid);
         if (tf) {
           try {
             const text = readFileSync(tf.path, "utf8").replace(
               /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
-              `$1${mismatch.gitStatus}`,
+              `$1${vocabStatusTarget(mismatch.gitStatus)}`,
             );
             writeFileSync(tf.path, text);
           } catch {
@@ -777,7 +792,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       if (!tf) continue;
       try {
         let text = readFileSync(tf.path, "utf8");
-        const target = ms.indexStatus === "done" ? "Done" : ms.indexStatus;
+        const target = vocabStatusTarget(ms.indexStatus);
         text = text.replace(
           /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
           `$1${target}`,
@@ -819,7 +834,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
             [
               `# ${type}: ${bareTitle}`,
               "",
-              `**Status:** open`,
+              `**Status:** ${vocabStatusTarget("open")}`,
               "**Priority:** medium",
               "",
               `Imported from git issue ${fi.hash}.`,
