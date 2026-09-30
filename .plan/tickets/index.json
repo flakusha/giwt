@@ -282,7 +282,7 @@
       "concurrency"
     ],
     "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
     "hash": "c42bc39",
@@ -677,7 +677,7 @@
       "history-safety"
     ],
     "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {
     "hash": "1ebe6f9",
