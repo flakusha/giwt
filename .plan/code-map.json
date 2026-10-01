@@ -1,8 +1,34 @@
 {
+  "src/assets/service/create.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md"
+    }
+  ],
   "src/cli.ts": [
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    }
+  ],
+  "src/commands/abort.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md"
+    }
+  ],
+  "src/commands/abort.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md"
     }
   ],
   "src/commands/backlog.ts": [
@@ -99,6 +125,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/commands/remove.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
     }
   ],
   "src/commands/ticket.test.ts": [

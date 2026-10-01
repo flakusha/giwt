@@ -35,6 +35,21 @@
     "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md",
     "status": "done"
   },
+  "BUG-BROWSER-E2E-404-ALLOWLIST-MASKS-REAL-404S": {
+    "hash": "2929526",
+    "git_issue": "2929526",
+    "extid": "BUG-BROWSER-E2E-404-ALLOWLIST-MASKS-REAL-404S",
+    "type": "BUG",
+    "title": "browser e2e 404 allowlist masks real 404s",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "e2e"
+    ],
+    "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
+    "status": "Not Started"
+  },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
     "extid": "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK",
@@ -213,6 +228,22 @@
     ],
     "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md",
     "status": "done"
+  },
+  "BUG-SYNC-FIX-STAMPS-TICKET-DONE-WITHOUT-PROVENANCE": {
+    "hash": "7d5a105",
+    "git_issue": "7d5a105",
+    "extid": "BUG-SYNC-FIX-STAMPS-TICKET-DONE-WITHOUT-PROVENANCE",
+    "type": "BUG",
+    "title": "sync fix stamps ticket Done without provenance",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "sync"
+    ],
+    "source": ".plan/tickets/BUG-sync-fix-stamps-ticket-done-without-provenance.md",
+    "status": "Not Started"
   },
   "BUG-SYNC-FIX-STATUSMISMATCHES-BRANCH-WRITES-RAW-GIT-STATE-INTO-M": {
     "hash": "5b1dd8c",
@@ -829,6 +860,21 @@
     "source": ".plan/tickets/FIX-wire-plandir-setting-into-plan-command.md",
     "status": "done"
   },
+  "INFRA-DISPOSE-TWO-STALE-LOOP-LORE-WORKTREES": {
+    "hash": "5c90e55",
+    "git_issue": "5c90e55",
+    "extid": "INFRA-DISPOSE-TWO-STALE-LOOP-LORE-WORKTREES",
+    "type": "INFRA",
+    "title": "dispose two stale loop lore worktrees",
+    "label": "infra",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "worktrees"
+    ],
+    "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md",
+    "status": "Not Started"
+  },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",
     "git_issue": "9ef7c2f",
@@ -993,5 +1039,20 @@
     "tags": [],
     "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md",
     "status": "done"
+  },
+  "TASK-VERIFY-FEAT-CHAT-FINISHERS-TICKET-CLAIMS-BEFORE-MERGE": {
+    "hash": "f6da0e8",
+    "git_issue": "f6da0e8",
+    "extid": "TASK-VERIFY-FEAT-CHAT-FINISHERS-TICKET-CLAIMS-BEFORE-MERGE",
+    "type": "TASK",
+    "title": "verify feat chat finishers ticket claims before merge",
+    "label": "task",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "verification"
+    ],
+    "source": ".plan/tickets/TASK-verify-feat-chat-finishers-ticket-claims-before-merge.md",
+    "status": "Not Started"
   }
 }
