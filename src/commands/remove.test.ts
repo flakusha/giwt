@@ -194,6 +194,26 @@ describe("remove --branch-only", () => {
     );
   });
 
+  test("falls back to HEAD for the merged check when the configured root ref is missing", async () => {
+    // Root='dev' does not exist in this fixture (trunk is main). A branch at
+    // HEAD must still count as merged, not force-required. Explicit config:
+    // the surrounding describe re-points root at main.
+    const devConfig: WorktreeConfig = {
+      ...config,
+      settings: { ...config.settings, branches: { ...config.settings.branches, root: "dev" } },
+    };
+    expect(devConfig.settings.branches.root).toBe("dev");
+    git(["branch", "head-merged", "HEAD"]);
+    const cap = captureOutput();
+    try {
+      await execute(["head-merged", "--branch-only"], devConfig);
+    } finally {
+      cap.restore();
+    }
+    expect(branchExists("head-merged")).toBe(false);
+    expect(cap.lines()).not.toContain("not fully merged");
+  });
+
   test("refuses an unmerged branch without --force, printing SHA and recovery", async () => {
     git(["checkout", "-qb", "unmerged-gone"]);
     writeFileSync(join(root, "wip.txt"), "wip\n");

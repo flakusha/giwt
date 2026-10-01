@@ -114,8 +114,17 @@ function gitRun(cwd: string, ...args: string[]): string {
   return result.stdout.toString().replace(/\n$/, "");
 }
 
-/** True when `branch` is fully merged into the configured root branch. */
+/** True when `branch` is fully merged into the configured root branch.
+ *  Falls back to the repo's current HEAD when the configured root ref does
+ *  not exist (e.g. the "dev" default in a repo whose trunk is master) —
+ *  otherwise every branch would read as unmerged and require --force. */
 function branchMerged(branch: string, config: WorktreeConfig): boolean {
+  const rootRef = `refs/heads/${config.settings.branches.root}`;
+  const rootExists = Bun.spawnSync(
+    ["git", "-C", config.repoRoot, "rev-parse", "--verify", "--quiet", rootRef],
+    { env: isolatedGitEnv(), stdout: "ignore", stderr: "ignore" },
+  ).exitCode === 0;
+  const target = rootExists ? config.settings.branches.root : "HEAD";
   const probe = Bun.spawnSync(
     [
       "git",
@@ -124,7 +133,7 @@ function branchMerged(branch: string, config: WorktreeConfig): boolean {
       "merge-base",
       "--is-ancestor",
       branch,
-      config.settings.branches.root,
+      target,
     ],
     { env: isolatedGitEnv(), stdout: "ignore", stderr: "ignore" },
   );
