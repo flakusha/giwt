@@ -1185,7 +1185,7 @@ export function runScratchpad(
 
 /** Default max concurrent checks — bounds peak memory on big projects
  *  (tests, tsc, knip, jscpd each spawn their own heavy toolchain). */
-export const DOCTOR_JOBS_DEFAULT = 4;
+export const DOCTOR_JOBS_DEFAULT = 1;
 
 /** Assumed peak RSS per concurrent check worker (tests, tsc, knip, jscpd
  *  each spawn their own heavy toolchain, ~0.5-1 GB observed). */
@@ -1209,7 +1209,7 @@ export interface DoctorCheckOptions {
   checks?: CheckId[];
   /** Test command words override (defaults to settings.commands.test). */
   testCommand?: string;
-  /** Max checks executing concurrently (integer >= 1; default 4). */
+  /** Max checks executing concurrently (integer >= 1; default 1). */
   jobs?: number;
   /** Available memory budget in MB. When set, the pool width is also capped
    *  by it (see effectiveJobs); absent = no memory cap. */
@@ -1237,10 +1237,10 @@ export interface DoctorCheckOptions {
  * thrown.
  *
  * Checks execute through a bounded worker pool of at most `jobs`
- * concurrent tasks — the safe default (4) keeps peak memory bounded on
- * big projects where tests + tsc + knip + jscpd each spawn heavy
- * toolchains. When `availableMemMb` is supplied the pool is additionally
- * capped by that budget (see effectiveJobs) and the applied sizing is
+ * concurrent tasks — the default (1) runs checks sequentially; raise it
+ * ([doctor] jobs) when you want parallelism. When `availableMemMb` is
+ * supplied the pool is additionally capped by that budget (see
+ * effectiveJobs) and the applied sizing is
  * reported as `report.jobs`. The report preserves the requested check
  * order regardless of completion order.
  */

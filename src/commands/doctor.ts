@@ -339,7 +339,7 @@ function printHelp(): void {
   raw("                        scratchpad`; shares --json/--root with check");
   raw("  --json              (check only) machine-readable report on stdout");
   raw("  --checks <csv>      (check only) restrict to specific check ids");
-  raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4;");
+  raw("  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 1;");
   raw("                        pool also capped by memory, see [doctor] memory_budget_mb)");
   raw("  --timeout <ms>      (check only) per-check subprocess budget; a check that");
   raw("                        exceeds it is killed and reported (default:");

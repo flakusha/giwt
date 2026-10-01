@@ -158,3 +158,169 @@ describe("remove: error paths", () => {
     expect(existsSync(resolve(wtPath, ".git"))).toBe(true);
   });
 });
+
+describe("remove --branch-only", () => {
+  beforeEach(() => {
+    // Fixture root branch is 'main'; point the merged-check at it.
+    config = {
+      ...config,
+      settings: { ...config.settings, branches: { ...config.settings.branches, root: "main" } },
+    };
+  });
+
+  function branchSha(branch: string): string {
+    return git(["rev-parse", branch]).trim();
+  }
+
+  function branchExists(branch: string): boolean {
+    const p = Bun.spawnSync(["git", "-C", root, "rev-parse", "--verify", `refs/heads/${branch}`], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    return p.exitCode === 0;
+  }
+
+  test("deletes a merged branch with no worktree and reports the SHA", async () => {
+    git(["branch", "merged-gone", "main"]);
+    const cap = captureOutput();
+    try {
+      await execute(["merged-gone", "--branch-only"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(branchExists("merged-gone")).toBe(false);
+    expect(cap.lines()).toContain(
+      `deleted branch 'merged-gone' (tip ${branchSha("main")} recoverable from reflog)`,
+    );
+  });
+
+  test("refuses an unmerged branch without --force, printing SHA and recovery", async () => {
+    git(["checkout", "-qb", "unmerged-gone"]);
+    writeFileSync(join(root, "wip.txt"), "wip\n");
+    git(["add", "wip.txt"]);
+    git(["commit", "-qm", "wip"]);
+    git(["checkout", "main"]);
+    const sha = branchSha("unmerged-gone");
+
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute(["unmerged-gone", "--branch-only"], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain(`branch 'unmerged-gone' is not fully merged (tip ${sha})`);
+    expect(cap.lines()).toContain(`git branch -D unmerged-gone`);
+    expect(branchExists("unmerged-gone")).toBe(true);
+  });
+
+  test("--force deletes an unmerged branch (branch -D)", async () => {
+    git(["checkout", "-qb", "forced-gone"]);
+    writeFileSync(join(root, "wip2.txt"), "wip\n");
+    git(["add", "wip2.txt"]);
+    git(["commit", "-qm", "wip2"]);
+    git(["checkout", "main"]);
+    const sha = branchSha("forced-gone");
+
+    const cap = captureOutput();
+    try {
+      await execute(["forced-gone", "--branch-only", "--force"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(branchExists("forced-gone")).toBe(false);
+    expect(cap.lines()).toContain(
+      `deleted branch 'forced-gone' (tip ${sha} recoverable from reflog)`,
+    );
+  });
+
+  test("refuses when the worktree still exists, directing to plain remove", async () => {
+    addWorktree("still-here");
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute(["still-here", "--branch-only"], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("still exists at");
+    expect(cap.lines()).toContain("giwt remove still-here");
+    expect(branchExists("still-here")).toBe(true);
+  });
+
+  test("errors on a nonexistent branch", async () => {
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute(["no-such-branch", "--branch-only"], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("no such branch: 'no-such-branch'");
+  });
+
+  test("unknown flags are refused", async () => {
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute(["some-branch", "--bogus"], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("unknown flag '--bogus'");
+  });
+
+  test("default path unchanged: worktree removed; merged branch deleted, unmerged kept", async () => {
+    const wtPath = addWorktree("keep-branch");
+    const cap = captureOutput();
+    try {
+      await execute(["keep-branch"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
+    // Branch was cut at main → fully merged → post-removal cleanup deletes it.
+    expect(branchExists("keep-branch")).toBe(false);
+    expect(cap.lines()).toContain("deleted merged branch 'keep-branch'");
+  });
+
+  test("default path keeps an unmerged branch after worktree removal", async () => {
+    const wtPath = addWorktree("diverged-keep");
+    writeFileSync(resolve(wtPath, "wip.txt"), "wip\n");
+    git(["add", "wip.txt"], wtPath);
+    git(["commit", "-qm", "wip"], wtPath);
+    const cap = captureOutput();
+    try {
+      await execute(["diverged-keep"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
+    expect(branchExists("diverged-keep")).toBe(true);
+    expect(cap.lines()).toContain("branch 'diverged-keep' kept (unmerged)");
+  });
+});

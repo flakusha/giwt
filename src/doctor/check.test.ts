@@ -356,7 +356,7 @@ describe("runDoctorChecks concurrency", () => {
     }
   });
 
-  it("defaults to 4 concurrent checks", async () => {
+  it("defaults to sequential checks (1 concurrent)", async () => {
     const root = makeApplicableRepo();
     try {
       const state = { inFlight: 0, max: 0 };
@@ -370,7 +370,7 @@ describe("runDoctorChecks concurrency", () => {
           return { exitCode: 0, stdout: "", stderr: "" };
         },
       });
-      expect(state.max).toBe(4);
+      expect(state.max).toBe(1);
     } finally {
       cleanup(root);
     }

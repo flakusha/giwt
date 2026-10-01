@@ -101,7 +101,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   },
   commands: { check: "bun run check", test: "bun run test:unit", diffBase: true },
   doctor: {
-    jobs: 4,
+    jobs: 1,
     timeoutMs: 120_000,
     memoryBudgetMb: 0,
     scratchpadWarnMb: DEFAULT_SCRATCHPAD_THRESHOLDS.warnMb,

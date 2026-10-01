@@ -112,14 +112,14 @@ describe("loadSettings", () => {
     }
   });
 
-  test("doctor jobs parses from [doctor] and defaults to 4", () => {
+  test("doctor jobs parses from [doctor] and defaults to 1", () => {
     const fx = makeFixture();
     try {
       const defaults = loadSettings(fx.root, {
         globalPath: fx.globalPath,
         localPath: fx.localPath,
       });
-      expect(defaults.doctor.jobs).toBe(4);
+      expect(defaults.doctor.jobs).toBe(1);
       writeFileSync(fx.localPath, `[doctor]\njobs = 2\n`);
       const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
       expect(s.doctor.jobs).toBe(2);
