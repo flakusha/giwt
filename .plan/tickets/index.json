@@ -15,6 +15,36 @@
     "status": "done",
     "git_issue": "3022ea0"
   },
+  "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED": {
+    "hash": "8f38844",
+    "git_issue": "8f38844",
+    "extid": "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED",
+    "type": "BUG",
+    "title": "finalize-lock-queue test flakes marker queued never appeared got OK",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "quality",
+    "tags": [
+      "tests"
+    ],
+    "source": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
+    "status": "Not Started"
+  },
+  "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-REPO": {
+    "hash": "95fe3d6",
+    "git_issue": "95fe3d6",
+    "extid": "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-REPO",
+    "type": "BUG",
+    "title": "giwt new default base dev does not exist in this repo",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "quality",
+    "tags": [
+      "dx"
+    ],
+    "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo.md",
+    "status": "Not Started"
+  },
   "BUG-GIWT-TICKET-EXTID-DOUBLE-PREFIX-RESOLVED": {
     "hash": "d3b099e",
     "git_issue": "d3b099e",
@@ -138,6 +168,21 @@
     "source": ".plan/tickets/BUG-sync-fix-statusmismatches-branch-writes-raw-git-state-into-m.md",
     "status": "done"
   },
+  "BUG-SYNC-INDEX-SHADOWS-IMPORTED-RAW-OXLINT-NO-SHADOW": {
+    "hash": "0609f96",
+    "git_issue": "0609f96",
+    "extid": "BUG-SYNC-INDEX-SHADOWS-IMPORTED-RAW-OXLINT-NO-SHADOW",
+    "type": "BUG",
+    "title": "sync-index shadows imported raw (oxlint no-shadow)",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "quality",
+    "tags": [
+      "lint"
+    ],
+    "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
+    "status": "Not Started"
+  },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
     "git_issue": "7968809",
@@ -167,6 +212,21 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-bounded-output-mode-for-check-and-test-streams.md",
     "status": "done"
+  },
+  "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
+    "hash": "7323f1b",
+    "git_issue": "7323f1b",
+    "extid": "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY",
+    "type": "FEAT",
+    "title": "docs list/show/search toml and emoji output parity",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "output-tooling",
+    "tags": [
+      "output"
+    ],
+    "source": ".plan/tickets/FEAT-docs-list-show-search-toml-and-emoji-output-parity.md",
+    "status": "Not Started"
   },
   "FEAT-DOCTOR-CHECK-CONCURRENCY-RUN-THE-FIVE-CHECKS-IN-PARALLEL": {
     "hash": "e3b6b3d",
