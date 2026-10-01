@@ -239,6 +239,20 @@
     "source": ".plan/tickets/FEAT-bounded-output-mode-for-check-and-test-streams.md",
     "status": "done"
   },
+
+  "FEAT-COPY-TICKET-FILES-BETWEEN-WORKTREES": {
+    "hash": "6f31aa3",
+    "git_issue": "6f31aa3",
+    "extid": "FEAT-COPY-TICKET-FILES-BETWEEN-WORKTREES",
+    "type": "FEAT",
+    "title": "copy ticket files between worktrees",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-copy-ticket-files-between-worktrees.md",
+    "status": "Not Started"
+  },
   "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
     "hash": "7323f1b",
     "git_issue": "7323f1b",
@@ -266,6 +280,20 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel.md",
     "status": "done"
+  },
+
+  "FEAT-DOCTOR-UNCLOSED-RESOURCE-LEAK-CHECK": {
+    "hash": "aeb4b85",
+    "git_issue": "aeb4b85",
+    "extid": "FEAT-DOCTOR-UNCLOSED-RESOURCE-LEAK-CHECK",
+    "type": "FEAT",
+    "title": "doctor unclosed-resource leak check",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-doctor-unclosed-resource-leak-check.md",
+    "status": "Not Started"
   },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
     "hash": "8e9078f",
@@ -327,6 +355,20 @@
     "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md",
     "status": "done"
   },
+
+  "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {
+    "hash": "5c8332a",
+    "git_issue": "5c8332a",
+    "extid": "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP",
+    "type": "FEAT",
+    "title": "plan status per-ticket Status plus checkbox rollup",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-plan-status-per-ticket-status-plus-checkbox-rollup.md",
+    "status": "Not Started"
+  },
   "FEAT-PLAN-STATUS-SUBCOMMAND": {
     "hash": "4096091",
     "git_issue": "4096091",
@@ -353,6 +395,23 @@
     "source": ".plan/tickets/FEAT-public-api-exports-for-plan-modules.md",
     "status": "done"
   },
+
+  "FEAT-REBASE-AUTO-RESOLVE-SUPERSET-SIDE-CONFLICTS": {
+    "hash": "d296830",
+    "git_issue": "d296830",
+    "extid": "FEAT-REBASE-AUTO-RESOLVE-SUPERSET-SIDE-CONFLICTS",
+    "type": "FEAT",
+    "title": "rebase auto-resolve superset-side conflicts",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "git",
+      "rebase"
+    ],
+    "source": ".plan/tickets/FEAT-rebase-auto-resolve-superset-side-conflicts.md",
+    "status": "Not Started"
+  },
   "FEAT-RECORD-PER-STEP-DURATIONMS-IN-RUN-EVENTS": {
     "hash": "d7a60af",
     "git_issue": "d7a60af",
@@ -368,6 +427,37 @@
     ],
     "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
     "status": "done"
+  },
+
+  "FEAT-RUNS-FAILURE-TRIAGE-EXTRACT-FAIL-BLOCKS-AND-DIFF-TWO-RUNS": {
+    "hash": "9075543",
+    "git_issue": "9075543",
+    "extid": "FEAT-RUNS-FAILURE-TRIAGE-EXTRACT-FAIL-BLOCKS-AND-DIFF-TWO-RUNS",
+    "type": "FEAT",
+    "title": "runs failure triage: extract fail blocks and diff two runs",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "reporting",
+      "runlog"
+    ],
+    "source": ".plan/tickets/FEAT-runs-failure-triage-extract-fail-blocks-and-diff-two-runs.md",
+    "status": "Not Started"
+  },
+
+  "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE": {
+    "hash": "cdde664",
+    "git_issue": "cdde664",
+    "extid": "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE",
+    "type": "FEAT",
+    "title": "show unmerged three-way content of a ticket file",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-show-unmerged-three-way-content-of-a-ticket-file.md",
+    "status": "Not Started"
   },
   "FEAT-SIZE-THE-GATE-FAN-OUT-BY-AVAILABLE-MEMORY-NOT-ONLY-BY-CORE-C": {
     "hash": "fd9c248",
@@ -385,6 +475,22 @@
     ],
     "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
     "status": "done"
+  },
+
+  "FEAT-TICKET-CLOSE-WRITES-MD-STATUS-PLUS-ISSUE-STATE": {
+    "hash": "6fc1947",
+    "git_issue": "6fc1947",
+    "extid": "FEAT-TICKET-CLOSE-WRITES-MD-STATUS-PLUS-ISSUE-STATE",
+    "type": "FEAT",
+    "title": "ticket close writes md status plus issue state",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [
+      "ticket"
+    ],
+    "source": ".plan/tickets/FEAT-ticket-close-writes-md-status-plus-issue-state.md",
+    "status": "Not Started"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
     "hash": "c42bc39",
