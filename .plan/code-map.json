@@ -1,8 +1,26 @@
 {
+  "src/cli.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    }
+  ],
+  "src/commands/backlog.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md"
+    }
+  ],
   "src/commands/clean.ts": [
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-giwt-clean-age-size-capped-tmp-pruning.md"
+    }
+  ],
+  "src/commands/commit-protected.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md"
     }
   ],
   "src/commands/doctor.ts": [
@@ -41,6 +59,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md"
     }
   ],
   "src/commands/issues.ts": [
@@ -66,6 +88,10 @@
     }
   ],
   "src/commands/rebase.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md"
@@ -200,6 +226,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree.md"
     }
   ],
@@ -223,6 +253,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/utils/check-slots.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md"
     }
   ],
   "src/utils/errors.test.ts": [
@@ -265,6 +301,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md"
+    }
+  ],
+  "src/utils/settings.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
     }
   ],
   "src/utils/worktree-root.test.ts": [
