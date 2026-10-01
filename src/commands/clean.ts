@@ -21,6 +21,7 @@
 import { existsSync, lstatSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config.ts";
+import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit.ts";
 import { log, raw } from "../utils/output.ts";
 import { activeRun } from "../utils/runlog.ts";
 import { scanScratch } from "../utils/scratch.ts";
@@ -28,7 +29,8 @@ import type { ScratchClass, ScratchScan } from "../utils/scratch.ts";
 
 interface CleanOptions {
   apply: boolean;
-  json: boolean;
+  /** Machine output format (--json/--toml/--emoji); "human" prints the plan. */
+  format: OutFormat;
   verbose: boolean;
 }
 
@@ -52,28 +54,33 @@ function humanBytes(n: number): string {
 }
 
 function printHelp(): void {
-  raw("Usage: giwt clean [--dry-run] [--apply] [--json] [--verbose]");
+  raw("Usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]");
   raw("  --dry-run   print the prune plan per class (default; nothing is deleted)");
   raw("  --apply     run the prune and report bytes freed");
-  raw("  --json      machine-readable plan/result on stdout");
+  raw("  --json      machine-readable plan/result on stdout (--toml/--emoji also supported)");
   raw("  --verbose   list every candidate path, not just per-class totals");
 }
 
 /** Raw string[] parsing in the doctor.ts style: no values, flags only.
- *  --apply/--dry-run override each other, last occurrence wins. Unknown
- *  flags exit hard (process.exit) — there is no partial plan worth
+ *  --apply/--dry-run override each other, last occurrence wins. Output
+ *  flags (--json/--toml/--emoji) come from the shared parseOutFlags —
+ *  precedence json > toml > emoji, with a warn when several were given.
+ *  Unknown flags exit hard (process.exit) — there is no partial plan worth
  *  recording for a typo'd invocation. */
 function parseArgs(args: string[]): CleanOptions {
-  const out: CleanOptions = { apply: false, json: false, verbose: false };
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i]!;
+  const { format, rest } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
+  const out: CleanOptions = { apply: false, format, verbose: false };
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i]!;
     if (a === "--apply") out.apply = true;
     else if (a === "--dry-run") out.apply = false;
-    else if (a === "--json") out.json = true;
     else if (a === "--verbose") out.verbose = true;
     else {
       log("error", `unknown flag '${a}'`);
-      raw("  Usage: giwt clean [--dry-run] [--apply] [--json] [--verbose]");
+      raw("  Usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]");
       process.exit(1);
     }
   }
@@ -107,33 +114,44 @@ function printPlan(scan: ScratchScan, verbose: boolean): void {
   raw(`   total: ${scan.totalCandidateCount} file(s), ${humanBytes(scan.totalCandidateBytes)}`);
 }
 
-function jsonPayload(
+/** Machine payload (single object record; renderRecords serializes per
+ *  --json/--toml/--emoji). Same facts as the old --json-only payload. */
+function machinePayload(
   scan: ScratchScan,
   apply: boolean,
   freedBytes: number,
   freedCount: number,
   failures: DeleteFailure[],
-): string {
-  return JSON.stringify(
-    {
-      root: scan.root,
-      apply,
-      totalCandidateBytes: scan.totalCandidateBytes,
-      totalCandidateCount: scan.totalCandidateCount,
-      totalBytes: scan.totalBytes,
-      oldestMtimeMs: scan.oldestMtimeMs,
-      classes: scan.classes.map((cls) => ({
-        name: cls.name,
-        candidateCount: cls.candidates.length,
-        candidateBytes: classBytes(cls),
-        candidates: cls.candidates,
-        keepCount: cls.keep.length,
-      })),
-      ...(apply ? { freedBytes, freedCount, failures } : {}),
-    },
-    null,
-    2,
-  );
+): Record<string, unknown> {
+  return {
+    root: scan.root,
+    apply,
+    totalCandidateBytes: scan.totalCandidateBytes,
+    totalCandidateCount: scan.totalCandidateCount,
+    totalBytes: scan.totalBytes,
+    oldestMtimeMs: scan.oldestMtimeMs,
+    classes: scan.classes.map((cls) => ({
+      name: cls.name,
+      candidateCount: cls.candidates.length,
+      candidateBytes: classBytes(cls),
+      candidates: cls.candidates,
+      keepCount: cls.keep.length,
+    })),
+    ...(apply ? { freedBytes, freedCount, failures } : {}),
+  };
+}
+
+/** 🧹 per prunable class + count, plus the total — one line. */
+function cleanEmoji(record: Record<string, unknown> | unknown): string {
+  const rec = record as {
+    totalCandidateCount: number;
+    classes: Array<{ name: string; candidateCount: number; }>;
+  };
+  const perClass = rec.classes
+    .filter((cls) => cls.candidateCount > 0)
+    .map((cls) => `🧹 ${cls.name}: ${cls.candidateCount}`);
+  perClass.push(`🧹 total: ${rec.totalCandidateCount}`);
+  return perClass.join(" · ");
 }
 
 /** Apply the plan: delete every candidate, collect (never abandon on)
@@ -190,7 +208,7 @@ export async function clean(args: string[], config: WorktreeConfig): Promise<voi
     checkReportKeep: scratch.checkReportKeep,
   });
 
-  if (!opts.json && !existsSync(root)) {
+  if (opts.format === "human" && !existsSync(root)) {
     log("info", `no scratchpad at ${root} — nothing to clean`);
     return;
   }
@@ -201,8 +219,10 @@ export async function clean(args: string[], config: WorktreeConfig): Promise<voi
         humanBytes(scan.totalCandidateBytes)
       }`,
     });
-    if (opts.json) {
-      raw(jsonPayload(scan, false, 0, 0, []));
+    if (opts.format !== "human") {
+      raw(renderRecords(machinePayload(scan, false, 0, 0, []), opts.format, {
+        emoji: cleanEmoji,
+      }));
       return;
     }
     printPlan(scan, opts.verbose);
@@ -214,8 +234,12 @@ export async function clean(args: string[], config: WorktreeConfig): Promise<voi
   const summary = `freed ${humanBytes(applied.freedBytes)} across ${applied.freedCount} artifact(s)`
     + (applied.failures.length > 0 ? ` (${applied.failures.length} failed)` : "");
   activeRun()?.outcome({ clean: summary });
-  if (opts.json) {
-    raw(jsonPayload(scan, true, applied.freedBytes, applied.freedCount, applied.failures));
+  if (opts.format !== "human") {
+    raw(renderRecords(
+      machinePayload(scan, true, applied.freedBytes, applied.freedCount, applied.failures),
+      opts.format,
+      { emoji: cleanEmoji },
+    ));
   } else {
     for (const cls of scan.classes) {
       const stat = applied.perClass.get(cls.name);

@@ -6,19 +6,80 @@
  */
 
 import type { WorktreeConfig } from "../utils/config";
+import { parseOutFlags, renderRecords } from "../utils/emit";
+import type { GitWorktree } from "../utils/git";
 import { getStatus, getWorktrees } from "../utils/git";
 import { colorize, log, raw, section } from "../utils/output";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { staleReasons } from "./worktree-registry";
 
+/** Records for --json/--toml/--emoji: one per worktree, the same facts the
+ *  human view prints (branch, path, short HEAD, sync state, staleness). */
+async function listRecords(
+  repoRoot: string,
+  worktrees: GitWorktree[],
+): Promise<Array<Record<string, unknown>>> {
+  const records: Array<Record<string, unknown>> = [];
+  for (const wt of worktrees) {
+    const branch = wt.branch.replace("refs/heads/", "");
+    const stale = staleReasons(repoRoot, wt);
+    const rec: Record<string, unknown> = {
+      branch,
+      path: wt.path,
+      head: wt.HEAD.slice(0, 8),
+    };
+    if (stale.dirMissing || stale.refMissing) {
+      rec.stale = [
+        stale.dirMissing ? "directory missing" : null,
+        stale.refMissing ? "branch ref missing" : null,
+      ].filter((reason) => reason !== null).join(", ");
+    } else {
+      try {
+        const status = await getStatus(repoRoot, branch);
+        rec.ahead = status.ahead;
+        rec.behind = status.behind;
+      } catch {
+        // Sync state unknown — omitted rather than fabricated to 0.
+      }
+    }
+    records.push(rec);
+  }
+  return records;
+}
+
 export async function listWorktrees(
-  _args?: string[],
+  args: string[] = [],
   config?: WorktreeConfig,
 ): Promise<void> {
-  const protectedBranches = config?.settings.branches.protected
-    ?? DEFAULT_SETTINGS.branches.protected;
+  const { format } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
   const repoRoot = config?.repoRoot;
   const worktrees = await getWorktrees(repoRoot!);
+
+  if (format !== "human") {
+    raw(renderRecords(await listRecords(repoRoot!, worktrees), format, {
+      emoji: (record) => {
+        const rec = record as {
+          branch: string;
+          stale?: string;
+          ahead?: number;
+          behind?: number;
+        };
+        const sync = rec.stale
+          ? ` ⚠️ ${rec.stale}`
+          : rec.ahead || rec.behind
+          ? ` ↑${rec.ahead ?? 0} ↓${rec.behind ?? 0}`
+          : " ✅";
+        return `📁 ${rec.branch}${sync}`;
+      },
+    }));
+    return;
+  }
+
+  const protectedBranches = config?.settings.branches.protected
+    ?? DEFAULT_SETTINGS.branches.protected;
 
   if (worktrees.length === 0) {
     log("info", "No worktrees found");

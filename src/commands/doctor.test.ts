@@ -563,7 +563,7 @@ describe("doctor() check subcommand", () => {
     const root = tsRepo();
     const { out, exitCode } = await runCheck(["--help"], configFor(root));
     expect(out).toContain("Usage: giwt doctor [--apply]");
-    expect(out).toContain("giwt doctor check [--json]");
+    expect(out).toContain("giwt doctor check [--json|--toml|--emoji]");
     expect(exitCode).toBe(0);
   });
 
@@ -621,6 +621,42 @@ describe("doctor() check subcommand", () => {
     expect(report.checks[0]?.id).toBe("todo");
     expect(report.checks[0]?.findings[0]?.rule).toBe("FIXME");
     expect(exitCode).toBe(1);
+  });
+
+  it("round-trips the report through --toml", async () => {
+    const root = tsRepo();
+    writeFileSync(join(root, "src", "a.ts"), "// FIXME: broken\n");
+    const { out, exitCode } = await runCheck(
+      ["--checks=todo", "--toml", `--root=${root}`, "--jobs=1"],
+      configFor(root),
+    );
+    const parsed = Bun.TOML.parse(out) as {
+      value: { version: number; root: string; checks: Array<{ id: string; }>; };
+    };
+    expect(parsed.value.version).toBe(1);
+    expect(parsed.value.root).toBe(root);
+    expect(parsed.value.checks[0]?.id).toBe("todo");
+    expect(exitCode).toBe(1);
+  });
+
+  it("prints one ✅/❌/⚠️ line per check with --emoji", async () => {
+    const root = tsRepo();
+    writeFileSync(join(root, "src", "a.ts"), "// FIXME: broken\n");
+    const { out, exitCode } = await runCheck(
+      ["--checks=todo", "--emoji", `--root=${root}`, "--jobs=1"],
+      configFor(root),
+    );
+    const lines = out.trim().split("\n");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^❌ todo \(\d+ finding\(s\)\)$/);
+    expect(exitCode).toBe(1);
+
+    const cleanRoot = tsRepo();
+    const ok = await runCheck(
+      ["--checks=todo", "--emoji", `--root=${cleanRoot}`, "--jobs=1"],
+      configFor(cleanRoot),
+    );
+    expect(ok.out.trim()).toMatch(/^✅ todo \(0 finding\(s\)\)$/);
   });
 
   it("marks non-applicable checks as skipped", async () => {

@@ -419,6 +419,44 @@ describe("clean handler", () => {
     expect(existsSync(join(scratchDir(base), "old.tmp"))).toBe(true);
   });
 
+  test("--toml round-trips the plan payload via Bun.TOML.parse", async () => {
+    const base = makeRoot("toml");
+    seedScratch(base);
+    const cap = capture();
+    try {
+      await clean(["--toml"], cfgFor(base));
+      const parsed = Bun.TOML.parse(cap.out()) as {
+        value: {
+          apply: boolean;
+          totalCandidateCount: number;
+          classes: { name: string; candidateCount: number; }[];
+        };
+      };
+      expect(parsed.value.apply).toBe(false);
+      expect(parsed.value.totalCandidateCount).toBe(8);
+      expect(parsed.value.classes).toHaveLength(4);
+      expect(parsed.value.classes.find((c) => c.name === "tmp")?.candidateCount).toBe(1);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--emoji prints one 🧹 line naming prunable classes", async () => {
+    const base = makeRoot("emoji");
+    seedScratch(base);
+    const cap = capture();
+    try {
+      await clean(["--emoji"], cfgFor(base));
+      const lines = cap.out().trim().split("\n");
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain("🧹");
+      expect(lines[0]).toContain("tmp: 1");
+      expect(lines[0]).toContain("total: 8");
+    } finally {
+      cap.restore();
+    }
+  });
+
   test("scratch settings values drive the plan", async () => {
     const base = makeRoot("plumbing");
     const tmp = scratchDir(base);
@@ -469,7 +507,9 @@ describe("clean handler", () => {
     try {
       await clean(["-h"], cfgFor(base));
       const text = cap.out();
-      expect(text).toContain("Usage: giwt clean [--dry-run] [--apply] [--json] [--verbose]");
+      expect(text).toContain(
+        "Usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]",
+      );
       expect(text).toContain(
         "--dry-run   print the prune plan per class (default; nothing is deleted)",
       );

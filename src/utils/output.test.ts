@@ -12,7 +12,21 @@
  */
 
 import { describe, expect, spyOn, test } from "bun:test";
-import { colorize, log, raw, section, setOutputFormat } from "./output";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import {
+  colorize,
+  log,
+  raw,
+  resolveFormat,
+  resolveLogLevel,
+  resolveMinLevel,
+  resolveOutputFormat,
+  section,
+  setColorMode,
+  setOutputFormat,
+} from "./output";
 
 function capture(fn: () => void): { out: string; err: string; } {
   const outSpy = spyOn(process.stdout, "write");
@@ -156,5 +170,136 @@ describe("colorize", () => {
       if (prev === undefined) delete process.env.NO_COLOR;
       else process.env.NO_COLOR = prev;
     }
+  });
+});
+
+describe("setColorMode", () => {
+  test("invalid value warns and keeps the previous mode", () => {
+    const { err } = capture(() => setColorMode("bogus"));
+    expect(err).toContain("ignoring invalid color mode \"bogus\"");
+    // Previous mode (auto, non-TTY here) still applies — plain text.
+    expect(colorize("x", "red")).toBe("x");
+  });
+
+  test("valid value changes the mode", () => {
+    // Neutralize ambient sentinels so colorMode alone decides.
+    const savedNoColor = process.env.NO_COLOR;
+    const savedGiwtColor = process.env.GIWT_COLOR;
+    delete process.env.NO_COLOR;
+    delete process.env.GIWT_COLOR;
+    try {
+      capture(() => setColorMode("always"));
+      expect(colorize("x", "red")).toBe("\x1b[31mx\x1b[0m");
+      capture(() => setColorMode("never"));
+      expect(colorize("x", "red")).toBe("x");
+    } finally {
+      capture(() => setColorMode("auto"));
+      if (savedNoColor === undefined) delete process.env.NO_COLOR;
+      else process.env.NO_COLOR = savedNoColor;
+      if (savedGiwtColor === undefined) delete process.env.GIWT_COLOR;
+      else process.env.GIWT_COLOR = savedGiwtColor;
+    }
+  });
+});
+
+describe("env-driven module resolution", () => {
+  // resolveMinLevel and resolveFormat run once at module load; a subprocess
+  // is the only way to exercise their invalid-env warn paths without
+  // re-importing the module (a second in-process instance would split
+  // coverage). Subprocess code is not counted by the in-process profiler.
+  test("invalid GIWT_LOG and GIWT_OUTPUT warn once at load", () => {
+    const script = join(
+      mkdtempSync(join(tmpdir(), "giwt-output-env-")),
+      "load-output.ts",
+    );
+    writeFileSync(
+      script,
+      `import ${JSON.stringify(resolve(import.meta.dir, "../utils/output"))};\n`,
+    );
+    try {
+      const result = Bun.spawnSync(["bun", script], {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: {
+          ...process.env,
+          GIWT_LOG: "bogus",
+          GIWT_OUTPUT: "bogus",
+        } as Record<string, string>,
+      });
+      const errText = result.stderr.toString();
+      expect(result.exitCode).toBe(0);
+      expect(errText).toContain("ignoring invalid GIWT_LOG value \"bogus\"");
+      expect(errText).toContain("ignoring invalid GIWT_OUTPUT value \"bogus\"");
+    } finally {
+      rmSync(dirname(script), { recursive: true, force: true });
+    }
+  });
+});
+
+describe("env resolvers (exported for load-branch coverage)", () => {
+  /** Bun.env is process.env — save/restore hermetically per test. */
+  function withEnv(vars: Record<string, string | undefined>, fn: () => void): { err: string; } {
+    const saved: Record<string, string | undefined> = {};
+    for (const [k, v] of Object.entries(vars)) {
+      saved[k] = Bun.env[k];
+      if (v === undefined) delete Bun.env[k];
+      else Bun.env[k] = v;
+    }
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    let err = "";
+    try {
+      fn();
+    } finally {
+      // Read calls BEFORE mockRestore — restore clears the recorded calls.
+      err = errSpy.mock.calls.map((a) => String(a[0])).join("");
+      errSpy.mockRestore();
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete Bun.env[k];
+        else Bun.env[k] = v;
+      }
+    }
+    return { err };
+  }
+
+  test("resolveLogLevel: empty/valid/invalid", () => {
+    expect(resolveLogLevel(undefined)).toBe("info");
+    expect(resolveLogLevel("")).toBe("info");
+    expect(resolveLogLevel("  WARN ")).toBe("warn");
+    expect(resolveLogLevel("bogus")).toBe(null);
+  });
+
+  test("resolveOutputFormat: empty/valid/invalid", () => {
+    expect(resolveOutputFormat(undefined)).toBe("simple");
+    expect(resolveOutputFormat("")).toBe("simple");
+    expect(resolveOutputFormat(" JSONL ")).toBe("jsonl");
+    expect(resolveOutputFormat("bogus")).toBe(null);
+  });
+
+  test("resolveMinLevel: invalid env warns and falls back to info", () => {
+    const { err } = withEnv({ GIWT_LOG: "bogus" }, () => {
+      expect(resolveMinLevel()).toBe(1);
+    });
+    expect(err).toContain("ignoring invalid GIWT_LOG value \"bogus\"");
+  });
+
+  test("resolveMinLevel: valid debug env resolves debug", () => {
+    const { err } = withEnv({ GIWT_LOG: "debug" }, () => {
+      expect(resolveMinLevel()).toBe(0);
+    });
+    expect(err).toBe("");
+  });
+
+  test("resolveFormat: invalid env warns and falls back to simple", () => {
+    const { err } = withEnv({ GIWT_OUTPUT: "bogus" }, () => {
+      expect(resolveFormat()).toBe("simple");
+    });
+    expect(err).toContain("ignoring invalid GIWT_OUTPUT value \"bogus\"");
+  });
+
+  test("resolveFormat: valid toml env resolves toml", () => {
+    const { err } = withEnv({ GIWT_OUTPUT: "toml" }, () => {
+      expect(resolveFormat()).toBe("toml");
+    });
+    expect(err).toBe("");
   });
 });

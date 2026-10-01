@@ -128,3 +128,111 @@ describe("list: sync labels", () => {
     expect(out).toContain("behind 1");
   });
 });
+
+describe("list: machine output flags", () => {
+  test("--json parses to one record per worktree", async () => {
+    addWorktree("feat-json");
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--json"], config);
+    } finally {
+      cap.restore();
+    }
+    const records = JSON.parse(cap.lines()) as Array<{
+      branch: string;
+      path: string;
+      head: string;
+      ahead?: number;
+      behind?: number;
+    }>;
+    expect(records).toHaveLength(2); // main + the new worktree
+    const rec = records.find((r) => r.branch === "feat-json");
+    expect(rec?.path).toBe(resolve(treeDir, branchToPath("feat-json")));
+    expect(rec?.head).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  test("--toml round-trips via Bun.TOML.parse", async () => {
+    addWorktree("feat-toml");
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--toml"], config);
+    } finally {
+      cap.restore();
+    }
+    const parsed = Bun.TOML.parse(cap.lines()) as {
+      items: Array<{ branch: string; }>;
+    };
+    expect(parsed.items.some((r) => r.branch === "feat-toml")).toBe(true);
+  });
+
+  test("--emoji prints one line per worktree", async () => {
+    addWorktree("feat-emoji");
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--emoji"], config);
+    } finally {
+      cap.restore();
+    }
+    const lines = cap.lines().trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines.every((l) => l.startsWith("📁"))).toBe(true);
+    expect(cap.lines()).toContain("feat-emoji");
+  });
+});
+
+describe("list: stale records and flag conflicts", () => {
+  test("--json marks a worktree whose directory vanished as stale", async () => {
+    const wtPath = addWorktree("ghost-json");
+    rmSync(wtPath, { recursive: true, force: true });
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--json"], config);
+    } finally {
+      cap.restore();
+    }
+    const records = JSON.parse(cap.lines()) as Array<{
+      branch: string;
+      stale?: string;
+      ahead?: number;
+      behind?: number;
+    }>;
+    const rec = records.find((r) => r.branch === "ghost-json");
+    expect(rec?.stale).toBe("directory missing");
+    // Sync state is omitted rather than fabricated when stale.
+    expect(rec?.ahead).toBeUndefined();
+    expect(rec?.behind).toBeUndefined();
+  });
+
+  test("multiple output flags warn and keep the first", async () => {
+    addWorktree("feat-multi");
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--json", "--toml"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.lines()).toContain("multiple output flags");
+    // --json wins: the raw payload carries the JSON record.
+    expect(cap.lines()).toContain("feat-multi");
+  });
+
+  test("missing root branch ref falls back to bare HEAD line", async () => {
+    const wtPath = addWorktree("orphan-status");
+    commitAll("orphan commit", wtPath);
+    git(["update-ref", "-d", "refs/heads/main"]);
+    const cap = captureOutput();
+    try {
+      await listWorktrees([], config);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.lines();
+    // Main registry entry is stale (its ref is gone)…
+    expect(out).toContain("branch ref missing");
+    // …while the surviving worktree can't compute sync state and prints
+    // a bare HEAD instead of a fabricated ahead/behind label.
+    expect(out).not.toContain("up to date");
+    expect(out).not.toContain("ahead");
+    expect(out).toMatch(/HEAD: [0-9a-f]{8}/);
+  });
+});

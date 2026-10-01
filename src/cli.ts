@@ -36,6 +36,7 @@ import { commit } from "./commands/commit";
 import { commitWt } from "./commands/commit-wt";
 import { execute as createCmd } from "./commands/create";
 import { execute as diffCmd } from "./commands/diff";
+import { docs } from "./commands/docs";
 import { doctor } from "./commands/doctor";
 import { edit } from "./commands/edit";
 import { finalize } from "./commands/finalize";
@@ -64,7 +65,7 @@ import { isNoColor } from "./utils/colors";
 import { loadConfig, type WorktreeConfig } from "./utils/config";
 import { assertNotInWorktree, gitSyncQuiet } from "./utils/git";
 import { appendLedger, extractSayArgs, LEDGER_SILENT_COMMANDS } from "./utils/ledger";
-import { log, raw, setOutputFormat } from "./utils/output";
+import { log, raw, setColorMode, setOutputFormat } from "./utils/output";
 import { beginRun } from "./utils/runlog";
 
 interface CommandHandler {
@@ -86,8 +87,10 @@ const USAGE: Record<string, string> = {
   "attach-dir": "<ID> <DIR>\n  <ID>    issue id\n  <DIR>   directory of files to attach",
   "branches": "",
   "clean":
-    "[--dry-run] [--apply] [--json] [--verbose]\n  --dry-run   print the prune plan per class (default; nothing is deleted)\n  --apply     run the prune and report bytes freed\n  --json      machine-readable plan/result on stdout\n  --verbose   list every candidate path, not just per-class totals",
+    "[--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]\n  --dry-run   print the prune plan per class (default; nothing is deleted)\n  --apply     run the prune and report bytes freed\n  --json      machine-readable plan/result on stdout (--toml/--emoji also supported)\n  --verbose   list every candidate path, not just per-class totals",
   "cleanup": "",
+  "docs":
+    "<list|show|search|dump> [args...]\n  list            table of doc names and titles (--json supported)\n  show <name>     print a doc with its path header (--json supported)\n  search <term>   case-insensitive line search, name:line:text (--json supported)\n  dump <name>     raw file bytes, pipe-safe (no header, no color)",
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
   "commit":
@@ -97,7 +100,7 @@ const USAGE: Record<string, string> = {
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
-    "[--apply] [--tool <csv>] [--root <dir>] | check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>] | scratchpad [--json] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  scratchpad          scratchpad bloat report (shortcut for `check --checks scratchpad`; shares --json/--root)\n  --json              (check only) machine-readable report\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --timeout <ms>      (check only) per-check subprocess budget; exceeded = killed check (default: [doctor] timeout_ms, 120000)\n  --root <dir>        override project root (default: worktreeRoot)",
+    "[--apply] [--tool <csv>] [--root <dir>] | check [--json|--toml|--emoji] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>] | scratchpad [--json] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  scratchpad          scratchpad bloat report (shortcut for `check --checks scratchpad`; shares --json/--root)\n  --json              (check only) machine-readable report (--toml/--emoji also supported)\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --timeout <ms>      (check only) per-check subprocess budget; exceeded = killed check (default: [doctor] timeout_ms, 120000)\n  --root <dir>        override project root (default: worktreeRoot)",
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
@@ -111,7 +114,8 @@ const USAGE: Record<string, string> = {
     "[--all|-a] [--state <open|closed|all>|-s <v>] [--format <f>|-f <f>]\n  --all, -a                show all issues (default: first 50, with a truncation notice)\n  --state, -s <v>          filter by state: open|closed|all (default: open; --state=<v> also accepted)\n  --format, -f <f>         git-issue ls format",
   "ledger":
     "[--last N] [--json]\n  --last <N>   show only the last N records (--last=N also accepted)\n  --json       machine-readable output",
-  "list": "",
+  "list":
+    "[--json|--toml|--emoji]\n  --json      worktree records: branch, path, head, ahead/behind, stale\n  --toml      same records as TOML (items array)\n  --emoji     one 📁 line per worktree",
   "merge":
     "<branch> <source>\n  <branch>   target worktree branch\n  <source>   branch merged into it",
   "new":
@@ -124,9 +128,11 @@ const USAGE: Record<string, string> = {
   "remove": "<branch>\n  <branch>   worktree branch to remove",
   "report": "",
   "runs":
-    "[--last N] [--json]\n  --last <N>   show only the last N runs (--last=N also accepted)\n  --json       machine-readable output",
-  "search": "<pattern>\n  <pattern>   git-issue search text",
-  "show": "<ID>\n  <ID>   issue id",
+    "[--last N] [--json|--toml|--emoji]\n  --last <N>   show only the last N runs (--last=N also accepted)\n  --json       machine-readable output (--toml/--emoji also supported)",
+  "search":
+    "<pattern> [--json|--toml|--emoji]\n  <pattern>   git-issue search text\n  --json      array of hit records {hash, state, title, extid}\n  --toml      [[items]] array-of-tables\n  --emoji     one line per hit: status glyph + extid/hash + title",
+  "show":
+    "<ID> [--json|--toml|--emoji]\n  <ID>        issue id (extid, case-insensitive, or hash)\n  --json      single record {extid, hash, state, title, labels?, priority?, body?}\n  --toml      {value = record}\n  --emoji     one line: status glyph + extid/hash + title",
   "sign": "<branch>\n  <branch>   worktree branch to configure GPG signing for",
   "state":
     "<ID> <open|closed>\n  <ID>      issue id\n  <state>   open|closed (other values become --state=<state>)",
@@ -170,6 +176,10 @@ const commands: Record<string, CommandHandler> = {
   "cleanup": {
     description: "Remove stale worktrees for deleted branches",
     run: cleanupCmd,
+  },
+  "docs": {
+    description: "List, show, search, or dump the repo's markdown docs",
+    run: docs,
   },
   "comment": {
     description: "Add comment to issue",
@@ -383,11 +393,20 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   // Logger format from settings ([output].format; env GIWT_OUTPUT wins at
   // module load). Applied before any command output, including run records.
   setOutputFormat(config.settings.output.format);
-  // An explicit --json flag is the most specific machine-output request:
-  // it forces a machine format so banners/log traffic (including the
-  // run-record announcement) move to stderr and stdout carries only the
-  // raw() payload. See FIX-json-output-polluted-by-run-record-announcement.
-  if (cleanArgs.includes("--json")) setOutputFormat("json");
+  // Color gate from settings ([output].color); GIWT_COLOR/NO_COLOR still
+  // win per shouldColor precedence.
+  setColorMode(config.settings.output.color);
+  // An explicit --json/--toml/--emoji flag is the most specific
+  // machine-output request: it forces a machine format so banners/log
+  // traffic (including the run-record announcement) move to stderr and
+  // stdout carries only the raw() payload. See
+  // FIX-json-output-polluted-by-run-record-announcement.
+  if (
+    cleanArgs.includes("--json") || cleanArgs.includes("--toml")
+    || cleanArgs.includes("--emoji")
+  ) {
+    setOutputFormat("json");
+  }
   const silent = LEDGER_SILENT_COMMANDS[cmdName] === true;
   // Resolved branch: one `git branch --show-current` shared by both
   // evidence records. Never derived from args — a positional can be a

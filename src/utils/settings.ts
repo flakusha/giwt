@@ -48,6 +48,7 @@
  *   max_runs = 200
  *   [output]
  *   format = "simple"        # simple|pretty|json|jsonl|toml
+ *   color = "auto"           # auto|always|never — TTY-aware color gate
  *
  * NOTE: commands.check / commands.test are arbitrary shell words executed
  * by `giwt finalize` in the managed repo. That is by design — the config
@@ -78,7 +79,7 @@ export interface GiwtSettings {
     scratchpadOldestWarnDays: number;
   };
   runlog: { maxRuns: number; };
-  output: { format: string; streamTail: number; };
+  output: { format: string; streamTail: number; color: string; };
   scratch: {
     tmpMaxAgeDays: number;
     lcovKeepLatest: number;
@@ -109,7 +110,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     scratchpadOldestWarnDays: DEFAULT_SCRATCHPAD_THRESHOLDS.oldestWarnDays,
   },
   runlog: { maxRuns: 200 },
-  output: { format: "simple", streamTail: 25 },
+  output: { format: "simple", streamTail: 25, color: "auto" },
   scratch: { ...DEFAULT_SCRATCH_CONFIG, root: ".tmp" },
   status: { aliases: {} },
 };
@@ -135,7 +136,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     scratchpad_oldest_warn_days: "scratchpadOldestWarnDays",
   },
   runlog: { max_runs: "maxRuns" },
-  output: { format: "format", stream_tail: "streamTail" },
+  output: { format: "format", stream_tail: "streamTail", color: "color" },
   scratch: {
     tmp_max_age_days: "tmpMaxAgeDays",
     lcov_keep_latest: "lcovKeepLatest",
@@ -169,7 +170,7 @@ const EXPECTED: Record<
     scratchpadOldestWarnDays: "number",
   },
   runlog: { maxRuns: "number" },
-  output: { format: "string", streamTail: "number" },
+  output: { format: "string", streamTail: "number", color: "string" },
   scratch: {
     tmpMaxAgeDays: "number",
     lcovKeepLatest: "number",

@@ -49,9 +49,9 @@ describe("buildMatrix", () => {
 
     expect(m.total).toBe(3);
     expect(m.byTag.map((r) => r.key)).toEqual(["matrix", "plan", "(untagged)"]);
-    const plan = m.byTag.find((r) => r.key === "plan")!;
-    expect(plan.total).toBe(2);
-    expect(plan.statuses).toEqual({
+    const planTag = m.byTag.find((r) => r.key === "plan")!;
+    expect(planTag.total).toBe(2);
+    expect(planTag.statuses).toEqual({
       done: 1,
       in_progress: 1,
       open: 0,
@@ -59,7 +59,7 @@ describe("buildMatrix", () => {
       cancelled: 0,
       other: 0,
     });
-    expect(plan.tickets).toEqual(["TASK-A", "TASK-B"]);
+    expect(planTag.tickets).toEqual(["TASK-A", "TASK-B"]);
     const untagged = m.byTag[m.byTag.length - 1]!;
     expect(untagged.key).toBe("(untagged)");
     expect(untagged.total).toBe(1);
@@ -238,5 +238,74 @@ describe("matrix gate", () => {
     expect(fixed.results[0]!.fixes?.length).toBe(1);
     // The regenerated file is byte-identical to a fresh build.
     expect(readFileSync(outPath, "utf8")).toBe(matrixOutput(indexPath).output);
+  });
+});
+
+describe("plan matrix: machine output flags", () => {
+  let root: string;
+
+  const cli = join(import.meta.dir, "..", "cli.ts");
+
+  function runCli(
+    args: string[],
+  ): { stdout: string; stderr: string; exitCode: number; } {
+    const result = Bun.spawnSync(["bun", cli, "plan", "matrix", ...args], {
+      cwd: root,
+      env: { ...process.env, REPO_ROOT: root },
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 30000,
+    });
+    return {
+      stdout: result.stdout.toString(),
+      stderr: result.stderr.toString(),
+      exitCode: result.exitCode ?? -1,
+    };
+  }
+
+  function makeFixture(): void {
+    mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
+    writeFileSync(
+      join(root, ".plan", "tickets", "index.json"),
+      JSON.stringify({ A: entry({ extid: "A", tags: ["t"] }) }),
+    );
+  }
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test("--json parses back to the FeatureMatrix (compact)", () => {
+    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    makeFixture();
+    const result = runCli(["--json"]);
+    expect(result.exitCode).toBe(0);
+    const matrix = JSON.parse(result.stdout) as {
+      total: number;
+      byTag: Array<{ key: string; total: number; }>;
+    };
+    expect(matrix.total).toBe(1);
+    expect(matrix.byTag[0]!.key).toBe("t");
+  });
+
+  test("--toml round-trips via Bun.TOML.parse", () => {
+    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    makeFixture();
+    const result = runCli(["--toml"]);
+    expect(result.exitCode).toBe(0);
+    const parsed = Bun.TOML.parse(result.stdout) as {
+      value: { total: number; };
+    };
+    expect(parsed.value.total).toBe(1);
+  });
+
+  test("--emoji prints one summary line", () => {
+    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    makeFixture();
+    const result = runCli(["--emoji"]);
+    expect(result.exitCode).toBe(0);
+    const lines = result.stdout.trim().split("\n");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^📊 total: 1 · tags: 1 · untagged: \d+ · unbound: \d+$/);
   });
 });

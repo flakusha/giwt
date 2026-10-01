@@ -23,6 +23,7 @@ import { collectEpics, genDocs, generateIndex } from "../plan/gen-docs";
 import { ALL_GATES, renderValidateSummary, resolveFromRoot, runValidate } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
 import { type WorktreeConfig } from "../utils/config";
+import { parseOutFlags, renderRecords } from "../utils/emit";
 import { log, raw, section } from "../utils/output";
 
 /** Structured subcommand metadata — drives help text + validation. */
@@ -373,23 +374,29 @@ async function runGenDocs(
 
 async function runMatrix(args: string[], config: WorktreeConfig): Promise<void> {
   const isCheck = args.includes("--check");
-  const json = args.includes("--json");
+  const { format } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
   const cooccurrence = args.includes("--cooccurrence");
   const unknown = args.filter(
     (a) =>
-      a !== "--help" && a !== "-h" && a !== "--check" && a !== "--json"
+      a !== "--help" && a !== "-h" && a !== "--check"
+      && a !== "--json" && a !== "--toml" && a !== "--emoji"
       && a !== "--cooccurrence",
   );
   if (unknown.length > 0 || args.includes("--help") || args.includes("-h")) {
-    raw("Usage: giwt plan matrix [--check] [--json] [--cooccurrence]");
+    raw("Usage: giwt plan matrix [--check] [--json|--toml|--emoji] [--cooccurrence]");
     raw("  Generate .plan/feature-matrix.md from the ticket index");
     raw("  --check          verify committed matrix matches fresh rebuild (CI gate)");
-    raw("  --json           print the matrix as JSON on stdout (no file write)");
+    raw(
+      "  --json           print the matrix as JSON on stdout (no file write; --toml/--emoji also supported)",
+    );
     raw("  --cooccurrence   append the tag×tag co-occurrence section");
     process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
   }
-  if (isCheck && json) {
-    log("error", "--check and --json are mutually exclusive");
+  if (isCheck && format !== "human") {
+    log("error", "--check and --json/--toml/--emoji are mutually exclusive");
     process.exit(1);
   }
 
@@ -413,9 +420,20 @@ async function runMatrix(args: string[], config: WorktreeConfig): Promise<void> 
     return;
   }
 
-  if (json) {
+  if (format !== "human") {
     const { matrix } = matrixOutput(indexPath, { cooccurrence });
-    raw(JSON.stringify(matrix, null, 2));
+    raw(renderRecords(matrix, format, {
+      emoji: (record) => {
+        const m = record as {
+          total: number;
+          byTag: Array<{ key: string; total: number; }>;
+          untagged: number;
+          unbound: number;
+        };
+        return `📊 total: ${m.total} · tags: ${m.byTag.length}`
+          + ` · untagged: ${m.untagged} · unbound: ${m.unbound}`;
+      },
+    }));
     process.exitCode = 0;
     return;
   }

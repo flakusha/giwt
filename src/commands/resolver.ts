@@ -8,6 +8,45 @@ export interface ResolvedIssue {
   raw: string;
 }
 
+/**
+ * Extract the extid from a git-issue title: `ticket` creates issues titled
+ * `<EXTID>: <prose title>`, so "TASK-demo: fix the thing" → "TASK-demo".
+ * Returns null for foreign issues without an extid prefix.
+ */
+export function extractExtid(title: string): string | null {
+  const m = title.match(/^([A-Za-z]+-[A-Za-z0-9-]+):\s/);
+  return m?.[1] ?? null;
+}
+
+export interface StatusStyle {
+  /** Canonical vocabulary name (src/plan/status-vocab.ts). */
+  name: string;
+  glyph: string;
+  color: "green" | "yellow" | "red" | "dim";
+}
+
+const STATUS_STYLES: Record<string, StatusStyle> = {
+  "Not Started": { name: "Not Started", glyph: "○", color: "dim" },
+  "In Progress": { name: "In Progress", glyph: "🚧", color: "yellow" },
+  "Blocked": { name: "Blocked", glyph: "⛔", color: "red" },
+  "Done": { name: "Done", glyph: "✅", color: "green" },
+  "Wontfix": { name: "Wontfix", glyph: "🗑", color: "dim" },
+  "Postponed": { name: "Postponed", glyph: "⏸", color: "dim" },
+  "duplicate-of": { name: "duplicate-of", glyph: "➡️", color: "dim" },
+};
+
+/**
+ * Map a raw state value to badge/glyph style. git-issue states are
+ * open/closed; plan-vocabulary names pass through unchanged. Unknown
+ * values fall back to the neutral Not Started style.
+ */
+export function statusStyle(state: string): StatusStyle {
+  if (state === "open") return STATUS_STYLES["Not Started"]!;
+  if (state === "closed") return STATUS_STYLES["Done"]!;
+  if (state.startsWith("duplicate-of")) return STATUS_STYLES["duplicate-of"]!;
+  return STATUS_STYLES[state] ?? STATUS_STYLES["Not Started"]!;
+}
+
 export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | null {
   // Extids are case-insensitive: `giwt ticket TASK my-title` creates the
   // lowercase kebab extid TASK-my-title, and lookups must round-trip it.

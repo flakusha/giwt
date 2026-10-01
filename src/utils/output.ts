@@ -5,19 +5,42 @@
  * Output formatting utilities
  */
 
-import { isNoColor } from "./colors";
+import { type ColorMode, shouldColor } from "./colors";
 
 export const colors = {
   reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  italic: "\x1b[3m",
   red: "\x1b[31m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
   cyan: "\x1b[36m",
   gray: "\x1b[90m",
 };
 
+/** Color mode override from settings `[output].color` (default "auto"). */
+let colorMode: ColorMode = "auto";
+
+const COLOR_MODES: readonly ColorMode[] = ["auto", "always", "never"];
+
+/** Set the color mode at runtime (e.g. from giwt.toml [output]); invalid
+ *  values warn once and keep the previous mode — mirrors setOutputFormat. */
+export function setColorMode(mode: string): void {
+  const normalized = mode.trim().toLowerCase();
+  if (!COLOR_MODES.includes(normalized as ColorMode)) {
+    process.stderr.write(
+      `output: ignoring invalid color mode "${mode}" (expected auto|always|never)\n`,
+    );
+    return;
+  }
+  colorMode = normalized as ColorMode;
+}
+
 export function colorize(text: string, color: keyof typeof colors): string {
-  if (isNoColor()) return text;
+  if (!shouldColor({ colorMode })) return text;
   return `${colors[color]}${text}${colors.reset}`;
 }
 
@@ -35,18 +58,35 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
 let minLevel: number = resolveMinLevel();
 
 /**
+ * Parse a GIWT_LOG-style level name. Empty/unset → "info"; invalid →
+ * null (caller warns with its own message). Exported for tests — the
+ * module-load warn branch is otherwise unexecutable in-process.
+ */
+export function resolveLogLevel(rawValue: string | undefined): LogLevel | null {
+  const v = rawValue?.trim().toLowerCase() ?? "";
+  if (v === "") return "info";
+  if (v in LEVEL_ORDER) return v as LogLevel;
+  return null;
+}
+
+/**
  * Resolve the minimum level from the GIWT_LOG environment variable.
  * Invalid or unset values fall back to "info". One-time setup: the env
- * var is read at module load; call setLogLevel to change it at runtime.
+ * var is read at module load; call setLogLevel to change at runtime.
+ * Exported for tests (the load-time warn branch is unreachable
+ * in-process otherwise).
  */
-function resolveMinLevel(): number {
-  const rawValue = (Bun.env.GIWT_LOG ?? "").trim().toLowerCase();
-  if (rawValue === "") return LEVEL_ORDER.info;
-  if (rawValue in LEVEL_ORDER) return LEVEL_ORDER[rawValue as LogLevel];
-  process.stderr.write(
-    `output: ignoring invalid GIWT_LOG value "${rawValue}" (expected debug|info|warn|error|silent)\n`,
-  );
-  return LEVEL_ORDER.info;
+export function resolveMinLevel(): number {
+  const level = resolveLogLevel(Bun.env.GIWT_LOG);
+  if (level === null) {
+    process.stderr.write(
+      `output: ignoring invalid GIWT_LOG value "${
+        (Bun.env.GIWT_LOG ?? "").trim()
+      }" (expected debug|info|warn|error|silent)\n`,
+    );
+    return LEVEL_ORDER.info;
+  }
+  return LEVEL_ORDER[level];
 }
 
 /**
@@ -73,26 +113,45 @@ const GLYPHS: Record<EmitLevel, string> = {
   error: "\u2718",
 };
 
-const LEVEL_COLORS: Record<EmitLevel, keyof typeof colors> = {
-  debug: "gray",
-  info: "cyan",
-  success: "green",
-  warn: "yellow",
-  error: "red",
+/** Per-level ANSI styling applied to the glyph in pretty format.
+ *  info stays plain; debug is dim+italic; error is bold red. */
+const LEVEL_STYLES: Record<EmitLevel, Array<keyof typeof colors>> = {
+  debug: ["dim", "italic"],
+  info: [],
+  success: ["green"],
+  warn: ["yellow"],
+  error: ["red", "bold"],
 };
 
 let activeFormat: OutputFormat = resolveFormat();
 
+/**
+ * Parse a GIWT_OUTPUT-style format name. Empty/unset → "simple";
+ * invalid → null (caller warns with its own message). Exported for
+ * tests — the module-load warn branch is otherwise unexecutable
+ * in-process.
+ */
+export function resolveOutputFormat(rawValue: string | undefined): OutputFormat | null {
+  const v = rawValue?.trim().toLowerCase() ?? "";
+  if (v === "") return "simple";
+  if (FORMATS.includes(v)) return v as OutputFormat;
+  return null;
+}
+
 /** Resolve the format from GIWT_OUTPUT; invalid values warn once and fall
- *  back to simple — mirrors the GIWT_LOG precedent. */
-function resolveFormat(): OutputFormat {
-  const rawValue = (Bun.env.GIWT_OUTPUT ?? "").trim().toLowerCase();
-  if (rawValue === "") return "simple";
-  if (FORMATS.includes(rawValue)) return rawValue as OutputFormat;
-  process.stderr.write(
-    `output: ignoring invalid GIWT_OUTPUT value "${rawValue}" (expected simple|pretty|json|jsonl|toml)\n`,
-  );
-  return "simple";
+ *  back to simple — mirrors the GIWT_LOG precedent. Exported for tests
+ *  (the load-time warn branch is unreachable in-process otherwise). */
+export function resolveFormat(): OutputFormat {
+  const format = resolveOutputFormat(Bun.env.GIWT_OUTPUT);
+  if (format === null) {
+    process.stderr.write(
+      `output: ignoring invalid GIWT_OUTPUT value "${
+        (Bun.env.GIWT_OUTPUT ?? "").trim()
+      }" (expected simple|pretty|json|jsonl|toml)\n`,
+    );
+    return "simple";
+  }
+  return format;
 }
 
 /** Override the output format at runtime (e.g. from giwt.toml [output]). */
@@ -124,8 +183,13 @@ export function isMachineFormat(): boolean {
 // per-run event volume grows ~1000× or a format needs per-event parsing.
 function render(level: EmitLevel, message: string): string {
   switch (activeFormat) {
-    case "pretty":
-      return `${colorize(GLYPHS[level], LEVEL_COLORS[level])} ${message}`;
+    case "pretty": {
+      const glyph = LEVEL_STYLES[level].reduce<string>(
+        (acc, style) => colorize(acc, style),
+        GLYPHS[level],
+      );
+      return `${glyph} ${message}`;
+    }
     case "json":
     case "jsonl":
       return JSON.stringify({ ts: new Date().toISOString(), level, msg: message });
@@ -172,7 +236,13 @@ export function raw(message: string): void {
 export function section(title: string): void {
   if (activeFormat === "pretty") {
     emit(process.stdout, "");
-    emit(process.stdout, colorize(`\u2551\u2551\u2551 ${title} \u2551\u2551\u2551`, "cyan"));
+    emit(
+      process.stdout,
+      (["cyan", "bold"] as const).reduce<string>(
+        (acc, style) => colorize(acc, style),
+        `║║║ ${title} ║║║`,
+      ),
+    );
     emit(process.stdout, "");
     return;
   }

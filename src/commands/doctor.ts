@@ -10,7 +10,7 @@
  *   giwt doctor --apply               write configs + run `git config`
  *   giwt doctor --tool oxlint,knip    restrict to specific tools
  *   giwt doctor --root <dir>          operate on a different root
- *   giwt doctor check [--json]        run repo-health checks (lint, typecheck,
+ *   giwt doctor check [--json|--toml|--emoji]        run repo-health checks (lint, typecheck,
  *                                     tests, knip, jscpd, todo, scratchpad)
  *   giwt doctor scratchpad [--json]   scratchpad bloat report (check shortcut)
  *   giwt doctor --help                this help
@@ -48,6 +48,7 @@ import { generateRenovate } from "../doctor/generators/renovate.ts";
 import { recommend } from "../doctor/recommend.ts";
 import type { DoctorOptions, GeneratedFile, ProjectReport, ToolId } from "../doctor/types.ts";
 import type { WorktreeConfig } from "../utils/config.ts";
+import { parseOutFlags, renderRecords } from "../utils/emit.ts";
 import { gitSync, gitSyncQuiet } from "../utils/git.ts";
 import { log, raw, section } from "../utils/output.ts";
 import { activeRun } from "../utils/runlog.ts";
@@ -165,32 +166,47 @@ export async function doctor(
  * and nothing else on stdout. Uses process.exitCode (not process.exit) so
  * piped JSON is never truncated.
  */
+/** ✅/❌/⚠️ per check ok/fail/warn + check id — one line per check. */
+function doctorCheckEmoji(record: Record<string, unknown> | unknown): string {
+  const rec = record as {
+    id: string;
+    ok: boolean;
+    skipped?: string;
+    findings: Array<{ severity: string; }>;
+  };
+  if (rec.skipped !== undefined) return `⏭️ ${rec.id} skipped`;
+  const hasError = !rec.ok || rec.findings.some((f) => f.severity === "error");
+  const mark = hasError ? "❌" : rec.findings.length > 0 ? "⚠️" : "✅";
+  return `${mark} ${rec.id} (${rec.findings.length} finding(s))`;
+}
+
 async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<void> {
-  let json = false;
+  const { format, rest } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
   let root = config.worktreeRoot;
   let checks: CheckId[] | undefined;
   let jobs: number | undefined;
   let timeoutMs: number | undefined;
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i]!;
-    if (a === "--json") {
-      json = true;
-    } else if (a === "--root" || a.startsWith("--root=")) {
-      const v = a.startsWith("--root=") ? a.slice(7) : args[++i];
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i]!;
+    if (a === "--root" || a.startsWith("--root=")) {
+      const v = a.startsWith("--root=") ? a.slice(7) : rest[++i];
       if (v) root = v;
     } else if (a === "--checks" || a.startsWith("--checks=")) {
-      const v = a.startsWith("--checks=") ? a.slice(9) : args[++i];
+      const v = a.startsWith("--checks=") ? a.slice(9) : rest[++i];
       if (v) checks = v.split(",").map((s) => s.trim()).filter(Boolean) as CheckId[];
     } else if (a === "--jobs" || a.startsWith("--jobs=")) {
-      const v = a.startsWith("--jobs=") ? a.slice(7) : args[++i];
+      const v = a.startsWith("--jobs=") ? a.slice(7) : rest[++i];
       if (v) jobs = Number(v);
     } else if (a === "--timeout" || a.startsWith("--timeout=")) {
-      const v = a.startsWith("--timeout=") ? a.slice(10) : args[++i];
+      const v = a.startsWith("--timeout=") ? a.slice(10) : rest[++i];
       if (v) timeoutMs = Number(v);
     } else {
       log("error", `unknown flag '${a}'`);
       raw(
-        "  Usage: giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
+        "  Usage: giwt doctor check [--json|--toml|--emoji] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
       );
       process.exit(1);
     }
@@ -263,8 +279,14 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
       + `${skippedCount} skipped, ${findingCount} findings`,
     ...(failedIds.length > 0 ? { failedGates: failedIds } : {}),
   });
-  if (json) {
-    raw(JSON.stringify(report, null, 2));
+  if (format !== "human") {
+    // json/toml carry the whole report contract; emoji maps one line per
+    // check, so it renders the checks array instead.
+    raw(
+      format === "emoji"
+        ? renderRecords(report.checks, format, { emoji: doctorCheckEmoji })
+        : renderRecords(report, format, { emoji: doctorCheckEmoji }),
+    );
     process.exitCode = checkExitCode(report);
     return;
   }
@@ -301,7 +323,7 @@ async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<v
 function printHelp(): void {
   raw("Usage: giwt doctor [--apply] [--tool <csv>] [--root <dir>]");
   raw(
-    "       giwt doctor check [--json] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
+    "       giwt doctor check [--json|--toml|--emoji] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>]",
   );
   raw("       giwt doctor scratchpad [--json] [--root <dir>]");
   raw("");
@@ -349,7 +371,9 @@ export function parseArgs(args: string[]): DoctorOptions {
       // would silently run setup mode. Force the user to disambiguate.
       log("error", `unknown flag '${a}' for setup mode`);
       raw("  Setup flags: --apply, --tool <csv>, --root <dir>");
-      raw("  Check subcommand: giwt doctor check [--json] [--checks <csv>] [--root <dir>]");
+      raw(
+        "  Check subcommand: giwt doctor check [--json|--toml|--emoji] [--checks <csv>] [--root <dir>]",
+      );
       process.exit(1);
     }
   }
