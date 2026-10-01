@@ -5,7 +5,6 @@
  * Plan command — subcommand dispatcher for .plan/ tooling.
  *
  * Subcommands:
- *   backlog-sync  Sync .plan/backlog/ index file maps ↔ tier files (--fix, --verbose)
  *   code-map      Build/check/query reverse code→plan index (--check, --find <path>)
  *   gen-docs      Generate .plan/epics-index.md from .plan/epics/
  *   matrix        Generate .plan/feature-matrix.md from the ticket index
@@ -15,7 +14,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { applyFixes, BACKLOG_INDEX_FILES, reconcile } from "../plan/backlog-sync";
+import { BACKLOG_INDEX_FILES, reconcile } from "../plan/backlog-sync";
 import { runLinkCheck } from "../plan/check-links";
 import { buildMap, findOwners, findStale, readMap, verifyFresh, writeMap } from "../plan/code-map";
 import { genMatrix, matrixOutput } from "../plan/feature-matrix";
@@ -34,11 +33,6 @@ interface SubcommandInfo {
 }
 
 const SUBCOMMAND_INFO: SubcommandInfo[] = [
-  {
-    name: "backlog-sync",
-    description: "Sync .plan/backlog/ index ↔ tier files",
-    flags: "--fix, --verbose",
-  },
   {
     name: "code-map",
     description: "Build/check/query reverse code→plan index",
@@ -98,9 +92,6 @@ export async function plan(
   }
 
   switch (sub) {
-    case "backlog-sync":
-      await runBacklogSync(rest, config);
-      break;
     case "code-map":
       await runCodeMap(rest, config);
       break;
@@ -119,118 +110,6 @@ export async function plan(
     case "status":
       await runStatus(rest, config);
       break;
-  }
-}
-
-// ── backlog-sync ────────────────────────────────────────────────
-
-async function runBacklogSync(
-  args: string[],
-  config: WorktreeConfig,
-): Promise<void> {
-  const fix = args.includes("--fix");
-  const verbose = args.includes("--verbose");
-  const unknown = args.filter(
-    (a) => a !== "--fix" && a !== "--verbose" && a !== "--help" && a !== "-h",
-  );
-  if (unknown.length > 0 || args.includes("--help") || args.includes("-h")) {
-    raw("Usage: giwt plan backlog-sync [--fix] [--verbose]");
-    raw("  Sync .plan/backlog/ index file maps ↔ tier files");
-    raw("  --fix       apply automatic fixes (add orphans, drop phantoms)");
-    raw("  --verbose   show per-file map state");
-    process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
-  }
-
-  const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
-  const backlogDir = join(planDir, "backlog");
-  const indexFiles = [...BACKLOG_INDEX_FILES];
-
-  if (!existsSync(backlogDir)) {
-    throw new Error(`${backlogDir}: missing backlog dir — nothing to sync`);
-  }
-
-  const result = reconcile(backlogDir, indexFiles);
-
-  if (fix) {
-    const fixReport = applyFixes(backlogDir, result);
-    for (const line of fixReport.added) {
-      log("info", line);
-    }
-    for (const line of fixReport.dropped) {
-      log("info", line);
-    }
-    for (const line of fixReport.outside) {
-      log("warn", line);
-    }
-    if (!fixReport.changed) {
-      log("info", "Nothing to fix");
-    } else {
-      log("success", "Wrote index file(s). Re-run without --fix to verify.");
-    }
-    // Re-reconcile to show residual
-    const residual = reconcile(backlogDir, indexFiles);
-    if (residual.issueCount > 0) {
-      log("warn", `${residual.issueCount} residual issue(s) after fix`);
-    }
-    process.exit(0);
-  }
-
-  // Report mode
-  raw("");
-  section("Reconcile .plan/backlog indexes");
-  raw(`   Backlog .md files:   ${result.map.size + result.orphans.length}`);
-  raw(`   Index files:         ${indexFiles.join(", ")}`);
-
-  if (result.orphans.length > 0) {
-    log("warn", `Orphans (not in any index file map): ${result.orphans.length}`);
-    for (const f of result.orphans) {
-      raw(`   ${f}`);
-    }
-  } else {
-    log("info", "OK: No orphan files");
-  }
-
-  if (result.phantoms.length > 0) {
-    log("warn", `Phantoms (index maps missing file): ${result.phantoms.length}`);
-    for (const p of result.phantoms) {
-      raw(`   ${p.index}:${p.row.line} -> ${p.row.file} (missing)`);
-    }
-  } else {
-    log("info", "OK: No phantom entries");
-  }
-
-  if (result.outside.length > 0) {
-    log("warn", `Non-backlog file-map targets: ${result.outside.length}`);
-    for (const o of result.outside) {
-      raw(`   ${o.index}:${o.row.line} -> ${o.row.target}`);
-    }
-  } else {
-    log("info", "OK: No outside targets");
-  }
-
-  if (verbose) {
-    raw("");
-    section("File map state");
-    for (const [file, rows] of [...result.map.entries()].sort()) {
-      const homes = rows.map((r) => r.index).join(", ");
-      const dup = rows.length > 1 ? " [warn] multiple homes" : "";
-      raw(`   ${file.padEnd(28)} <- ${homes}${dup}`);
-    }
-    const listed = [...result.map.keys()].filter(
-      (f) => !result.orphans.includes(f),
-    );
-    raw(
-      `\n   Listed: ${listed.length} - Unlisted (orphans): ${result.orphans.length}`,
-    );
-  }
-
-  if (result.issueCount === 0) {
-    log("success", "Backlog indexes are in sync");
-    process.exit(0);
-  } else {
-    log("warn", `${result.issueCount} actionable issue(s) found`);
-    raw("Run with --fix to apply automatic fixes");
-    process.exit(1);
   }
 }
 

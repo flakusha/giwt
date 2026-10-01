@@ -28,6 +28,7 @@ import { abort } from "./commands/abort";
 import { agentMerge } from "./commands/agent-merge";
 import { attach } from "./commands/attach";
 import { attachDir } from "./commands/attach-dir";
+import { backlog } from "./commands/backlog";
 import { execute as branchesCmd } from "./commands/branches";
 import { clean } from "./commands/clean";
 import { execute as cleanupCmd } from "./commands/cleanup";
@@ -85,6 +86,7 @@ const USAGE: Record<string, string> = {
     "<branch> [...]\n  alias for finalize — delegates all args (--merge-strategy, --force, --gates, --skip-gates)",
   "attach": "<ID> <FILE>\n  <ID>     issue id\n  <FILE>   file to attach as comment",
   "attach-dir": "<ID> <DIR>\n  <ID>    issue id\n  <DIR>   directory of files to attach",
+  "backlog": "<sync> [flags]\n  sync   sync .plan/backlog/ index ↔ tier files (--fix, --verbose)",
   "branches": "",
   "clean":
     "[--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]\n  --dry-run   print the prune plan per class (default; nothing is deleted)\n  --apply     run the prune and report bytes freed\n  --json      machine-readable plan/result on stdout (--toml/--emoji also supported)\n  --verbose   list every candidate path, not just per-class totals",
@@ -94,9 +96,9 @@ const USAGE: Record<string, string> = {
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
   "commit":
-    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\"\n  -F, --message-file <path>   read the message from file ('-' = stdin)",
+    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\" [--on-protected]\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              required when the current branch is protected",
   "commit-wt":
-    "<branch> [-F <file>|--message-file <file>] \"<message>\"\n  <branch>                    worktree branch to commit in\n  -F, --message-file <path>   read the message from file ('-' = stdin)",
+    "<branch> [-F <file>|--message-file <file>] \"<message>\" [--on-protected]\n  <branch>                    worktree branch (or protected branch with --on-protected)\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              commit directly in the main checkout of a protected branch",
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
@@ -121,7 +123,7 @@ const USAGE: Record<string, string> = {
   "new":
     "<branch> [base]\n  <branch>   new branch name\n  [base]     base ref (default: root branch)",
   "plan":
-    "<subcommand> [flags]\n  backlog-sync  sync .plan/backlog/ index ↔ tier files (--fix, --verbose)\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        show .plan/ health summary",
+    "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        show .plan/ health summary",
   "prs": "",
   "rebase":
     "<branch> [onto]\n  <branch>   worktree branch\n  [onto]     target ref (default: root branch)",
@@ -242,8 +244,12 @@ const commands: Record<string, CommandHandler> = {
     description: "Create new branch + worktree",
     run: newBranchCmd,
   },
+  "backlog": {
+    description: "Backlog tooling — sync .plan/backlog/ indexes",
+    run: backlog,
+  },
   "plan": {
-    description: "Plan tooling — backlog sync, code map, docs, link check, validate",
+    description: "Plan tooling — code map, docs, link check, validate",
     run: plan,
   },
   "prs": {

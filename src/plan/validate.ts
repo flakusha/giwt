@@ -924,7 +924,7 @@ export const MAX_LISTED_FINDINGS = 20;
 const MANUAL_FIX_HINTS: Record<ConcreteGate, string> = {
   format: "add the missing **Section:** headers to the flagged ticket/epic files",
   linkage: "add the missing epic↔ticket links to the flagged files",
-  backlog: "reconcile the backlog indexes (giwt plan backlog-sync --fix)",
+  backlog: "reconcile the backlog indexes (giwt backlog sync --fix)",
   tickets: "reconcile the ticket index (giwt sync)",
   "code-map": "regenerate .plan/code-map.json (giwt plan code-map)",
   links: "fix or remove the broken links/refs listed in the findings",
