@@ -6,7 +6,13 @@
  */
 
 import { type WorktreeConfig } from "../utils/config";
-import { gitSync, gitSyncQuiet, isolatedGitEnv, stagedDependencyPaths } from "../utils/git";
+import {
+  gitSync,
+  gitSyncQuiet,
+  isolatedGitEnv,
+  isProtected,
+  stagedDependencyPaths,
+} from "../utils/git";
 import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
@@ -15,7 +21,10 @@ export async function commit(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  const { rest, message: messageInput } = await extractMessageInput(args);
+  const onProtected = args.includes("--on-protected");
+  const { rest, message: messageInput } = await extractMessageInput(
+    args.filter((a) => a !== "--on-protected"),
+  );
   const message = messageInput ?? rest.join(" ");
 
   const validation = validateMessage(message);
@@ -24,6 +33,17 @@ export async function commit(
     raw("  Usage: giwt commit [-F <file>|--message-file <file>] \"<type>(scope): <description>\"");
     raw("  Example: worktree commit -F - <<< \"fix(worktree): handle empty stdin\"");
     process.exit(1);
+  }
+
+  // Direct-commit guard: protected branches require an explicit opt-in.
+  const currentBranch = gitSync(config.repoRoot, "branch", "--show-current") || "(detached)";
+  if (isProtected(currentBranch, config.settings.branches.protected)) {
+    if (!onProtected) {
+      log("error", `refusing direct commit on protected branch '${currentBranch}'`);
+      raw("  Re-run with --on-protected to commit directly (use worktrees for feature work)");
+      process.exit(1);
+    }
+    log("warn", `direct commit on protected branch '${currentBranch}' (--on-protected)`);
   }
 
   // Verify agent credentials
@@ -69,8 +89,6 @@ export async function commit(
   // Verify GPG key is in the keyring AND unlocked. The helper exits 1 on
   // any of three failure modes with an actionable hint to gpg-unlock.
   assertGpgUnlocked(config.agentGpgKeyId);
-
-  const currentBranch = gitSync(config.repoRoot, "branch", "--show-current") || "(detached)";
 
   log("info", `Creating GPG-signed commit on '${currentBranch}'...`);
   raw(`  Author:    ${authorName} <${authorEmail}>`);

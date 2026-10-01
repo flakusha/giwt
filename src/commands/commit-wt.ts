@@ -19,7 +19,10 @@ export async function commitWt(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  const { rest, message: messageInput } = await extractMessageInput(args);
+  const onProtected = args.includes("--on-protected");
+  const { rest, message: messageInput } = await extractMessageInput(
+    args.filter((a) => a !== "--on-protected"),
+  );
   const [branch, ...messageParts] = rest;
   const message = messageInput ?? messageParts.join(" ");
 
@@ -36,13 +39,29 @@ export async function commitWt(
     process.exit(1);
   }
 
+  // Protected branches have no worktree — a direct commit in the main
+  // checkout requires an explicit --on-protected opt-in.
+  let wtPath: string;
   if (isProtected(branch, config.settings.branches.protected)) {
-    log("error", `cannot commit-wt on protected branch '${branch}'`);
-    process.exit(1);
+    if (!onProtected) {
+      log("error", `cannot commit-wt on protected branch '${branch}'`);
+      raw("  Re-run with --on-protected to commit directly in the main checkout");
+      process.exit(1);
+    }
+    const checkoutBranch = gitSyncQuiet(config.repoRoot, "branch", "--show-current");
+    if (checkoutBranch !== branch) {
+      log("error", `main checkout is on '${checkoutBranch ?? "(detached)"}', not '${branch}'`);
+      process.exit(1);
+    }
+    log("warn", `direct commit on protected branch '${branch}' (--on-protected)`);
+    wtPath = config.repoRoot;
+  } else {
+    if (onProtected) {
+      log("error", `--on-protected given but '${branch}' is not a protected branch`);
+      process.exit(1);
+    }
+    wtPath = resolve(config.treeDir, branchToPath(branch));
   }
-
-  // Find worktree path from config
-  const wtPath = resolve(config.treeDir, branchToPath(branch));
 
   if (!existsSync(resolve(wtPath, ".git"))) {
     log("error", `worktree not found for branch '${branch}'`);

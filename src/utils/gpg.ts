@@ -92,6 +92,10 @@ function gpgAvailable(): boolean {
  * Each failure exits 1 with a distinct `hint:` prefix.
  */
 export function assertGpgUnlocked(keyId: string | undefined | null): void {
+  // Test seam (same family as GIWT_CHECK_SLOT_DIR): signing-pipeline tests
+  // stub `git commit -S` at the Bun.spawnSync boundary, so the real gpg
+  // pre-flight has nothing meaningful to probe. Off by default.
+  if (process.env.GIWT_SKIP_GPG_PREFLIGHT === "1") return;
   if (!keyId || !FINGERPRINT_RE.test(keyId) || keyId.length < MIN_LEN || keyId.length > MAX_LEN) {
     fail(
       "invalid-key",
