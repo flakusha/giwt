@@ -106,7 +106,7 @@ const USAGE: Record<string, string> = {
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
-    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge",
+    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>] [--jobs <n>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge\n  --jobs <n>             gate concurrency for the check step (check runners\n                         default to 1; raise it to trade memory for speed)",
   "gi":
     "<git-issue args...>\n  forwarded verbatim to git issue; issue-taking subcommands want the id first (show/edit/state <id> ...)\n  git-issue has no close command; close with: giwt gi state <id> --close",
   "gpg-unlock": "",

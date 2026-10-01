@@ -901,6 +901,7 @@ export function parseFinalizeArgs(args: string[]): {
   gatesFilter: string;
   skipGatesFilter: string;
   planGatesFilter: string;
+  jobs: string;
 } {
   const nonFlagArgs: string[] = [];
   let mergeStrategy = "rebase";
@@ -908,6 +909,7 @@ export function parseFinalizeArgs(args: string[]): {
   let gatesFilter = "";
   let skipGatesFilter = "";
   let planGatesFilter = "";
+  let jobs = "";
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === undefined) break;
@@ -922,6 +924,11 @@ export function parseFinalizeArgs(args: string[]): {
       skipGatesFilter = args[++i] || "";
     } else if (arg === "--plan-gates") {
       planGatesFilter = args[++i] || "";
+    } else if (arg === "--jobs") {
+      // Check runners default their gate fan-out to 1 (serial) because
+      // agents finalize worktrees concurrently and co-scheduled heavy gates
+      // OOM the host. `--jobs N` is the explicit opt-in to a faster run.
+      jobs = args[++i] || "";
     } else {
       nonFlagArgs.push(arg);
     }
@@ -937,6 +944,7 @@ export function parseFinalizeArgs(args: string[]): {
     gatesFilter,
     skipGatesFilter,
     planGatesFilter,
+    jobs,
   };
 }
 
@@ -1148,6 +1156,7 @@ export async function finalize(
   let gatesFilter = "";
   let skipGatesFilter = "";
   let planGatesFilter = "";
+  let jobs = "";
   const parsed = parseFinalizeArgs(args);
   branch = parsed.branch;
   mergeStrategy = parsed.mergeStrategy;
@@ -1155,6 +1164,7 @@ export async function finalize(
   gatesFilter = parsed.gatesFilter;
   skipGatesFilter = parsed.skipGatesFilter;
   planGatesFilter = parsed.planGatesFilter;
+  jobs = parsed.jobs;
   gripeBranch = branch;
 
   if (!["rebase", "squash", "direct"].includes(mergeStrategy)) {
@@ -1165,7 +1175,7 @@ export async function finalize(
   if (!branch) {
     log("error", "branch name required");
     raw(
-      "  Usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>]",
+      "  Usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--jobs <n>]",
     );
     process.exit(1);
   }
@@ -1247,6 +1257,7 @@ export async function finalize(
         gatesFilter,
         skipGatesFilter,
         planGatesFilter,
+        jobs,
         config,
         wtPath,
         targetBranch,
@@ -1271,6 +1282,7 @@ async function runFinalize(
   gatesFilter: string,
   skipGatesFilter: string,
   planGatesFilter: string,
+  jobs: string,
   config: WorktreeConfig,
   wtPath: string,
   targetBranch: string,
@@ -1379,6 +1391,9 @@ async function runFinalize(
       checkArgs.push("--gates", gatesFilter);
     } else if (skipGatesFilter) {
       checkArgs.push("--skip-gates", skipGatesFilter);
+    }
+    if (jobs) {
+      checkArgs.push("--jobs", jobs);
     }
     const hasBunLock = existsSync(resolve(wtPath, "bun.lock"));
     if (hasBunLock) {

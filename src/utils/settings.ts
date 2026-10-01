@@ -29,7 +29,7 @@
  *   check_report_keep = 20
  *   root = ".tmp"
  *   [doctor]
- *   jobs = 4
+ *   jobs = 1
  *   timeout_ms = 120000      # per-check subprocess budget (child killed on expiry)
  *   memory_budget_mb = 0     # MB the doctor pool may assume; 0 = auto (free RAM)
  *   scratchpad_warn_mb = 100 / scratchpad_error_mb = 500
@@ -41,7 +41,8 @@
  *                              # commands.diff_base = false
  *   test  = "bun run test:unit"
  *   [doctor]
- *   jobs = 4                  # max concurrent `doctor check` executions
+ *   jobs = 1                  # max concurrent `doctor check` executions
+ *                              # (1 = serial; agents run concurrent check trees)
  *   timeout_ms = 120000       # per-check subprocess budget; over it the
  *                             # child is killed and the check reports an error
  *   [runlog]

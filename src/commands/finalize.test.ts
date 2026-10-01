@@ -929,6 +929,46 @@ describe("finalize check gate", () => {
     ]);
   });
 
+  test("forwards --jobs to the check command", async () => {
+    // Check runners default the gate fan-out to 1; --jobs is the explicit
+    // opt-in to a faster (memory-hungry) run, so it must reach the runner.
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
+
+    await driveFinalize(["feature/x", "--jobs", "4"]);
+
+    expect(readFileSync(argsPath, "utf8").trim().split("\n").slice(2)).toEqual([
+      "--jobs",
+      "4",
+    ]);
+  });
+
+  test("omits --jobs when the caller did not opt in", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
+
+    await driveFinalize(["feature/x"]);
+
+    expect(readFileSync(argsPath, "utf8")).not.toContain("--jobs");
+  });
+
+  test("forwards --gates and --jobs together", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
+
+    await driveFinalize(["feature/x", "--gates", "lint", "--jobs", "2"]);
+
+    expect(readFileSync(argsPath, "utf8").trim().split("\n").slice(2)).toEqual([
+      "--gates",
+      "lint",
+      "--jobs",
+      "2",
+    ]);
+  });
+
   test("forwards a display-name gates csv verbatim as argv (no re-splitting)", async () => {
     // Ticket FIX-gates-accepts-ambiguous-display-names: the csv values can
     // contain spaces, dashes, commas and parens — they must reach the check

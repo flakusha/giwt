@@ -30,7 +30,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 /** Memory budget for ONE concurrent check tree (the full gate storm), in MB.
- * Conservative: covers the doctor pool's 4 x 1 GB plus interpreter overhead. */
+ * Conservative: covers the doctor pool's 1 GB-per-worker ceiling plus
+ * interpreter overhead. */
 export const CHECK_TREE_MEM_BUDGET_MB = 4096;
 
 /** Contention wait before a finalize proceeds without a slot. Contention is

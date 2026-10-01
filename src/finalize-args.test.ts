@@ -35,6 +35,7 @@ describe("parseFinalizeArgs — defaults", () => {
     expect(r.force).toBe(false);
     expect(r.gatesFilter).toBe("");
     expect(r.skipGatesFilter).toBe("");
+    expect(r.jobs).toBe("");
   });
 });
 
@@ -85,6 +86,29 @@ describe("parseFinalizeArgs — --gates / --skip-gates forwarding", () => {
     // skipGatesFilter is still "" because --gates consumed the value
     // AND the next iteration sees --skip-gates without a value
     expect(r.skipGatesFilter).toBe("");
+  });
+});
+
+describe("parseFinalizeArgs — --jobs forwarding", () => {
+  test("absent by default so the check runner keeps its own serial default", () => {
+    expect(parseFinalizeArgs(["branch-a"]).jobs).toBe("");
+  });
+
+  test("--jobs captures the next arg verbatim", () => {
+    const r = parseFinalizeArgs(["--jobs", "4"]);
+    expect(r.jobs).toBe("4");
+  });
+
+  test("--jobs does not leak into the branch positional", () => {
+    const r = parseFinalizeArgs(["branch-a", "--jobs", "2"]);
+    expect(r.branch).toBe("branch-a");
+    expect(r.jobs).toBe("2");
+  });
+
+  test("composes with --gates", () => {
+    const r = parseFinalizeArgs(["--gates", "md - lint", "--jobs", "2"]);
+    expect(r.gatesFilter).toBe("md - lint");
+    expect(r.jobs).toBe("2");
   });
 });
 
