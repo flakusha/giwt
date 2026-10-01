@@ -30,6 +30,19 @@
     "source": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
     "status": "Not Started"
   },
+  "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
+    "hash": "7c1a34d",
+    "git_issue": "7c1a34d",
+    "extid": "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE",
+    "type": "BUG",
+    "title": "giwt new default base dev does not exist in this clone",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-clone.md",
+    "status": "Not Started"
+  },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-REPO": {
     "hash": "95fe3d6",
     "git_issue": "95fe3d6",
@@ -43,6 +56,19 @@
       "dx"
     ],
     "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo.md",
+    "status": "Not Started"
+  },
+  "BUG-GIWT-TICKET-DROPS-FLAGS-THAT-FOLLOW-THE-POSITIONAL-BODY": {
+    "hash": "a9a0711",
+    "git_issue": "a9a0711",
+    "extid": "BUG-GIWT-TICKET-DROPS-FLAGS-THAT-FOLLOW-THE-POSITIONAL-BODY",
+    "type": "BUG",
+    "title": "giwt ticket drops flags that follow the positional body",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-giwt-ticket-drops-flags-that-follow-the-positional-body.md",
     "status": "Not Started"
   },
   "BUG-GIWT-TICKET-EXTID-DOUBLE-PREFIX-RESOLVED": {
@@ -629,6 +655,19 @@
     "source": ".plan/tickets/FIX-wire-plandir-setting-into-plan-command.md",
     "status": "done"
   },
+  "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
+    "hash": "9ef7c2f",
+    "git_issue": "9ef7c2f",
+    "extid": "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO",
+    "type": "TASK",
+    "title": "commit-wt on-protected-branch direct commit scenario",
+    "label": "task",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md",
+    "status": "Not Started"
+  },
   "TASK-GIWT-CLEAN-AGE-SIZE-CAPPED-TMP-PRUNING": {
     "hash": "pending",
     "extid": "TASK-GIWT-CLEAN-AGE-SIZE-CAPPED-TMP-PRUNING",
@@ -702,6 +741,19 @@
     "tags": [],
     "source": ".plan/tickets/TASK-giwt-ticket-create-tickets-from-inside-a-worktree.md",
     "status": "done"
+  },
+  "TASK-MIGRATE-PLAN-BACKLOG-SYNC-TO-A-TOP-LEVEL-BACKLOG-COMMAND": {
+    "hash": "dfecf6f",
+    "git_issue": "dfecf6f",
+    "extid": "TASK-MIGRATE-PLAN-BACKLOG-SYNC-TO-A-TOP-LEVEL-BACKLOG-COMMAND",
+    "type": "TASK",
+    "title": "migrate plan backlog-sync to a top-level backlog command",
+    "label": "task",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md",
+    "status": "Not Started"
   },
   "TASK-PLAN-VALIDATE-REJECT-CASE-INSENSITIVE-TICKET-FILENAME-COLLIS": {
     "hash": "6093563",
