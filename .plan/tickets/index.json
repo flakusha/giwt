@@ -408,6 +408,19 @@
     "source": ".plan/tickets/FEAT-rebase-auto-resolve-superset-side-conflicts.md",
     "status": "done"
   },
+  "FEAT-RECONCILE-LEFTOVER-FINALIZE-STASHES-IN-A-TEMP-WORKTREE": {
+    "hash": "54ac3d7",
+    "git_issue": "54ac3d7",
+    "extid": "FEAT-RECONCILE-LEFTOVER-FINALIZE-STASHES-IN-A-TEMP-WORKTREE",
+    "type": "FEAT",
+    "title": "reconcile leftover finalize stashes in a temp worktree",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-reconcile-leftover-finalize-stashes-in-a-temp-worktree.md",
+    "status": "Not Started"
+  },
   "FEAT-RECORD-PER-STEP-DURATIONMS-IN-RUN-EVENTS": {
     "hash": "d7a60af",
     "git_issue": "d7a60af",
@@ -439,6 +452,19 @@
     ],
     "source": ".plan/tickets/FEAT-runs-failure-triage-extract-fail-blocks-and-diff-two-runs.md",
     "status": "done"
+  },
+  "FEAT-SCOPED-WORKTREE-CREATION-NEW-SCOPE-AND-TICKETS-FLAGS": {
+    "hash": "60f133c",
+    "git_issue": "60f133c",
+    "extid": "FEAT-SCOPED-WORKTREE-CREATION-NEW-SCOPE-AND-TICKETS-FLAGS",
+    "type": "FEAT",
+    "title": "scoped worktree creation: new --scope and --tickets flags",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-scoped-worktree-creation-new-scope-and-tickets-flags.md",
+    "status": "Not Started"
   },
   "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE": {
     "hash": "cdde664",
@@ -670,7 +696,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "4368e0c"
   },
   "FIX-JSON-OUTPUT-POLLUTED-BY-RUN-RECORD-ANNOUNCEMENT": {
