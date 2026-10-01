@@ -425,6 +425,41 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     expect(out).toContain("worktree not found for branch 'never-created'");
   });
 
+  test("wt refuses when the worktree has no user.name/user.email", async () => {
+    // Stand-in worktree dir: .git present, staged change, but no local identity.
+    const wt = resolve(root, "tree", "feature");
+    mkdirSync(wt, { recursive: true });
+    const p = Bun.spawnSync(["git", "init", "-q", wt], {
+      stdout: "ignore",
+      stderr: "ignore",
+      env: isolatedGitEnv(),
+    });
+    if (p.exitCode !== 0) throw new Error("git init failed");
+    stageChange("f.txt", wt);
+    const chunks: string[] = [];
+    const push = (c: unknown): boolean => {
+      chunks.push(String(c));
+      return true;
+    };
+    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const original = process.exit;
+    process.exit = ((code: number) => {
+      throw new Error(`__exit__:${code}`);
+    }) as never;
+    try {
+      await commitWt(["feature", "fix(x): y"], config);
+      throw new Error("expected exit");
+    } catch (err) {
+      expect((err as Error).message).toBe("__exit__:1");
+    } finally {
+      process.exit = original;
+      o.mockRestore();
+      e.mockRestore();
+    }
+    expect(chunks.join("")).toContain("worktree user.name/user.email not configured");
+  });
+
   test("wt rejects --on-protected on non-protected", async () => {
     git(["checkout", "-qb", "feature"]);
     const out = await expectExit1((cfg) =>
