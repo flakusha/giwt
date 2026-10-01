@@ -182,6 +182,11 @@ export function isMachineFormat(): boolean {
 // is ~µs while a compiled boundary costs more than it saves; revisit only if
 // per-run event volume grows ~1000× or a format needs per-event parsing.
 function render(level: EmitLevel, message: string): string {
+  // Styles go through colorize() in every format: it no-ops when color is
+  // off (NO_COLOR / non-TTY / [output].color=never), so `simple` gets
+  // colored levels on a real terminal and stays byte-clean when piped.
+  const paint = (s: string): string =>
+    LEVEL_STYLES[level].reduce<string>((acc, style) => colorize(acc, style), s);
   switch (activeFormat) {
     case "pretty": {
       const glyph = LEVEL_STYLES[level].reduce<string>(
@@ -199,7 +204,9 @@ function render(level: EmitLevel, message: string): string {
       }\nmsg = ${JSON.stringify(message)}`;
     default:
       // simple: bare message; level tag only where it carries signal.
-      return level === "warn" || level === "error" ? `${level}: ${message}` : message;
+      return level === "warn" || level === "error"
+        ? paint(`${level}: ${message}`)
+        : paint(message);
   }
 }
 
