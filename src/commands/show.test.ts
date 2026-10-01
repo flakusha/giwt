@@ -160,10 +160,10 @@ describe("show", () => {
     execFileSync("git", ["-C", config.repoRoot, "issue", "state", done.hash, "--close"]);
 
     const capOpen = await run([open.extid, "--emoji"], config);
-    expect(capOpen.out).toBe(`○ ${open.extid} TASK-open: open emoji\n`);
+    expect(capOpen.out).toBe(`○ ${open.extid} open emoji\n`);
 
     const capDone = await run([done.hash, "--emoji"], config); // closed issues resolve by hash
-    expect(capDone.out).toBe(`✅ ${done.extid} TASK-done: done emoji\n`);
+    expect(capDone.out).toBe(`✅ ${done.extid} done emoji\n`);
   });
 
   it("unknown extid exits 1 and names the id", async () => {

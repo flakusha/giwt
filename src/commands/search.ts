@@ -43,7 +43,10 @@ export function parseIssueSearch(output: string): SearchHit[] {
 function emojiLine(record: unknown): string {
   const hit = record as SearchHit;
   const style = statusStyle(hit.state);
-  return `${style.glyph} ${hit.extid ?? hit.hash} ${hit.title}`;
+  // Titles conventionally embed the extid prefix (`EXTID: prose`); drop it
+  // so the emoji line does not print the id twice.
+  const title = hit.extid !== null ? hit.title.replace(`${hit.extid}: `, "") : hit.title;
+  return `${style.glyph} ${hit.extid ?? hit.hash} ${title}`;
 }
 
 function hitLine(hit: SearchHit): string {

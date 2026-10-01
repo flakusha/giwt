@@ -92,7 +92,10 @@ export function parseIssueShow(output: string): ShowRecord | null {
 function emojiLine(record: unknown): string {
   const rec = record as ShowRecord;
   const style = statusStyle(rec.state);
-  return `${style.glyph} ${rec.extid ?? rec.hash} ${rec.title}`;
+  // git-issue titles conventionally embed the extid prefix (`EXTID: prose`);
+  // drop it so the emoji line does not print the id twice.
+  const title = rec.extid !== undefined ? rec.title.replace(`${rec.extid}: `, "") : rec.title;
+  return `${style.glyph} ${rec.extid ?? rec.hash} ${title}`;
 }
 
 export async function show(args: string[], config: WorktreeConfig): Promise<void> {
