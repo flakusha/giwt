@@ -18,7 +18,9 @@
  *   1. `scanLockfile`     — present / absent / unreadable
  *   2. `removeLockfile`   — present-removes / absent-noop / error-swallowed
  *   3. `parseStashList`   — empty / single / multi-line / malformed
- *   4. `selectFinalizeStashes` — only FINALIZE_STASH_PREFIX entries
+ *   4. `selectFinalizeStashes` — only whole-label finalize run entries
+ *      (`On <branch>: worktree-finalize-<token>`), never messages that
+ *      merely mention the prefix
  *   5. End-to-end abort command against a per-test git repo (real
  *      subprocess) — dry-run is idempotent and does not mutate
  *
@@ -192,11 +194,16 @@ describe("parseStashList", () => {
 describe("selectFinalizeStashes", () => {
   const mk = (ref: string, message: string): StashEntry => ({ ref, message });
 
-  test("returns only entries with the finalize prefix", () => {
+  // Real stash-list shape: `stash@{N}: On <branch>: <label>`. The whole
+  // message after the branch context must BE the finalize run label
+  // (`worktree-finalize-<base36 token>`), not merely contain it — that is
+  // the loop-lore BUG-giwt-abort-runs-unscoped… anchored-selection AC.
+
+  test("returns only entries whose whole message is a finalize run label", () => {
     const entries = [
-      mk("stash@{0}", "WIP on dev: abc worktree-finalize-foo"),
+      mk("stash@{0}", "On main: worktree-finalize-1a2b3c4d"),
       mk("stash@{1}", "On main: user-stuff"),
-      mk("stash@{2}", "WIP on dev: def worktree-finalize-bar"),
+      mk("stash@{2}", "WIP on dev: worktree-finalize-9z8y"),
     ];
     const selected = selectFinalizeStashes(entries);
     expect(selected.map((e) => e.ref)).toEqual(["stash@{0}", "stash@{2}"]);
@@ -214,17 +221,17 @@ describe("selectFinalizeStashes", () => {
     expect(selectFinalizeStashes([])).toEqual([]);
   });
 
-  test("never touches user-authored stashes", () => {
-    // Belt-and-braces: even if a user stash happens to contain the word
-    // "finalize" in its message, only entries with the exact prefix
-    // (worktree-finalize-) match.
+  test("never touches user-authored stashes that merely mention the prefix", () => {
+    // A decoy message embedding the phrase inside longer prose is not a
+    // finalize run label and must never be selected.
     const entries = [
       mk("stash@{0}", "On main: do not finalize this"),
-      mk("stash@{1}", "WIP on dev: 9999 worktree-finalize-x"),
+      mk("stash@{1}", "WIP on dev: abc1234 notes on the worktree-finalize-bug investigation"),
+      mk("stash@{2}", "On dev: worktree-finalize-77"),
     ];
     const selected = selectFinalizeStashes(entries);
     expect(selected.length).toBe(1);
-    expect(selected[0]?.ref).toBe("stash@{1}");
+    expect(selected[0]?.ref).toBe("stash@{2}");
   });
 });
 

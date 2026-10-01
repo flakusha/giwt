@@ -14,7 +14,16 @@
  */
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -62,6 +71,31 @@ function capture(): { text: () => string; restore: () => void; } {
       err.mockRestore();
     },
   };
+}
+
+/**
+ * Run abort() expecting a non-zero process.exit; returns output + code via
+ * the repo-wide `__exit:N` sentinel convention (commit-protected.test.ts).
+ * Owns nothing beyond capture()'s spies — both restored in `finally`.
+ */
+async function abortExitingNonZero(cfg: WorktreeConfig): Promise<{ out: string; code: number; }> {
+  const cap = capture();
+  const exit = spyOn(process, "exit").mockImplementation(
+    ((code?: number) => {
+      throw new Error(`__exit:${code ?? 0}`);
+    }) as never,
+  );
+  try {
+    await abort([], cfg);
+    throw new Error("expected abort() to exit non-zero but it returned");
+  } catch (err) {
+    const message = (err as Error).message;
+    if (!message.startsWith("__exit:")) throw err;
+    return { out: cap.text(), code: Number(message.slice("__exit:".length)) };
+  } finally {
+    exit.mockRestore();
+    cap.restore();
+  }
 }
 
 /** Build a conflicted merge in the fixture repo (MERGE_HEAD present). */
@@ -179,6 +213,10 @@ describe("abort orchestrator", () => {
     const out = cap.text();
     expect(out).toContain("Found 1 finalize stash(es)");
     expect(out).toContain("restored stash@{0}");
+    // Clean-tree pop (the normal crash-recovery shape) proceeds, but is
+    // warned about up front and carries a dropped-sha undo hint.
+    expect(out).toContain("CLEAN tree");
+    expect(out).toContain("undo with 'git stash apply");
     expect(out).toContain("lockfile removed");
     // The stashed file came back and the lockfile is gone.
     expect(existsSync(join(root, "stash-me.txt"))).toBe(true);
@@ -200,6 +238,107 @@ describe("abort orchestrator", () => {
     expect(out).toContain("No leftover finalize stashes");
     expect(git(["stash", "list"])).toContain("my own stash");
   });
+
+  test("pop conflict leaves unrelated tracked and staged work byte-identical", async () => {
+    // BUG-abort-hard-resets-dev… + loop-lore BUG-giwt-abort-runs-unscoped…:
+    // the old conflict branch ran an unscoped `reset --hard HEAD` that
+    // destroyed every unrelated tracked modification and staged entry.
+    const cfg = makeRepo();
+    writeFileSync(join(root, "unrelated.txt"), "base\n");
+    git(["add", "unrelated.txt"]);
+    git(["commit", "-qm", "add unrelated"]);
+    // Finalize-style stash touching a.txt (label-anchored, tracked only).
+    writeFileSync(join(root, "a.txt"), "stashed\n");
+    git(["stash", "push", "-q", "-m", "worktree-finalize-2k5z", "a.txt"]);
+    // Move HEAD so the pop genuinely three-way-conflicts on a.txt.
+    writeFileSync(join(root, "a.txt"), "moved on\n");
+    git(["commit", "-aqm", "dev moved on"]);
+    // Unrelated unstaged modification + staged new file: must survive.
+    writeFileSync(join(root, "unrelated.txt"), "precious uncommitted\n");
+    writeFileSync(join(root, "staged-new.txt"), "staged content\n");
+    git(["add", "staged-new.txt"]);
+    const beforeUnrelated = readFileSync(join(root, "unrelated.txt"), "utf8");
+    const beforeStaged = readFileSync(join(root, "staged-new.txt"), "utf8");
+
+    const { out, code } = await abortExitingNonZero(cfg);
+    expect(code).toBe(1);
+    expect(out).toContain("pop failed — stash preserved, tree left untouched");
+    expect(out).toContain("Conflicted paths");
+    expect(out).toContain("a.txt");
+    expect(out).not.toContain("Abort complete");
+    // Byte-identical survival of everything the stash did not touch.
+    expect(readFileSync(join(root, "unrelated.txt"), "utf8")).toBe(beforeUnrelated);
+    expect(readFileSync(join(root, "staged-new.txt"), "utf8")).toBe(beforeStaged);
+    const status = git(["status", "--porcelain"]);
+    expect(status).toContain("A  staged-new.txt");
+    expect(status).toContain("M unrelated.txt");
+    // The stash entry is preserved for manual resolution.
+    expect(git(["stash", "list"])).toContain("worktree-finalize-2k5z");
+  });
+
+  test("restores interleaved finalize stashes without touching user stashes", async () => {
+    // BUG-abort-pops-stashes-by-positional-ref…: popping captured stash@{N}
+    // refs renumbers the stack mid-loop and destroys user stashes. The loop
+    // must order pops highest-index-first and re-resolve each label.
+    const cfg = makeRepo();
+    const push = (file: string, message: string): void => {
+      writeFileSync(join(root, file), `${file}\n`);
+      git(["stash", "push", "-q", "-u", "-m", message, file]);
+    };
+    push("mine-1.txt", "user one");
+    push("fin-1.txt", "worktree-finalize-aa1");
+    push("mine-2.txt", "user two");
+    push("fin-2.txt", "worktree-finalize-bb2");
+
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    expect(out).toContain("Found 2 finalize stash(es)");
+    // Highest index first (oldest leftover restored first); after the drop
+    // renumbers the stack, the label re-resolves to the live ref.
+    expect(out).toContain("restored stash@{2}");
+    expect(out).toContain("restored stash@{0}");
+    const list = git(["stash", "list"]);
+    expect(list).toContain("user one");
+    expect(list).toContain("user two");
+    expect(list).not.toContain("worktree-finalize");
+    expect(existsSync(join(root, "fin-1.txt"))).toBe(true);
+    expect(existsSync(join(root, "fin-2.txt"))).toBe(true);
+    expect(existsSync(join(root, "mine-1.txt"))).toBe(false);
+    expect(existsSync(join(root, "mine-2.txt"))).toBe(false);
+  });
+
+  test("ignores stashes that merely mention the finalize prefix", async () => {
+    // loop-lore BUG-giwt-abort-runs-unscoped… AC: selection is anchored to
+    // the whole finalize run label, not a message substring.
+    const cfg = makeRepo();
+    writeFileSync(join(root, "decoy.txt"), "decoy\n");
+    git([
+      "stash",
+      "push",
+      "-q",
+      "-u",
+      "-m",
+      "notes on the worktree-finalize-bug investigation",
+      "decoy.txt",
+    ]);
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.text();
+    expect(out).toContain("No leftover finalize stashes");
+    expect(out).toContain("not a finalize-run label — left untouched");
+    expect(git(["stash", "list"])).toContain("worktree-finalize-bug");
+    // The decoy was never popped back.
+    expect(existsSync(join(root, "decoy.txt"))).toBe(false);
+  });
 });
 
 describe("abort failure branches", () => {
@@ -212,6 +351,30 @@ describe("abort failure branches", () => {
       },
     };
     expect(removeLockfile("/repo", fs)).toBe(false);
+  });
+
+  test("reports a failed merge --abort instead of failing silently", async () => {
+    // The `<op> --abort` failure branch (abort.ts:242-243) is reachable
+    // deterministically: a held index.lock makes `merge --abort` fail even
+    // though MERGE_HEAD is abortable. abort must surface the failure and
+    // keep the recovery report honest instead of claiming the op ended.
+    const cfg = makeRepo();
+    startConflictedMerge();
+    writeFileSync(join(root, ".git", "index.lock"), "");
+    const cap = capture();
+    try {
+      await abort([], cfg);
+    } finally {
+      cap.restore();
+      unlinkSync(join(root, ".git", "index.lock"));
+    }
+    const out = cap.text();
+    expect(out).toContain("Found MERGE_HEAD — aborting in-progress merge");
+    expect(out).toContain("merge --abort failed — you may need manual intervention");
+    expect(out).toContain("Stderr:");
+    // The merge state survived (the operator resolves it manually).
+    expect(existsSync(join(root, ".git", "MERGE_HEAD"))).toBe(true);
+    expect(out).toContain("Abort complete");
   });
 
   test("aborts an in-progress cherry-pick with the real git subcommand", async () => {
@@ -251,23 +414,21 @@ describe("abort failure branches", () => {
     expect(existsSync(join(root, ".git", "REBASE_HEAD"))).toBe(true);
   });
 
-  test("cleans the tree and reports a failed reset when a finalize stash pop fails", async () => {
+  test("a failed pop keeps the stash, never resets, and exits non-zero", async () => {
+    // BUG-abort-hard-resets-dev…: the old branch ran `reset --hard HEAD`
+    // (failing here under the index lock) and still claimed success.
     const cfg = makeRepo();
     writeFileSync(join(root, "stash-me.txt"), "dirty\n");
     git(["stash", "push", "-q", "-u", "-m", "worktree-finalize-11", "stash-me.txt"]);
-    // Hold the index lock so both `stash pop` and `reset --hard` fail.
+    // Hold the index lock so the pop itself fails.
     writeFileSync(join(root, ".git", "index.lock"), "");
-    const cap = capture();
-    try {
-      await abort([], cfg);
-    } finally {
-      cap.restore();
-    }
-    const out = cap.text();
+    const { out, code } = await abortExitingNonZero(cfg);
+    expect(code).toBe(1);
     expect(out).toContain("Found 1 finalize stash(es)");
-    expect(out).toContain("pop conflicted — preserving stash, cleaning tree");
-    expect(out).toContain("reset --hard HEAD failed");
+    expect(out).toContain("pop failed — stash preserved, tree left untouched");
     expect(out).toContain("Stderr:");
+    expect(out).not.toContain("Abort complete");
+    expect(out).not.toContain("reset --hard");
     // The stash is preserved for manual recovery.
     expect(git(["stash", "list"])).toContain("worktree-finalize-11");
   });

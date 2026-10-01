@@ -11,8 +11,12 @@
  *   1. Detect in-progress git operations on the dev checkout (MERGE_HEAD,
  *      REBASE_HEAD, CHERRY_PICK_HEAD) and abort each.
  *   2. Pop any leftover `worktree-finalize-*` stash entries — these are
- *      auto-pushed by `stashDevForMerge` before every merge. Pop conflicts
- *      fall back to `git reset --hard HEAD` so the dev tree is clean.
+ *      auto-pushed by `stashDevForMerge` before every merge. Selection is
+ *      anchored to the whole run label (not a message substring), pops run
+ *      highest-index-first with per-pop label re-resolution, and a failed
+ *      pop STOPS the recovery: the stash is preserved, the tree is never
+ *      reset (an unscoped `reset --hard` would destroy unrelated tracked
+ *      work in the shared dev checkout), and abort exits non-zero.
  *   3. Remove the finalize lockfile if present.
  *   4. Print a recovery report so the user can verify the state.
  *
@@ -22,8 +26,11 @@
  *
  * Design notes:
  * - Idempotent. Running it twice in a row does the same thing.
- * - Never deletes user-authored stashes. We only touch entries whose message
- *   contains `worktree-finalize-`.
+ * - Never deletes user-authored stashes. We only touch entries whose entire
+ *   message is a finalize run label (`worktree-finalize-<token>`); a stash
+ *   that merely mentions the prefix is reported and left untouched.
+ * - Never runs `reset --hard`: a failed stash pop leaves the tree as-is
+ *   and surfaces the conflict instead of discarding tracked work.
  * - Never force-deletes branches, never resets to a remote ref, never
  *   touches the worktree under `tree/`. The user owns those decisions.
  *
@@ -163,12 +170,31 @@ export function parseStashList(rawText: string): StashEntry[] {
 }
 
 /**
+ * Shape of a stash message the finalize flow pushes: `git stash push -m
+ * worktree-finalize-<token>` renders as `<On|WIP on> <branch>:
+ * worktree-finalize-<base36 token>` — the run label is the ENTIRE message
+ * after the branch context. A stash that merely mentions the prefix inside
+ * longer prose is user-authored and must never be selected (loop-lore
+ * BUG-giwt-abort-runs-unscoped…: substring selection pops decoys).
+ * Detached-HEAD contexts are not recognized — finalize only ever pushes
+ * from a branch. Failing closed here only makes abort report "no leftover
+ * finalize stashes"; it can never destroy anything.
+ */
+const FINALIZE_STASH_MESSAGE_RE = /^(?:On|WIP on) [^:]+: worktree-finalize-[0-9a-z]+$/;
+
+/**
  * Filter a parsed stash list to only the entries that the finalize flow
- * pushed (message contains FINALIZE_STASH_PREFIX). User-authored stashes
- * are NEVER returned — abort must not touch them.
+ * pushed (whole-message run label). User-authored stashes are NEVER
+ * returned — abort must not touch them.
  */
 export function selectFinalizeStashes(entries: StashEntry[]): StashEntry[] {
-  return entries.filter((e) => e.message.includes(FINALIZE_STASH_PREFIX));
+  return entries.filter((e) => FINALIZE_STASH_MESSAGE_RE.test(e.message.trim()));
+}
+
+/** Positional index of a stash entry's `stash@{N}` ref. */
+function stashIndex(entry: StashEntry): number {
+  const match = entry.ref.match(/^stash@\{(\d+)\}$/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 }
 
 export async function abort(
@@ -219,37 +245,94 @@ export async function abort(
     }
   }
 
-  // 2. Pop leftover finalize stashes. Use the pure helpers so the
-  // selection is testable in isolation; the actual `git stash pop` is a
-  // subprocess that we run only against a real repo in production.
-  const finalizeStashes = selectFinalizeStashes(
-    parseStashList(gitSync(repoRoot, "stash", "list") ?? ""),
-  );
+  // 2. Pop leftover finalize stashes. Selection is shape-anchored (the
+  // whole message after the branch context must be a finalize run label),
+  // so a user stash that merely mentions the prefix is never touched.
+  const stashEntries = parseStashList(gitSync(repoRoot, "stash", "list") ?? "");
+  const finalizeStashes = selectFinalizeStashes(stashEntries);
+  for (const entry of stashEntries) {
+    if (finalizeStashes.includes(entry)) continue;
+    if (!entry.message.includes(FINALIZE_STASH_PREFIX)) continue;
+    log(
+      "warn",
+      `${entry.ref} mentions '${FINALIZE_STASH_PREFIX}' but is not a finalize-run label — left untouched`,
+    );
+    raw(`  Inspect: git stash show -p ${entry.ref}`);
+  }
+  let stashConflict = false;
   if (finalizeStashes.length === 0) {
     log("info", "No leftover finalize stashes");
   } else {
     log("info", `Found ${finalizeStashes.length} finalize stash(es)`);
-    for (const entry of finalizeStashes) {
+    // Pop the highest index first: `stash pop` renumbers every lower
+    // index, so a captured positional ref goes stale after each success
+    // (BUG-abort-pops-stashes-by-positional-ref…: pops destroyed user
+    // stashes while skipping the intended entry). Refs are ALSO
+    // re-resolved by label before every pop, so concurrent pushes from
+    // other agents cannot misroute one.
+    const ordered = [...finalizeStashes].sort((a, b) => stashIndex(b) - stashIndex(a));
+    for (const entry of ordered) {
       log("info", `Restoring ${entry.ref}...`);
+      // Re-resolve: the index may have shifted since the scan (dry-run
+      // included — the preview must show the same live refs).
+      const live = parseStashList(gitSync(repoRoot, "stash", "list") ?? "").find(
+        (e) => e.message === entry.message,
+      );
+      if (!live) {
+        log("warn", `${entry.ref} is no longer on the stash stack — skipped`);
+        continue;
+      }
+      // Clean = no dirt except our own lockfile (untracked in fixtures
+      // without the .gitignore that real finalize checkouts carry).
+      const dirtyLines = gitSyncQuiet(repoRoot, "status", "--porcelain")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && l !== `?? ${LOCK_FILENAME}`);
+      const cleanTree = dirtyLines.length === 0;
+      if (cleanTree) {
+        log(
+          "warn",
+          `${live.ref} applies onto a CLEAN tree — popping applies the whole snapshot and drops the entry`,
+        );
+        raw(`  If unexpected: abort now and inspect first ('git stash show -p ${live.ref}')`);
+      }
       if (dryRun) continue;
       const pop = Bun.spawnSync(
-        ["git", "-C", repoRoot, "stash", "pop", entry.ref],
+        ["git", "-C", repoRoot, "stash", "pop", live.ref],
         { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
       );
       if (pop.exitCode === 0) {
-        log("success", `restored ${entry.ref}`);
+        if (cleanTree) {
+          // The entry is gone; keep the dropped sha so the operator can
+          // undo a misdirected restore (`stash apply` accepts the sha).
+          const dropped = pop.stdout.toString().match(/Dropped \S+ \(([0-9a-f]+)\)/);
+          if (dropped) {
+            raw(
+              `  Dropped at ${dropped[1]} — undo with 'git stash apply ${
+                dropped[1]
+              }' if this was wrong`,
+            );
+          }
+        }
+        log("success", `restored ${live.ref}`);
         continue;
       }
-      log("warn", `${entry.ref} pop conflicted — preserving stash, cleaning tree`);
-      const head = gitSyncQuiet(repoRoot, "rev-parse", "HEAD");
-      const reset = Bun.spawnSync(
-        ["git", "-C", repoRoot, "reset", "--hard", head],
-        { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
-      );
-      if (reset.exitCode !== 0) {
-        log("error", `reset --hard HEAD failed`);
-        raw(`  Stderr: ${reset.stderr.toString().trim()}`);
+      // Pop refused or conflicted; git preserved the stash entry. NEVER
+      // hard-reset the tree here: an unscoped `reset --hard` destroys
+      // every unrelated tracked modification and staged file in the
+      // shared dev checkout (BUG-abort-hard-resets-dev…). Stop the
+      // recovery and leave the decision to the operator.
+      stashConflict = true;
+      log("warn", `${live.ref} pop failed — stash preserved, tree left untouched (no reset)`);
+      raw(`  Stderr: ${pop.stderr.toString().trim()}`);
+      const unmerged = gitSyncQuiet(repoRoot, "diff", "--name-only", "--diff-filter=U");
+      const paths = unmerged.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+      if (paths.length > 0) {
+        raw("  Conflicted paths (resolve or discard, then re-run 'giwt abort'):");
+        for (const path of paths) raw(`    ${path}`);
       }
+      raw(`  Inspect:  git -C ${repoRoot} stash show -p ${live.ref}`);
+      break;
     }
   }
 
@@ -282,6 +365,10 @@ export async function abort(
   if (dryRun) {
     raw("");
     log("warn", "DRY RUN complete — no mutations performed. Re-run without --dry-run to apply.");
+  } else if (stashConflict) {
+    raw("");
+    log("error", "Abort stopped early — stash recovery needs manual resolution (see above).");
+    process.exit(1);
   } else {
     raw("");
     log("success", "Abort complete. Verify state, then re-run finalize if needed.");

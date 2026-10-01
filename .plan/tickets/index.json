@@ -1,4 +1,40 @@
 {
+  "BUG-ABORT-HARD-RESETS-DEV-WHEN-A-STASH-POP-CONFLICTS-DESTROYING-": {
+    "hash": "8c7cc2d",
+    "git_issue": "8c7cc2d",
+    "extid": "BUG-ABORT-HARD-RESETS-DEV-WHEN-A-STASH-POP-CONFLICTS-DESTROYING-",
+    "type": "BUG",
+    "title": "abort hard-resets dev when a stash pop conflicts, destroying other sessions' tracked work",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "abort",
+      "stash",
+      "git",
+      "history-safety"
+    ],
+    "source": ".plan/tickets/BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-.md",
+    "status": "done"
+  },
+  "BUG-ABORT-POPS-STASHES-BY-POSITIONAL-REF-DESTROYING-USER-AUTHORE": {
+    "hash": "de00c01",
+    "git_issue": "de00c01",
+    "extid": "BUG-ABORT-POPS-STASHES-BY-POSITIONAL-REF-DESTROYING-USER-AUTHORE",
+    "type": "BUG",
+    "title": "abort pops stashes by positional ref, destroying user-authored stashes",
+    "label": "bug",
+    "priority": "critical",
+    "epic": "",
+    "tags": [
+      "abort",
+      "stash",
+      "git",
+      "history-safety"
+    ],
+    "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md",
+    "status": "done"
+  },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
     "extid": "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK",

@@ -28,7 +28,13 @@ import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { appendGripe, printRecentLedger } from "../utils/ledger";
 import { log, raw, section } from "../utils/output";
 import { activeRun } from "../utils/runlog";
-import { DEV_IN_PROGRESS_HEADS, FINALIZE_STASH_PREFIX, isOrphanRebaseMarker } from "./abort";
+import {
+  DEV_IN_PROGRESS_HEADS,
+  FINALIZE_STASH_PREFIX,
+  isOrphanRebaseMarker,
+  parseStashList,
+  selectFinalizeStashes,
+} from "./abort";
 
 const LOCK_FILENAME = ".worktree-finalize.lock";
 // Signals we treat as user-initiated cancellation. SIGINT (Ctrl-C), SIGTERM
@@ -197,8 +203,9 @@ function checkDevMergeable(repoRoot: string): void {
   // 4. Leftover finalize stashes from a prior crashed finalize. Garbage from
   // the user's perspective but harmless if we leave them; warn so the
   // operator can `git stash drop` them.
-  const stashList = gitSyncQuiet(repoRoot, "stash", "list");
-  const leftovers = stashList.split("\n").filter((l) => l.includes(FINALIZE_STASH_PREFIX));
+  const leftovers = selectFinalizeStashes(
+    parseStashList(gitSyncQuiet(repoRoot, "stash", "list")),
+  );
   if (leftovers.length > 0) {
     log(
       "warn",
