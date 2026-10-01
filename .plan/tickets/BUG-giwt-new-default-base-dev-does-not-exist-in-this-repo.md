@@ -11,7 +11,7 @@
 
 **Summary:**
 
-[branches] root defaults to 'dev' but this repo's long-lived branch is 'master', so the plain 'giwt new <branch>' form always fails with 'base dev does not exist' and needs an explicit base. Set repo giwt.toml [branches] root = "master" (or make the default fall back to the current branch's merge-base target).
+[branches] root defaults to 'dev' but this repo's long-lived branch is 'master', so the plain 'giwt new BRANCH' form always fails with 'base dev does not exist' and needs an explicit base. Set repo giwt.toml [branches] root = "master" (or make the default fall back to the current branch's merge-base target).
 
 **Context:**
 
