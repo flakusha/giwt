@@ -8,7 +8,7 @@
  * phantom/hash/orphan/unbound-to-epic classification.
  */
 
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,8 +21,16 @@ import {
   reconcile,
 } from "./sync-ticket";
 
+/** Fresh sync-ticket fixture root per test. Removed in the file-level
+ *  afterEach — even a failed test cannot leak its fixture into /tmp. */
+const tempRoots: string[] = [];
+afterEach(() => {
+  for (const r of tempRoots.splice(0)) rmSync(r, { recursive: true, force: true });
+});
+
 function makeRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "sync-ticket-"));
+  tempRoots.push(root);
   mkdirSync(join(root, ".plan/tickets"), { recursive: true });
   mkdirSync(join(root, ".plan/epics"), { recursive: true });
   return root;

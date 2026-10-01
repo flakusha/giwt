@@ -21,7 +21,7 @@
  *   - `appendGripe` records the resolved branch with the emoji prefix.
  */
 
-import { describe, expect, it, spyOn } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -41,8 +41,17 @@ import {
   truncateMsg,
 } from "./ledger";
 
+/** Fresh ledger tree dir per test. Removed in the file-level afterEach —
+ *  even a failed test cannot leak its fixture into /tmp. */
+const tempRoots: string[] = [];
+afterEach(() => {
+  for (const r of tempRoots.splice(0)) rmSync(r, { recursive: true, force: true });
+});
+
 function makeTreeDir(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-ledger-"));
+  const dir = mkdtempSync(join(tmpdir(), "giwt-ledger-"));
+  tempRoots.push(dir);
+  return dir;
 }
 
 /** Non-empty file lines, for asserting raw line counts. */

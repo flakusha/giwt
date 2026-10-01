@@ -8,7 +8,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -20,9 +20,18 @@ import {
   checkSlotWaitMs,
 } from "./check-slots";
 
-/** Fresh empty slot root per test. */
+/** Fresh empty slot root per test. Removed deterministically in the
+ *  file-level afterEach below — even a failed test cannot leak its
+ *  fixture into /tmp. */
+const tempRoots: string[] = [];
+afterEach(() => {
+  for (const r of tempRoots.splice(0)) rmSync(r, { recursive: true, force: true });
+});
+
 function newSlotRoot(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-slots-"));
+  const root = mkdtempSync(join(tmpdir(), "giwt-slots-"));
+  tempRoots.push(root);
+  return root;
 }
 
 /** acquireCheckSlot with a loud failure instead of a nullable result. */
