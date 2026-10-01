@@ -3,7 +3,7 @@
 
 # FIX: giwt remove cannot delete a branch whose worktree is already gone
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 
@@ -51,8 +51,9 @@ out. A `--branch-only` mode belongs there.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
 
 git issue: 4368e0c
+**Resolved:** 2026-10-01T03:52:10.665Z shipped: --branch-only + --force, merged-check HEAD fallback
