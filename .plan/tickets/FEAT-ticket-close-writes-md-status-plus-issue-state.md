@@ -3,7 +3,7 @@
 
 # FEAT: ticket close writes md status plus issue state
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Small
 **Tags:** ticket
@@ -18,6 +18,7 @@ giwt state only flips git-issue state; nothing updates the md Status line, ticks
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-01T02:12:54.284Z shipped in 38b44a5 on feat/new-tickets

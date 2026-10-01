@@ -3,7 +3,7 @@
 
 # FEAT: doctor unclosed-resource leak check
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -17,6 +17,7 @@ No doctor check detects resource handles tests open but never close. Recurring s
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-01T02:12:54.085Z shipped in 38b44a5 on feat/new-tickets

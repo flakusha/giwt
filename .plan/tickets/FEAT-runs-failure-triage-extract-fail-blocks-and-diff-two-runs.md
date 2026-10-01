@@ -3,7 +3,7 @@
 
 # FEAT: runs failure triage: extract fail blocks and diff two runs
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** reporting, runlog
@@ -18,6 +18,7 @@ giwt runs lists records and finalize names failed gates, but nothing mines test 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-01T02:12:54.189Z shipped in 38b44a5 on feat/new-tickets

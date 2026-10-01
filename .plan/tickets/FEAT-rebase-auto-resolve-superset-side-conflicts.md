@@ -3,7 +3,7 @@
 
 # FEAT: rebase auto-resolve superset-side conflicts
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Small
 **Tags:** git, rebase
@@ -18,6 +18,7 @@ No command detects that one conflict side is a pure superset of the other. Recur
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-01T02:12:54.147Z shipped in 38b44a5 on feat/new-tickets
