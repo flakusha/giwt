@@ -16,6 +16,7 @@ import {
 } from "node:fs";
 import { freemem } from "node:os";
 import { join, resolve } from "path";
+import { BACKLOG_INDEX_FILES } from "../plan/backlog-sync";
 import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { ALL_GATES, runValidate } from "../plan/validate";
 import type { GateName } from "../plan/validate";
@@ -1325,7 +1326,7 @@ async function runFinalize(
           { dir: "docs/frontend", kind: "frontend" },
         ],
         linkScanDirs: ["docs", planDirName],
-        backlogIndexFiles: ["priority.md", "open.md"],
+        backlogIndexFiles: [...BACKLOG_INDEX_FILES],
         gates: gateNames as GateName[],
         // Scope per-file gates (format/linkage/status-vocab) to the branch's
         // changes: foreign tickets committed by concurrently-active sessions

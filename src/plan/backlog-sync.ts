@@ -25,6 +25,13 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+// ── Canonical index files ──────────────────────────────────────
+
+/** Canonical backlog index files — single source of truth for every caller. */
+export const BACKLOG_INDEX_FILES = ["priority.md", "open.md"];
+export const BACKLOG_OPEN_INDEX = "open.md";
+export const BACKLOG_PRIORITY_INDEX = "priority.md";
+
 // ── File map parsing ───────────────────────────────────────────
 
 export interface FileMapRow {
@@ -161,14 +168,22 @@ export function applyFixes(backlogDir: string, result: SyncResult): FixReport {
   const report: FixReport = { added: [], dropped: [], outside: [], changed: false };
 
   for (const f of result.orphans) {
-    const targetIndex = f.startsWith("open-") ? "open.md" : "priority.md";
+    const targetIndex = f.startsWith("open-")
+      ? BACKLOG_OPEN_INDEX
+      : BACKLOG_PRIORITY_INDEX;
     if (addMapRow(backlogDir, targetIndex, f)) {
       report.added.push(`${f}: added to ${targetIndex} file map`);
       report.changed = true;
     }
   }
 
-  for (const p of result.phantoms) {
+  // Drop highest-line-first per index: splicing a row shifts every later
+  // line, so ascending order corrupts the captured row.line of remaining
+  // phantoms and deletes legitimate rows.
+  const droppable = [...result.phantoms].sort((a, b) =>
+    a.index === b.index ? b.row.line - a.row.line : a.index < b.index ? -1 : 1
+  );
+  for (const p of droppable) {
     if (dropPhantomRow(backlogDir, p.index, p.row)) {
       report.dropped.push(`${p.index}:${p.row.line}: dropped phantom row (${p.row.file})`);
       report.changed = true;

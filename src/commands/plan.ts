@@ -15,7 +15,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { applyFixes, reconcile } from "../plan/backlog-sync";
+import { applyFixes, BACKLOG_INDEX_FILES, reconcile } from "../plan/backlog-sync";
 import { runLinkCheck } from "../plan/check-links";
 import { buildMap, findOwners, findStale, readMap, verifyFresh, writeMap } from "../plan/code-map";
 import { genMatrix, matrixOutput } from "../plan/feature-matrix";
@@ -143,7 +143,11 @@ async function runBacklogSync(
 
   const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const backlogDir = join(planDir, "backlog");
-  const indexFiles = ["priority.md", "open.md"];
+  const indexFiles = [...BACKLOG_INDEX_FILES];
+
+  if (!existsSync(backlogDir)) {
+    throw new Error(`${backlogDir}: missing backlog dir — nothing to sync`);
+  }
 
   const result = reconcile(backlogDir, indexFiles);
 
@@ -570,7 +574,7 @@ async function runValidateCmd(
     epicsIndexPath: join(planDir, "epics-index.md"),
     mapSources: mapSourcesFor(config.settings.paths.planDir),
     linkScanDirs: ["docs", config.settings.paths.planDir],
-    backlogIndexFiles: ["priority.md", "open.md"],
+    backlogIndexFiles: [...BACKLOG_INDEX_FILES],
     gates: gateNames as import("../plan/validate").GateName[],
     runSync: (root, opts) =>
       runSync(root, { fix: opts.fix, verbose: opts.verbose, ticketsPath: opts.ticketsPath }),
@@ -658,7 +662,7 @@ async function runStatus(
 
   // Backlog tiers
   const backlogResult = existsSync(backlogDir)
-    ? reconcile(backlogDir, ["priority.md", "open.md"])
+    ? reconcile(backlogDir, [...BACKLOG_INDEX_FILES])
     : null;
   const backlogFileCount = existsSync(backlogDir)
     ? readdirSync(backlogDir).filter((f) => f.endsWith(".md")).length

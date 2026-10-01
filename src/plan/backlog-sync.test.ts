@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyFixes, parseFileMap, reconcile } from "./backlog-sync";
@@ -329,6 +329,29 @@ describe("applyFixes", () => {
       // addMapRow returns false → not added
       expect(fixReport.added).toEqual([]);
       expect(fixReport.changed).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("drops multiple phantoms without deleting legitimate rows (line-shift regression)", () => {
+    const fx = makeFixture();
+    try {
+      // Resource contract: this test owns its mkdtemp backlog fixture.
+      writeFile(
+        fx.backlogDir,
+        "priority.md",
+        INDEX_FILE_MAP(["ghost-a.md", "ghost-b.md", "real.md"]),
+      );
+      writeFile(fx.backlogDir, "real.md", "# Real\n");
+      const result = reconcile(fx.backlogDir, ["priority.md"]);
+      expect(result.phantoms).toHaveLength(2);
+      const fixReport = applyFixes(fx.backlogDir, result);
+      expect(fixReport.dropped).toHaveLength(2);
+      const after = readFileSync(join(fx.backlogDir, "priority.md"), "utf8");
+      expect(after).toContain("[real](./real.md)");
+      expect(after).not.toContain("ghost-a");
+      expect(after).not.toContain("ghost-b");
     } finally {
       fx.cleanup();
     }
