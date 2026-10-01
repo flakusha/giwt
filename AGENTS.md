@@ -48,6 +48,7 @@ Toolchain (all folded into `bun run check`):
 - **Shell**: shfmt (`-ln posix -i 2`) + shellcheck on `.githooks/` scripts.
 
 Pre-commit hook: `git config core.hooksPath .githooks && chmod +x .githooks/pre-commit` (local config; runs `bun run check` when TS/config/md/shell files are staged, warns on missing SPDX headers and stale `.tmp/check-report.json`).
+Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips LLM `Co-Authored-By:` trailers (claude/anthropic/openai/copilot/gemini/… denylist) from commit messages before signing; a line containing any `ALLOWED_TRAILERS="substr,substr"` entry from `.credentials.env` (walked up from repo top, `$HOME` fallback) is kept. Tests: `.githooks/commit-msg.test.ts`.
 
 ## Code Conventions & Common Patterns
 

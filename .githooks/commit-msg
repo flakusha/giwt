@@ -1,0 +1,97 @@
+#!/bin/sh
+# commit-msg hook for giwt — LLM Co-Authored-By trailer gate.
+#
+# Agents keep injecting attribution trailers like
+#   Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+# This hook DISCARDS those lines from the commit message before git signs
+# and creates the object, so the junk never lands and never gets signed.
+#
+# Rules:
+#   1. A Co-Authored-By line matching the LLM-vendor denylist (claude,
+#      anthropic, openai, chatgpt, copilot, gemini, deepseek, mistral,
+#      qwen, kimi, glm, z.ai) is stripped + a warning goes to stderr.
+#   2. EXEMPTION: a line that contains any entry of ALLOWED_TRAILERS in
+#      .credentials.env (comma-separated substrings, case-insensitive,
+#      file resolved by walking up from the repo top) is kept verbatim.
+#      Use it for intentionally attributed assistant accounts.
+#   3. Human Co-Authored-By lines never match the denylist and pass.
+#
+# Install: git config core.hooksPath .githooks && chmod +x .githooks/commit-msg
+# (same setup as .githooks/pre-commit).
+
+set -u
+
+MSG_FILE=${1:-""}
+[ -n "$MSG_FILE" ] || exit 0
+[ -f "$MSG_FILE" ] || exit 0
+
+REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null) || REPO_TOP=$(pwd)
+
+# LLM vendor denylist (case-insensitive, substring match on the trailer).
+DENY='claude|anthropic|openai|chatgpt|copilot|gemini|deepseek|mistral|qwen|kimi|glm|z\.ai'
+
+# ── Resolve .credentials.env (walk up from the repo top, like
+#    src/utils/credentials.ts; fall back to $HOME) and read
+#    ALLOWED_TRAILERS ──
+ALLOW=""
+CREDS=""
+d=$REPO_TOP
+while :; do
+  if [ -f "$d/.credentials.env" ]; then
+    CREDS=$d/.credentials.env
+    break
+  fi
+  [ "$d" = "/" ] && break
+  d=$(dirname "$d")
+done
+if [ -z "$CREDS" ] && [ -n "${HOME:-}" ] && [ -f "$HOME/.credentials.env" ]; then
+  CREDS=$HOME/.credentials.env
+fi
+if [ -n "$CREDS" ]; then
+  ALLOW=$(sed -n 's/^ALLOWED_TRAILERS="\?\([^"]*\)"\?$/\1/p' "$CREDS" | head -n 1)
+fi
+
+TRAILERS=$(grep -iE '^co-authored-by:' "$MSG_FILE" || true)
+[ -n "$TRAILERS" ] || exit 0
+
+TRAILER_LIST=$(mktemp)
+PATTERNS=$(mktemp)
+trap 'rm -f "$TRAILER_LIST" "$PATTERNS"' EXIT
+printf '%s\n' "$TRAILERS" >"$TRAILER_LIST"
+
+STRIPPED=0
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  if printf '%s' "$line" | grep -qiE "$DENY"; then
+    allowed=0
+    if [ -n "$ALLOW" ]; then
+      OLD_IFS=$IFS
+      IFS=','
+      for frag in $ALLOW; do
+        frag=$(printf '%s' "$frag" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -n "$frag" ] || continue
+        if printf '%s' "$line" | grep -qiF -- "$frag"; then
+          allowed=1
+          break
+        fi
+      done
+      IFS=$OLD_IFS
+    fi
+    if [ "$allowed" -ne 1 ]; then
+      printf '%s\n' "$line" >>"$PATTERNS"
+      STRIPPED=$((STRIPPED + 1))
+    fi
+  fi
+done <"$TRAILER_LIST"
+
+[ "$STRIPPED" -gt 0 ] || exit 0
+
+printf '%s\n' "$TRAILERS" | grep -viF -f "$PATTERNS" | while IFS= read -r kept; do
+  printf 'giwt commit-msg: kept allow-listed trailer: %s\n' "$kept" >&2
+done
+grep -viF -f "$PATTERNS" "$MSG_FILE" >"$MSG_FILE.giwt-trailer-clean" 2>/dev/null || true
+mv "$MSG_FILE.giwt-trailer-clean" "$MSG_FILE"
+
+printf 'giwt commit-msg: stripped %s LLM Co-Authored-By trailer(s):\n' "$STRIPPED" >&2
+sed 's/^/  /' "$PATTERNS" >&2
+exit 0

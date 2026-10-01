@@ -126,6 +126,8 @@ tree/
 !.githooks/
 .githooks/*
 !.githooks/pre-commit
+!.githooks/commit-msg
+!.githooks/commit-msg.test.ts
 
 # Tool scratch reports (jscpd output dir, knip cache)
 .tmp/jscpd-report.json/
