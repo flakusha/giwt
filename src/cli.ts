@@ -102,7 +102,7 @@ const USAGE: Record<string, string> = {
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
-    "[--apply] [--tool <csv>] [--root <dir>] | check [--json|--toml|--emoji] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>] | scratchpad [--json] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo)\n  scratchpad          scratchpad bloat report (shortcut for `check --checks scratchpad`; shares --json/--root)\n  --json              (check only) machine-readable report (--toml/--emoji also supported)\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --timeout <ms>      (check only) per-check subprocess budget; exceeded = killed check (default: [doctor] timeout_ms, 120000)\n  --root <dir>        override project root (default: worktreeRoot)",
+    "[--apply] [--tool <csv>] [--root <dir>] | check [--json|--toml|--emoji] [--checks <csv>] [--jobs <n>] [--timeout <ms>] [--root <dir>] | scratchpad [--json] [--root <dir>]\n  --apply             write configs + apply git config (default: dry-run)\n  --tool <csv>        restrict to specific tool ids\n  check               run repo-health checks (lint, typecheck, tests, knip, jscpd, todo, leaks)\n  scratchpad          scratchpad bloat report (shortcut for `check --checks scratchpad`; shares --json/--root)\n  --json              (check only) machine-readable report (--toml/--emoji also supported)\n  --checks <csv>      (check only) restrict to specific check ids\n  --jobs <n>          (check only) max concurrent checks (default: [doctor] jobs, 4)\n  --timeout <ms>      (check only) per-check subprocess budget; exceeded = killed check (default: [doctor] timeout_ms, 120000)\n  --root <dir>        override project root (default: worktreeRoot)",
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
@@ -123,14 +123,14 @@ const USAGE: Record<string, string> = {
   "new":
     "<branch> [base]\n  <branch>   new branch name\n  [base]     base ref (default: root branch)",
   "plan":
-    "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        show .plan/ health summary",
+    "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        .plan/ health summary (--tickets: per-ticket Status + unticked acceptance counts; --json|--toml|--emoji)",
   "prs": "",
   "rebase":
     "<branch> [onto]\n  <branch>   worktree branch\n  [onto]     target ref (default: root branch)",
   "remove": "<branch>\n  <branch>   worktree branch to remove",
   "report": "",
   "runs":
-    "[--last N] [--json|--toml|--emoji]\n  --last <N>   show only the last N runs (--last=N also accepted)\n  --json       machine-readable output (--toml/--emoji also supported)",
+    "[triage <run>] [diff <runA> <runB>] [--last N] [--json|--toml|--emoji]\n  triage <run>  failing blocks from a run's captured test.log (run dir path or id prefix)\n  diff <a> <b>  set-diff failure identities between two runs: new / fixed (report, never gates)\n  --last <N>    show only the last N runs (--last=N also accepted)\n  --json        machine-readable records (--toml/--emoji also supported)",
   "search":
     "<pattern> [--json|--toml|--emoji]\n  <pattern>   git-issue search text\n  --json      array of hit records {hash, state, title, extid}\n  --toml      [[items]] array-of-tables\n  --emoji     one line per hit: status glyph + extid/hash + title",
   "show":
@@ -142,7 +142,7 @@ const USAGE: Record<string, string> = {
   "sync":
     "[--fix] [--import] [--import-back] [--verbose]\n  --fix           apply fixes, not just report\n  --import        with --fix: create issues for plan-only .md files\n  --import-back   with --fix: generate .md + index for foreign issues\n  --verbose       verbose output",
   "ticket":
-    "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
+    "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]\n  close <extid...> [--note \"text\"] [--json|--toml|--emoji]\n  copy <name|extid...> --to <checkout-path> | --from <checkout-path> [--json|--toml|--emoji]\n  3way <path> [--json|--toml|--emoji]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
 };
 
 const commands: Record<string, CommandHandler> = {
@@ -269,7 +269,7 @@ const commands: Record<string, CommandHandler> = {
     run: report,
   },
   "runs": {
-    description: "List recent run records (.tmp scratchpad)",
+    description: "List run records; triage failures; diff two runs (.tmp scratchpad)",
     run: runs,
   },
   "search": {
@@ -297,7 +297,7 @@ const commands: Record<string, CommandHandler> = {
     run: sync,
   },
   "ticket": {
-    description: "Create ticket file + git issue",
+    description: "Create ticket file + git issue; close/copy/3way subactions",
     run: ticket,
   },
 };
