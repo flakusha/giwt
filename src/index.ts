@@ -98,6 +98,8 @@ export type {
   TodoMatch,
   TscError,
 } from "./doctor/check";
+export { hasTestFiles, scanLeaks } from "./doctor/leaks";
+export type { LeakMatch, LeakOpener } from "./doctor/leaks";
 export {
   applyFixes as applyBacklogFixes,
   reconcile as reconcileBacklog,

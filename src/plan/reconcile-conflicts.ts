@@ -21,6 +21,8 @@ export interface RebaseResult {
   exitCode: number;
   output: string;
   generatedConflicts: string[];
+  /** Paths auto-resolved because one conflict side was a strict superset. */
+  autoResolved: string[];
 }
 
 export interface JsonMergeResult {
@@ -51,6 +53,59 @@ function runGit(root: string, ...args: string[]): GitResult {
  */
 export function isAncestorOf(root: string, ancestor: string, descendant: string): boolean {
   return runGit(root, "merge-base", "--is-ancestor", ancestor, descendant).exitCode === 0;
+}
+
+/** Non-empty trimmed lines of `content`, order preserved. */
+function contentLines(content: string): string[] {
+  return content.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+}
+
+/** True when every line of `small` appears in `big` as an ordered subsequence. */
+function isOrderedSubsequence(small: string[], big: string[]): boolean {
+  let cursor = 0;
+  for (const line of big) {
+    if (cursor < small.length && line === small[cursor]) cursor++;
+  }
+  return cursor === small.length;
+}
+
+/**
+ * Strict-superset test between the two sides of a content conflict: returns
+ * the side that contains every line of the other (compared as ordered
+ * subsequences of non-empty trimmed lines), or null when the sides are equal
+ * (ambiguous which side "wins") or neither contains the other.
+ */
+export function strictSupersetSide(ours: string, theirs: string): "ours" | "theirs" | null {
+  const oursLines = contentLines(ours);
+  const theirsLines = contentLines(theirs);
+  const oursContainsTheirs = isOrderedSubsequence(theirsLines, oursLines);
+  const theirsContainsOurs = isOrderedSubsequence(oursLines, theirsLines);
+  if (oursContainsTheirs && theirsContainsOurs) return null;
+  if (oursContainsTheirs) return "ours";
+  if (theirsContainsOurs) return "theirs";
+  return null;
+}
+
+/**
+ * Auto-resolve unmerged files whose two stages form a strict superset
+ * relationship: write the superset side and stage it. Delete/modify conflicts
+ * (a missing stage blob) and files neither side contains are left untouched.
+ * Returns the resolved paths; each is also announced with a warn log.
+ */
+function autoResolveSupersets(root: string): string[] {
+  const resolved: string[] = [];
+  for (const path of unmergedPaths(root)) {
+    const ours = runGit(root, "show", `:2:${path}`);
+    const theirs = runGit(root, "show", `:3:${path}`);
+    if (ours.exitCode !== 0 || theirs.exitCode !== 0) continue;
+    const side = strictSupersetSide(ours.stdout, theirs.stdout);
+    if (side === null) continue;
+    atomicWrite(fromRoot(root, path), side === "ours" ? ours.stdout : theirs.stdout);
+    if (runGit(root, "add", "--", path).exitCode !== 0) continue;
+    log("warn", `auto-resolved ${path}: ${side} side is a strict superset`);
+    resolved.push(path);
+  }
+  return resolved;
 }
 
 function asRecord(value: string): JsonRecord {
@@ -233,22 +288,29 @@ export function rebaseWithPlanReconciliation(
       exitCode: 0,
       output: `Already up to date: '${target}' is contained in HEAD. Rebase skipped.`,
       generatedConflicts: [],
+      autoResolved: [],
     };
   }
 
   let result = runGit(root, "rebase", target);
   let output = result.stdout + result.stderr;
   const generatedConflicts: string[] = [];
+  const autoResolved: string[] = [];
 
   while (result.exitCode !== 0) {
     const resolved = resolveGenerated(root, planDir, ticketsPath);
     generatedConflicts.push(...resolved);
-    if (resolved.length === 0 || unmergedPaths(root).length > 0) {
-      return { exitCode: result.exitCode, output, generatedConflicts };
+    const supersets = autoResolveSupersets(root);
+    autoResolved.push(...supersets);
+    if (
+      (resolved.length === 0 && supersets.length === 0)
+      || unmergedPaths(root).length > 0
+    ) {
+      return { exitCode: result.exitCode, output, generatedConflicts, autoResolved };
     }
     result = runGit(root, "rebase", "--continue");
     output += result.stdout + result.stderr;
   }
 
-  return { exitCode: 0, output, generatedConflicts };
+  return { exitCode: 0, output, generatedConflicts, autoResolved };
 }

@@ -59,7 +59,7 @@ import {
  * find-work's STATUS_LINE_RE so giwt's index and /find-work's roster
  * classify the same files — including dual-status reconciliation stubs.
  */
-const STATUS_LINE_RE =
+export const STATUS_LINE_RE =
   /^\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*(.+?)\s*(?:\*\*)?\s*$/i;
 /**
  * Parse a ticket .md file into a TicketFile.

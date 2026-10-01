@@ -11,7 +11,7 @@
  *   giwt doctor --tool oxlint,knip    restrict to specific tools
  *   giwt doctor --root <dir>          operate on a different root
  *   giwt doctor check [--json|--toml|--emoji]        run repo-health checks (lint, typecheck,
- *                                     tests, knip, jscpd, todo, scratchpad)
+ *                                     tests, knip, jscpd, todo, leaks, scratchpad)
  *   giwt doctor scratchpad [--json]   scratchpad bloat report (check shortcut)
  *   giwt doctor --help                this help
  */
@@ -334,7 +334,7 @@ function printHelp(): void {
   raw("  --tool <csv>        restrict to specific tool ids (oxlint,knip,jscpd,...)");
   raw("  --root <dir>        override project root (default: worktreeRoot)");
   raw("  check               run repo-health checks instead of scaffolding:");
-  raw("                        lint, typecheck, tests, knip, jscpd, todo, scratchpad");
+  raw("                        lint, typecheck, tests, knip, jscpd, todo, leaks, scratchpad");
   raw("  scratchpad          scratchpad bloat report — shortcut for `check --checks");
   raw("                        scratchpad`; shares --json/--root with check");
   raw("  --json              (check only) machine-readable report on stdout");

@@ -12,6 +12,7 @@
  *   knip       unused exports/dependencies (knip configured)
  *   jscpd      copy-paste clones (jscpd configured)
  *   todo       TODO/FIXME comments in code (pure FS scan)
+ *   leaks      openers of src test files with no teardown (pure FS scan)
  *   scratchpad .tmp scratchpad bloat — total bytes, orphan *.tmp count,
  *              oldest artifact age, largest dirs (pure FS, scanScratch)
  *
@@ -45,8 +46,17 @@ import {
 } from "../utils/scratch.ts";
 import type { ScratchConfig, ScratchpadThresholds } from "../utils/scratch.ts";
 import { detectProject } from "./detect.ts";
+import { hasTestFiles, OPENER_TEARDOWN_METHODS, scanLeaks } from "./leaks.ts";
 
-export type CheckId = "lint" | "typecheck" | "tests" | "knip" | "jscpd" | "todo" | "scratchpad";
+export type CheckId =
+  | "lint"
+  | "typecheck"
+  | "tests"
+  | "knip"
+  | "jscpd"
+  | "todo"
+  | "leaks"
+  | "scratchpad";
 
 export const CHECK_IDS: readonly CheckId[] = [
   "lint",
@@ -55,6 +65,7 @@ export const CHECK_IDS: readonly CheckId[] = [
   "knip",
   "jscpd",
   "todo",
+  "leaks",
   "scratchpad",
 ];
 
@@ -263,6 +274,9 @@ export function applicableChecks(root: string): CheckId[] {
   if (report.languages.some((l) => (CODE_LANGUAGES as readonly string[]).includes(l))) {
     out.push("todo");
   }
+  // Pure FS scan of src test files — applies once a scan target exists;
+  // repos without test files would only get a vacuous row.
+  if (hasTestFiles(root)) out.push("leaks");
   // Pure FS — no tool detection can make it inapplicable.
   out.push("scratchpad");
   return out;
@@ -1015,6 +1029,40 @@ function runTodo(root: string): CheckResult {
   };
 }
 
+// ---- leaks ----
+
+/**
+ * `leaks` — test files opening resources (createTestDb, Bun.spawn) with no
+ * teardown. Pure FS scan via scanLeaks; findings are hygiene warnings
+ * (kind "task"), so ok stays true and the exit code is unaffected —
+ * mirroring how non-FIXME todo findings behave.
+ */
+export function runLeaks(root: string): CheckResult {
+  const base = {
+    id: "leaks" as const,
+    tool: "leak-scan",
+    ok: true,
+    findings: [] as CheckFinding[],
+  };
+  return {
+    ...base,
+    findings: scanLeaks(root).slice(0, CHECK_MAX_FINDINGS).map((m) => {
+      const teardowns = OPENER_TEARDOWN_METHODS[m.opener]
+        .map((t) => `${m.var}.${t}()`)
+        .join("/");
+      return {
+        file: m.file,
+        line: m.line,
+        rule: `leaks:${m.opener}`,
+        message: `${m.opener}() bound to '${m.var}' is never torn down — no ${teardowns}, `
+          + `no afterAll/afterEach/t.cleanup usage`,
+        severity: "warning",
+        kind: "task",
+      };
+    }),
+  };
+}
+
 // ---- scratchpad ----
 
 const SCRATCHPAD_MIB = 1024 * 1024;
@@ -1260,6 +1308,9 @@ export async function runDoctorChecks(
         break;
       case "todo":
         tasks.push({ at, run: () => runTodo(root) });
+        break;
+      case "leaks":
+        tasks.push({ at, run: () => runLeaks(root) });
         break;
       case "scratchpad":
         tasks.push({

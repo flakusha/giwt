@@ -1,10 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
+import { type RebaseResult, rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
+
+/** One-line summary of strict-superset auto-resolutions, if any occurred. */
+function reportAutoResolved(result: RebaseResult): void {
+  if (result.autoResolved.length === 0) return;
+  log(
+    "info",
+    `Auto-resolved ${result.autoResolved.length} conflict(s) by strict superset: ${
+      result.autoResolved.join(", ")
+    }`,
+  );
+}
 
 export async function rebase(
   args: string[],
@@ -83,6 +94,8 @@ export async function rebase(
     config.settings.paths.planDir,
     config.settings.paths.tickets,
   );
+
+  reportAutoResolved(result);
 
   if (result.exitCode !== 0) {
     if (result.output.trim()) raw(result.output.trimEnd());
