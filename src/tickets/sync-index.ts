@@ -153,9 +153,9 @@ function guessType(filename: string): string {
  * never leak into a .md and re-break `plan validate`'s status-vocab gate.
  * Unresolvable freeform values pass through untouched (reclassify-nothing).
  */
-export function vocabStatusTarget(raw: string): string {
-  const r = resolveStatus(raw, {});
-  return r.action === "invalid" ? raw : r.value;
+export function vocabStatusTarget(status: string): string {
+  const r = resolveStatus(status, {});
+  return r.action === "invalid" ? status : r.value;
 }
 
 // ── Entry ─────────────────────────────────────────────────────
