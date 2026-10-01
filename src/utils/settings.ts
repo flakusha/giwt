@@ -34,6 +34,10 @@
  *   memory_budget_mb = 0     # MB the doctor pool may assume; 0 = auto (free RAM)
  *   scratchpad_warn_mb = 100 / scratchpad_error_mb = 500
  *   scratchpad_orphan_warn = 100 / scratchpad_oldest_warn_days = 30
+ *   [tmp]
+ *   root = "/tmp"              # cleanup root — only /tmp, $TMPDIR, os.tmpdir() allowed
+ *   prefixes = ["giwt-", ...]  # name allowlist for `giwt tmp --apply` candidates
+ *   max_age_hours = 6          # entries younger than this are never deleted
  *   [status.aliases]
  *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate
  *   [commands]
@@ -64,6 +68,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { log } from "./output";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "./scratch";
+import { DEFAULT_TMP_OPTIONS } from "./tmpscan";
 
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
@@ -88,6 +93,7 @@ export interface GiwtSettings {
     checkReportKeep: number;
     root: string;
   };
+  tmp: { root: string; prefixes: string[]; maxAgeHours: number; };
   status: { aliases: Record<string, string>; };
 }
 
@@ -113,6 +119,11 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   runlog: { maxRuns: 200 },
   output: { format: "simple", streamTail: 25, color: "auto" },
   scratch: { ...DEFAULT_SCRATCH_CONFIG, root: ".tmp" },
+  tmp: {
+    root: "/tmp",
+    prefixes: DEFAULT_TMP_OPTIONS.prefixes,
+    maxAgeHours: DEFAULT_TMP_OPTIONS.maxAgeHours,
+  },
   status: { aliases: {} },
 };
 
@@ -145,6 +156,7 @@ const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     check_report_keep: "checkReportKeep",
     root: "root",
   },
+  tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
   status: { aliases: "aliases" },
 };
 
@@ -179,6 +191,7 @@ const EXPECTED: Record<
     checkReportKeep: "number",
     root: "string",
   },
+  tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
   status: { aliases: "map" },
 };
 

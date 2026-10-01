@@ -61,6 +61,7 @@ import { state } from "./commands/state";
 import { execute as statusCmd } from "./commands/status";
 import { sync } from "./commands/sync";
 import { ticket } from "./commands/ticket";
+import { tmp } from "./commands/tmp";
 import { runGpgUnlock } from "./gpg-unlock";
 import { isNoColor } from "./utils/colors";
 import { loadConfig, type WorktreeConfig } from "./utils/config";
@@ -91,6 +92,8 @@ const USAGE: Record<string, string> = {
   "clean":
     "[--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]\n  --dry-run   print the prune plan per class (default; nothing is deleted)\n  --apply     run the prune and report bytes freed\n  --json      machine-readable plan/result on stdout (--toml/--emoji also supported)\n  --verbose   list every candidate path, not just per-class totals",
   "cleanup": "",
+  "tmp":
+    "[--dry-run] [--apply] [--json|--toml|--emoji] [--verbose] [--max-age-hours <n>]\n  --dry-run          analysis + prune plan (default; nothing is deleted)\n  --apply            delete gated stale test-fixture candidates\n  --max-age-hours n  age floor override (settings: [tmp] max_age_hours, default 6)\n  Gates: [tmp] prefixes allowlist, current-user ownership, plain dir/file only,\n  allowed temp roots only (/tmp, $TMPDIR) — /home and system paths refuse.",
   "docs":
     "<list|show|search|dump> [args...]\n  list            table of doc names and titles (--json supported)\n  show <name>     print a doc with its path header (--json supported)\n  search <term>   case-insensitive line search, name:line:text (--json supported)\n  dump <name>     raw file bytes, pipe-safe (no header, no color)",
   "comment":
@@ -179,6 +182,10 @@ const commands: Record<string, CommandHandler> = {
   "cleanup": {
     description: "Remove stale worktrees for deleted branches",
     run: cleanupCmd,
+  },
+  "tmp": {
+    description: "Analyze the machine temp root and prune stale test fixtures (dry-run by default)",
+    run: tmp,
   },
   "docs": {
     description: "List, show, search, or dump the repo's markdown docs",

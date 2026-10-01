@@ -68,6 +68,8 @@ export interface RunOutcome {
   doctor?: string | undefined;
   /** One-line clean summary (scratchpad bytes freed). */
   clean?: string | undefined;
+  /** One-line tmp summary (temp-root bytes freed by `giwt tmp`). */
+  tmp?: string | undefined;
 }
 
 export interface RunMeta {
@@ -347,5 +349,6 @@ export function formatOutcome(outcome: RunOutcome | undefined): string {
   }
   if (outcome.doctor) parts.push(`doctor: ${outcome.doctor}`);
   if (outcome.clean) parts.push(`clean: ${outcome.clean}`);
+  if (outcome.tmp) parts.push(`tmp: ${outcome.tmp}`);
   return parts.join("; ");
 }
