@@ -39,6 +39,7 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   },
   tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
   status: { aliases: "aliases" },
+  git: { rtk: "rtk", safe: "safe", allow: "allow", deny: "deny", classify: "classify" },
 };
 
 export const EXPECTED: Record<
@@ -74,6 +75,7 @@ export const EXPECTED: Record<
   },
   tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
   status: { aliases: "map" },
+  git: { rtk: "string", safe: "string[]", allow: "string[]", deny: "string[]", classify: "string" },
 };
 
 export type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };

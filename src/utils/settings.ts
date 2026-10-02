@@ -40,6 +40,12 @@
  *   max_age_hours = 6          # entries younger than this are never deleted
  *   [status.aliases]
  *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate
+ *   [git]                    # `giwt git` passthrough policy (harness reroutes git here)
+ *   rtk = "auto"             # auto|on|off — rtk compact console output for reads
+ *   safe = []                # extra subcommands treated as read-only
+ *   allow = []               # extra subcommands treated as recoverable mutations
+ *   deny = []                # extra subcommands refused outright (wins)
+ *   classify = "builtin"     # reserved for the future 0-shot classifier seam
  *   [commands]
  *   check = "bun run check"    # finalize gate; --diff-base appended unless
  *                              # commands.diff_base = false
@@ -95,6 +101,7 @@ export interface GiwtSettings {
   };
   tmp: { root: string; prefixes: string[]; maxAgeHours: number; };
   status: { aliases: Record<string, string>; };
+  git: { rtk: string; safe: string[]; allow: string[]; deny: string[]; classify: string; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -125,6 +132,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     maxAgeHours: DEFAULT_TMP_OPTIONS.maxAgeHours,
   },
   status: { aliases: {} },
+  git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin" },
 };
 
 import { checkType, EXPECTED, SCHEMA, type TomlValue } from "./settings-schema";

@@ -24,6 +24,7 @@ import { doctor } from "./commands/doctor";
 import { edit } from "./commands/edit";
 import { finalize } from "./commands/finalize";
 import { gi } from "./commands/gi";
+import { gitPassthrough } from "./commands/git";
 import { gripe } from "./commands/gripe";
 import { issues } from "./commands/issues";
 import { ledger } from "./commands/ledger";
@@ -126,6 +127,11 @@ export const commands: Record<string, CommandHandler> = {
   "gi": {
     description: "Run git-issue command directly",
     run: gi,
+  },
+  "git": {
+    description:
+      "Safety-gated git passthrough (harness reroutes raw git here): allowlist + destructive/gpg guard, run-record capture, rtk compact output",
+    run: gitPassthrough,
   },
   "gpg-unlock": {
     description: "Warm/verify the GPG agent passphrase cache for agent commits",
