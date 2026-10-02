@@ -1128,13 +1128,59 @@ describe("finalize rebase strategy", () => {
     expect(existsSync(wtPath)).toBe(true);
   });
 
-  test("stops when the branch has no commits beyond the target", async () => {
-    addWorktree("feature/empty");
+  test("tears down the worktree and branch when the target already contains them", async () => {
+    const wtPath = addWorktree("feature/empty");
 
     const run = await driveFinalize(["feature/empty"]);
 
-    expect(run.exitCode).toBe(0);
+    expect(run.exitCode).toBeNull();
     expect(run.output).toContain("has no commits beyond main \u2014 nothing to merge");
+    // Nothing merges or reconciles when there is nothing to merge.
+    expect(run.output).not.toContain("Step 5a");
+    expect(run.output).not.toContain("Step 5.5");
+    // Teardown is the contract: worktree dir, admin entry, and branch ref go.
+    expect(run.output).toContain("Worktree removed");
+    expect(run.output).toContain("Branch deleted");
+    expect(run.output).toContain("Finalized 'feature/empty' \u2014 already contained in main");
+    expect(existsSync(wtPath)).toBe(false);
+    expect(gitExitCode(["rev-parse", "--verify", "feature/empty"])).not.toBe(0);
+  });
+
+  test("still refuses a dirty already-merged worktree at Step 1", async () => {
+    const wtPath = addWorktree("feature/empty");
+    // Tracked modification: `git diff --quiet` ignores untracked files.
+    writeFileSync(join(wtPath, "seed.txt"), "dirty\n");
+
+    const run = await driveFinalize(["feature/empty"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("uncommitted changes detected");
+    expect(existsSync(wtPath)).toBe(true);
+    expect(gitExitCode(["rev-parse", "--verify", "feature/empty"])).toBe(0);
+  });
+
+  test("closes scoped issues and reconciles the plan on a normal finalize", async () => {
+    const wtPath = featureWorktree();
+    // Scope marker lives in the linked worktree's git dir, not the tree.
+    const gitDir = resolve(wtPath, git(["rev-parse", "--git-dir"], wtPath).trim());
+    writeFileSync(
+      join(gitDir, "giwt-scoped.json"),
+      `${JSON.stringify({ tickets: ["FEAT-DEMO"] })}\n`,
+    );
+    // Minimal plan state so Step 5.5's runSync --fix has something to stage.
+    mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
+    writeFileSync(join(root, ".plan", "tickets", "index.json"), "{}\n");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("Scoped worktree: closing 1 ticket issue(s)...");
+    expect(run.output).toContain("Step 5.5: scoped-worktree plan reconciliation...");
+    // The unresolvable extid is tolerated (warn), the reconciliation lands.
+    expect(run.output).toContain("could not resolve FEAT-DEMO in the registry");
+    expect(git(["log", "-1", "--format=%s"]).trim())
+      .toBe("chore(plan): scoped-worktree reconciliation");
+    expect(existsSync(wtPath)).toBe(false);
   });
 
   test("stashes a dirty dev checkout and restores it after the merge", async () => {

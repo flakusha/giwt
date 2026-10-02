@@ -1433,19 +1433,25 @@ async function runFinalize(
   log("info", "Step 4: Checking commits...");
   const aheadStr = gitSync(wtPath, "rev-list", "--count", `${targetBranch}..HEAD`);
   const ahead = parseInt(aheadStr || "0", 10);
-  if (ahead === 0) {
+  // The target already contains HEAD (manual merge, or an interrupted earlier
+  // finalize): there is nothing to merge or reconcile, but teardown (Steps
+  // 6/7) is part of finalize's contract and MUST still run — exiting here
+  // leaks the worktree directory, its .git/worktrees admin entry, and the
+  // branch ref while reporting success.
+  const alreadyMerged = ahead === 0;
+  if (alreadyMerged) {
     log("warn", `Branch '${branch}' has no commits beyond ${targetBranch} — nothing to merge`);
-    process.exit(0);
+  } else {
+    log("success", `Branch has ${ahead} commit(s) beyond ${targetBranch}`);
   }
-  log("success", `Branch has ${ahead} commit(s) beyond ${targetBranch}`);
 
   const scopedMeta = readScopedMeta(wtPath);
-  if (scopedMeta !== null && scopedMeta.tickets.length > 0) {
+  if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
     closeScopedIssues(config.repoRoot, scopedMeta.tickets);
   }
 
-  // Step 5: Merge
-  if (mergeStrategy === "rebase" || mergeStrategy === "squash") {
+  // Step 5: Merge (skipped entirely when the target already contains HEAD)
+  if (!alreadyMerged && (mergeStrategy === "rebase" || mergeStrategy === "squash")) {
     // 5a: Rebase
     log("info", `Step 5a: Rebasing '${branch}' onto ${targetBranch}...`);
     const rebaseResult = rebaseWithPlanReconciliation(
@@ -1532,7 +1538,7 @@ async function runFinalize(
       }
       if (ffOk) { /* restored above */ }
     }
-  } else if (mergeStrategy === "direct") {
+  } else if (!alreadyMerged && mergeStrategy === "direct") {
     // Direct merge warning — logger channel: the old hand-drawn box was
     // decorative output leaked onto the raw data channel.
     log(
@@ -1603,7 +1609,7 @@ async function runFinalize(
   // maps the closed issues' Done state into the merged .md files and index,
   // the generated plan artifacts are regenerated, and the result lands as a
   // signed in-place commit on the target branch.
-  if (scopedMeta !== null && scopedMeta.tickets.length > 0) {
+  if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
     log("info", "Step 5.5: scoped-worktree plan reconciliation...");
     reconcileScopedPlan(config);
   }
@@ -1642,5 +1648,10 @@ async function runFinalize(
   }
 
   raw("");
-  log("success", `Finalized '${branch}' — merged to ${targetBranch}`);
+  log(
+    "success",
+    alreadyMerged
+      ? `Finalized '${branch}' — already contained in ${targetBranch}`
+      : `Finalized '${branch}' — merged to ${targetBranch}`,
+  );
 }
