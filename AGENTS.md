@@ -67,6 +67,8 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 ## Important Files
 
 - `src/cli.ts` — dispatch + exit codes; `src/cli-registry.ts` registry; `src/cli-usage.ts` USAGE help table.
+- `src/git/` — `giwt git` invocation policy: `policy.ts` classifier (err-closed), `policy-tables.ts` RO/RW/BLOCK tables, `predicates.ts` per-subcommand flag checks.
+- `src/commands/git.ts` — the `giwt git` safety-gated passthrough (harness reroutes raw `git` here).
 - `src/index.ts` — public API; `package.json` `exports` map (`.`, `./package.json`).
 - `src/utils/config.ts` — `WorktreeConfig` shape every handler receives.
 - `src/utils/settings.ts` — TOML schema; add new keys to `SCHEMA` or they're warn-ignored.
@@ -91,3 +93,23 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 - **Conventions**: mkdtemp tmp-dir fixtures cleaned in `finally`/`afterEach`; output captured via `spyOn(process.stdout, "write")` joined from `mock.calls` (logger writes via `raw`, so `console.log` spies see nothing); `process.exit` mocked by replacing it with a spy that throws an `__exit:<code>` sentinel; `entry(overrides)` builder factories for structured records.
 - **Real subprocess tests**: `finalize-lock-cleanup.test.ts` spawns `bun run src/finalize-lock-fixture.ts <tmp> <mode>` — process.exit semantics can't be tested in-runner (it kills the bun test runner). Signal tests use SIGHUP and sync on a `started` stdout marker, never wall-clock timers.
 - **Expectations**: tests assert behavior (ledger record contents, exit codes, lockfile absence, symlink targets, output substrings) — not implementation plumbing; keep it that way. `bunx tsc --noEmit` clean + full `bun test` green = shippable.
+- **Bun exitCode quirk**: `process.exitCode = undefined` does not reset a previously set code — reset with `0`.
+- **Run-record hygiene in tests**: a `beginRun()` recorder must be closed with `finishActiveRun(code)` (not only `rec.finish()`), or `ACTIVE_RUN` stays cached and later gate steps in the same process write into that stale run dir.
+
+## `giwt git` passthrough (harness rerouting)
+
+All agent `git` traffic is rerouted to `giwt git <args…>` — the harness enforces it, giwt is the gate. Every invocation is classified (`src/git/policy.ts`, err-closed) before git runs: reads and recoverable mutations pass; destructive shapes (cc-safety-net-seeded), gpg bypass (`--no-gpg-sign`, `-c commit.gpgsign=false`), credential/hook/ssh `-c` overrides, git-config writes, editor-requiring commits, and unknown subcommands are refused. Full raw output lands in the run record (`git-output.txt`); rtk (when installed, `[git] rtk`) prints compact output for `status/log/diff/show`. Commit/merge messages get the LLM Co-Authored-By strip (real co-authors kept, `src/utils/coauthors.ts`); finalize squash aggregates real co-authors from the squashed commits. Policy lists are user-configurable via `[git] safe/allow/deny` in giwt.toml (`deny` wins; built-in blocks are not overridable); `[git] classify` is reserved (only `builtin` accepted).
+
+Drop-in harness rule text (install under `~/.omp/agent/rules/git-rerouting.md`):
+
+```markdown
+---
+route git through giwt
+---
+All `git` invocations MUST be rewritten to `giwt git …` before execution:
+the line-anchored bashInterceptor rewrites command-initial `git ` tokens to
+`giwt git `. `giwt git` classifies the invocation (allowlist + destructive
+and gpg-bypass guard), captures the full output into the run record, and
+prints rtk-compact output for reads. Blocked commands exit 1 with a reason;
+extend the allowlist via `[git] allow` in giwt.toml, never by bypassing.
+```

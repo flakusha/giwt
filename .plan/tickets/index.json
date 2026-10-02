@@ -335,6 +335,22 @@
     "source": ".plan/tickets/FEAT-bounded-output-mode-for-check-and-test-streams.md",
     "status": "done"
   },
+  "FEAT-COMMIT-CO-AUTHOR-TRAILER-POLICY-STRIP-LLM-KEEP-REAL-AGGREGAT": {
+    "hash": "b1f3ce5",
+    "git_issue": "b1f3ce5",
+    "extid": "FEAT-COMMIT-CO-AUTHOR-TRAILER-POLICY-STRIP-LLM-KEEP-REAL-AGGREGAT",
+    "type": "FEAT",
+    "title": "commit co-author trailer policy: strip LLM, keep real, aggregate in squash",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "coauthors"
+    ],
+    "source": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md",
+    "status": "Not Started"
+  },
   "FEAT-COPY-TICKET-FILES-BETWEEN-WORKTREES": {
     "hash": "6f31aa3",
     "git_issue": "6f31aa3",
@@ -347,6 +363,22 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-copy-ticket-files-between-worktrees.md",
     "status": "done"
+  },
+  "FEAT-DESTRUCTIVE-GPG-BYPASS-GIT-GUARD-CC-SAFETY-NET-SEEDED": {
+    "hash": "6dc4190",
+    "git_issue": "6dc4190",
+    "extid": "FEAT-DESTRUCTIVE-GPG-BYPASS-GIT-GUARD-CC-SAFETY-NET-SEEDED",
+    "type": "FEAT",
+    "title": "destructive + gpg-bypass git guard (cc-safety-net seeded)",
+    "label": "feat",
+    "priority": "high",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "safety"
+    ],
+    "source": ".plan/tickets/FEAT-destructive-gpg-bypass-git-guard-cc-safety-net-seeded.md",
+    "status": "Not Started"
   },
   "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
     "hash": "7323f1b",
@@ -431,6 +463,38 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-gen-docs-check-freshness-gate.md",
     "status": "done"
+  },
+  "FEAT-GIT-INVOCATION-ALLOWLIST-POLICY-CONFIGURABLE-LISTS": {
+    "hash": "181389f",
+    "git_issue": "181389f",
+    "extid": "FEAT-GIT-INVOCATION-ALLOWLIST-POLICY-CONFIGURABLE-LISTS",
+    "type": "FEAT",
+    "title": "git invocation allowlist policy + configurable lists",
+    "label": "feat",
+    "priority": "high",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "policy"
+    ],
+    "source": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md",
+    "status": "Not Started"
+  },
+  "FEAT-GIWT-GIT-PASSTHROUGH-COMMAND-FOR-HARNESS-REROUTING": {
+    "hash": "ccd5711",
+    "git_issue": "ccd5711",
+    "extid": "FEAT-GIWT-GIT-PASSTHROUGH-COMMAND-FOR-HARNESS-REROUTING",
+    "type": "FEAT",
+    "title": "giwt git passthrough command for harness rerouting",
+    "label": "feat",
+    "priority": "high",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "rerouting"
+    ],
+    "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md",
+    "status": "Not Started"
   },
   "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
     "hash": "52e9b13",
@@ -533,6 +597,22 @@
     "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
     "status": "done"
   },
+  "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
+    "hash": "5c8a4b5",
+    "git_issue": "5c8a4b5",
+    "extid": "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT",
+    "type": "FEAT",
+    "title": "rtk minimal-context output for giwt git",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "rtk"
+    ],
+    "source": ".plan/tickets/FEAT-rtk-minimal-context-output-for-giwt-git.md",
+    "status": "Not Started"
+  },
   "FEAT-RUNS-FAILURE-TRIAGE-EXTRACT-FAIL-BLOCKS-AND-DIFF-TWO-RUNS": {
     "hash": "9075543",
     "git_issue": "9075543",
@@ -632,6 +712,22 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-validate-skip-gates-flag.md",
     "status": "done"
+  },
+  "FEAT-ZERO-SHOT-COMMAND-CLASSIFIER-SEAM-PREPARE-ONLY": {
+    "hash": "bcdd0eb",
+    "git_issue": "bcdd0eb",
+    "extid": "FEAT-ZERO-SHOT-COMMAND-CLASSIFIER-SEAM-PREPARE-ONLY",
+    "type": "FEAT",
+    "title": "zero-shot command classifier seam (prepare only)",
+    "label": "feat",
+    "priority": "low",
+    "epic": "git-rerouting-safety",
+    "tags": [
+      "git",
+      "classifier"
+    ],
+    "source": ".plan/tickets/FEAT-zero-shot-command-classifier-seam-prepare-only.md",
+    "status": "Not Started"
   },
   "FIX-ABORT-LEAVES-STALE-REBASE-HEAD-AND-FINALIZE-IS-BLOCKED-BY-TH": {
     "hash": "0e92491",

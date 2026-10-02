@@ -329,6 +329,12 @@
       "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md"
     }
   ],
+  "src/utils/coauthors.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md"
+    }
+  ],
   "src/utils/errors.test.ts": [
     {
       "kind": "ticket",
