@@ -3,7 +3,7 @@
 
 # FEAT: reconcile leftover finalize stashes in a temp worktree
 
-**Status:** Not Started
+**Status:** Postponed
 **Priority:** Medium
 **Effort:** Medium
 

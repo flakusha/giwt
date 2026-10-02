@@ -3,7 +3,7 @@
 
 # FEAT: scoped worktree creation: new --scope and --tickets flags
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Large
 
@@ -17,8 +17,9 @@ Design review 2026-10-01. Index merge-up on the fly already exists for rebase/sq
 
 **Acceptance Criteria:**
 
-- [ ] `giwt new --scope --tickets` creates worktree + first commit with In Progress status lines and `**Scope:**` header lines
-- [ ] `ticket close` invoked pre-merge when finalize runs with the scoped-worktree metadata
-- [ ] Finalize Step 5.5 performs runSync --fix + regenerate + signed in-place commit on the target branch
-- [ ] USAGE table updated for `new`; flags parsed before the positional body
-- [ ] Tests: fixture covers create → status assertions → finalize → merged index/closure, plus unknown-ticket-id and empty-csv negatives
+- [x] `giwt new --scope --tickets` creates worktree + first commit with In Progress status lines and `**Scope:**` header lines (create.ts + new-branch.ts; unknown-id/empty-csv refuse pre-mutation)
+- [x] `ticket close` of scoped tickets runs pre-merge when finalize sees the scope marker (finalize `closeScopedIssues`, extid→hash via resolver, idempotent)
+- [x] Finalize Step 5.5 performs runSync --fix + matrix/code-map regeneration + signed in-place commit on the target branch (reconcileScopedPlan; commits only when the fix pass landed changes)
+- [x] USAGE table updated for `new`; flags parsed before the positional body (parseScopeFlags)
+- [x] Tests: scoped-worktree.test.ts — create→status/scope assertions→marker→finalize reconcile helpers, plus unknown-ticket-id and empty-csv negatives (12 cases)
+**Resolved:** 2026-10-02T01:30:53.582Z scoped worktree feature landed: new --scope/--tickets, finalize pre-merge close + Step 5.5 reconciliation; 12 fixture tests

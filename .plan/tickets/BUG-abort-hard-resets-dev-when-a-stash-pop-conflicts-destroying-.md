@@ -67,6 +67,8 @@ The conflict branch is reachable only through a real subprocess pop against a re
 
 ## Acceptance Criteria
 
+**Acceptance Criteria:**
+
 - [x] A failed `stash pop` in `abort()` leaves unrelated uncommitted TRACKED work in `repoRoot` intact
 - [x] Conflict path stops the recovery loop instead of popping remaining stashes onto a just-reset tree
 - [x] Conflict path exits non-zero and does not print `Abort complete`

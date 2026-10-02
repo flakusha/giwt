@@ -18,7 +18,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -114,6 +114,40 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
     root = "";
   }
+});
+
+describe("sync --fix regenerates generated plan artifacts", () => {
+  test("stale feature-matrix.md and code-map.json are rewritten when fixes apply", () => {
+    makeRepo("artifacts");
+    seedMismatch(root);
+    const planDir = join(root, ".plan");
+    writeFileSync(join(planDir, "feature-matrix.md"), "STALE MATRIX\n");
+    writeFileSync(join(planDir, "code-map.json"), "{\n}\n");
+
+    const result = runCli(["--fix"]);
+    expect(result.exitCode).toBe(0);
+
+    const matrix = readFileSync(join(planDir, "feature-matrix.md"), "utf8");
+    expect(matrix).not.toContain("STALE");
+    // The adopted orphan ticket shows up in the regenerated matrix.
+    expect(matrix).toContain("TASK-ORPHAN");
+    // Deterministic empty rebuild: the fixture has no src refs, and
+    // writeMap pretty-prints with a trailing newline.
+    expect(readFileSync(join(planDir, "code-map.json"), "utf8")).toBe("{}\n");
+  });
+
+  test("dry-run leaves generated artifacts untouched", () => {
+    makeRepo("artifacts-dry");
+    seedMismatch(root);
+    const planDir = join(root, ".plan");
+    writeFileSync(join(planDir, "feature-matrix.md"), "STALE MATRIX\n");
+
+    const result = runCli([]);
+    expect(readFileSync(join(planDir, "feature-matrix.md"), "utf8")).toBe("STALE MATRIX\n");
+    // Mismatch fixture leaves actionable orphans in dry-run: exit 1, and
+    // no artifact regeneration without an applied fix.
+    expect(result.exitCode).toBe(1);
+  });
 });
 
 describe("sync: machine output flags (mismatch fixture)", () => {

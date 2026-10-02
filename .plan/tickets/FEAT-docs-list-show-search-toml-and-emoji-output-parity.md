@@ -3,7 +3,7 @@
 
 # FEAT: docs list/show/search toml and emoji output parity
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Epic:** output-tooling
@@ -19,6 +19,7 @@ docs subcommands accept only --json; the other data commands accept --json|--tom
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] `docs list|show|search` accept --json|--toml|--emoji via parseOutFlags (dump stays raw bytes)
+- [x] Tests: 3 parity cases in docs.test.ts (toml round-trip, emoji mappers, --json unchanged) — 45/45 module green
+- [x] USAGE_TEXT updated
+**Resolved:** 2026-10-02T01:03:33.392Z parseOutFlags parity landed; toml/emoji tests green

@@ -3,7 +3,7 @@
 
 # TASK: commit-wt on-protected-branch direct commit scenario
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -21,3 +21,4 @@ Agents parked on the protected main checkout cannot use commit-wt (refused) yet 
 - [x] `commit-wt <protected>` without the flag keeps refusing; with it, verifies the main checkout branch and routes the commit to `repoRoot` via the same GPG-signed pipeline
 - [x] `--on-protected` on a non-protected branch is an error; mismatched main checkout is an error
 - [x] Tests: `src/commands/commit-protected.test.ts` (6 cases, mkdtemp fixtures, parallel-safe) — 27/27 module+adjacent pass
+**Resolved:** 2026-10-02T01:00:35.237Z verified: --on-protected contract + 27/27 commit-protected tests pass

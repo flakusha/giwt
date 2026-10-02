@@ -3,7 +3,7 @@
 
 # TASK: migrate plan backlog-sync to a top-level backlog command
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -27,3 +27,4 @@ Promote `giwt plan backlog-sync` to a top-level `giwt backlog` command with a
 - [x] `plan backlog-sync` removed: SUBCOMMAND_INFO entry, switch case, handler, USAGE line, command description
 - [x] Registry + `USAGE["backlog"]` added; `plan validate` fix hint now `giwt backlog sync --fix`
 - [x] Dogfood: in-sync run on loop-lore (exit 0), missing-dir friendly error in giwt repo, unknown-subcommand usage exit 1
+**Resolved:** 2026-10-02T01:00:35.135Z verified: backlog.ts + registry live, plan backlog-sync removed, tests green

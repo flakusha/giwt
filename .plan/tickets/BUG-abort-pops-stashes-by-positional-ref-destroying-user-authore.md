@@ -79,6 +79,8 @@ A regression test must use a real scratch git repo with 2+ finalize stashes INTE
 
 ## Acceptance Criteria
 
+**Acceptance Criteria:**
+
 - [x] `abort()` restores every selected finalize stash and leaves every non-matching user stash on the stack, with 2+ finalize stashes interleaved with user stashes
 - [x] Ordering fix verified: descending-index pop, or per-iteration label re-resolution
 - [x] Regression test in `abort.test.ts`: real scratch repo, >=2 finalize + >=2 user stashes interleaved, distinct file per stash, asserts both user messages survive and both finalize entries are consumed

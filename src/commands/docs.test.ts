@@ -100,6 +100,83 @@ function exitSentinel(): { codes: number[]; restore: () => void; } {
   };
 }
 
+describe("docs output parity (--toml/--emoji)", () => {
+  test("list --toml wraps items and --emoji renders one line per doc", () => {
+    const base = makeRoot("parity-list");
+    seedCorpus(base);
+    const cfg = cfgFor(base);
+
+    let cap = capture();
+    try {
+      void docs(["list", "--toml"], cfg);
+    } finally {
+      cap.restore();
+    }
+    const tomlOut = Bun.TOML.parse(cap.out()) as {
+      items: Array<{ name: string; title: string; path: string; }>;
+    };
+    expect(Array.isArray(tomlOut.items)).toBe(true);
+    expect(tomlOut.items.some((d) => d.path.endsWith("/AGENTS.md"))).toBe(true);
+
+    cap = capture();
+    try {
+      void docs(["list", "--emoji"], cfg);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.out()).toContain("📚 AGENTS — Agents");
+  });
+
+  test("search --toml round-trips hits; --emoji keeps the name:line prefix", () => {
+    const base = makeRoot("parity-search");
+    seedCorpus(base);
+    const cfg = cfgFor(base);
+
+    let cap = capture();
+    try {
+      void docs(["search", "intro", "--toml"], cfg);
+    } finally {
+      cap.restore();
+    }
+    const parsed = Bun.TOML.parse(cap.out()) as {
+      items: Array<{ name: string; line: number; text: string; }>;
+    };
+    expect(parsed.items[0]?.name).toBe("README");
+
+    cap = capture();
+    try {
+      void docs(["search", "intro", "--emoji"], cfg);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.out()).toContain("🔍 README:1:");
+  });
+
+  test("show --emoji emits path line plus content; --json unchanged", () => {
+    const base = makeRoot("parity-show");
+    seedCorpus(base);
+    const cfg = cfgFor(base);
+
+    let cap = capture();
+    try {
+      void docs(["show", "agents", "--emoji"], cfg);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.out()).toContain("📄 AGENTS (");
+    expect(cap.out()).toContain("Be nice.");
+
+    cap = capture();
+    try {
+      void docs(["show", "agents", "--json"], cfg);
+    } finally {
+      cap.restore();
+    }
+    const rec = JSON.parse(cap.out()) as Array<{ name: string; content: string; }>;
+    expect(rec[0]?.content).toContain("Be nice.");
+  });
+});
+
 describe("docs list", async () => {
   test("table lists names and titles from the whole corpus", async () => {
     const base = makeRoot("list-table");

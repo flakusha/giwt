@@ -35,6 +35,7 @@ import {
   parseStashList,
   selectFinalizeStashes,
 } from "./abort";
+import { closeScopedIssues, readScopedMeta, reconcileScopedPlan } from "./scoped-worktree";
 
 const LOCK_FILENAME = ".worktree-finalize.lock";
 // Signals we treat as user-initiated cancellation. SIGINT (Ctrl-C), SIGTERM
@@ -1438,6 +1439,11 @@ async function runFinalize(
   }
   log("success", `Branch has ${ahead} commit(s) beyond ${targetBranch}`);
 
+  const scopedMeta = readScopedMeta(wtPath);
+  if (scopedMeta !== null && scopedMeta.tickets.length > 0) {
+    closeScopedIssues(config.repoRoot, scopedMeta.tickets);
+  }
+
   // Step 5: Merge
   if (mergeStrategy === "rebase" || mergeStrategy === "squash") {
     // 5a: Rebase
@@ -1592,6 +1598,15 @@ async function runFinalize(
   // itself lives under repoRoot now, but the SHA is the durable answer to
   // "what did this finalize land" (head of the target branch post-merge).
   activeRun()?.outcome({ mergeCommit: gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD") });
+
+  // Step 5.5: scoped-worktree plan reconciliation (post-merge). runSync --fix
+  // maps the closed issues' Done state into the merged .md files and index,
+  // the generated plan artifacts are regenerated, and the result lands as a
+  // signed in-place commit on the target branch.
+  if (scopedMeta !== null && scopedMeta.tickets.length > 0) {
+    log("info", "Step 5.5: scoped-worktree plan reconciliation...");
+    reconcileScopedPlan(config);
+  }
 
   // Step 6: Remove worktree
   log("info", "Step 6: Removing worktree...");

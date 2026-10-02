@@ -179,4 +179,31 @@ describe("show", () => {
     expect(cap.exits).toEqual([1]);
     expect(cap.out).toContain("Usage: show");
   });
+
+  // TASK-show-state-resolve-plan-tickets-filename-slugs: the resolver must
+  // accept every ID form an agent sees on disk — uppercase extid, lowercase
+  // filename slug, slug.md, and hex hash.
+  describe("resolveExtid input forms", () => {
+    it("resolves lowercase slug, slug.md, and uppercase extid to the same issue", async () => {
+      const config = makeConfig();
+      const fx = createExtidIssue(config.repoRoot, "TASK-resolve-forms", "forms title", "b");
+
+      for (const form of [fx.extid, "TASK-resolve-forms", "TASK-resolve-forms.md"]) {
+        const cap = await run([form, "--json"], config);
+        expect(cap.exits).toEqual([]);
+        const rec = JSON.parse(cap.out) as { hash: string; extid: string; };
+        expect(rec.hash).toBe(fx.hash);
+        expect(rec.extid).toBe(fx.extid);
+      }
+    });
+
+    it("slug.md resolves without leaking the suffix into the passthrough hash", async () => {
+      const config = makeConfig();
+      createExtidIssue(config.repoRoot, "BUG-suffix-check", "suffix title", "b");
+
+      const cap = await run(["BUG-suffix-check.md", "--json"], config);
+      const rec = JSON.parse(cap.out) as { extid: string; };
+      expect(rec.extid).toBe("BUG-suffix-check");
+    });
+  });
 });

@@ -133,6 +133,12 @@
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
     }
   ],
+  "src/commands/show.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-show-state-resolve-plan-tickets-filename-slugs.md"
+    }
+  ],
   "src/commands/ticket.test.ts": [
     {
       "kind": "ticket",

@@ -13,6 +13,7 @@ import { reportMissingBranch } from "../utils/errors";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
+import { applyScopedTickets, parseScopeFlags, resolveScopedTickets } from "./scoped-worktree";
 import {
   hasWorktreeDir,
   isDirEmpty,
@@ -22,12 +23,16 @@ import {
 } from "./worktree-registry";
 
 export async function execute(args: string[], config: WorktreeConfig): Promise<void> {
-  const branch = args[0];
+  const { scope, tickets, rest } = parseScopeFlags(args);
+  const branch = rest[0];
   if (!branch) {
     log("error", "branch name required");
     raw("  Usage: giwt create <branch>");
     process.exit(1);
   }
+  // Ticket resolution is a pre-flight: an unknown id must refuse before any
+  // git mutation (worktree add), not leave a half-created tree behind.
+  if (tickets !== undefined) resolveScopedTickets(config, tickets);
 
   if (isProtected(branch, config.settings.branches.protected)) {
     log("error", `cannot create worktree for protected branch '${branch}'`);
@@ -112,6 +117,10 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
 
   linkNodeModules(config.repoRoot, wtPath);
   linkWorktreeCredentials(config.repoRoot, wtPath);
+
+  if (tickets !== undefined || scope !== undefined) {
+    applyScopedTickets(config, wtPath, scope, tickets ?? []);
+  }
 
   log("success", `Created: ${wtPath}`);
 }

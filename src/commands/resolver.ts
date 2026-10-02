@@ -48,21 +48,25 @@ export function statusStyle(state: string): StatusStyle {
 }
 
 export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | null {
+  // Agents paste the .plan/tickets/<slug>.md filename they see on disk;
+  // strip the suffix so the filename form resolves like the bare slug
+  // (TASK-show-state-resolve-plan-tickets-filename-slugs).
+  const stripped = input.replace(/\.md$/i, "");
   // Extids are case-insensitive: `giwt ticket TASK my-title` creates the
   // lowercase kebab extid TASK-my-title, and lookups must round-trip it.
   const extidPattern = /^[a-z]+-[a-z0-9-]+$/i;
-  if (!extidPattern.test(input)) {
+  if (!extidPattern.test(stripped)) {
     return { hash: input, raw: input };
   }
 
-  const lines = gitSync(repoRoot, "issue", "ls").split("\n");
+  const lines = gitSync(repoRoot, "issue", "ls", "--all").split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
     const match = trimmed.match(/([0-9a-f]{7,40})\s+/);
     const hash = match?.[1];
-    if (hash && trimmed.toLowerCase().includes(input.toLowerCase())) {
+    if (hash && trimmed.toLowerCase().includes(stripped.toLowerCase())) {
       return { hash, raw: trimmed };
     }
   }

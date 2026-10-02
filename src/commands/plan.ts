@@ -122,7 +122,7 @@ export async function plan(
 // ── code-map ────────────────────────────────────────────────────
 
 /** Build map sources using the configured planDir instead of hardcoded .plan */
-function mapSourcesFor(planDir: string): Array<{ dir: string; kind: string; }> {
+export function mapSourcesFor(planDir: string): Array<{ dir: string; kind: string; }> {
   return [
     { dir: `${planDir}/tickets`, kind: "ticket" },
     { dir: `${planDir}/epics`, kind: "epic" },

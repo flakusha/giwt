@@ -214,6 +214,22 @@
     "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
     "status": "done"
   },
+  "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
+    "hash": "adccccd",
+    "git_issue": "adccccd",
+    "extid": "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE",
+    "type": "BUG",
+    "title": "sync --fix leaves feature-matrix and code-map stale",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "tickets",
+      "sync"
+    ],
+    "source": ".plan/tickets/BUG-sync-fix-leaves-feature-matrix-and-code-map-stale.md",
+    "status": "done"
+  },
   "BUG-SYNC-FIX-REWRITES-MD-STATUS-TO-GIT-ISSUE-STATE-REVERTING-PLA": {
     "hash": "c72813b",
     "git_issue": "c72813b",
@@ -332,7 +348,7 @@
       "output"
     ],
     "source": ".plan/tickets/FEAT-docs-list-show-search-toml-and-emoji-output-parity.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-DOCTOR-CHECK-CONCURRENCY-RUN-THE-FIVE-CHECKS-IN-PARALLEL": {
     "hash": "e3b6b3d",
@@ -531,7 +547,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-scoped-worktree-creation-new-scope-and-tickets-flags.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE": {
     "hash": "cdde664",
@@ -886,7 +902,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-GIWT-CLEAN-AGE-SIZE-CAPPED-TMP-PRUNING": {
     "hash": "pending",
@@ -973,7 +989,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-PLAN-VALIDATE-REJECT-CASE-INSENSITIVE-TICKET-FILENAME-COLLIS": {
     "hash": "6093563",
@@ -1025,6 +1041,21 @@
       "history-safety"
     ],
     "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
+    "status": "done"
+  },
+  "TASK-SHOW-STATE-RESOLVE-PLAN-TICKETS-FILENAME-SLUGS": {
+    "hash": "6bf73b8",
+    "git_issue": "6bf73b8",
+    "extid": "TASK-SHOW-STATE-RESOLVE-PLAN-TICKETS-FILENAME-SLUGS",
+    "type": "TASK",
+    "title": "show/state resolve plan tickets filename slugs",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "dx"
+    ],
+    "source": ".plan/tickets/TASK-show-state-resolve-plan-tickets-filename-slugs.md",
     "status": "done"
   },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {

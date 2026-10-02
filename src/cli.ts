@@ -124,7 +124,7 @@ const USAGE: Record<string, string> = {
   "merge":
     "<branch> <source>\n  <branch>   target worktree branch\n  <source>   branch merged into it",
   "new":
-    "<branch> [base]\n  <branch>   new branch name\n  [base]     base ref (default: root branch)",
+    "<branch> [base] [--scope <text>] [--tickets <csv>]\n  <branch>     new branch name\n  [base]       base ref (default: root branch)\n  --scope <t>  short explanation, persisted as **Scope:** header lines\n  --tickets <csv>  ticket ids (extid/slug/.md) copied in as In Progress + first commit; finalize closes them pre-merge and reconciles the plan post-merge",
   "plan":
     "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --json)\n  status        .plan/ health summary (--tickets: per-ticket Status + unticked acceptance counts; --json|--toml|--emoji)",
   "prs": "",
