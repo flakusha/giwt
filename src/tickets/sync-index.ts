@@ -158,6 +158,55 @@ export function vocabStatusTarget(status: string): string {
   return r.action === "invalid" ? status : r.value;
 }
 
+/**
+ * Provenance line for a registry-driven Done stamp
+ * (BUG-sync-fix-stamps-ticket-done-without-provenance): the git-issue close
+ * event is (at minimum) the tip commit of the issue's ref
+ * (`refs/issues/<uuid>` — the uuid is prefixed by the issue hash), so the
+ * short sha + author recorded there name the agent that flipped the shared
+ * registry state. A reader of any worktree commit can then distinguish a
+ * registry-driven Done from a locally verified one. Best-effort: a missing
+ * ref or unreadable metadata degrades to a plainer line, never throws.
+ */
+function registryDoneProvenance(repoRoot: string, hash: string | undefined): string {
+  const stamp = `**Resolved:** ${new Date().toISOString().slice(0, 10)} registry-driven close`;
+  if (!hash || !/^[0-9a-f]{7,40}$/.test(hash)) return `${stamp}: git issue hash unknown`;
+  const gitOpts = {
+    timeout: 10_000,
+    cwd: repoRoot,
+    env: isolatedGitEnv(),
+    encoding: "utf8",
+  } as const;
+  try {
+    const ref = execFileSync(
+      "git",
+      ["for-each-ref", "--format=%(refname)", `refs/issues/${hash}*`],
+      gitOpts,
+    ).trim().split("\n")[0];
+    if (!ref) return `${stamp}: git issue ${hash} (issue ref not found)`;
+    const tip = execFileSync("git", ["log", "-1", "--format=%h %an %s", ref], gitOpts).trim();
+    return `${stamp}: git issue ${hash} (registry tip: ${tip.slice(0, 100)})`;
+  } catch {
+    return `${stamp}: git issue ${hash} (registry metadata unavailable)`;
+  }
+}
+
+/** Append the provenance line to a .md sync just stamped Done, unless the
+ * file already carries a `**Resolved:**` line (`giwt ticket close` output
+ * and prior runs are preserved — idempotent re-runs never double-stamp). */
+function appendRegistryDoneProvenance(
+  tfPath: string,
+  repoRoot: string,
+  hash: string | undefined,
+): void {
+  const text = readFileSync(tfPath, "utf8");
+  if (/\*\*Resolved:\*\*/.test(text)) return;
+  writeFileSync(
+    tfPath,
+    `${text.replace(/\n+$/, "\n")}\n${registryDoneProvenance(repoRoot, hash)}\n`,
+  );
+}
+
 // ── Entry ─────────────────────────────────────────────────────
 
 /**
@@ -463,6 +512,12 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
               `$1${vocabStatusTarget(mismatch.gitStatus)}`,
             );
             writeFileSync(tf.path, text);
+            // Same provenance contract as the mdStatusStale writer below:
+            // a .md flipped to Done from registry state carries the close
+            // evidence, never a bare Done.
+            if (normalizeStatus(mismatch.gitStatus) === "done") {
+              appendRegistryDoneProvenance(tf.path, repoRoot, cur.hash);
+            }
           } catch {
             // non-fatal: index entry already corrected; .md fixed next run
           }
@@ -801,6 +856,17 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         report.fixesApplied.push(
           `${ms.extid}: .md status ${ms.mdStatus} → ${target}`,
         );
+        // Provenance for registry-driven Done stamps
+        // (BUG-sync-fix-stamps-ticket-done-without-provenance): a Done the
+        // sync itself derives from the shared registry carries the close
+        // evidence in the .md — never a bare Done.
+        if (normalizeStatus(target) === "done") {
+          try {
+            appendRegistryDoneProvenance(tf.path, repoRoot, fixed[ms.extid]?.hash);
+          } catch {
+            // non-fatal: the status stamp itself already landed
+          }
+        }
       } catch (e) {
         report.fixesApplied.push(
           `${ms.extid}: FAILED to rewrite .md status: ${

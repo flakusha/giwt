@@ -196,7 +196,11 @@ describe("finalize lock queue", () => {
     // The next waiter reaps the dead ticket, becomes head, and acquires
     // once the holder releases. Its reap must leave no residue.
     const next = spawnChild("queue");
-    await next.waitForMarker("queued");
+    // Same race as the FIFO test above: under load the holder's 1500ms
+    // budget can expire before this waiter even spawns, so it acquires
+    // directly (exit 0, no 'queued' line) — the marker is a fast path,
+    // not a guarantee.
+    await Promise.race([next.waitForMarker("queued"), next.exited]);
     expect(await next.exited).toBe(0);
     await holder.exited;
 

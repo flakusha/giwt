@@ -146,7 +146,7 @@ const USAGE: Record<string, string> = {
   "sync":
     "[--fix] [--import] [--import-back] [--verbose]\n  --fix           apply fixes, not just report\n  --import        with --fix: create issues for plan-only .md files\n  --import-back   with --fix: generate .md + index for foreign issues\n  --verbose       verbose output",
   "ticket":
-    "<TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]\n  close <extid...> [--note \"text\"] [--json|--toml|--emoji]\n  copy <name|extid...> --to <checkout-path> | --from <checkout-path> [--json|--toml|--emoji]\n  3way <path> [--json|--toml|--emoji]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
+    "<TYPE> <title> [body] [flags] — flags may precede or follow the body\n  close <extid...> [--note \"text\"] [--json|--toml|--emoji]\n  copy <name|extid...> --to <checkout-path> | --from <checkout-path> [--json|--toml|--emoji]\n  3way <path> [--json|--toml|--emoji]\n  <TYPE>          BUG|FEAT|FIX|IDEA|TASK|SOL|INFRA\n  --label <X>     add label (repeatable)\n  --priority <X>  low|medium|high|critical\n  --epic <X>      epic name\n  --effort <X>    Small|Medium|Large|XL\n  --tag <X>       add tag (repeatable)",
 };
 
 const commands: Record<string, CommandHandler> = {

@@ -550,6 +550,67 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     expect(exit).toBe(0);
   });
 
+  test("registry-driven Done stamp carries provenance: registry tip sha + author in a Resolved line", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-prov: provenance work");
+    gitOut(root, "issue", "state", hash, "--close", "-m", "done");
+    writeTicket(root, "TASK-prov.md", "provenance work", {
+      status: "open",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-PROV": indexEntry({
+        extid: "TASK-PROV",
+        hash,
+        git_issue: hash,
+        status: "done",
+        title: "provenance work",
+        source: ".plan/tickets/TASK-prov.md",
+      }),
+    });
+
+    const { exit } = runCaptured(() => runSync(root, { fix: true }));
+
+    const text = readFileSync(join(root, ".plan/tickets/TASK-prov.md"), "utf8");
+    const resolved = text.split("\n").find((l) => l.startsWith("**Resolved:**"));
+    expect(resolved).toBeDefined();
+    expect(resolved).toContain("registry-driven close");
+    expect(resolved).toContain(`git issue ${hash}`);
+    // Registry tip: short sha + the fixture repo's committer name.
+    expect(resolved).toMatch(/registry tip: [0-9a-f]{7,} giwt test /);
+    expect(exit).toBe(0);
+
+    // Idempotent: a second --fix run must not double-stamp.
+    runCaptured(() => runSync(root, { fix: true }));
+    const after = readFileSync(join(root, ".plan/tickets/TASK-prov.md"), "utf8");
+    expect(after.split("\n").filter((l) => l.startsWith("**Resolved:**"))).toHaveLength(1);
+  });
+
+  test("non-done status rewrites carry no Resolved stamp", () => {
+    const root = makeRepo();
+    const hash = createIssue(root, "TASK-nodone: still open");
+    writeTicket(root, "TASK-nodone.md", "still open", {
+      status: "Blocked",
+      issue: hash,
+    });
+    writeIndex(root, {
+      "TASK-NODONE": indexEntry({
+        extid: "TASK-NODONE",
+        hash,
+        git_issue: hash,
+        status: "open",
+        title: "still open",
+        source: ".plan/tickets/TASK-nodone.md",
+      }),
+    });
+
+    const { exit } = runCaptured(() => runSync(root, { fix: true }));
+
+    const text = readFileSync(join(root, ".plan/tickets/TASK-nodone.md"), "utf8");
+    expect(text).not.toContain("**Resolved:**");
+    expect(exit).toBe(0);
+  });
+
   test("dual-status Shape B .md backfills done, then closes the linked issue on the next fix", () => {
     const root = makeRepo();
     const hash = createIssue(root, "TASK-dual: dual status");

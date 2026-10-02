@@ -5,3 +5,8 @@
 # --diff-base sha as a test-file filter — opt out of the append.
 [commands]
 diff_base = false
+
+# This repo's long-lived branch is master (no dev exists); the default root
+# must resolve or `giwt new` / finalize / rebase default targets all miss.
+[branches]
+root = "master"

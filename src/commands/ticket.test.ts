@@ -37,6 +37,7 @@ import {
   closeTickets,
   copyTickets,
   hunkCount,
+  parseTicketArgs,
   renderTicketFile,
   stripTypePrefix,
   threeWay,
@@ -165,6 +166,55 @@ describe("renderTicketFile — generated template is gate-clean", () => {
     const content = renderTicketFile("TASK", "some title", FLAGS, "body");
     expect(content).not.toMatch(/^## (Summary|Context|Acceptance Criteria)$/m);
     expect(content).not.toContain("⬜");
+  });
+});
+
+describe("parseTicketArgs — flags anywhere in the tail", () => {
+  it("consumes flags that follow the title (the dropped --epic repro)", () => {
+    const { flags, body } = parseTicketArgs(["--epic", "plan-tooling", "-F", "-"]);
+    expect(flags.epic).toBe("plan-tooling");
+    // The old parser captured "--epic" as the body and lost the flag.
+    expect(body).not.toBe("--epic");
+  });
+
+  it("keeps flags before the body working", () => {
+    const { flags, body } = parseTicketArgs(["--priority", "high", "the body"]);
+    expect(flags.priority).toBe("high");
+    expect(body).toBe("the body");
+  });
+
+  it("keeps repeatable labels/tags and comma-splitting in both positions", () => {
+    const before = parseTicketArgs(["-l", "a,b", "body", "--tag", "x"]);
+    expect(before.flags.labels).toEqual(["a", "b"]);
+    expect(before.body).toBe("body");
+    expect(before.flags.tags).toEqual(["x"]);
+    const after = parseTicketArgs(["body", "-l", "a", "--tag", "x,y"]);
+    expect(after.flags.labels).toEqual(["a"]);
+    expect(after.flags.tags).toEqual(["x", "y"]);
+    expect(after.body).toBe("body");
+  });
+
+  it("treats unknown dash-prefixed tokens as positionals, so a dash-leading body survives", () => {
+    const { flags, body } = parseTicketArgs(["-dash body"]);
+    expect(body).toBe("-dash body");
+    expect(flags.epic).toBe("");
+  });
+
+  it("`--` ends flag parsing: later flag-shaped tokens become the body", () => {
+    const { flags, body } = parseTicketArgs(["--", "--epic", "x"]);
+    expect(flags.epic).toBe("");
+    expect(body).toBe("--epic");
+  });
+
+  it("ignores a flag at the end without its value", () => {
+    const { flags, body } = parseTicketArgs(["body", "--epic"]);
+    expect(flags.epic).toBe("");
+    expect(body).toBe("body");
+  });
+
+  it("returns an empty body for a flag-only tail", () => {
+    const { body } = parseTicketArgs(["--effort", "Small"]);
+    expect(body).toBe("");
   });
 });
 

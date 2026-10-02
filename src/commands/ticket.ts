@@ -117,12 +117,11 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
 
   const typeRaw = args[0]?.toUpperCase() ?? "";
   const title = args[1];
-  const body = args[2] ?? "";
 
   if (!typeRaw || !title) {
     log("error", "type and title required");
     raw(
-      "  Usage: ticket <TYPE> <title> [body] [--label X] [--priority X] [--epic X] [--effort X] [--tag X]",
+      "  Usage: ticket <TYPE> <title> [body] [flags] — flags may precede or follow the body",
     );
     raw(`  TYPE: ${VALID_TYPES.join(", ")}`);
     process.exit(1);
@@ -134,7 +133,7 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
   }
 
   const type = typeRaw as TicketType;
-  const flags = parseFlags(args.slice(3));
+  const { flags, body } = parseTicketArgs(args.slice(2));
 
   if (flags.priority && !(VALID_PRIORITIES as readonly string[]).includes(flags.priority)) {
     log("error", `unknown priority '${flags.priority}' — use: ${VALID_PRIORITIES.join(", ")}`);
@@ -210,45 +209,87 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
   if (hash) raw(`  Issue: ${hash}`);
 }
 
-function parseFlags(args: string[]): TicketFlags {
-  const flags: TicketFlags = { labels: [], priority: "", epic: "", effort: "Medium", tags: [] };
-  for (let i = 0; i < args.length; i++) {
-    switch (args[i]) {
-      case "-l":
-      case "--label": {
-        const value = args[++i];
-        if (value !== undefined) {
-          flags.labels.push(...value.split(",").map((l) => l.trim()).filter((l) => l.length > 0));
-        }
-        break;
+/** Flag tokens `ticket` accepts in its arg tail. Static table per repo
+ * convention (Set/Map are for dynamic membership only). */
+const FLAG_TOKENS: Record<string, true> = {
+  "-l": true,
+  "--label": true,
+  "-p": true,
+  "--priority": true,
+  "-e": true,
+  "--epic": true,
+  "--effort": true,
+  "--tag": true,
+};
+
+/** Apply one flag + its value token to a flags record. Undefined value
+ * (flag at end of args) is ignored — parity with the previous scan. */
+function applyFlag(flags: TicketFlags, token: string, value: string | undefined): void {
+  switch (token) {
+    case "-l":
+    case "--label": {
+      if (value !== undefined) {
+        flags.labels.push(...value.split(",").map((l) => l.trim()).filter((l) => l.length > 0));
       }
-      case "-p":
-      case "--priority": {
-        const value = args[++i];
-        if (value !== undefined) flags.priority = value;
-        break;
+      break;
+    }
+    case "-p":
+    case "--priority": {
+      if (value !== undefined) flags.priority = value;
+      break;
+    }
+    case "-e":
+    case "--epic": {
+      if (value !== undefined) flags.epic = value;
+      break;
+    }
+    case "--effort": {
+      if (value !== undefined) flags.effort = value;
+      break;
+    }
+    case "--tag": {
+      if (value !== undefined) {
+        flags.tags.push(...value.split(",").map((t) => t.trim()).filter((t) => t.length > 0));
       }
-      case "-e":
-      case "--epic": {
-        const value = args[++i];
-        if (value !== undefined) flags.epic = value;
-        break;
-      }
-      case "--effort": {
-        const value = args[++i];
-        if (value !== undefined) flags.effort = value;
-        break;
-      }
-      case "--tag": {
-        const value = args[++i];
-        if (value !== undefined) {
-          flags.tags.push(...value.split(",").map((t) => t.trim()).filter((t) => t.length > 0));
-        }
-        break;
-      }
+      break;
     }
   }
-  return flags;
+}
+
+/** Result of splitting the `ticket` arg tail (everything after
+ * `TYPE TITLE`): the parsed flags plus the positional body. */
+export interface ParsedTicketArgs {
+  flags: TicketFlags;
+  body: string;
+}
+
+/** Split the arg tail after `TYPE TITLE` into flags and the positional body
+ * with one left-to-right scan
+ * (BUG-giwt-ticket-drops-flags-that-follow-the-positional-body). Known flags
+ * are consumed wherever they appear — before or after the body — each
+ * swallowing its value token; `--` ends flag parsing (everything after is
+ * positional); unknown `-`-prefixed tokens are positionals, so a
+ * dash-leading body keeps working; extra positionals are ignored, matching
+ * the old args.slice(3) scan. */
+export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
+  const flags: TicketFlags = { labels: [], priority: "", epic: "", effort: "Medium", tags: [] };
+  const positionals: string[] = [];
+  for (let i = 0; i < tail.length; i++) {
+    const token = tail[i];
+    if (token === undefined) break;
+    if (token === "--") {
+      positionals.push(...tail.slice(i + 1));
+      break;
+    }
+    if (FLAG_TOKENS[token] === true) {
+      const value = tail[i + 1];
+      if (value !== undefined) i++;
+      applyFlag(flags, token, value);
+    } else {
+      positionals.push(token);
+    }
+  }
+  return { flags, body: positionals[0] ?? "" };
 }
 
 // ── ticket close / copy / 3way ─────────────────────────────────
