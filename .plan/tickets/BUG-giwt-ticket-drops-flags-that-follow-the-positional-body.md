@@ -3,7 +3,7 @@
 
 # BUG: giwt ticket drops flags that follow the positional body
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -17,6 +17,7 @@ Run: giwt ticket TASK TITLE --epic plan-tooling -F - — the --epic flag is not 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:09.355Z fixed in fd11d0d: parseTicketArgs single scan consumes known flags anywhere; -- separator; pinned in ticket.test.ts

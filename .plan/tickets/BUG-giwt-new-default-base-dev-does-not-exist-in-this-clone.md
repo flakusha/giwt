@@ -3,7 +3,7 @@
 
 # BUG: giwt new default base dev does not exist in this clone
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -17,6 +17,7 @@ giwt.toml sets [branches] root = 'dev' but no local dev branch exists, so `giwt 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:15.871Z duplicate-of-BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo: same missing-dev root cause, same giwt.toml root=master fix (fd11d0d)

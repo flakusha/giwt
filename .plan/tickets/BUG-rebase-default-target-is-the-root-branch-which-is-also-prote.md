@@ -3,7 +3,7 @@
 
 # BUG: rebase default target is the root branch, which is also protected, so the no-onto form always fails
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** rebase, git, history-safety
@@ -45,11 +45,12 @@ nobody running the installed binary today sees it.
 
 **Acceptance Criteria:**
 
-- [ ] `giwt rebase <branch>` with no `onto` succeeds on a default config
+- [x] `giwt rebase <branch>` with no `onto` succeeds on a default config
       (`branches.root = "dev"` with `dev` in `branches.protected`)
-- [ ] `giwt rebase FEATURE dev` is still refused, or the refusal is proven
+- [x] `giwt rebase FEATURE dev` is still refused, or the refusal is proven
       unreachable now that the root is exempt
-- [ ] A regression test drives the no-`onto` form through the real CLI and fails
+- [x] A regression test drives the no-`onto` form through the real CLI and fails
       against the current code
-- [ ] The test does not depend on a stale `bin/giwt` build
-- [ ] `bun test src/commands/` green
+- [x] The test does not depend on a stale `bin/giwt` build
+- [x] `bun test src/commands/` green
+**Resolved:** 2026-10-02T00:33:01.888Z fixed in e9f0ff4: target guard applies to explicit onto only; no-onto form tested in rebase.test.ts

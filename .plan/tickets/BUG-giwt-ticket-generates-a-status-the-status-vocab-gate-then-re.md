@@ -3,7 +3,7 @@
 
 # BUG: giwt ticket generates a Status the status-vocab gate then rejects
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Small
 **Tags:** status-vocab, ticket
@@ -22,7 +22,8 @@ So the round trip is: create a ticket, and the tool that created it reports a vi
 
 **Acceptance Criteria:**
 
-- [ ] `giwt ticket` emits a Status value that passes `plan validate --gates status-vocab` on the file it just created
-- [ ] The generated template matches the house style used by the existing tickets in `.plan/tickets/`
-- [ ] A test asserts a `giwt ticket`-generated file is status-vocab clean, so the two cannot drift apart again
-- [ ] Existing tickets using the emoji, if any, are normalized
+- [x] `giwt ticket` emits a Status value that passes `plan validate --gates status-vocab` on the file it just created
+- [x] The generated template matches the house style used by the existing tickets in `.plan/tickets/`
+- [x] A test asserts a `giwt ticket`-generated file is status-vocab clean, so the two cannot drift apart again
+- [x] Existing tickets using the emoji, if any, are normalized
+**Resolved:** 2026-10-02T00:33:01.994Z fixed in e9f0ff4: template emits canonical Not Started; pinned by ticket.test.ts vocab test

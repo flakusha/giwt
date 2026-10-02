@@ -48,7 +48,7 @@
       "e2e"
     ],
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
@@ -79,7 +79,7 @@
       "tests"
     ],
     "source": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
     "hash": "7c1a34d",
@@ -92,7 +92,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-clone.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-REPO": {
     "hash": "95fe3d6",
@@ -107,7 +107,7 @@
       "dx"
     ],
     "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-TICKET-DROPS-FLAGS-THAT-FOLLOW-THE-POSITIONAL-BODY": {
     "hash": "a9a0711",
@@ -120,7 +120,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/BUG-giwt-ticket-drops-flags-that-follow-the-positional-body.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-TICKET-EXTID-DOUBLE-PREFIX-RESOLVED": {
     "hash": "d3b099e",
@@ -149,7 +149,7 @@
       "ticket"
     ],
     "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
@@ -179,7 +179,7 @@
       "history-safety"
     ],
     "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE": {
     "hash": "23751b8",
@@ -243,7 +243,7 @@
       "sync"
     ],
     "source": ".plan/tickets/BUG-sync-fix-stamps-ticket-done-without-provenance.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-SYNC-FIX-STATUSMISMATCHES-BRANCH-WRITES-RAW-GIT-STATE-INTO-M": {
     "hash": "5b1dd8c",
@@ -274,7 +274,7 @@
       "lint"
     ],
     "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",

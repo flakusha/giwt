@@ -3,7 +3,7 @@
 
 # BUG: giwt new default base dev does not exist in this repo
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Epic:** quality
@@ -19,6 +19,7 @@
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:15.773Z fixed in fd11d0d: giwt.toml [branches] root = "master"; giwt new probe verified against master

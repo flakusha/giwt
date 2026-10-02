@@ -3,7 +3,7 @@
 
 # BUG: sync fix stamps ticket Done without provenance
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** plan, sync
@@ -31,6 +31,7 @@ Acceptance: a ticket that sync --fix marks Done carries provenance (which agent/
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:09.459Z fixed in fd11d0d: registry-driven Done stamps append **Resolved:** with registry tip sha+author (both fix writers); pinned in sync-issues-ops.test.ts

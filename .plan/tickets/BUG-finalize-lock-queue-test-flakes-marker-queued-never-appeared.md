@@ -3,7 +3,7 @@
 
 # BUG: finalize-lock-queue test flakes marker queued never appeared got OK
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Epic:** quality
@@ -19,6 +19,7 @@ finalize-lock-queue.test.ts intermittently fails with "marker 'queued' never app
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:09.568Z fixed in fd11d0d: test awaited un-raced queued marker; under load the waiter acquires directly (OK, no marker). Now races marker vs exit like the FIFO test. 20/20 local runs green

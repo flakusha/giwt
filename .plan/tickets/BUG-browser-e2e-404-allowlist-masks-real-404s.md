@@ -3,7 +3,7 @@
 
 # BUG: browser e2e 404 allowlist masks real 404s
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** e2e
@@ -24,6 +24,7 @@ Acceptance: the allowlist entries in characters-flow.browser.ts are scoped so th
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-02T00:33:15.676Z fixed in loop-lore a08b6df: EXPECTED_404_NOISE_ALLOWLIST scoped to /api/v1/chats/:id/game-state; navigation.browser.ts 13/13 green
