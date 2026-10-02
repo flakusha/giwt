@@ -1058,6 +1058,19 @@
     "source": ".plan/tickets/TASK-show-state-resolve-plan-tickets-filename-slugs.md",
     "status": "done"
   },
+  "TASK-TICKET-INDEX-SYNC-SPENDS-3074-SUBPROCESS-SPAWNS-ON-A-SINGLE-": {
+    "hash": "3c279da",
+    "git_issue": "3c279da",
+    "extid": "TASK-TICKET-INDEX-SYNC-SPENDS-3074-SUBPROCESS-SPAWNS-ON-A-SINGLE-",
+    "type": "TASK",
+    "title": "ticket index sync spends 3074 subprocess spawns on a single batched git cat-file --batch-check",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md",
+    "status": "Not Started"
+  },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {
     "hash": "1ebe6f9",
     "git_issue": "1ebe6f9",
