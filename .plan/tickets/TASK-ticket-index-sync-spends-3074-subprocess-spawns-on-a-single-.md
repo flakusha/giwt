@@ -49,7 +49,7 @@ iteration per index entry.
 (every `entry.commitHash` plus every `entry.hash !== "pending"`).
 
 | path | wall time | real commits found |
-|---|---|---|
+| --- | --- | --- |
 | per-call `execSync` (current) | **6908ms** | 19 |
 | one `execFileSync("git", ["cat-file","--batch-check"])` over stdin | **77ms** | 19 |
 
@@ -60,7 +60,7 @@ iteration per index entry.
 Probing both paths with the same three refs against loop-lore:
 
 | ref | per-call (`git cat-file -e <ref>^{commit}`) | `--batch-check` stdout |
-|---|---|---|
+| --- | --- | --- |
 | `4b963ed39` (HEAD, a commit) | exit 0 → EXISTS | `4b963ed39aaa49662e6fa5d9621ada5c263611b0 commit 627` |
 | `eb5c1129c` (a blob) | exit 128 → absent | `eb5c1129c^{commit} missing` |
 | `deadbee` (nonexistent) | exit 128 → absent | `deadbee^{commit} missing` |

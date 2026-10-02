@@ -3,7 +3,14 @@
 
 # TASK: reach parity with the loop-lore worktree fork so it can be deleted
 
-**Status:** Done (detached-root finalize guard, env isolation sweep 34→0 unisolated git spawns + mechanical audit test, rebase guards + ticket-template gates landed earlier; loop-lore fork deletion tracked in that repo)
+**Status:** Done
+
+All three giwt-side deltas re-verified landed 2026-10-02: the detached-root
+finalize guard (`finalize.ts:1215-1234`), git env isolation (50/50 spawns
+isolated; fork 39/39), the rebase default target (`rebase.ts:25` reading
+`config.settings.branches.root`), and `commit`/`commit-wt` spreading the
+filtered env with only `GIT_COMMITTER_*` re-set (`commit.ts:99`,
+`commit-wt.ts:118`). The loop-lore fork deletion is tracked in that repo.
 **Priority:** high
 **Effort:** Medium
 **Tags:** worktree, migration, isolation, history-safety
@@ -64,13 +71,14 @@ Tracked loop-lore-side by the fork-retirement ticket in the loop-lore repo
 
 **Acceptance Criteria:**
 
-- [ ] `finalize` refuses a detached root checkout instead of merging into the
-      `getRootBranch` fallback branch
-- [ ] Every `git` `Bun.spawnSync` in `src/` passes an isolated env; verified by
-      a mechanical audit, not by eye
-- [ ] `commit` and `commit-wt` spread the filtered env and re-set only
-      `GIT_COMMITTER_NAME`/`_EMAIL`
-- [ ] The rebase default-target regression is fixed
+- [x] `finalize` refuses a detached root checkout instead of merging into the
+      `getRootBranch` fallback branch — `src/commands/finalize.ts:1215-1234`
+- [x] Every `git` `Bun.spawnSync` in `src/` passes an isolated env; verified by
+      a mechanical audit, not by eye — 50/50 isolated (re-measured 2026-10-02)
+- [x] `commit` and `commit-wt` spread the filtered env and re-set only
+      `GIT_COMMITTER_NAME`/`_EMAIL` — `commit.ts:99`, `commit-wt.ts:118`
+- [x] The rebase default-target regression is fixed — `rebase.ts:25`
 - [ ] loop-lore deletes `scripts/worktree/` and its `docs/giwt-scripts-map.md`
-      references, with no loss of behaviour
-- [ ] Tests passing
+      references, with no loss of behaviour — **owned by the loop-lore repo;
+      still present there as of 2026-10-02**
+- [x] Tests passing

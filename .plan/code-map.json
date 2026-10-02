@@ -8,6 +8,10 @@
   "src/cli.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
     }
   ],
@@ -58,6 +62,10 @@
   "src/commands/finalize.test.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
     }
   ],
@@ -65,6 +73,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-check-failure-report-never-names-failed-gates-check.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md"
     },
     {
       "kind": "ticket",
@@ -183,6 +195,12 @@
       "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
     }
   ],
+  "src/index.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
+    }
+  ],
   "src/plan/feature-matrix.test.ts": [
     {
       "kind": "ticket",
@@ -244,6 +262,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
     }
   ],
@@ -285,9 +307,17 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
     }
   ],
   "src/tickets/sync-ticket.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"

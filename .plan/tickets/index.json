@@ -66,6 +66,19 @@
     "status": "done",
     "git_issue": "3022ea0"
   },
+  "BUG-FINALIZE-LEAKS-WORKTREE-AND-BRANCH-WHEN-THE-TARGET-ALREADY-C": {
+    "hash": "f16f955",
+    "git_issue": "f16f955",
+    "extid": "BUG-FINALIZE-LEAKS-WORKTREE-AND-BRANCH-WHEN-THE-TARGET-ALREADY-C",
+    "type": "BUG",
+    "title": "finalize leaks worktree and branch when the target already contains the branch",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md",
+    "status": "done"
+  },
   "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED": {
     "hash": "8f38844",
     "git_issue": "8f38844",
