@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+import { existsSync, readFileSync } from "node:fs";
+import { basename, resolve } from "path";
+import type { IndexEntry } from "../../tickets/sync-ticket";
+import { resolveExtid } from "../resolver";
+
+const ISSUE_HASH_RE = /^[0-9a-f]{7,}$/;
+
+/** Parse a checkout's ticket index (`.plan/tickets/index.json`). Throws
+ * with the path named — repo convention for input errors. */
+export function readTicketIndex(
+  checkoutRoot: string,
+  ticketsPath: string,
+): Record<string, IndexEntry> {
+  const indexPath = resolve(checkoutRoot, ticketsPath, "index.json");
+  if (!existsSync(indexPath)) {
+    throw new Error(`${indexPath}: no ticket index (run 'giwt sync --fix' first)`);
+  }
+  try {
+    return JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntry>;
+  } catch (error) {
+    throw new Error(`${indexPath}: invalid JSON (${(error as Error).message})`, { cause: error });
+  }
+}
+
+/** Resolve a `name|extid` operand against a parsed index: exact key match
+ * (case-insensitive) first, then the `.md` basename of the entry's
+ * `source` so `copy` accepts the plain file-name form. */
+export function lookupTicket(
+  index: Record<string, IndexEntry>,
+  input: string,
+): { extid: string; entry: IndexEntry; } | null {
+  const wanted = input.replace(/\.md$/i, "").toLowerCase();
+  for (const [key, entry] of Object.entries(index)) {
+    if (key.toLowerCase() === wanted) return { extid: key, entry };
+  }
+  for (const [key, entry] of Object.entries(index)) {
+    if (basename(entry.source ?? "").replace(/\.md$/i, "").toLowerCase() === wanted) {
+      return { extid: key, entry };
+    }
+  }
+  return null;
+}
+
+/** Git-issue hash for an index entry: the entry's own hash when it looks
+ * real (not the `pending` placeholder), else a registry walk by extid.
+ * resolveExtid passes non-extid input through verbatim — only trust the
+ * result when it is hex. */
+export function issueHashFor(repoRoot: string, entry: IndexEntry): string | null {
+  if (ISSUE_HASH_RE.test(entry.hash ?? "")) return entry.hash;
+  if (ISSUE_HASH_RE.test(entry.git_issue ?? "")) return entry.git_issue!;
+  const resolved = resolveExtid(repoRoot, entry.extid ?? "");
+  return resolved && ISSUE_HASH_RE.test(resolved.hash) ? resolved.hash : null;
+}

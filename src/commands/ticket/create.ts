@@ -1,0 +1,192 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+import { resolve } from "path";
+import type { WorktreeConfig } from "../../utils/config";
+import { getWorktreeRoot, gitSync } from "../../utils/git";
+import { log, raw } from "../../utils/output";
+import { parseTicketArgs, type TicketFlags } from "./args";
+import { closeTickets } from "./close";
+import { copyTickets } from "./copy";
+import { threeWay } from "./threeway";
+
+const VALID_TYPES = ["BUG", "FEAT", "FIX", "IDEA", "TASK", "SOL", "INFRA"] as const;
+type TicketType = typeof VALID_TYPES[number];
+
+const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
+
+function kebab(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
+/**
+ * Strip a duplicated type-name prefix from the prose `title` so the git issue
+ * title doesn't carry the same words twice (the extid already encodes them).
+ *
+ * Only strips when the title starts LITERALLY with `kebab(type)` (followed by
+ * a space, dash, or colon — "BUG story", "BUG-story", "BUG: story"). No
+ * fuzzy/kebab-prefix matching — that over-strips unrelated prose that merely
+ * happens to share letters with the post-type segment.
+ *   ("FEAT", "FEAT story UI") → "story UI"
+ *   ("TASK", "TASK-")         → ""      (whole-title collapse)
+ *   ("BUG",  "something else") → "something else"  (no literal BUG prefix)
+ *
+ * - Matches case-insensitively against `kebab(type)` (e.g. "BUG" → "bug").
+ * - The .md filename uses `kebab(title)` (unstripped); only the git-issue
+ *   prose uses the stripped form.
+ */
+export function stripTypePrefix(type: string, title: string): string {
+  const prefix = kebab(type);
+  if (!prefix) return title;
+  const lower = title.toLowerCase();
+  if (lower === prefix) return "";
+  if (
+    lower.startsWith(prefix + " ")
+    || lower.startsWith(prefix + "-")
+    || lower.startsWith(prefix + ":")
+  ) {
+    return title.slice(prefix.length + 1).trimStart();
+  }
+  return title;
+}
+
+/**
+ * Render the ticket .md body written by `giwt ticket`.
+ *
+ * The shape is load-bearing: `plan validate`'s format gate requires the
+ * `**Section:**` metadata markers, and its status-vocab gate requires a
+ * canonical `**Status:**` value. The template must emit exactly what those
+ * gates accept — a generated ticket that fails its own repo's gates is the
+ * BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re defect.
+ * ticket.test.ts pins this template against both gates' constants.
+ */
+export function renderTicketFile(
+  type: string,
+  title: string,
+  flags: TicketFlags,
+  body: string,
+): string {
+  let content =
+    `<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->\n\n# ${type}: ${title}\n\n`;
+  content += `**Status:** Not Started\n`;
+  content += `**Priority:** ${flags.priority || "Medium"}\n`;
+  content += `**Effort:** ${flags.effort}\n`;
+  if (flags.epic) {
+    content += `**Epic:** ${flags.epic}\n`;
+  }
+  if (flags.tags.length > 0) {
+    content += `**Tags:** ${flags.tags.join(", ")}\n`;
+  }
+  content += `\n**Summary:**\n\n${body || "No description provided."}\n\n`;
+  content +=
+    `**Context:**\n\n(fill in before starting: why this change, constraints, alternatives considered.)\n\n`;
+  content += `**Acceptance Criteria:**\n\n`;
+  content += `- [ ] Implementation complete\n`;
+  content += `- [ ] Tests passing\n`;
+  content += `- [ ] Documentation updated\n`;
+  return content;
+}
+
+export async function ticket(args: string[], config: WorktreeConfig): Promise<void> {
+  // Subactions share the `ticket` command; none collide with VALID_TYPES.
+  if (args[0] === "close") return closeTickets(args.slice(1), config);
+  if (args[0] === "copy") return copyTickets(args.slice(1), config);
+  if (args[0] === "3way") return threeWay(args.slice(1), config);
+
+  const typeRaw = args[0]?.toUpperCase() ?? "";
+  const title = args[1];
+
+  if (!typeRaw || !title) {
+    log("error", "type and title required");
+    raw(
+      "  Usage: ticket <TYPE> <title> [body] [flags] — flags may precede or follow the body",
+    );
+    raw(`  TYPE: ${VALID_TYPES.join(", ")}`);
+    process.exit(1);
+  }
+
+  if (!(VALID_TYPES as readonly string[]).includes(typeRaw)) {
+    log("error", `unknown type '${typeRaw}' — use: ${VALID_TYPES.join(", ")}`);
+    process.exit(1);
+  }
+
+  const type = typeRaw as TicketType;
+  const { flags, body } = parseTicketArgs(args.slice(2));
+
+  if (flags.priority && !(VALID_PRIORITIES as readonly string[]).includes(flags.priority)) {
+    log("error", `unknown priority '${flags.priority}' — use: ${VALID_PRIORITIES.join(", ")}`);
+    process.exit(1);
+  }
+
+  if (!flags.epic) {
+    log(
+      "warn",
+      "no --epic given — ticket will be unbound (giwt sync lists it under the unbound-to-epic advisory)",
+    );
+  }
+
+  const ticketName = kebab(title);
+  const ticketFile = `${config.settings.paths.tickets}/${type}-${ticketName}.md`;
+  const extid = `${type}-${ticketName}`;
+  // Issue title: collapse the prose when it duplicates the type-name words that
+  // `extid` already encodes. The .md filename above still uses the full title.
+  const issueTitle = stripTypePrefix(type, title);
+  const fullTitle = `${extid}: ${issueTitle}`;
+  // Plan files belong to the checkout in progress (worktree-aware): when the
+  // CLI is invoked from inside tree/<branch>, the ticket file must land in
+  // that worktree, not the main checkout (config.repoRoot is the *main* root
+  // by design, since git issues live in the shared .git store).
+  const planRoot = getWorktreeRoot();
+  const ticketPath = resolve(planRoot, ticketFile);
+
+  const exists = await Bun.file(ticketPath).exists();
+  if (exists) {
+    log("warn", `ticket file already exists: ${ticketFile}`);
+  } else {
+    log("info", `creating ticket file: ${ticketFile}`);
+    await Bun.write(ticketPath, renderTicketFile(type, title, flags, body));
+    log("success", `created ticket file: ${ticketFile}`);
+  }
+
+  log("info", `creating git issue: ${extid}`);
+  const issueOutput = gitSync(
+    config.repoRoot,
+    "issue",
+    "create",
+    fullTitle,
+    "-m",
+    body || "No description",
+  );
+
+  const hashMatch = issueOutput.match(/[0-9a-f]{7,40}/);
+  const hash = hashMatch?.[0];
+
+  if (hash) {
+    gitSync(config.repoRoot, "issue", "comment", hash, "-m", `Plan spec: ${ticketFile}`);
+    // Single edit invocation: `git issue edit -l` replaces the whole label set,
+    // so per-label edits would leave only the last label applied.
+    if (flags.labels.length > 0) {
+      gitSync(
+        config.repoRoot,
+        "issue",
+        "edit",
+        hash,
+        ...flags.labels.flatMap((label) => ["-l", label]),
+      );
+    }
+    if (flags.priority) {
+      gitSync(config.repoRoot, "issue", "edit", hash, "-p", flags.priority);
+    }
+    log("success", `created git issue: ${hash}`);
+  } else {
+    log("warn", "could not extract issue hash");
+  }
+
+  log("info", `ticket ${extid} created`);
+  raw(`  File:  ${ticketFile}`);
+  if (hash) raw(`  Issue: ${hash}`);
+}

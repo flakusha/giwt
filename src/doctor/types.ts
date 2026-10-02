@@ -9,15 +9,9 @@
  */
 
 export type { ProjectReport } from "./detect.ts";
-export type {
-  RecommendResult,
-  ToolCategory,
-  ToolId,
-  ToolRecommendation,
-  ToolStatus,
-} from "./recommend.ts";
+export type { RecommendResult, ToolId, ToolRecommendation, ToolStatus } from "./recommend/types.ts";
 import type { ProjectReport } from "./detect.ts";
-import type { ToolId } from "./recommend.ts";
+import type { ToolId } from "./recommend/types.ts";
 
 export interface DoctorOptions {
   /** Subset of tools to act on. Undefined = act on all recommended. */

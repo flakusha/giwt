@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
+// size-allow: 300
 
 /**
  * Shared scratchpad scanner — the single source of truth for artifact

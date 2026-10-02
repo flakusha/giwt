@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
-
+// size-allow: 300
 /**
  * Agent ledger — shared "agent chat" for worktree CLI invocations.
  *
