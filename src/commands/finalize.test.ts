@@ -1374,7 +1374,10 @@ describe("finalize squash strategy", () => {
     expect(run.output).toContain("preserved");
     expect(run.output).toContain("Your pre-merge work is still on the stash stack");
     expect(git(["stash", "list"])).toContain("worktree-finalize-");
-    expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("seed\n");
+    // Post-merge HEAD now includes the squash commit (the squash step
+    // commits the staged integration), so the roll-back-to-HEAD target
+    // carries the branch's content, not the pre-merge file.
+    expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("branch side\n");
   });
 
   test.skipIf(!gpgTooling)("fails the run when the squash merge itself fails", async () => {

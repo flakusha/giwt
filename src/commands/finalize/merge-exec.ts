@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { unlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { rebaseWithPlanReconciliation } from "../../plan/reconcile-conflicts";
+import { loadAllowedTrailers, squashMessageWithCoAuthors } from "../../utils/coauthors";
 import type { WorktreeConfig } from "../../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../../utils/git";
 import { assertAgentGpgUnlocked } from "../../utils/gpg";
@@ -52,7 +55,16 @@ export function executeMergeStep(
 
     // 5b: Integrate
     if (mergeStrategy === "squash") {
-      const msg = branchToSquashMessage(branch);
+      // Real co-authors on the squashed commits survive the squash: the
+      // conventional subject gains their deduplicated Co-Authored-By
+      // trailers (LLM-vendor ones dropped by the shared policy).
+      const baseMsg = branchToSquashMessage(branch);
+      const msg = squashMessageWithCoAuthors(
+        config.repoRoot,
+        baseMsg,
+        `${targetBranch}..${branch}`,
+        loadAllowedTrailers(config.repoRoot),
+      );
       log("info", `Step 5b: Squash merging into ${targetBranch}...`);
       // Gate: GPG must be configured AND unlocked before we produce a
       // squash commit. The previous `git merge --squash` invocation ran
@@ -80,8 +92,29 @@ export function executeMergeStep(
           log("error", "Squash merge failed");
           process.exit(1);
         }
+        // `git merge --squash` stages but never commits (its -m is ignored
+        // on the ff path) — produce the squash commit now, signed via the
+        // same gpgMergeFlags, with the co-author-aware message.
+        const msgFile = join(config.repoRoot, ".git", "GIWT_SQUASH_MSG");
+        writeFileSync(msgFile, `${msg}\n`);
+        const squashCommit = Bun.spawnSync([
+          "git",
+          "-C",
+          config.repoRoot,
+          ...flags,
+          "commit",
+          "-F",
+          msgFile,
+        ], { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" });
+        try {
+          unlinkSync(msgFile);
+        } catch { /* best-effort scratch cleanup */ }
+        if (squashCommit.exitCode !== 0) {
+          log("error", "Squash commit failed");
+          process.exit(1);
+        }
         setMergeInProgress(config.repoRoot, branch, preMergeHead, devStash, false);
-        log("success", `Squash merged: ${msg}`);
+        log("success", `Squash merged: ${baseMsg}`);
       } finally {
         if (devStash !== null) {
           const mergeHead = gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD");
