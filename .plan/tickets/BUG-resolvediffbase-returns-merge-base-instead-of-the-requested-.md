@@ -10,7 +10,7 @@
 
 **Summary:**
 
-src/commands/finalize/checks.ts:12-22 runs gitSyncQuiet(wtPath, 'merge-base', target, 'HEAD') and returns that merge-base SHA rather than the operator's requested target. Caller src/commands/finalize/gates.ts:36 passes it to 'bun run check --diff-base <merge-base> <target>'. Because a merge-base is a valid ref the flag does not error - it silently scopes the check to a different file set than requested. Also affects src/commands/finalize/run.ts:90-92 (plan-validate gate scopes to the same merge-base); a fix must change both consumers.
+src/commands/finalize/checks.ts:12-22 runs gitSyncQuiet(wtPath, 'merge-base', target, 'HEAD') and returns that merge-base SHA rather than the operator's requested target. Caller src/commands/finalize/gates.ts:36 passes it to `bun run check --diff-base <merge-base> <target>`. Because a merge-base is a valid ref the flag does not error - it silently scopes the check to a different file set than requested. Also affects src/commands/finalize/run.ts:90-92 (plan-validate gate scopes to the same merge-base); a fix must change both consumers.
 
 **Context:**
 

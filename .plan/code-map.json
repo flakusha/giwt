@@ -79,6 +79,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
     }
   ],
   "src/commands/finalize.ts": [
@@ -279,6 +283,12 @@
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
     }
   ],
+  "src/plan/reconcile-conflicts.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    }
+  ],
   "src/plan/reconcile-conflicts.ts": [
     {
       "kind": "ticket",
@@ -339,6 +349,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
     }
   ],
   "src/tickets/sync-index.ts": [
