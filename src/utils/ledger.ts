@@ -33,6 +33,7 @@ import {
   newRecord,
   normalizeRecord,
 } from "./ledger-core";
+import { withLedgerLock } from "./ledger-lock";
 
 // Re-exported so `./utils/ledger` import paths keep working while the
 // pure schema primitives live in ledger-core (read side in ledger-read).
@@ -139,32 +140,36 @@ export function appendLedger(
     const base = defaultMessage(cmd, args);
     const msg = truncateMsg(said ? `${base} :: ${said}` : base);
     const path = resolve(treeDir, LEDGER_FILENAME);
-    const lines = existsSync(path)
-      ? readFileSync(path, "utf8").split("\n").filter((l) => l.trim().length > 0)
-      : [];
-    // v1 lines normalize to seq 0, so the first v2 line in an old file is seq 1.
-    let lastSeq = 0;
-    for (let i = lines.length - 1; i >= 0; i--) {
-      try {
-        const parsed = normalizeRecord(JSON.parse(lines[i]!));
-        if (parsed !== null) {
-          lastSeq = parsed.seq;
-          break;
-        }
-      } catch { /* skip corrupt line, keep hunting for the newest seq */ }
-    }
-    const record = newRecord({
-      ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
-      pid: process.pid,
-      agent: process.env.GIWT_AGENT ?? `${hostname()}:${process.pid}`,
-      cmd,
-      branch,
-      msg,
-      state: "in-progress",
-      seq: lastSeq + 1,
+    const record = withLedgerLock(treeDir, () => {
+      const lines = existsSync(path)
+        ? readFileSync(path, "utf8").split("\n").filter((l) => l.trim().length > 0)
+        : [];
+      // v1 lines normalize to seq 0, so the first v2 line in an old file is seq 1.
+      let lastSeq = 0;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const parsed = normalizeRecord(JSON.parse(lines[i]!));
+          if (parsed !== null) {
+            lastSeq = parsed.seq;
+            break;
+          }
+        } catch { /* skip corrupt line, keep hunting for the newest seq */ }
+      }
+      const rec = newRecord({
+        ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+        pid: process.pid,
+        agent: process.env.GIWT_AGENT ?? `${hostname()}:${process.pid}`,
+        cmd,
+        branch,
+        msg,
+        state: "in-progress",
+        seq: lastSeq + 1,
+      });
+      lines.push(JSON.stringify(rec));
+      writeFileSync(path, `${lines.slice(-LEDGER_MAX_RECORDS).join("\n")}\n`);
+      return rec;
     });
-    lines.push(JSON.stringify(record));
-    writeFileSync(path, `${lines.slice(-LEDGER_MAX_RECORDS).join("\n")}\n`);
+    void record;
   } catch { /* ledger must never fail the command */ }
 }
 
@@ -211,30 +216,33 @@ export function finishRecord(treeDir: string, cmd: string, outcome: LedgerOutcom
     if (!existsSync(treeDir)) return "not-found";
     const path = resolve(treeDir, LEDGER_FILENAME);
     if (!existsSync(path)) return "not-found";
-    const lines = readFileSync(path, "utf8").split("\n");
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const line = lines[i];
-      if (line === undefined || line.trim().length === 0) continue;
-      let rec: LedgerRecordView | null;
-      try {
-        rec = normalizeRecord(JSON.parse(line));
-      } catch {
-        continue;
+    return withLedgerLock(treeDir, () => {
+      const lines = readFileSync(path, "utf8").split("\n");
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        if (line === undefined || line.trim().length === 0) continue;
+        let rec: LedgerRecordView | null;
+        try {
+          rec = normalizeRecord(JSON.parse(line));
+        } catch {
+          continue;
+        }
+        if (rec === null) continue;
+        // Newest-to-oldest scan for THIS invocation's line (same pid +
+        // cmd); records from other runs are skipped, not barriers.
+        if (rec.pid !== process.pid || rec.cmd !== cmd) continue;
+        // A terminal state is written only by finishRecord, so a matching
+        // line either awaits enrichment or is already done.
+        if (rec.state === "finished" || rec.state === "postponed") return "already-done";
+        rec.state = outcome.state;
+        rec.msg = truncateMsg(`${rec.msg} :: ${outcome.text}`);
+        if (outcome.error !== undefined) rec.error = outcome.error;
+        lines[i] = JSON.stringify(rec);
+        writeFileSync(path, lines.join("\n"));
+        return "enriched";
       }
-      if (rec === null) continue;
-      // Newest-to-oldest scan for THIS invocation's line (same pid +
-      // cmd); records from other runs are skipped, not barriers.
-      if (rec.pid !== process.pid || rec.cmd !== cmd) continue;
-      // A terminal state is written only by finishRecord, so a matching
-      // line either awaits enrichment or is already done.
-      if (rec.state === "finished" || rec.state === "postponed") return "already-done";
-      rec.state = outcome.state;
-      rec.msg = truncateMsg(`${rec.msg} :: ${outcome.text}`);
-      if (outcome.error !== undefined) rec.error = outcome.error;
-      lines[i] = JSON.stringify(rec);
-      writeFileSync(path, lines.join("\n"));
-      return "enriched";
-    }
+      return "not-found";
+    });
   } catch { /* treat as no eligible line */ }
   return "not-found";
 }

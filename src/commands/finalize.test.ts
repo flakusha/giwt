@@ -1440,6 +1440,31 @@ describe("finalize squash strategy", () => {
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("Squash merge failed");
   });
+
+  test.skipIf(!gpgTooling)(
+    "unwinds the staged squash and unblocks retry when the squash commit fails",
+    async () => {
+      featureWorktree();
+      config.agentGpgKeyId = gpgKeyId;
+      // A failing pre-commit hook makes `git commit -F` fail AFTER
+      // `git merge --squash` successfully staged the integration.
+      writeFileSync(join(root, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 1\n");
+      chmodSync(join(root, ".git", "hooks", "pre-commit"), 0o755);
+
+      const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "squash"]);
+
+      expect(run.exitCode).toBe(1);
+      expect(run.output).toContain("Squash commit failed");
+      expect(run.output).toContain("Unwound the staged squash");
+      // The staged squash was unwound: a plain retry is not blocked by the
+      // staged-entries gate.
+      expect(git(["status", "--porcelain"], root)).toBe("");
+      // The finally-restore ran (no bypassed process.exit): no leaked stash.
+      expect(git(["stash", "list"])).not.toContain("worktree-finalize-");
+      // Exit happened before teardown: branch + worktree survive for a retry.
+      expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
+    },
+  );
 });
 
 // --------------------------------------------------------------------------

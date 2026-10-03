@@ -97,6 +97,7 @@ export function executeMergeStep(
         // same gpgMergeFlags, with the co-author-aware message.
         const msgFile = join(config.repoRoot, ".git", "GIWT_SQUASH_MSG");
         writeFileSync(msgFile, `${msg}\n`);
+        let squashCommitFailed = false;
         const squashCommit = Bun.spawnSync([
           "git",
           "-C",
@@ -111,10 +112,37 @@ export function executeMergeStep(
         } catch { /* best-effort scratch cleanup */ }
         if (squashCommit.exitCode !== 0) {
           log("error", "Squash commit failed");
-          process.exit(1);
+          // `git merge --squash` already staged the integration, so bailing
+          // out here would strand dev with staged-but-uncommitted contents
+          // that block the next run's staged-entries gate. Unwind to the
+          // pre-merge HEAD (the dirty dev state is on the stash, restored in
+          // the finally below) so a plain retry works.
+          const unwind = Bun.spawnSync([
+            "git",
+            "-C",
+            config.repoRoot,
+            "reset",
+            "--hard",
+            "HEAD",
+          ], { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" });
+          if (unwind.exitCode === 0) {
+            log(
+              "info",
+              "Unwound the staged squash \u2014 dev is back at its pre-merge HEAD; re-run finalize to retry",
+            );
+          } else {
+            raw(`  Recover manually: cd ${config.repoRoot} && git reset --hard HEAD`);
+            raw(`  Then: re-run finalize`);
+          }
+          squashCommitFailed = true;
         }
-        setMergeInProgress(config.repoRoot, branch, preMergeHead, devStash, false);
-        log("success", `Squash merged: ${baseMsg}`);
+        if (!squashCommitFailed) {
+          setMergeInProgress(config.repoRoot, branch, preMergeHead, devStash, false);
+          log("success", `Squash merged: ${baseMsg}`);
+        }
+        // Exit only after the finally below has restored the pre-merge stash;
+        // a bare process.exit here would bypass it and leak the stash.
+        if (squashCommitFailed) process.exit(1);
       } finally {
         if (devStash !== null) {
           const mergeHead = gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD");

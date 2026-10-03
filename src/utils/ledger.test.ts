@@ -24,7 +24,8 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { hostname, tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   appendCommitOutcome,
@@ -838,6 +839,53 @@ describe("schema v2 writer", () => {
       expect(rec.msg).toBe("commit-wt feat-x :: ✅ abc123456 fix: x");
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("concurrent writers", () => {
+  /** Spawn one bun subprocess that appends (and optionally finishes) its
+   *  own ledger record against the shared treeDir. Real concurrency:
+   *  separate OS processes racing on one .ledger.jsonl. */
+  function spawnWriter(dir: string, finish: boolean) {
+    const script = [
+      `import { appendLedger, finishRecord } from ${
+        JSON.stringify(pathToFileURL(resolve(import.meta.dir, "ledger.ts")).href)
+      };`,
+      `appendLedger(${JSON.stringify(dir)}, "say", [], "from-" + process.pid, "dev");`,
+      finish
+        ? `finishRecord(${JSON.stringify(dir)}, "say", { state: "finished", text: "done" });`
+        : "",
+    ].join("\n");
+    return Bun.spawn([process.execPath, "-e", script], {
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+  }
+
+  it("parallel CLI appends never lose records; seqs stay unique", async () => {
+    const dir = makeTreeDir();
+    const procs = Array.from({ length: 8 }, () => spawnWriter(dir, false));
+    const codes = await Promise.all(procs.map((p) => p.exited));
+    expect(codes).toEqual(Array(8).fill(0));
+    const recs = readLedger(dir, 100);
+    expect(recs.length).toBe(8);
+    const seqs = new Set(recs.map((r) => r.seq));
+    expect(seqs.size).toBe(8);
+  });
+
+  it("concurrent append + finishRecord do not clobber each other", async () => {
+    const dir = makeTreeDir();
+    const procs = Array.from({ length: 8 }, () => spawnWriter(dir, true));
+    const codes = await Promise.all(procs.map((p) => p.exited));
+    expect(codes).toEqual(Array(8).fill(0));
+    const recs = readLedger(dir, 100);
+    expect(recs.length).toBe(8);
+    const seqs = new Set(recs.map((r) => r.seq));
+    expect(seqs.size).toBe(8);
+    for (const r of recs) {
+      expect(r.state).toBe("finished");
+      expect(r.msg).toContain(":: done");
     }
   });
 });
