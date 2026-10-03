@@ -906,7 +906,8 @@ describe("finalize check gate", () => {
     configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
 
     // Resolve the expected diff-base before finalize removes the worktree.
-    const expectedBase = git(["merge-base", "main", "HEAD"], wtPath).trim();
+    // resolveDiffBase returns the requested target verbatim (BUG-resolvediffbase).
+    const expectedBase = "main";
     const run = await driveFinalize(["feature/x", "--gates", "lint"]);
 
     expect(run.exitCode).toBeNull();
@@ -979,7 +980,8 @@ describe("finalize check gate", () => {
     withBunLock(wtPath);
     configureCommands(`printf '%s\\n' "$@" > ${argsPath}`);
 
-    const expectedBase = git(["merge-base", "main", "HEAD"], wtPath).trim();
+    // resolveDiffBase returns the requested target verbatim (BUG-resolvediffbase).
+    const expectedBase = "main";
     const csv = "format - dprint,dead - code (knip),typecheck — backend";
     const run = await driveFinalize(["feature/x", "--gates", csv]);
 

@@ -32,7 +32,8 @@ export function runCheckGateStep(
 ): void {
   holdCheckFanoutSlot(config);
   try {
-    // See resolveDiffBase for why we don't pass targetBranch directly.
+    // resolveDiffBase validates the ref and returns the requested target
+    // itself (BUG-resolvediffbase: the merge-base mis-scoped the diff).
     const diffBase = resolveDiffBase(wtPath, targetBranch);
     if (runCheck(wtPath, diffBase, checkArgs, config, activeRun()?.capturePath("check.log"))) {
       log("success", `Checks passed (diff-base=${diffBase.slice(0, 8)}…)`);

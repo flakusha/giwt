@@ -156,26 +156,7 @@ export function restoreDevFromStash(
   raw(`  Your pre-merge work is still on the stash stack as '${stashRef}'.`);
   raw(`  When ready: cd ${repoRoot} && git stash pop ${stashRef}`);
 }
-/**
- * Resolve the diff-base ref to pass to `bun run check --diff-base`.
- *
- * Why: the `--diff-base` arg scopes coverage + unit gates to that ref's
- * diff vs HEAD (see AGENTS.md). Passing the live target branch means
- * "branch vs current target", which leaks unrelated target-only changes
- * into the gate when the target has moved past the branch's base.
- *
- * This returns the merge-base of `target` and HEAD — a stable ancestor
- * that captures exactly what this branch has contributed since forking.
- *
- * Throws when `git merge-base` exits non-zero (target is not a valid ref
- * or has no common ancestor with HEAD). The previous implementation
- * silently returned `target` on failure, which then crashed
- * the target repo check runner downstream with a confusing stack trace.
- * Production callers always pass a valid `target` (the protected target
- * branch), so this throw is unreachable in normal finalize flows.
- *
- * Exported for unit tests; production callers in `runFinalize` invoke it.
- */
+
 /**
  * Parse the CLI args for `worktree finalize`.
  *

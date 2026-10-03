@@ -9,6 +9,23 @@ import { appendGripe } from "../../utils/ledger";
 import { raw, section } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 
+/**
+ * Resolve the diff-base ref for `bun run check --diff-base` (and the
+ * plan-validate per-file gate scope): the operator's requested `target`,
+ * NOT `git merge-base target HEAD`.
+ *
+ * BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-:
+ * returning the merge-base silently mis-scoped every consumer's
+ * `git diff <base>` in both directions — files the target independently
+ * reproduced were over-reported, files the target moved were
+ * under-reported — and because a merge-base is a valid ref, nothing
+ * errored. Consumers diff two-dot against the ref, so the requested
+ * target is exactly the requested scope.
+ *
+ * The merge-base call is retained purely as validation: it fails closed
+ * (throws) when `target` is not a valid ref or has no common ancestor
+ * with HEAD, preserving the strict-mode regression guard.
+ */
 export function resolveDiffBase(wtPath: string, target: string): string {
   const mergeBase = gitSyncQuiet(wtPath, "merge-base", target, "HEAD").trim();
   if (mergeBase.length === 0) {
@@ -18,7 +35,7 @@ export function resolveDiffBase(wtPath: string, target: string): string {
         + `for 'bun run check --diff-base'.`,
     );
   }
-  return mergeBase;
+  return target;
 }
 
 export function runCheck(
