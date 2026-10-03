@@ -3,7 +3,7 @@
 
 # FEAT: ledger-core canonical module
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Epic:** ledger-redesign

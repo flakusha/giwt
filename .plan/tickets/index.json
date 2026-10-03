@@ -35,6 +35,21 @@
     "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md",
     "status": "done"
   },
+  "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS": {
+    "hash": "pending",
+    "extid": "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS",
+    "type": "BUG",
+    "title": "bad config TOML crashes every command including readers",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "config",
+      "cli"
+    ],
+    "source": ".plan/tickets/BUG-bad-config-toml-crashes-every-command-including-readers.md",
+    "status": "done"
+  },
   "BUG-BROWSER-E2E-404-ALLOWLIST-MASKS-REAL-404S": {
     "hash": "2929526",
     "git_issue": "2929526",
@@ -67,6 +82,37 @@
     "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
     "status": "Not Started"
   },
+  "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE",
+    "type": "BUG",
+    "title": "finalize alreadyMerged check is incomplete — rev-list count misses content-equivalent branches",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "merge"
+    ],
+    "source": ".plan/tickets/BUG-finalize-alreadymerged-check-is-incomplete.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-BRANCHTOPATH-IS-LOSSY": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-BRANCHTOPATH-IS-LOSSY",
+    "type": "BUG",
+    "title": "finalize branchToPath is lossy — feature/foo and feature-foo map to same directory",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "worktree",
+      "naming"
+    ],
+    "source": ".plan/tickets/BUG-finalize-branchtopath-is-lossy.md",
+    "status": "done"
+  },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
     "extid": "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK",
@@ -82,6 +128,37 @@
     "source": ".plan/tickets/BUG-finalize-check-failure-report-never-names-failed-gates-check.md",
     "status": "done",
     "git_issue": "3022ea0"
+  },
+  "BUG-FINALIZE-DIRECT-MERGE-ALLOWS-FAST-FORWARD": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-DIRECT-MERGE-ALLOWS-FAST-FORWARD",
+    "type": "BUG",
+    "title": "finalize direct merge allows fast-forward — no merge commit created",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "merge"
+    ],
+    "source": ".plan/tickets/BUG-finalize-direct-merge-allows-fast-forward.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-FINDWORKTREE-ONLY-CHECKS-TREE-DIR": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-FINDWORKTREE-ONLY-CHECKS-TREE-DIR",
+    "type": "BUG",
+    "title": "finalize findWorktree only checks `tree/<dirName>` — misses worktrees at custom paths",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "worktree",
+      "discovery"
+    ],
+    "source": ".plan/tickets/BUG-finalize-findworktree-only-checks-tree-dir.md",
+    "status": "done"
   },
   "BUG-FINALIZE-LEAKS-WORKTREE-AND-BRANCH-WHEN-THE-TARGET-ALREADY-C": {
     "hash": "f16f955",
@@ -109,6 +186,68 @@
       "tests"
     ],
     "source": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES",
+    "type": "BUG",
+    "title": "finalize step1 doesnt check untracked files — silent data loss on worktree removal",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "worktree",
+      "data-loss"
+    ],
+    "source": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-TEARDOWN-BRANCH-DELETION-FALLBACK-IS-SILENT": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-TEARDOWN-BRANCH-DELETION-FALLBACK-IS-SILENT",
+    "type": "BUG",
+    "title": "finalize teardown branch deletion -d to -D fallback is silent — discards unmerged commits without warning",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "teardown",
+      "data-loss"
+    ],
+    "source": ".plan/tickets/BUG-finalize-teardown-branch-deletion-fallback-is-silent.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-TEARDOWN-DOESNT-VERIFY-WORKTREE-EXISTS": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-TEARDOWN-DOESNT-VERIFY-WORKTREE-EXISTS",
+    "type": "BUG",
+    "title": "finalize teardown doesnt verify worktree exists — confusing error on externally-removed worktree",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "teardown"
+    ],
+    "source": ".plan/tickets/BUG-finalize-teardown-doesnt-verify-worktree-exists.md",
+    "status": "done"
+  },
+  "BUG-FINALIZE-TEARDOWN-WORKTREE-REMOVAL-FAILURE-IS-NON-FATAL": {
+    "hash": "pending",
+    "extid": "BUG-FINALIZE-TEARDOWN-WORKTREE-REMOVAL-FAILURE-IS-NON-FATAL",
+    "type": "BUG",
+    "title": "finalize teardown worktree removal failure is non-fatal — leaks worktree dir and admin entry",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "teardown"
+    ],
+    "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md",
     "status": "done"
   },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
@@ -179,6 +318,21 @@
       "ticket"
     ],
     "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
+    "status": "done"
+  },
+  "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS": {
+    "hash": "pending",
+    "extid": "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS",
+    "type": "BUG",
+    "title": "ledger append race drops records under concurrent agents",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "ledger",
+      "concurrency"
+    ],
+    "source": ".plan/tickets/BUG-ledger-append-race-drops-records-under-concurrent-agents.md",
     "status": "done"
   },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
@@ -278,6 +432,36 @@
     ],
     "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
     "status": "Not Started"
+  },
+  "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
+    "hash": "pending",
+    "extid": "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV",
+    "type": "BUG",
+    "title": "squash commit failure strands staged changes in dev",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "squash"
+    ],
+    "source": ".plan/tickets/BUG-squash-commit-failure-strands-staged-changes-in-dev.md",
+    "status": "done"
+  },
+  "BUG-STATUS-VOCAB-ANNOTATION-REGEX-REJECTS-NESTED-PARENTHESES": {
+    "hash": "pending",
+    "extid": "BUG-STATUS-VOCAB-ANNOTATION-REGEX-REJECTS-NESTED-PARENTHESES",
+    "type": "BUG",
+    "title": "status-vocab annotation regex rejects nested parentheses",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "status-vocab",
+      "plan-validate"
+    ],
+    "source": ".plan/tickets/BUG-status-vocab-annotation-regex-rejects-nested-parentheses.md",
+    "status": "done"
   },
   "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
     "hash": "adccccd",
@@ -563,6 +747,36 @@
       "environment"
     ],
     "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md",
+    "status": "done"
+  },
+  "FEAT-LEDGER-CORE-CANONICAL-MODULE": {
+    "hash": "pending",
+    "extid": "FEAT-LEDGER-CORE-CANONICAL-MODULE",
+    "type": "FEAT",
+    "title": "ledger-core canonical module",
+    "label": "feat",
+    "priority": "high",
+    "epic": "ledger-redesign",
+    "tags": [
+      "ledger",
+      "shared-module"
+    ],
+    "source": ".plan/tickets/FEAT-ledger-core-canonical-module.md",
+    "status": "done"
+  },
+  "FEAT-LEDGER-SCHEMA-V2-WRITER": {
+    "hash": "pending",
+    "extid": "FEAT-LEDGER-SCHEMA-V2-WRITER",
+    "type": "FEAT",
+    "title": "ledger schema v2 writer",
+    "label": "feat",
+    "priority": "high",
+    "epic": "ledger-redesign",
+    "tags": [
+      "ledger",
+      "schema-v2"
+    ],
+    "source": ".plan/tickets/FEAT-ledger-schema-v2-writer.md",
     "status": "done"
   },
   "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {

@@ -3,7 +3,7 @@
 
 # FEAT: ledger schema v2 writer
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Epic:** ledger-redesign

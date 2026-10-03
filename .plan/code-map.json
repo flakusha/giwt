@@ -129,9 +129,27 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-squash-commit-failure-strands-staged-changes-in-dev.md"
+    }
+  ],
+  "src/commands/finalize/merge-exec.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-direct-merge-allows-fast-forward.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-squash-commit-failure-strands-staged-changes-in-dev.md"
     }
   ],
   "src/commands/finalize/merge.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
@@ -140,7 +158,29 @@
   "src/commands/finalize/run.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-alreadymerged-check-is-incomplete.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    }
+  ],
+  "src/commands/finalize/teardown.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-teardown-branch-deletion-fallback-is-silent.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-teardown-doesnt-verify-worktree-exists.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md"
     }
   ],
   "src/commands/issues.ts": [
@@ -180,6 +220,14 @@
     }
   ],
   "src/commands/remove.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-teardown-branch-deletion-fallback-is-silent.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
@@ -308,6 +356,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-status-vocab-annotation-regex-rejects-nested-parentheses.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
     },
     {
@@ -415,6 +467,16 @@
       "source": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md"
     }
   ],
+  "src/utils/config.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-branchtopath-is-lossy.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-findworktree-only-checks-tree-dir.md"
+    }
+  ],
   "src/utils/errors.test.ts": [
     {
       "kind": "ticket",
@@ -429,6 +491,18 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md"
+    }
+  ],
+  "src/utils/ledger-core.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-ledger-core-canonical-module.md"
+    }
+  ],
+  "src/utils/ledger.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-ledger-append-race-drops-records-under-concurrent-agents.md"
     }
   ],
   "src/utils/output.ts": [
