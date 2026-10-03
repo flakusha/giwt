@@ -31,13 +31,26 @@ export async function sync(
   const hasVerbose = rest.includes("--verbose");
   const hasImport = rest.includes("--import");
   const hasImportBack = rest.includes("--import-back");
-  const unknown = rest.filter(
-    (a) => a !== "--fix" && a !== "--verbose" && a !== "--import" && a !== "--import-back",
-  );
+  let diffBase = "";
+  const knownFlags = new Set(["--fix", "--verbose", "--import", "--import-back", "--diff-base"]);
+  const consumed = new Set<number>();
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] !== "--diff-base") continue;
+    if (i + 1 >= rest.length || rest[i + 1]!.startsWith("--")) {
+      log("error", "--diff-base requires <ref>");
+      raw(
+        "  Usage: giwt sync [--fix] [--import] [--import-back] [--verbose] [--diff-base <ref>] [--json|--toml|--emoji]",
+      );
+      process.exit(1);
+    }
+    diffBase = rest[++i]!;
+    consumed.add(i);
+  }
+  const unknown = rest.filter((a, i) => !consumed.has(i) && !knownFlags.has(a));
   if (unknown.length > 0) {
     log("error", `unknown flag '${unknown[0]}'`);
     raw(
-      "  Usage: giwt sync [--fix] [--import] [--import-back] [--verbose] [--json|--toml|--emoji]",
+      "  Usage: giwt sync [--fix] [--import] [--import-back] [--verbose] [--diff-base <ref>] [--json|--toml|--emoji]",
     );
     process.exit(1);
   }
@@ -73,6 +86,7 @@ export async function sync(
       import: hasImport,
       importBack: hasImportBack,
       ticketsPath: config.settings.paths.tickets,
+      ...(diffBase ? { diffBase } : {}),
       onSummary: (s) => {
         summary = s;
       },

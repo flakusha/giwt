@@ -75,7 +75,13 @@ export function fixTicketIndexGate(
   worktreeRoot: string,
   ticketsPath: string,
   runSyncFn: TicketSyncFn,
+  diffBase?: string,
 ): string[] {
-  runSyncFn(worktreeRoot, { fix: true, verbose: false, ticketsPath });
+  runSyncFn(worktreeRoot, {
+    fix: true,
+    verbose: false,
+    ticketsPath,
+    ...(diffBase !== undefined ? { diffBase } : {}),
+  });
   return [`synced ticket index (index.json ↔ .md ↔ git issues)`];
 }

@@ -1095,4 +1095,142 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test("diffBase scopes reconciliation to files changed vs the ref", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      // Out-of-scope drift: ticket committed at base, registry issue closed
+      // afterwards (repo-global state), index still says In Progress.
+      const iGhost = createIssue(root, "TASK-GHOST: ghost drift");
+      writeTicket(root, "TASK-GHOST.md", "ghost drift", { epic: "EPIC-1" });
+      writeIndex(root, {
+        "TASK-GHOST": indexEntry({
+          extid: "TASK-GHOST",
+          title: "ghost drift",
+          hash: iGhost,
+          status: "In Progress",
+          source: ".plan/tickets/TASK-GHOST.md",
+        }),
+      });
+      // -f: ambient user gitignore (e.g. `.*/`) must not hide .plan/ fixtures.
+      gitOut(root, "add", "-f", "-A");
+      gitOut(root, "commit", "-q", "-m", "ghost ticket");
+      const base = gitOut(root, "rev-parse", "HEAD").trim();
+
+      // In-scope ticket added after base: registry issue still open, index
+      // In Progress → no mismatch, so the scoped run is fully green.
+      const iFresh = createIssue(root, "TASK-FRESH: fresh ticket");
+      writeTicket(root, "TASK-FRESH.md", "fresh ticket", { epic: "EPIC-1" });
+      writeIndex(root, {
+        "TASK-GHOST": indexEntry({
+          extid: "TASK-GHOST",
+          title: "ghost drift",
+          hash: iGhost,
+          status: "In Progress",
+          source: ".plan/tickets/TASK-GHOST.md",
+        }),
+        "TASK-FRESH": indexEntry({
+          extid: "TASK-FRESH",
+          title: "fresh ticket",
+          hash: iFresh,
+          status: "In Progress",
+          source: ".plan/tickets/TASK-FRESH.md",
+        }),
+      });
+      gitOut(root, "add", "-f", "-A");
+      gitOut(root, "commit", "-q", "-m", "fresh ticket");
+      // Sibling session closes GHOST's issue — repo-global registry state,
+      // invisible to THIS tree's committed .plan copy.
+      closeIssue(root, iGhost);
+
+      // Scope = {TASK-FRESH}: TASK-GHOST's sibling-session drift must not
+      // render nor gate the exit code.
+      const scoped = runCaptured(() => runSync(root, { diffBase: base }));
+      expect(scoped.exit).toBe(0);
+      expect(listedRows(scoped.out, "TASK-GHOST:")).toEqual([]);
+      expect(scoped.out).not.toContain("Status mismatches");
+
+      // Same drift class on the in-scope ticket → still gates.
+      closeIssue(root, iFresh);
+      const freshDrift = runCaptured(() => runSync(root, { diffBase: base }));
+      expect(freshDrift.exit).toBe(1);
+      expect(freshDrift.out).toContain("Status mismatches: 1");
+      expect(freshDrift.out).toContain("TASK-FRESH: index=in_progress vs git=done");
+      expect(listedRows(freshDrift.out, "TASK-GHOST:")).toEqual([]);
+
+      // Diff base before both plan files existed → full scan → both drifts.
+      const seed = gitOut(root, "rev-parse", "HEAD~2").trim();
+      const global = runCaptured(() => runSync(root, { diffBase: seed }));
+      expect(global.exit).toBe(1);
+      expect(global.out).toContain("Status mismatches: 2");
+      expect(global.out).toContain("TASK-GHOST: index=in_progress vs git=done");
+
+      // Unreadable diff base fails closed — never a silent full scan.
+      const badRef = runCaptured(() => runSync(root, { diffBase: "no-such-ref" }));
+      expect(badRef.exit).toBe(1);
+      expect(badRef.out).toContain("no-such-ref");
+      expect(badRef.out).not.toContain("Status mismatches");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("diffBase scopes --fix: the backfill pass never touches out-of-scope entries", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      // Out-of-scope: committed at base; its index status is undefined so an
+      // unscoped --fix would backfill it — it must stay untouched scoped.
+      const iGhost = createIssue(root, "TASK-GHOST: ghost backfill");
+      writeTicket(root, "TASK-GHOST.md", "ghost backfill", { epic: "EPIC-1" });
+      writeIndex(root, {
+        "TASK-GHOST": indexEntry({
+          extid: "TASK-GHOST",
+          title: "ghost backfill",
+          hash: iGhost,
+          source: ".plan/tickets/TASK-GHOST.md",
+        }),
+      });
+      // -f: ambient user gitignore (e.g. `.*/`) must not hide .plan/ fixtures.
+      gitOut(root, "add", "-f", "-A");
+      gitOut(root, "commit", "-q", "-m", "ghost ticket");
+      const base = gitOut(root, "rev-parse", "HEAD").trim();
+
+      // In-scope: added after base, index status also undefined.
+      const iFresh = createIssue(root, "TASK-FRESH: fresh backfill");
+      writeTicket(root, "TASK-FRESH.md", "fresh backfill", { epic: "EPIC-1" });
+      writeIndex(root, {
+        "TASK-GHOST": indexEntry({
+          extid: "TASK-GHOST",
+          title: "ghost backfill",
+          hash: iGhost,
+          source: ".plan/tickets/TASK-GHOST.md",
+        }),
+        "TASK-FRESH": indexEntry({
+          extid: "TASK-FRESH",
+          title: "fresh backfill",
+          hash: iFresh,
+          source: ".plan/tickets/TASK-FRESH.md",
+        }),
+      });
+      gitOut(root, "add", "-f", "-A");
+      gitOut(root, "commit", "-q", "-m", "fresh ticket");
+
+      // Scoped --fix backfills ONLY the in-scope entry.
+      const scoped = runCaptured(() => runSync(root, { fix: true, diffBase: base }));
+      expect(scoped.exit).toBe(0);
+      expect(scoped.out).toContain("TASK-FRESH: backfilled status");
+      expect(scoped.out).not.toContain("TASK-GHOST: backfilled status");
+      expect(readIndex(root)["TASK-FRESH"]?.status).toBeDefined();
+      expect(readIndex(root)["TASK-GHOST"]?.status).toBeUndefined();
+
+      // Unscoped --fix still backfills the rest (trigger stays live).
+      const full = runCaptured(() => runSync(root, { fix: true }));
+      expect(full.exit).toBe(0);
+      expect(full.out).toContain("TASK-GHOST: backfilled status");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

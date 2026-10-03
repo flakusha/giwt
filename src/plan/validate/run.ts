@@ -138,13 +138,19 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
           opts.worktreeRoot,
           opts.ticketsDir,
           opts.runSync,
+          opts.diffBase,
         );
         let pass = findings.length === 0;
         let fixMsgs: string[] = [];
         if (opts.fix && !pass) {
           // Don't re-check — runSync is expensive (calls git issue CLI).
           // Trust the fix; user can re-run validate to confirm.
-          fixMsgs = fixTicketIndexGate(opts.worktreeRoot, opts.ticketsDir, opts.runSync);
+          fixMsgs = fixTicketIndexGate(
+            opts.worktreeRoot,
+            opts.ticketsDir,
+            opts.runSync,
+            opts.diffBase,
+          );
           if (fixMsgs.length > 0) pass = true;
         }
         results.push({

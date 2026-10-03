@@ -20,6 +20,7 @@ export async function runValidateCmd(
 ): Promise<void> {
   let gatesArg = "all";
   let skipGatesArg = "";
+  let diffBase = "";
   const fix = args.includes("--fix");
   const json = args.includes("--json");
   for (let i = 0; i < args.length; i++) {
@@ -27,12 +28,23 @@ export async function runValidateCmd(
       gatesArg = args[++i]!;
     } else if (args[i] === "--skip-gates" && args[i + 1]) {
       skipGatesArg = args[++i]!;
+    } else if (args[i] === "--diff-base") {
+      if (i + 1 >= args.length || args[i + 1]!.startsWith("--")) {
+        log("error", "--diff-base requires <ref>");
+        raw(
+          "Usage: giwt plan validate [--gates <list>] [--skip-gates <list>] [--fix] [--diff-base <ref>] [--json]",
+        );
+        process.exit(1);
+      }
+      diffBase = args[++i]!;
     }
   }
 
   const isHelp = args.includes("--help") || args.includes("-h");
   if (isHelp) {
-    raw("Usage: giwt plan validate [--gates <list>] [--skip-gates <list>] [--fix] [--json]");
+    raw(
+      "Usage: giwt plan validate [--gates <list>] [--skip-gates <list>] [--fix] [--diff-base <ref>] [--json]",
+    );
     raw("  Comprehensive .plan/ validation");
     raw("  --gates       comma-separated gate list (default: all)");
     raw(
@@ -50,6 +62,13 @@ export async function runValidateCmd(
       "  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc, matrix, status-vocab)",
     );
     raw("                unfixable failing gates are reported with a manual next step");
+    raw(
+      "  --diff-base <ref>  scope per-file gates (format, linkage, status-vocab, tickets) to",
+    );
+    raw(
+      "                plan files changed vs this ref — foreign tickets from concurrently-active",
+    );
+    raw("                sibling worktrees no longer fail this checkout's validation");
     raw("  --json        machine-readable full result on stdout (every finding, no cap)");
     return;
   }
@@ -87,8 +106,14 @@ export async function runValidateCmd(
     backlogIndexFiles: [...BACKLOG_INDEX_FILES],
     gates: gateNames as import("../../plan/validate").GateName[],
     runSync: (root, opts) =>
-      runSync(root, { fix: opts.fix, verbose: opts.verbose, ticketsPath: opts.ticketsPath }),
+      runSync(root, {
+        fix: opts.fix,
+        verbose: opts.verbose,
+        ticketsPath: opts.ticketsPath,
+        ...(opts.diffBase ? { diffBase: opts.diffBase } : {}),
+      }),
     ...(fix ? { fix: true } : {}),
+    ...(diffBase ? { diffBase } : {}),
     ...(Object.keys(config.settings.status.aliases).length > 0
       ? { statusAliases: config.settings.status.aliases }
       : {}),

@@ -35,6 +35,15 @@ export interface SyncOptions {
    *  ISSUE_LS_TIMEOUT_MS (60s); exposed so tests can exercise the
    *  timed-out-vs-unavailable distinction without a real 60s sleep. */
   issueLsTimeoutMs?: number;
+  /**
+   * Diff-base ref: when set, ticket reconciliation only gates on plan files
+   * changed relative to this ref (committed diff + dirty + untracked under
+   * `.plan/tickets` / `.plan/epics`, custom `ticketsPath` aware). Foreign
+   * tickets from concurrently-active sessions in the same repo no longer
+   * fail this branch's sync — mirrors ValidateOptions.diffBase per-file gate
+   * scoping. Unset = full scan (historic behavior).
+   */
+  diffBase?: string;
 }
 
 /** Final ticket-sync counts, for run-record outcome summaries. */

@@ -13,6 +13,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTicketFile } from "./sync-index";
+import { batchCommitObjectExists } from "./sync-reconcile";
 import {
   type GitIssue,
   gitObjectExists,
@@ -68,6 +69,78 @@ describe("gitObjectExists", () => {
     expect(gitObjectExists("abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca")).toBe(
       false,
     );
+  });
+});
+
+// ── batchCommitObjectExists ────────────────────────────────────
+
+describe("batchCommitObjectExists", () => {
+  /** Tiny throwaway repo so the batch spawn runs against a real object
+   *  store (makeRoot() is not a git repo). Cleaned by the file afterEach. */
+  function makeRepo(): string {
+    const root = makeRoot();
+    const git = (args: string[], input?: string): string => {
+      const proc = Bun.spawnSync(["git", ...args], {
+        cwd: root,
+        stdin: input === undefined ? "ignore" : new TextEncoder().encode(input),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      if (proc.exitCode !== 0) {
+        throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString()}`);
+      }
+      return proc.stdout.toString().trim();
+    };
+    git(["init", "-q"]);
+    git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "--allow-empty", "-qm", "seed"]);
+    return root;
+  }
+
+  test("commit true; blob/missing false; junk refs are pre-filtered", () => {
+    const root = makeRepo();
+    const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root, stdout: "pipe" })
+      .stdout.toString().trim();
+    const blob = Bun.spawnSync(["git", "hash-object", "-w", "--stdin"], {
+      cwd: root,
+      stdin: new TextEncoder().encode("not a commit"),
+      stdout: "pipe",
+    }).stdout.toString().trim();
+    const missing = "a".repeat(40);
+
+    const verdicts = batchCommitObjectExists(root, [commit, blob, missing, "zzzzzzz", ""]);
+    expect(verdicts.get(commit)).toBe(true);
+    expect(verdicts.get(blob)).toBe(false);
+    expect(verdicts.get(missing)).toBe(false);
+    // Non-hex refs never enter the batch (gitObjectExists semantics: false
+    // via the per-ref fallback).
+    expect(verdicts.has("zzzzzzz")).toBe(false);
+    expect(verdicts.has("")).toBe(false);
+  });
+
+  test("reconcile classification is unchanged: commit accepted, blob/junk placeholder", () => {
+    const root = makeRepo();
+    const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root, stdout: "pipe" })
+      .stdout.toString().trim();
+    const blob = Bun.spawnSync(["git", "hash-object", "-w", "--stdin"], {
+      cwd: root,
+      stdin: new TextEncoder().encode("x"),
+      stdout: "pipe",
+    }).stdout.toString().trim();
+
+    const report = reconcile(
+      [],
+      new Map(),
+      {
+        "TASK-SHIPPED": entry({ hash: "pending", commitHash: commit }),
+        "TASK-BLOB": entry({ hash: "123456789", commitHash: blob }),
+        "TASK-COMMIT": entry({ hash: commit }),
+        "TASK-JUNK": entry({ hash: "123456789" }),
+      },
+      false,
+      root,
+    );
+    expect(report.placeholderHashes.map((p) => p.extid)).toEqual(["TASK-BLOB", "TASK-JUNK"]);
+    expect(report.hashMismatches).toEqual([]);
   });
 });
 
@@ -610,6 +683,61 @@ describe("reconcile unbound-to-epic advisory", () => {
     ) as Record<string, IndexEntry>;
     const report = reconcile([], new Map(), index, false, makeRoot());
     expect(report.unboundEpics).toEqual(["TASK-RAW"]);
+  });
+});
+
+// ── reconcile diff-scope filter ────────────────────────────────
+
+describe("reconcile diff-scope filtering", () => {
+  test("out-of-scope drift is filtered, in-scope kept", () => {
+    const root = makeRoot();
+    const issues = new Map<string, GitIssue>([
+      ["aaa1111", {
+        hash: "aaa1111",
+        status: "done",
+        title: "TASK-KEEP: kept",
+        extid: "TASK-KEEP",
+      }],
+      ["bbb2222", {
+        hash: "bbb2222",
+        status: "done",
+        title: "TASK-DROP: dropped",
+        extid: "TASK-DROP",
+      }],
+    ]);
+    const index = {
+      "TASK-KEEP": entry({ extid: "TASK-KEEP", hash: "aaa1111", status: "In Progress" }),
+      "TASK-DROP": entry({ extid: "TASK-DROP", hash: "bbb2222", status: "In Progress" }),
+    };
+    const report = reconcile([], issues, index, false, root, new Set(["TASK-KEEP"]));
+    expect(report.statusMismatches.map((m) => m.extid)).toEqual(["TASK-KEEP"]);
+  });
+
+  test("extid match is case-normalized (index key vs filename stem)", () => {
+    const root = makeRoot();
+    // Index key lowercase, scope set carries the uppercased filename stem.
+    const report = reconcile(
+      [],
+      new Map(),
+      { "task-case": entry({ extid: "TASK-CASE", source: "" }) },
+      false,
+      root,
+      new Set(["TASK-CASE"]),
+    );
+    expect(report.phantomEntries).toEqual(["task-case"]);
+  });
+
+  test("empty scope set filters every extid-keyed category", () => {
+    const root = makeRoot();
+    writeFileSync(join(root, ".plan/tickets/TASK-ORPHAN.md"), "# TASK-ORPHAN\n");
+    const files = [
+      parseTicketFile(join(root, ".plan/tickets/TASK-ORPHAN.md"), ".plan/tickets/TASK-ORPHAN.md"),
+    ]
+      .filter((f) => f !== null);
+    const index = { "TASK-PHANTOM": entry({ extid: "TASK-PHANTOM", source: "" }) };
+    const report = reconcile(files, new Map(), index, false, root, new Set());
+    expect(report.orphanFiles).toEqual([]);
+    expect(report.phantomEntries).toEqual([]);
   });
 });
 

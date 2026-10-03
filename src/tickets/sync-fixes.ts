@@ -41,6 +41,9 @@ export interface FixContext {
   epicsPrefix: string;
   epicsDir: string;
   ticketsDir: string;
+  /** Diff-scope extids (undefined = full run). Fix passes must never
+   *  touch entries outside this set — scoped `--fix` is scoped. */
+  scope?: Set<string> | undefined;
   opts: SyncOptions;
 }
 
@@ -58,7 +61,7 @@ export function applyFixes(
     fileByExtid.set(extid, tf);
   }
 
-  backfillStatuses(fixed, report, ticketFiles);
+  backfillStatuses(fixed, report, ticketFiles, ctx.scope);
   fixStatusMismatches(fixed, report, fileByExtid, ctx.repoRoot);
   fixIndexStatusStale(fixed, report, gitIssues, ctx.repoRoot);
   fixMissingHashes(fixed, report);

@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isolatedGitEnv } from "../utils/git";
+import { gitSync, isolatedGitEnv } from "../utils/git";
 import { STATUS_ENUM } from "./status-vocab";
 import {
   ALL_GATES,
@@ -461,6 +461,89 @@ describe("validate / tickets gate", () => {
       });
       const ticketsResult = result.results.find((r) => r.gate === "tickets");
       expect(ticketsResult!.pass).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("forwards diffBase to runSync opts", () => {
+    const fx = makeFixture();
+    try {
+      // diffBase triggers a real git diff — give the fixture a repo + HEAD.
+      const git = (...a: string[]) => gitSync(fx.root, ...a);
+      git("init", "-q", "-b", "master");
+      git("config", "user.email", "giwt-test@example.com");
+      git("config", "user.name", "giwt test");
+      git("config", "commit.gpgsign", "false");
+      git("config", "core.excludesFile", "");
+      writeFileSync(join(fx.ticketsDir, "TASK-good.md"), "# TASK-good.md\n");
+      git("add", "-A");
+      git("commit", "-q", "-m", "base");
+      const seen: Array<
+        { fix: boolean; verbose: boolean; ticketsPath: string; diffBase?: string; }
+      > = [];
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["tickets"],
+        runSync: (_root, opts) => {
+          seen.push(opts);
+          return 0;
+        },
+        diffBase: "HEAD",
+      });
+      const ticketsResult = result.results.find((r) => r.gate === "tickets");
+      expect(ticketsResult!.pass).toBe(true);
+      expect(seen).toEqual([
+        { fix: false, verbose: false, ticketsPath: fx.ticketsDir, diffBase: "HEAD" },
+      ]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("diffBase makes scoped runSync succeed where unscoped would fail", () => {
+    const fx = makeFixture();
+    try {
+      const git = (...a: string[]) => gitSync(fx.root, ...a);
+      git("init", "-q", "-b", "master");
+      git("config", "user.email", "giwt-test@example.com");
+      git("config", "user.name", "giwt test");
+      git("config", "commit.gpgsign", "false");
+      git("config", "core.excludesFile", "");
+      writeFileSync(join(fx.ticketsDir, "TASK-good.md"), "# TASK-good.md\n");
+      git("add", "-A");
+      git("commit", "-q", "-m", "base");
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["tickets"],
+        // Fakes a scoped reconcile: clean only when scoped to the diff base.
+        runSync: (_root, opts) => (opts.diffBase === "HEAD" ? 0 : 1),
+        diffBase: "HEAD",
+      });
+      const ticketsResult = result.results.find((r) => r.gate === "tickets");
+      expect(ticketsResult!.pass).toBe(true);
     } finally {
       fx.cleanup();
     }

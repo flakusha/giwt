@@ -85,7 +85,7 @@ export interface ValidateResult {
 // runSync function. This keeps validate pure of CLI-side imports.
 export type TicketSyncFn = (
   root: string,
-  opts: { fix: boolean; verbose: boolean; ticketsPath: string; },
+  opts: { fix: boolean; verbose: boolean; ticketsPath: string; diffBase?: string; },
 ) => number;
 
 export interface ValidateOptions {
@@ -107,10 +107,10 @@ export interface ValidateOptions {
   statusAliases?: Record<string, string>;
   /**
    * Diff-base ref: when set, the purely per-file gates (format, linkage,
-   * status-vocab) only inspect ticket/epic files changed relative to this
-   * ref — foreign tickets from concurrently-active sessions in the same
-   * repo no longer fail another branch's finalize. Cross-file and freshness
-   * gates (naming, links, backlog, tickets, code-map, matrix, epics-doc,
+   * status-vocab, tickets) only inspect ticket/epic files changed relative
+   * to this ref — foreign tickets from concurrently-active sessions in the
+   * same repo no longer fail another branch's finalize. Cross-file and
+   * freshness gates (naming, links, backlog, code-map, matrix, epics-doc,
    * spdx) stay global. Unset = full scan (historic behavior).
    */
   diffBase?: string;

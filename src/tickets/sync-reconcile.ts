@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
+// size-allow: 300
 
 /**
  * Pure reconciliation logic for .plan/tickets/index.json sync.
@@ -12,6 +13,7 @@
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 import { normalizeStatus } from "./sync-normalize";
 import {
   checkIssueLifecycleDrift,
@@ -21,6 +23,7 @@ import {
   checkStaleOpenGitIssues,
   checkUnboundEpics,
 } from "./sync-reconcile-checks";
+import { applyReportScope } from "./sync-scope";
 import type { GitIssue, IndexEntry, SyncReport, TicketFile } from "./sync-ticket-types";
 
 // ── Git object helpers ─────────────────────────────────────────
@@ -39,6 +42,39 @@ export function gitObjectExists(ref: string): boolean {
   }
 }
 
+/**
+ * Batch verdict for `refs` (each peeled with `^{commit}`) via one
+ * `git cat-file --batch-check` spawn — replaces N per-ref `cat-file -e`
+ * subprocesses in the hash-provenance loop. Verdicts come from stdout only:
+ * `git` echoes each request line, so request N maps positionally to output
+ * line N; anything ending in `missing` does not resolve to a commit.
+ * Refs failing the hex pre-check are absent from the map (false by
+ * gitObjectExists semantics); on spawn failure the map is empty and callers
+ * fall back to per-ref `gitObjectExists`.
+ */
+export function batchCommitObjectExists(
+  root: string,
+  refs: Iterable<string>,
+): Map<string, boolean> {
+  const list = [...new Set(refs)].filter((ref) => /^[0-9a-f]{7,40}$/.test(ref));
+  const verdicts = new Map<string, boolean>();
+  if (list.length === 0) return verdicts;
+  const input = `${list.map((ref) => `${ref}^{commit}`).join("\n")}\n`;
+  const proc = Bun.spawnSync(["git", "cat-file", "--batch-check"], {
+    cwd: root,
+    stdin: new TextEncoder().encode(input),
+    stdout: "pipe",
+    stderr: "ignore",
+    env: isolatedGitEnv(),
+  });
+  if (proc.exitCode !== 0) return verdicts;
+  const lines = new TextDecoder().decode(proc.stdout).split("\n");
+  for (const [i, ref] of list.entries()) {
+    verdicts.set(ref, lines[i] !== undefined && !lines[i].endsWith("missing"));
+  }
+  return verdicts;
+}
+
 // ── Reconcile ──────────────────────────────────────────────────
 
 export function reconcile(
@@ -47,6 +83,9 @@ export function reconcile(
   index: Record<string, IndexEntry>,
   _verbose: boolean,
   root: string,
+  /** Diff-scope extids (uppercased stems of plan files changed vs the base).
+   *  Unset = full scan. */
+  scope?: Set<string>,
 ): SyncReport {
   const report: SyncReport = {
     orphanFiles: [],
@@ -124,18 +163,28 @@ export function reconcile(
   //    placeholder with no provenance. Only a hash that resolves to a git
   //    issue but mismatches its title is a hard mismatch; the rest are
   //    advisory.
+  //
+  //    Object-existence checks are batched: one `cat-file --batch-check`
+  //    spawn covers every distinct ref (task: 3074 spawns ≈ 6.9 s → 89 ≈ 77 ms
+  //    on loop-lore); `gitObjectExists` is the per-ref fallback when the
+  //    batch spawn fails.
+  const hashRefs = Object.values(index).flatMap((entry) =>
+    entry.commitHash && entry.hash ? [entry.commitHash, entry.hash] : [entry.hash]
+  ).filter((h): h is string => !!h);
+  const batched = batchCommitObjectExists(root, hashRefs);
+  const objectExists = (ref: string): boolean => batched.get(ref) ?? gitObjectExists(ref);
   for (const [extid, entry] of Object.entries(index)) {
     if (!entry.hash || entry.hash === "pending") continue;
 
     // Shipped-commit hash — valid git commit, nothing to reconcile.
-    if (entry.commitHash && gitObjectExists(entry.commitHash)) continue;
+    if (entry.commitHash && objectExists(entry.commitHash)) continue;
 
     const issue = gitIssues.get(entry.hash);
     if (!issue) {
       // Not a git issue. If it's a real git object it's a commit reference
       // stored in `hash` (legacy) — accept it; otherwise flag placeholder.
       const tf = fileByExtid.get(extid);
-      if (gitObjectExists(entry.hash)) continue;
+      if (objectExists(entry.hash)) continue;
       report.placeholderHashes.push({
         extid,
         indexHash: entry.hash,
@@ -198,11 +247,7 @@ export function reconcile(
     if (!issue) continue;
 
     const indexStatus = normalizeStatus(entry.status ?? "undefined");
-    const gitStatus = issue.status === "done"
-      ? "done"
-      : issue.status === "closed"
-      ? "done"
-      : issue.status;
+    const gitStatus = issue.status === "open" ? issue.status : "done";
 
     if (indexStatus !== gitStatus && gitStatus !== "open") {
       // Only flag if git issue is closed/done but index says otherwise
@@ -243,5 +288,6 @@ export function reconcile(
   checkMdStatusDrift(report, index, gitIssues, fileByExtid);
   checkUnboundEpics(report, index);
 
+  if (scope) applyReportScope(report, scope);
   return report;
 }

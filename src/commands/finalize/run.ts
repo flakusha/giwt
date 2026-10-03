@@ -95,6 +95,7 @@ export async function runFinalize(
             fix: opts.fix,
             verbose: opts.verbose,
             ticketsPath: opts.ticketsPath,
+            ...(opts.diffBase ? { diffBase: opts.diffBase } : {}),
           }),
       });
       if (planResult.pass) {

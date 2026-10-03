@@ -215,12 +215,14 @@ export function checkTicketIndex(
   worktreeRoot: string,
   ticketsPath: string,
   runSync: TicketSyncFn,
+  diffBase?: string,
 ): Finding[] {
   const findings: Finding[] = [];
   const exitCode = runSync(worktreeRoot, {
     fix: false,
     verbose: false,
     ticketsPath,
+    ...(diffBase !== undefined ? { diffBase } : {}),
   });
   if (exitCode !== 0) {
     findings.push({

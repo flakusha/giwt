@@ -26,14 +26,17 @@ import type { GitIssue, IndexEntry, SyncReport, TicketFile } from "./sync-ticket
  * normalizes to "draft" while git is "done"). The 186 stale-open
  * bookkeeping gaps this unblocks are auto-corrected by the
  * statusMismatches pass once the index has a normalized status to
- * compare against. */
+ * compare against. Scoped runs (diffBase) skip out-of-scope entries
+ * entirely — a fix pass never exceeds its report's scope. */
 export function backfillStatuses(
   fixed: Record<string, IndexEntry>,
   report: SyncReport,
   ticketFiles: TicketFile[],
+  scope?: Set<string>,
 ): void {
   for (const tf of ticketFiles) {
     const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
+    if (scope && !scope.has(extid)) continue;
     const cur = fixed[extid];
     if (!cur) continue;
     if (cur.status !== undefined) continue;

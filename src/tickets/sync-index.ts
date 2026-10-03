@@ -48,6 +48,7 @@ import { type SyncOptions } from "./sync-options";
 import { parseTicketFile } from "./sync-parse";
 import { logFixRefusal, readGitIssues, readIndex } from "./sync-registry";
 import { countIssueTotals, renderReport } from "./sync-report";
+import { scopedPlanExtids } from "./sync-scope";
 import { reconcile } from "./sync-ticket";
 import type { IndexEntry, TicketFile } from "./sync-ticket-types";
 
@@ -75,6 +76,29 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   /** Ceiling for the registry walk (opts override → test injection). */
   const issueLsTimeoutMs = opts.issueLsTimeoutMs ?? 60_000;
+
+  // Diff-scope: when a base ref is set, only plan files changed vs that ref
+  // gate the run (committed diff + dirty + untracked). A failed git query
+  // (e.g. an unknown ref) must fail closed — widening to a full scan would
+  // reintroduce the sibling-worktree false failures the scope exists to prevent.
+  let scope: Set<string> | undefined;
+  if (opts.diffBase) {
+    const scoped = scopedPlanExtids({
+      repoRoot,
+      diffBase: opts.diffBase,
+      ticketsPrefix,
+      epicsPrefix,
+    });
+    if (scoped === null) {
+      log(
+        "error",
+        `Ticket sync: refusing to run — diff base '${opts.diffBase}' is unreadable `
+          + `(falling back to a full scan would report other sessions' tickets).`,
+      );
+      return 1;
+    }
+    scope = scoped;
+  }
 
   // Read sources
   if (!existsSync(TICKETS_DIR)) {
@@ -135,8 +159,10 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
   );
   raw(`   Index entries:     ${Object.keys(index).length}`);
 
-  // Reconcile
-  const report = reconcile(ticketFiles, gitIssues, index, verbose, repoRoot);
+  // Reconcile — scope filters every extid-keyed category inside reconcile
+  // (single filtering point: renderReport/countIssueTotals see the filtered
+  // report directly).
+  const report = reconcile(ticketFiles, gitIssues, index, verbose, repoRoot, scope);
 
   // Importable is the one category that INVERTS on an unreadable registry:
   // an empty map is indistinguishable from a missing tool, so plan-only
@@ -159,9 +185,11 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
 
   // Apply fixes (also when only advisory issues exist — e.g. missing-hash
   // links, or a pending status backfill that no other category surfaces).
-  const backfillPending = ticketFiles.some(
-    (tf) => index[tf.filename.replace(/\.md$/, "").toUpperCase()]?.status === undefined,
-  );
+  const backfillPending = ticketFiles.some((tf) => {
+    const extid = tf.filename.replace(/\.md$/, "").toUpperCase();
+    if (scope && !scope.has(extid)) return false;
+    return index[extid]?.status === undefined;
+  });
   if (fixMode && (totalIssues > 0 || advisoryCount > 0 || backfillPending)) {
     // With the issue registry unreadable, every non-commit hash looks like a
     // placeholder — --fix would mass-create issues. Refuse instead.
@@ -177,7 +205,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     try {
       raw(`\n🔧 Applying fixes...`);
       fixedIndex = applyFixes(
-        { repoRoot, ticketsPrefix, epicsPrefix, epicsDir, ticketsDir: TICKETS_DIR, opts },
+        { repoRoot, ticketsPrefix, epicsPrefix, epicsDir, ticketsDir: TICKETS_DIR, scope, opts },
         index,
         report,
         ticketFiles,
@@ -215,7 +243,14 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     // generated import-back files; reconciling against stale in-memory
     // copies would re-report what the fix just resolved.
     const postTicketFiles = scanTicketFiles();
-    const postReport = reconcile(postTicketFiles, postGitIssues, fixedIndex, verbose, repoRoot);
+    const postReport = reconcile(
+      postTicketFiles,
+      postGitIssues,
+      fixedIndex,
+      verbose,
+      repoRoot,
+      scope,
+    );
     const { total: postTotal, advisory: postAdvisory } = countIssueTotals(postReport);
 
     if (postTotal === 0) {
