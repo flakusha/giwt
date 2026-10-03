@@ -53,6 +53,18 @@
       "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md"
     }
   ],
+  "src/commands/commit-wt.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
+    }
+  ],
+  "src/commands/commit.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
+    }
+  ],
   "src/commands/doctor.ts": [
     {
       "kind": "ticket",
@@ -103,6 +115,30 @@
       "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md"
     }
   ],
+  "src/commands/finalize/checks.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    }
+  ],
+  "src/commands/finalize/gates.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    }
+  ],
+  "src/commands/finalize/merge.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
+    }
+  ],
+  "src/commands/finalize/run.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
+    }
+  ],
   "src/commands/issues.ts": [
     {
       "kind": "ticket",
@@ -143,6 +179,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
+    }
+  ],
+  "src/commands/scoped-worktree.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
     }
   ],
   "src/commands/show.ts": [
@@ -189,6 +231,24 @@
       "source": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md"
     }
   ],
+  "src/doctor/check/run.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md"
+    }
+  ],
+  "src/doctor/check/tools.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md"
+    }
+  ],
+  "src/doctor/check/types.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md"
+    }
+  ],
   "src/finalize-signal-safety.test.ts": [
     {
       "kind": "ticket",
@@ -223,6 +283,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    }
+  ],
+  "src/plan/reconcile-conflicts/git-io.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
     }
   ],
   "src/plan/status-vocab.ts": [
