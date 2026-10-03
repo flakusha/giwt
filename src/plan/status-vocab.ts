@@ -59,6 +59,34 @@ const LEADING_EMOJI_RE = /^[\s\p{Extended_Pictographic}\p{Symbol}]+/u;
 const DUPLICATE_RE = /^duplicate([- ]of)?/i;
 
 /**
+ * Split a trailing balanced parenthetical off `s`: the group opened by the
+ * last unbalanced `(` through the closing `)` at the end is the annotation
+ * (any whitespace between core and group stays with the annotation, as the
+ * previous `\s*\(...\)$` regex did). Returns null when `s` does not end
+ * with a balanced trailing group or the group would leave an empty core.
+ */
+function splitTrailingAnnotation(
+  s: string,
+): [core: string, annotation: string] | null {
+  if (!s.endsWith(")") || s.length < 2) return null;
+  let depth = 0;
+  for (let i = s.length - 1; i >= 0; i--) {
+    const c = s[i]!;
+    if (c === ")") depth++;
+    else if (c === "(") {
+      depth--;
+      if (depth === 0) {
+        let ws = i;
+        while (ws > 0 && /\s/.test(s[ws - 1]!)) ws--;
+        if (ws === 0) return null;
+        return [s.slice(0, ws), s.slice(ws)];
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Classify one raw Status value against the vocabulary.
  *
  * Order matters: duplicate markers first (never rewritten), then the exact
@@ -88,15 +116,19 @@ export function resolveStatus(
   // signal (normalizeStatus never coerces freeform notes), so the rewrite
   // keeps it: "Done (landed on master: ...)". Full-string alias lookup
   // runs first, so table keys that themselves end in a parenthetical
-  // ("open (planning)") still win.
-  const annotation = raw.trim().match(/^(.+?)(\s*\([^()]*\))$/s);
+  // ("open (planning)") still win. The trailing group is found with
+  // balanced-paren counting, so nested parens inside the annotation
+  // ("Done (fix ... process.exit(0) ...)") resolve too; unbalanced
+  // trailing parens still fall through to invalid.
+  const annotation = splitTrailingAnnotation(raw.trim());
   if (annotation !== null) {
-    const core = resolveStatus(annotation[1]!, aliases);
+    const [coreRaw, annotationText] = annotation;
+    const core = resolveStatus(coreRaw, aliases);
     if (core.action === "fixable" || core.action === "valid") {
-      if (core.action === "valid" && core.value === annotation[1]) {
+      if (core.action === "valid" && core.value === coreRaw) {
         return { value: raw, action: "valid" };
       }
-      return { value: `${core.value}${annotation[2]}`, action: "fixable" };
+      return { value: `${core.value}${annotationText}`, action: "fixable" };
     }
   }
 

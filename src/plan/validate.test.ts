@@ -13,7 +13,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gitSync, isolatedGitEnv } from "../utils/git";
-import { STATUS_ENUM } from "./status-vocab";
+import { resolveStatus, STATUS_ENUM } from "./status-vocab";
 import {
   ALL_GATES,
   FIXABLE_GATES,
@@ -1860,6 +1860,38 @@ describe("validate / status-vocab gate", () => {
     } finally {
       fx.cleanup();
     }
+  });
+
+  test("annotation tolerance resolves nested parens; unbalanced junk stays invalid", () => {
+    // Nested parens in the trailing annotation resolve; core still classified.
+    expect(resolveStatus("done (outer (nested))", {})).toEqual({
+      value: "Done (outer (nested))",
+      action: "fixable",
+    });
+    expect(resolveStatus("Done (fix finalize: process.exit(0) guard)", {}))
+      .toEqual({
+        value: "Done (fix finalize: process.exit(0) guard)",
+        action: "valid",
+      });
+    // Single-level annotation unchanged.
+    expect(resolveStatus("✅ Done (landed on master: x)", {})).toEqual({
+      value: "Done (landed on master: x)",
+      action: "fixable",
+    });
+    // Built-in parenthetical alias key unchanged.
+    expect(resolveStatus("open (planning)", {})).toEqual({
+      value: "Not Started",
+      action: "fixable",
+    });
+    // Unbalanced trailing parens are not annotations.
+    expect(resolveStatus("done (unclosed", {})).toEqual({
+      value: "done (unclosed",
+      action: "invalid",
+    });
+    expect(resolveStatus("done ((unbalanced)", {})).toEqual({
+      value: "done ((unbalanced)",
+      action: "invalid",
+    });
   });
 });
 
