@@ -5,5 +5,9 @@
     "suspicious": "warn"
   },
   "ignorePatterns": ["bin/", ".tmp/", "node_modules/"],
-  "plugins": ["typescript"]
+  "jsPlugins": ["./.oxlint/plugins/giwt-style.js"],
+  "plugins": ["typescript"],
+  "rules": {
+    "giwt-style/options-object-params": "warn"
+  }
 }

@@ -22,7 +22,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 ## Key Directories
 
 - `src/cli.ts` — entry point/bin; dispatch (`main()`), exit codes; registry in `src/cli-registry.ts`, USAGE table in `src/cli-usage.ts`.
-- `src/commands/` — one module per subcommand (35, incl. `task`); `resolver.ts` is a helper, not a command.
+- `src/commands/` — one module per subcommand (41 command keys); `resolver.ts` is a helper, not a command.
 - `src/utils/` — config/settings/ledger/runlog/output (logger)/git plumbing/GPG/credentials/colors/message.
 - `src/index.ts` — **public API surface** (`exports["."]`); re-exports are a compatibility promise; external consumers import by absolute path or `giwt`.
 - `src/tickets/` — ticket-index sync logic.
@@ -59,6 +59,7 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 - **Formatting**: dprint-formatted (`bun run fmt`) — multiline call args get trailing commas automatically; never hand-format or fight the formatter. AGPL-3.0-or-later SPDX header on every file.
 - **File size**: production `src/**` files stay ≤250L (300L hard ceiling); enforced by `bun run size` (`scripts/check-file-size.ts --strict`, part of `bun run check`). Tests are exempt. `// size-allow: 300` in the file header grants the max tier for cohesive single-purpose files — use sparingly; split instead when the file has seams.
 - **Naming**: camelCase symbols; kebab-case file names; command keys in `commands` must match their `src/commands/<key>.ts` module (exception: `new` → `new-branch.ts`).
+- **Options-object parameters**: functions with 3+ params take a single destructured options object (`function fn({ root, opts, scope }: FnOpts)`) over positional args (`fn(a, b, c, d?)`) — named at the call site, optional without placeholders, extensible without breaking callers. Mirror of loop-lore's `.agents/references/recommendations.md` rule. Enforced in review, not lint; existing positional signatures (e.g. `runSync(root, opts)`, two-param seams) are grandfathered — apply to new functions and to refactors that already touch the signature. Still positional, grandfathered as of this rule: `reconcile(...)` (`src/tickets/sync-reconcile.ts`), `backfillStatuses(...)` (`src/tickets/sync-fix-status.ts`), `checkTicketIndex(...)` (`src/plan/validate/content-gates.ts`).
 - **Error handling**: throw `Error` with a `"<path>: <problem>"` message for config/input issues; `main()` catches, logs via `log("error")`, records `finish(1)`, exits 1. Error-path tests assert corrupt input never aborts listing (e.g. malformed report JSON).
 - **Async**: handlers are `async (args: string[], config: WorktreeConfig) => Promise<void>`; git plumbing is mostly sync (`gitSync`/`gitSyncQuiet` via `Bun.spawnSync`); async only for enumerations (`getBranches`/`getWorktrees`) and GPG.
 - **Strict TS** (`tsconfig.json`, `noEmit`): `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. Prefer real narrowing over `!`; for optional props from possibly-undefined values use conditional spread (`...(x !== undefined ? { prop: x } : {})`); never pass `cwd: undefined` in spawn option literals — omit the key.
