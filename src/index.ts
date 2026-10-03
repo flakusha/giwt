@@ -44,6 +44,7 @@ export {
   appendGripe,
   appendLedger,
   extractSayArgs,
+  finishRecord,
   LEDGER_DUMP_DEFAULT,
   LEDGER_MAX_MSG,
   LEDGER_MAX_RECORDS,
@@ -51,9 +52,9 @@ export {
   readLedger,
   truncateMsg,
 } from "./utils/ledger";
-export type { LedgerRecord, SayArgs } from "./utils/ledger";
+export type { LedgerOutcome, LedgerRecord, SayArgs } from "./utils/ledger";
 
-// Ledger schema v2 core (pure primitives; writers still emit v1 in Phase 0).
+// Ledger schema v2 core (pure primitives; writers now emit v2 via newRecord).
 export {
   formatRecord,
   LEDGER_FILENAME,

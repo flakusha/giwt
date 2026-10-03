@@ -9,7 +9,7 @@
  * shared root state on this host without ever entering a commit.
  *
  * Record (single line, chat-compact):
- *   {"v":1,"ts":"2026-09-10T06:55:01Z","pid":1234,"cmd":"new","branch":"foo","msg":"new foo :: working on auth"}
+ *   {"v":2,"ts":"2026-09-10T06:55:01Z","pid":1234,"agent":"host:1234","cmd":"new","branch":"foo","msg":"new foo :: working on auth","state":"in-progress","seq":7}
  *
  * Limits keep it small and greppable:
  *   - msg capped at LEDGER_MAX_MSG chars (chat-like, truncated with …)
@@ -22,25 +22,23 @@
 
 import { existsSync } from "fs";
 import { readFileSync, writeFileSync } from "node:fs";
+import { hostname } from "node:os";
 import { resolve } from "path";
 import {
-  formatRecord,
   LEDGER_FILENAME,
   LEDGER_MAX_MSG,
   LEDGER_MAX_RECORDS,
-  type LedgerRecord,
-  type LedgerRecordV1,
+  type LedgerError,
   type LedgerRecordView,
+  newRecord,
   normalizeRecord,
 } from "./ledger-core";
-import { log, raw } from "./output";
 
 // Re-exported so `./utils/ledger` import paths keep working while the
-// pure schema primitives live in ledger-core.
+// pure schema primitives live in ledger-core (read side in ledger-read).
 export { formatRecord, LEDGER_FILENAME, LEDGER_MAX_MSG, LEDGER_MAX_RECORDS } from "./ledger-core";
-export type { LedgerRecord, LedgerRecordView } from "./ledger-core";
-
-export const LEDGER_DUMP_DEFAULT = 10;
+export type { LedgerError, LedgerRecord } from "./ledger-core";
+export { LEDGER_DUMP_DEFAULT, printRecentLedger, readLedger } from "./ledger-read";
 
 /** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record). */
 export const LEDGER_SILENT_COMMANDS: Record<string, true> = {
@@ -140,68 +138,36 @@ export function appendLedger(
     if (!existsSync(treeDir)) return;
     const base = defaultMessage(cmd, args);
     const msg = truncateMsg(said ? `${base} :: ${said}` : base);
-    // Phase 0: writers still emit v1; only readers normalize.
-    const record: LedgerRecordV1 = {
-      v: 1,
-      ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
-      pid: process.pid,
-      cmd,
-      branch,
-      msg,
-    };
     const path = resolve(treeDir, LEDGER_FILENAME);
     const lines = existsSync(path)
       ? readFileSync(path, "utf8").split("\n").filter((l) => l.trim().length > 0)
       : [];
+    // v1 lines normalize to seq 0, so the first v2 line in an old file is seq 1.
+    let lastSeq = 0;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const parsed = normalizeRecord(JSON.parse(lines[i]!));
+        if (parsed !== null) {
+          lastSeq = parsed.seq;
+          break;
+        }
+      } catch { /* skip corrupt line, keep hunting for the newest seq */ }
+    }
+    const record = newRecord({
+      ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+      pid: process.pid,
+      agent: process.env.GIWT_AGENT ?? `${hostname()}:${process.pid}`,
+      cmd,
+      branch,
+      msg,
+      state: "in-progress",
+      seq: lastSeq + 1,
+    });
     lines.push(JSON.stringify(record));
     writeFileSync(path, `${lines.slice(-LEDGER_MAX_RECORDS).join("\n")}\n`);
   } catch { /* ledger must never fail the command */ }
 }
 
-/**
- * Read the latest records, oldest-first. Returns [] when missing/corrupt.
- *
- * @param treeDir - shared tree directory
- * @param last - max records to return (capped at LEDGER_MAX_RECORDS)
- * @returns parsed records, oldest first
- */
-export function readLedger(treeDir: string, last: number): LedgerRecordView[] {
-  const capped = Math.max(1, Math.min(last, LEDGER_MAX_RECORDS));
-  try {
-    const path = resolve(treeDir, LEDGER_FILENAME);
-    if (!existsSync(path)) return [];
-    const lines = readFileSync(path, "utf8").split("\n").filter((l) => l.trim().length > 0);
-    const out: LedgerRecordView[] = [];
-    for (const line of lines.slice(-capped)) {
-      try {
-        const parsed = normalizeRecord(JSON.parse(line));
-        if (parsed !== null) out.push(parsed);
-      } catch { /* skip corrupt line */ }
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Dump the latest records to stdout (the shared-state view `finalize`
- * shows before mutating dev). Placeholder when the ledger is empty.
- *
- * @param treeDir - shared tree directory
- * @param count - records to show (default LEDGER_DUMP_DEFAULT)
- */
-export function printRecentLedger(treeDir: string, count: number = LEDGER_DUMP_DEFAULT): void {
-  const records = readLedger(treeDir, count);
-  if (records.length === 0) {
-    log("info", "Agent ledger is empty — no recent agent activity");
-    return;
-  }
-  log("info", `Agent ledger (last ${records.length}):`);
-  for (const record of records) {
-    raw(`  ${formatRecord(record)}`);
-  }
-}
 /**
  * Record a gripe: a `gripe`-cmd ledger record with the 😤 prefix.
  * Same shape the `gripe` command writes by hand; also used for
@@ -212,20 +178,35 @@ export function printRecentLedger(treeDir: string, count: number = LEDGER_DUMP_D
  * @param message - gripe text without the emoji prefix
  */
 export function appendGripe(treeDir: string, branch: string, message: string): void {
-  // The [branch] arg only shapes the default message; the resolved branch
-  // is passed explicitly so the field never lies.
-  appendLedger(treeDir, "gripe", branch === "" ? [] : [branch], `😤 ${message}`, branch);
+  // The [branch] arg only shapes the fallback append's default message; the
+  // resolved branch is passed explicitly so the field never lies.
+  const text = `😤 ${message}`;
+  if (finishRecord(treeDir, "gripe", { state: "finished", text }) !== "not-found") return;
+  appendLedger(treeDir, "gripe", branch === "" ? [] : [branch], text, branch);
 }
+/** Structured outcome handed to finishRecord by its thin wrappers. */
+export interface LedgerOutcome {
+  /** Terminal lifecycle for the record. */
+  state: "finished" | "postponed";
+  /** Human-readable outcome text appended to the record's msg. */
+  text: string;
+  /** Optional structured failure detail (e.g. a postponed gate list). */
+  error?: LedgerError;
+}
+
 /** Outcome of hunting for this invocation's own ledger line. */
 type EnrichResult = "enriched" | "already-done" | "not-found";
 
 /**
- * Enrich the newest ledger line of THIS invocation (same pid + cmd) in
- * place with `outcome`. "not-found" (missing ledger, pruned past the cap,
- * I/O error) lets the caller fall back to a plain append; "already-done"
- * means the line carries the ✅ marker already and must be left alone.
+ * Finish the newest ledger line of THIS invocation (same pid + cmd) in
+ * place with `outcome`: the line's state moves to finished/postponed and
+ * the human text is appended to its msg (`:: <text>`), with an optional
+ * error object attached. "not-found" (missing ledger, pruned past the
+ * cap, I/O error) lets the caller fall back to a plain append;
+ * "already-done" means the line carries a terminal state already and
+ * must be left alone.
  */
-function enrichOwnRecord(treeDir: string, cmd: string, outcome: string): EnrichResult {
+export function finishRecord(treeDir: string, cmd: string, outcome: LedgerOutcome): EnrichResult {
   try {
     if (!existsSync(treeDir)) return "not-found";
     const path = resolve(treeDir, LEDGER_FILENAME);
@@ -234,19 +215,22 @@ function enrichOwnRecord(treeDir: string, cmd: string, outcome: string): EnrichR
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i];
       if (line === undefined || line.trim().length === 0) continue;
-      let rec: LedgerRecord;
+      let rec: LedgerRecordView | null;
       try {
-        rec = JSON.parse(line) as LedgerRecord;
+        rec = normalizeRecord(JSON.parse(line));
       } catch {
         continue;
       }
+      if (rec === null) continue;
       // Newest-to-oldest scan for THIS invocation's line (same pid +
       // cmd); records from other runs are skipped, not barriers.
       if (rec.pid !== process.pid || rec.cmd !== cmd) continue;
-      // The " :: ✅ " marker is written only by appendCommitOutcome, so a
-      // matching line either awaits enrichment or is already done.
-      if (rec.msg.includes(" :: ✅ ")) return "already-done"; // never duplicate
-      rec.msg = truncateMsg(`${rec.msg} :: ${outcome}`);
+      // A terminal state is written only by finishRecord, so a matching
+      // line either awaits enrichment or is already done.
+      if (rec.state === "finished" || rec.state === "postponed") return "already-done";
+      rec.state = outcome.state;
+      rec.msg = truncateMsg(`${rec.msg} :: ${outcome.text}`);
+      if (outcome.error !== undefined) rec.error = outcome.error;
       lines[i] = JSON.stringify(rec);
       writeFileSync(path, lines.join("\n"));
       return "enriched";
@@ -279,9 +263,12 @@ export function appendCommitOutcome(
   subject: string,
 ): void {
   const firstLine = (subject.split("\n")[0] ?? "").trim();
-  const outcome = `✅ ${sha.slice(0, 9)} ${firstLine}`;
+  const outcome: LedgerOutcome = {
+    state: "finished",
+    text: `✅ ${sha.slice(0, 9)} ${firstLine}`,
+  };
   // "already-done" lands here too: the commit is recorded, appending again
   // would resurrect the double-line bug this function exists to prevent.
-  if (enrichOwnRecord(treeDir, cmd, outcome) !== "not-found") return;
-  appendLedger(treeDir, cmd, branch === "" ? [] : [branch], outcome, branch);
+  if (finishRecord(treeDir, cmd, outcome) !== "not-found") return;
+  appendLedger(treeDir, cmd, branch === "" ? [] : [branch], outcome.text, branch);
 }

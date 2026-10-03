@@ -23,7 +23,7 @@
 
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
@@ -32,6 +32,7 @@ import {
   appendLedger,
   defaultMessage,
   extractSayArgs,
+  finishRecord,
   formatRecord,
   LEDGER_FILENAME,
   LEDGER_MAX_MSG,
@@ -123,11 +124,11 @@ describe("appendLedger/readLedger", () => {
       expect(records[0]!.cmd).toBe("new");
       expect(records[0]!.branch).toBe("my-branch");
       expect(records[0]!.msg).toBe("new my-branch :: working on auth");
-      // Writers emit v1; readers surface the normalized v2 view.
+      // Writers emit v2 via newRecord; first line in an empty file is seq 1.
       expect(records[0]!.v).toBe(2);
-      expect(records[0]!.state).toBe("observed");
-      expect(records[0]!.agent).toBe(`pid:${process.pid}`);
-      expect(records[0]!.seq).toBe(0);
+      expect(records[0]!.state).toBe("in-progress");
+      expect(records[0]!.agent).toBe(process.env.GIWT_AGENT ?? `${hostname()}:${process.pid}`);
+      expect(records[0]!.seq).toBe(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -685,6 +686,156 @@ describe("readLedger mixed-version fixture", () => {
         state: "finished",
         seq: 4,
       });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("schema v2 writer", () => {
+  it("v2 append after v1 history produces seq 1 and hostname:pid agent", () => {
+    const dir = makeTreeDir();
+    try {
+      writeFileSync(
+        join(dir, LEDGER_FILENAME),
+        JSON.stringify({
+          v: 1,
+          ts: "2026-09-18T12:00:00Z",
+          pid: 111,
+          cmd: "old",
+          branch: "dev",
+          msg: "v1 line",
+        }) + "\n",
+      );
+      delete process.env.GIWT_AGENT;
+      appendLedger(dir, "new", ["b"], null, "b");
+      const records = readLedger(dir, 10);
+      expect(records.length).toBe(2);
+      expect(records[0]!.seq).toBe(0); // v1 history normalizes to seq 0
+      expect(records[1]!.seq).toBe(1); // first v2 line is seq 1
+      expect(records[1]!.state).toBe("in-progress");
+      expect(records[1]!.agent).toBe(`${hostname()}:${process.pid}`);
+      // v1 history stays byte-identical on disk.
+      expect(JSON.parse(rawLines(dir)[0]!)).toEqual({
+        v: 1,
+        ts: "2026-09-18T12:00:00Z",
+        pid: 111,
+        cmd: "old",
+        branch: "dev",
+        msg: "v1 line",
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses $GIWT_AGENT as the agent identity when set", () => {
+    const dir = makeTreeDir();
+    const prev = process.env.GIWT_AGENT;
+    process.env.GIWT_AGENT = "omp";
+    try {
+      appendLedger(dir, "status", [], null, "dev");
+      expect(readLedger(dir, 10)[0]!.agent).toBe("omp");
+    } finally {
+      if (prev === undefined) delete process.env.GIWT_AGENT;
+      else process.env.GIWT_AGENT = prev;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("finishRecord enriches only THIS invocation's line (pid + cmd match)", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "sync", [], null, "dev");
+      // Foreign pid, same cmd: must be skipped, not enriched.
+      writeFileSync(
+        join(dir, LEDGER_FILENAME),
+        JSON.stringify({
+          v: 2,
+          ts: "2026-10-03T09:00:00Z",
+          pid: process.pid + 1,
+          agent: "other",
+          cmd: "sync",
+          branch: "dev",
+          msg: "sync",
+          state: "in-progress",
+          seq: 0,
+        }) + "\n",
+        { flag: "a" },
+      );
+      expect(finishRecord(dir, "sync", { state: "finished", text: "done" })).toBe("enriched");
+      const records = readLedger(dir, 10);
+      expect(records[0]!.msg).toBe("sync :: done"); // own line enriched
+      expect(records[0]!.state).toBe("finished");
+      expect(records[0]!.pid).toBe(process.pid);
+      expect(records[1]!.msg).toBe("sync"); // foreign line untouched
+      expect(records[1]!.state).toBe("in-progress");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("finishRecord returns not-found with no matching line; postponed carries the error object", () => {
+    const dir = makeTreeDir();
+    try {
+      expect(
+        finishRecord(dir, "sync", {
+          state: "postponed",
+          text: "gates pending",
+          error: { message: "gate failed", code: 1, gates: ["tsc"] },
+        }),
+      ).toBe("not-found");
+      appendLedger(dir, "sync", [], null, "dev");
+      // A different cmd never matches this invocation's sync line.
+      expect(finishRecord(dir, "other-cmd", { state: "postponed", text: "x" })).toBe(
+        "not-found",
+      );
+      expect(
+        finishRecord(dir, "sync", {
+          state: "postponed",
+          text: "gates pending",
+          error: { message: "gate failed", code: 1, gates: ["tsc"] },
+        }),
+      ).toBe("enriched");
+      const rec = readLedger(dir, 10)[0]!;
+      expect(rec.state).toBe("postponed");
+      expect(rec.msg).toBe("sync :: gates pending");
+      expect(rec.error).toEqual({ message: "gate failed", code: 1, gates: ["tsc"] });
+      // Terminal state makes a second finish a no-op.
+      expect(finishRecord(dir, "sync", { state: "finished", text: "again" })).toBe(
+        "already-done",
+      );
+      expect(readLedger(dir, 10)[0]!.msg).toBe("sync :: gates pending");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("thin wrappers keep the same records as before for identical inputs", () => {
+    const dir = makeTreeDir();
+    try {
+      // appendCommitOutcome supplement fallback: same msg text as before.
+      appendCommitOutcome(dir, "commit", "dev", "abc1234567890", "fix: x");
+      const enriched = readLedger(dir, 10)[0]!;
+      expect(enriched.msg).toBe("commit dev :: ✅ abc123456 fix: x");
+      // appendGripe: same msg text as before.
+      appendGripe(dir, "my-branch", "boom");
+      const gripe = readLedger(dir, 10)[1]!;
+      expect(gripe.msg).toBe("gripe my-branch :: 😤 boom");
+      expect(gripe.state).toBe("in-progress");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("appendCommitOutcome enrichment marks the record finished", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "commit-wt", ["feat-x"], null, "dev");
+      appendCommitOutcome(dir, "commit-wt", "dev", "abc1234567890", "fix: x");
+      const rec = readLedger(dir, 10)[0]!;
+      expect(rec.state).toBe("finished");
+      expect(rec.msg).toBe("commit-wt feat-x :: ✅ abc123456 fix: x");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
