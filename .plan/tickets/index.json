@@ -447,7 +447,7 @@
       "checks"
     ],
     "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
     "hash": "pending",

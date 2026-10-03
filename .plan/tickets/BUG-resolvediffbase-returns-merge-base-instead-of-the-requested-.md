@@ -3,7 +3,7 @@
 
 # BUG: resolveDiffBase returns merge-base instead of the requested target, silently mis-scoping diff-base gates
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** finalize, gates, diff-base, checks
@@ -52,9 +52,11 @@ acceptance criterion.
 
 **Acceptance Criteria:**
 
-- [ ] `resolveDiffBase` returns the operator's requested `target`, not `git merge-base target HEAD`
-- [ ] Both consumers changed together: `src/commands/finalize/gates.ts:36` and `src/commands/finalize/run.ts:90-92`
-- [ ] Tests listed above updated to assert the requested target, not `git merge-base main HEAD`
-- [ ] A test pins the two-directional divergence (over-report AND under-report) so the bug cannot silently return
-- [ ] `bun test src/resolve-diff-base.test.ts src/commands/finalize.test.ts src/plan/reconcile-conflicts.test.ts` green
-- [ ] `bunx tsc --noEmit` clean
+- [x] `resolveDiffBase` returns the operator's requested `target`, not `git merge-base target HEAD`
+- [x] Both consumers changed together: `src/commands/finalize/gates.ts:36` and `src/commands/finalize/run.ts:90-92`
+- [x] Tests listed above updated to assert the requested target, not `git merge-base main HEAD` (reconcile-conflicts.test.ts had no diff-base pin — ticket line ref was stale; finalize.test.ts:909/:982 updated)
+- [x] A test pins the two-directional divergence (over-report AND under-report) so the bug cannot silently return
+- [x] `bun test src/resolve-diff-base.test.ts src/commands/finalize.test.ts src/plan/reconcile-conflicts.test.ts` green — 86 pass, 0 fail
+- [x] `bunx tsc --noEmit` clean
+
+**Resolved:** 2026-10-03T13:23:01Z fixed in fbf8547: resolveDiffBase returns the requested target verbatim; merge-base call kept as fail-closed validation; orphaned merge.ts doc block removed; full gate suite green (1399 tests, coverage floor met)
