@@ -14,6 +14,7 @@ import { log, raw, section } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 import { closeScopedIssues, readScopedMeta, reconcileScopedPlan } from "../scoped-worktree";
 import { resolveDiffBase, runTests } from "./checks";
+import { ensureWorktreeClean } from "./clean-state";
 import { runCheckGateStep } from "./gates";
 import { executeMergeStep } from "./merge-exec";
 import { teardownFinalizedWorktree } from "./teardown";
@@ -34,24 +35,7 @@ export async function runFinalize(
   // Shared-state view: what agents recorded lately, before mutating dev.
   printRecentLedger(config.treeDir, 10);
   // Step 1: Check worktree clean
-  log("info", "Step 1: Checking worktree state...");
-  const dirty = Bun.spawnSync(["git", "-C", wtPath, "diff", "--quiet"], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const staged = Bun.spawnSync(["git", "-C", wtPath, "diff", "--cached", "--quiet"], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
-    log("error", "uncommitted changes detected — commit or stash before finalizing");
-    raw(`  cd ${wtPath} && git add -A && git commit -m 'feat: ...'`);
-    raw(`  cd ${wtPath} && git stash`);
-    process.exit(1);
-  }
-  log("success", "Worktree clean");
+  const wtMissing = ensureWorktreeClean(wtPath);
 
   // Plan validation gate (if --plan-gates specified)
   if (planGatesFilter) {
@@ -167,16 +151,41 @@ export async function runFinalize(
 
   // Step 4: Check branch has commits beyond base
   log("info", "Step 4: Checking commits...");
-  const aheadStr = gitSync(wtPath, "rev-list", "--count", `${targetBranch}..HEAD`);
-  const ahead = parseInt(aheadStr || "0", 10);
-  // The target already contains HEAD (manual merge, or an interrupted earlier
-  // finalize): there is nothing to merge or reconcile, but teardown (Steps
-  // 6/7) is part of finalize's contract and MUST still run — exiting here
-  // leaks the worktree directory, its .git/worktrees admin entry, and the
-  // branch ref while reporting success.
-  const alreadyMerged = ahead === 0;
+  // ahead counts COMMITS, not content: a cherry-picked branch has commits
+  // beyond the target whose patches already landed there under different
+  // SHAs. `git cherry <target> HEAD` marks each patch-equivalent commit
+  // '-'; every line '-' (or empty output) means the branch's changes are
+  // all in the target and there is nothing left to merge. When cherry
+  // itself fails (unresolvable ref), fall back to the ahead-count check.
+  let ahead = 0;
+  let alreadyMerged = true;
+  if (!wtMissing) {
+    ahead = parseInt(gitSync(wtPath, "rev-list", "--count", `${targetBranch}..HEAD`) || "0", 10);
+    const cherry = Bun.spawnSync(["git", "-C", wtPath, "cherry", targetBranch, "HEAD"], {
+      env: isolatedGitEnv(),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const cherryList = cherry.stdout.toString().trim();
+    const cherryUsable = cherry.exitCode === 0;
+    const cherryEquivalent = cherryUsable
+      && (cherryList === "" || cherryList.split("\n").every((line) => line.startsWith("-")));
+    alreadyMerged = cherryUsable ? cherryEquivalent : ahead === 0;
+  }
+  // The target already contains HEAD's changes (manual merge, cherry-pick,
+  // or an interrupted earlier finalize): there is nothing to merge or
+  // reconcile, but teardown (Steps 6/7) is part of finalize's contract and
+  // MUST still run — exiting here leaks the worktree directory, its
+  // .git/worktrees admin entry, and the branch ref while reporting success.
   if (alreadyMerged) {
-    log("warn", `Branch '${branch}' has no commits beyond ${targetBranch} — nothing to merge`);
+    if (ahead > 0) {
+      log(
+        "warn",
+        `Branch '${branch}' commits are patch-equivalent to ${targetBranch} (cherry-picked?) — nothing to merge`,
+      );
+    } else {
+      log("warn", `Branch '${branch}' has no commits beyond ${targetBranch} — nothing to merge`);
+    }
   } else {
     log("success", `Branch has ${ahead} commit(s) beyond ${targetBranch}`);
   }

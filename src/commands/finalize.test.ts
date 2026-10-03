@@ -64,10 +64,12 @@ import { join, resolve } from "node:path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { credentials } from "../utils/credentials";
 import { isolatedGitEnv } from "../utils/git";
+import { readLedger } from "../utils/ledger";
 import { setLogLevel, setOutputFormat } from "../utils/output";
 import { beginRun } from "../utils/runlog";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { finalize } from "./finalize";
+import { teardownFinalizedWorktree } from "./finalize/teardown";
 
 // Check-fanout slots must stay hermetic: these tests drive the real
 // finalize() in-process, so Step 2's slot acquisition would otherwise write
@@ -1210,18 +1212,22 @@ describe("finalize rebase strategy", () => {
     expect(run.output).toContain("failed to stash dirty dev checkout");
   });
 
-  test("warns but still succeeds when the worktree cannot be removed", async () => {
+  // Intentional contract change from
+  // BUG-finalize-teardown-worktree-removal-failure-is-non-fatal: a failed
+  // worktree removal now fails the whole run (exit 1, no branch delete, no
+  // success summary) instead of warning and continuing.
+  test("fails finalize when the worktree cannot be removed", async () => {
     const wtPath = featureWorktree();
     git(["worktree", "lock", wtPath]);
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBeNull();
-    expect(run.output).toContain("Failed to remove worktree \u2014 remove manually");
-    expect(run.output).toContain("Branch deleted (forced)");
-    expect(run.output).toContain("Finalized 'feature/x' \u2014 merged to main");
-    // The teardown logs are optimistic: git refuses to delete a branch that is
-    // still checked out in the surviving worktree, so the branch survives.
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("Failed to remove worktree");
+    expect(run.output).toContain(`Remove manually: git worktree remove ${wtPath}`);
+    // Step 7 (branch deletion) and the success summary never ran.
+    expect(run.output).not.toContain("Branch deleted");
+    expect(run.output).not.toContain("Finalized '");
     expect(existsSync(wtPath)).toBe(true);
     expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
   });
@@ -1314,6 +1320,49 @@ describe("finalize direct strategy", () => {
     });
     expect(verdict.stdout.toString().trim()).toBe("G");
   });
+
+  test.skipIf(!gpgTooling)(
+    "creates a merge commit instead of fast-forwarding when the branch is FF-able",
+    () => {
+      // No commit on main after branching: the merge is fast-forwardable,
+      // which must NOT happen — the direct strategy's contract is a
+      // GPG-signed merge commit (BUG-finalize-direct-merge-allows-fast-forward).
+      featureWorktree("feature/ff");
+
+      const code = [
+        `import { finalize } from ${JSON.stringify(resolve(import.meta.dir, "finalize.ts"))};`,
+        `import { credentials } from ${
+          JSON.stringify(resolve(import.meta.dir, "../utils/credentials.ts"))
+        };`,
+        `credentials.found = true;`,
+        `credentials.keyId = ${JSON.stringify(gpgKeyId)};`,
+        `await finalize(["feature/ff", "--merge-strategy", "direct", "--force"], {`,
+        `  repoRoot: ${JSON.stringify(root)},`,
+        `  worktreeRoot: ${JSON.stringify(root)},`,
+        `  treeDir: ${JSON.stringify(treeDir)},`,
+        `  agentGpgKeyId: ${JSON.stringify(gpgKeyId)},`,
+        `  settings: ${JSON.stringify(DEFAULT_SETTINGS)},`,
+        `});`,
+      ].join("\n");
+      const child = Bun.spawnSync([process.execPath, "-e", code], {
+        cwd: root,
+        env: { ...isolatedGitEnv(), GNUPGHOME: gpgHome },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const output = child.stdout.toString() + child.stderr.toString();
+
+      expect(child.exitCode).toBe(0);
+      expect(output).toContain("Merge commit GPG-signed (");
+      // A merge commit has two parents; a fast-forward would have none.
+      const parents = Bun.spawnSync(["git", "-C", root, "rev-parse", "--verify", "HEAD^2"], {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: isolatedGitEnv(),
+      });
+      expect(parents.exitCode).toBe(0);
+    },
+  );
 });
 
 describe("finalize detached root guard", () => {
@@ -1390,5 +1439,129 @@ describe("finalize squash strategy", () => {
 
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("Squash merge failed");
+  });
+});
+
+// --------------------------------------------------------------------------
+// Teardown lifecycle regressions (untracked gate, cherry-pick, missing wt,
+// fatal removal)
+// --------------------------------------------------------------------------
+
+describe("finalize teardown lifecycle regressions", () => {
+  test("refuses a worktree with untracked files", async () => {
+    const wtPath = featureWorktree();
+    writeFileSync(join(wtPath, "scratch.txt"), "untracked\n");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("untracked files detected");
+    expect(run.output).toContain("scratch.txt");
+    // Refusal happens before any teardown: nothing was destroyed.
+    expect(existsSync(wtPath)).toBe(true);
+    expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
+  });
+
+  test("treats a cherry-picked branch as already merged and force-deletes with a reflog warning", async () => {
+    const wtPath = featureWorktree("feature/pick");
+    const sha = git(["rev-parse", "HEAD"], wtPath).trim();
+    // Land the same patch on main under a DIFFERENT SHA: pin ancient
+    // commit dates, because a cherry-pick in the same second as the
+    // original commit reproduces the identical SHA (same tree, parent,
+    // message, timestamps) and would make the branch trivially merged.
+    const pick = Bun.spawnSync(["git", "-C", root, "cherry-pick", sha], {
+      stdout: "pipe",
+      stderr: "pipe",
+      env: {
+        ...isolatedGitEnv(),
+        GIT_AUTHOR_DATE: "2005-04-07T22:13:13+00:00",
+        GIT_COMMITTER_DATE: "2005-04-07T22:13:13+00:00",
+      },
+    });
+    if (pick.exitCode !== 0) {
+      throw new Error(`cherry-pick failed: ${pick.stderr.toString()}`);
+    }
+    const pickedSha = git(["rev-parse", "main"]).trim();
+    expect(pickedSha).not.toBe(sha);
+
+    const run = await driveFinalize(["feature/pick"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("patch-equivalent to main (cherry-picked?)");
+    // Different SHAs mean the safe delete refuses; the forced fallback must
+    // disclose the discarded tip for reflog recovery.
+    expect(run.output).toContain("branch -d refused:");
+    expect(run.output).toMatch(/tip [0-9a-f]{40} recoverable from reflog/);
+    expect(run.output).toContain("Branch deleted (forced)");
+    expect(existsSync(wtPath)).toBe(false);
+    expect(gitExitCode(["rev-parse", "--verify", "feature/pick"])).not.toBe(0);
+  });
+
+  test("prunes stale registration when the worktree was removed externally", async () => {
+    const wtPath = featureWorktree("feature/gone");
+    rmSync(wtPath, { recursive: true, force: true });
+
+    const run = await driveFinalize(["feature/gone"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("Worktree missing — skipping clean-state checks");
+    expect(run.output).toContain("Worktree already removed externally");
+    // The branch commit is unmerged, so the forced fallback discloses the tip.
+    expect(run.output).toContain("branch -d refused:");
+    expect(run.output).toContain("Branch deleted (forced)");
+    expect(run.output).toContain("already contained in main");
+    expect(existsSync(wtPath)).toBe(false);
+    expect(gitExitCode(["rev-parse", "--verify", "feature/gone"])).not.toBe(0);
+    // The stale admin entry is pruned, not leaked.
+    expect(git(["worktree", "list"])).not.toContain("feature/gone");
+  });
+
+  test("exits 1 without success summary when the worktree cannot be removed", () => {
+    const wtPath = featureWorktree("feature/stuck");
+    // Sabotage: drop the .git/worktrees admin entry so the dir is no longer
+    // a registered worktree and `git worktree remove` fails with "is not a
+    // working tree" while the branch ref still exists.
+    const gitDir = git(["rev-parse", "--git-dir"], wtPath).trim();
+    rmSync(gitDir, { recursive: true, force: true });
+
+    const chunks: string[] = [];
+    const push = (chunk: unknown): boolean => {
+      chunks.push(String(chunk));
+      return true;
+    };
+    const outSpy = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(push as never);
+    let exitCode: number | null = null;
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        exitCode = code ?? 0;
+        throw new Error(`__exit__:${code}`);
+      }) as typeof process.exit,
+    );
+    let error: Error | null = null;
+    try {
+      teardownFinalizedWorktree("feature/stuck", wtPath, config, false, "main");
+    } catch (err) {
+      error = err as Error;
+    } finally {
+      outSpy.mockRestore();
+      errSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+    const output = chunks.join("");
+
+    // Widen: TS narrows `exitCode` to null since the only write happens
+    // inside the process.exit mock callback.
+    expect(exitCode as number | null).toBe(1);
+    expect(error).not.toBeNull();
+    expect(output).toContain("Failed to remove worktree:");
+    expect(output).toContain(`Remove manually: git worktree remove ${wtPath}`);
+    // Step 7 and the success summary never ran.
+    expect(output).not.toContain("Branch deleted");
+    expect(output).not.toContain("Finalized '");
+    expect(gitExitCode(["rev-parse", "--verify", "feature/stuck"])).toBe(0);
+    // The failure was appended to the ledger as a gripe.
+    const ledger = readLedger(config.treeDir, 10);
+    expect(ledger.some((record) => record.msg.includes("failed to remove worktree"))).toBe(true);
   });
 });

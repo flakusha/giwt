@@ -180,6 +180,9 @@ export function executeMergeStep(
         "merge",
         branch,
         "--no-edit",
+        // Direct merge's contract is a GPG-signed merge commit; FF would
+        // skip merge-commit creation and move verify-commit onto the branch tip.
+        "--no-ff",
       ], { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" });
       if (mergeResult.exitCode !== 0) {
         log("error", `Merge conflicts — resolve on ${targetBranch}`);
