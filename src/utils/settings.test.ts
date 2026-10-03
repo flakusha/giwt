@@ -9,7 +9,7 @@
  * on the real HOME.
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -172,12 +172,45 @@ describe("loadSettings", () => {
     }
   });
 
-  test("invalid TOML throws naming the file", () => {
+  test("invalid TOML warns naming the file and falls back to defaults", () => {
     const fx = makeFixture();
     try {
       writeFileSync(fx.localPath, "[branches\nbroken");
-      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
-        .toThrow(/invalid TOML/);
+      const errSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+      let stderr = "";
+      try {
+        const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+        expect(s).toEqual(DEFAULT_SETTINGS);
+        stderr = errSpy.mock.calls.map((c) => String(c[0])).join("");
+      } finally {
+        errSpy.mockRestore();
+      }
+      expect(stderr).toContain("invalid TOML");
+      expect(stderr).toContain(fx.localPath);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("malformed global file warns naming it and local layer still applies", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.globalPath, "[branches\nbroken");
+      writeFileSync(fx.localPath, `[paths]\ntree = "custom-tree"\n`);
+      const errSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+      let stderr = "";
+      try {
+        const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+        // Global layer degraded to defaults; local layer still merged.
+        expect(s.paths.tree).toBe("custom-tree");
+        expect(s.branches).toEqual(DEFAULT_SETTINGS.branches);
+        stderr = errSpy.mock.calls.map((c) => String(c[0])).join("");
+      } finally {
+        errSpy.mockRestore();
+      }
+      expect(stderr).toContain("invalid TOML");
+      expect(stderr).toContain(fx.globalPath);
+      expect(stderr).not.toContain(fx.localPath);
     } finally {
       fx.cleanup();
     }

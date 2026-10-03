@@ -66,7 +66,9 @@
  * is user-owned; never point them at untrusted values.
  *
  * Wrong-typed values are a hard error naming file + key; unknown keys are
- * warned about and ignored (forward compatibility).
+ * warned about and ignored (forward compatibility). A file that fails to
+ * parse as TOML at all degrades to a warn naming the file; that layer falls
+ * back to defaults so commands (including silent readers) still run.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -200,7 +202,14 @@ function parseFile(path: string): Record<string, TomlValue> | null {
   try {
     return Bun.TOML.parse(raw) as Record<string, TomlValue>;
   } catch (error) {
-    throw new Error(`${path}: invalid TOML (${(error as Error).message})`, { cause: error });
+    // Malformed TOML must not crash every command, including silent readers
+    // (BUG-bad-config-toml-crashes-every-command-including-readers): warn
+    // naming the file, then fall back to defaults for this layer.
+    log(
+      "warn",
+      `${path}: invalid TOML — ignoring this file (${(error as Error).message.split("\n")[0]})`,
+    );
+    return null;
   }
 }
 
