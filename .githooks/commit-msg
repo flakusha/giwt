@@ -15,6 +15,10 @@
 #      file resolved by walking up from the repo top) is kept verbatim.
 #      Use it for intentionally attributed assistant accounts.
 #   3. Human Co-Authored-By lines never match the denylist and pass.
+#   4. A literal backslash-n / backslash-t sequence in the message is a
+#      hallucinated newline — REJECTED (mirrors src/utils/commit-message.ts).
+#   5. The subject (first line) may not exceed 72 chars (commitlint
+#      subject-max-length) — REJECTED, not rewritten.
 #
 # Install: git config core.hooksPath .githooks && chmod +x .githooks/commit-msg
 # (same setup as .githooks/pre-commit).
@@ -24,6 +28,18 @@ set -u
 MSG_FILE=${1:-""}
 [ -n "$MSG_FILE" ] || exit 0
 [ -f "$MSG_FILE" ] || exit 0
+
+# ── Reject hallucinated message shapes (mirrors src/utils/commit-message.ts)
+#    before any trailer processing — the author must fix and re-commit. ──
+if grep -qF '\n' "$MSG_FILE" || grep -qF '\t' "$MSG_FILE"; then
+  printf 'giwt commit-msg: message contains a literal \\n/\\t escape sequence — use a real newline\n' >&2
+  exit 1
+fi
+SUBJECT=$(head -n 1 "$MSG_FILE")
+if [ "${#SUBJECT}" -gt 72 ]; then
+  printf 'giwt commit-msg: subject is %s chars (max 72) — wrap the detail into the body\n' "${#SUBJECT}" >&2
+  exit 1
+fi
 
 REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null) || REPO_TOP=$(pwd)
 

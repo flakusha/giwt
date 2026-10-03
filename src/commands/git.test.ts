@@ -139,6 +139,42 @@ describe("giwt git passthrough", () => {
     expect(errChunks.join("")).toContain("stripped 1 LLM Co-Authored-By");
   });
 
+  test("commit --author is blocked and the repo stays unmutated", async () => {
+    await gitPassthrough(
+      ["commit", "--author", "Evil <e@evil>", "-m", "evil author"],
+      settingsWith({ rtk: "off" }),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(errChunks.join("")).toContain("--author");
+    expect(git(root, "rev-list", "--count", "HEAD").trim()).toBe("1");
+  });
+
+  test("one-shot user.email override is blocked (pinned identity)", async () => {
+    await gitPassthrough(
+      ["-c", "user.email=sneaky@evil", "commit", "-m", "spoofed"],
+      settingsWith({ rtk: "off" }),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(errChunks.join("")).toContain("blocked");
+    expect(git(root, "rev-list", "--count", "HEAD").trim()).toBe("1");
+  });
+
+  test("commit with a literal \\n sequence in -m is blocked", async () => {
+    await gitPassthrough(["commit", "-m", "feat: x\\n\\nbody"], settingsWith({ rtk: "off" }));
+    expect(process.exitCode).toBe(1);
+    expect(errChunks.join("")).toContain("escape sequence");
+    expect(git(root, "rev-list", "--count", "HEAD").trim()).toBe("1");
+  });
+
+  test("commit with an over-wide subject is blocked", async () => {
+    await gitPassthrough(
+      ["commit", "-m", `feat: ${"x".repeat(80)}`],
+      settingsWith({ rtk: "off" }),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(errChunks.join("")).toContain("max 72");
+  });
+
   test("run record captures full output and the git:<sub> event", async () => {
     const rec = beginRun(config, "git", ["status"], null, "main");
     try {

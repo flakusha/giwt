@@ -95,6 +95,9 @@ function commitPredicate(args: readonly string[]): string | null {
   if (args.includes("--allow-empty-message")) {
     return "commit --allow-empty-message skips the message gate";
   }
+  if (args.includes("--author") || args.some((a) => a.startsWith("--author="))) {
+    return "commit --author overrides the pinned repo identity";
+  }
   if (args.includes("-e") || args.includes("--edit")) return "commit --edit opens an editor";
   if (args.includes("-p") || args.includes("--patch") || args.includes("--interactive")) {
     return "interactive commit opens an editor";

@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { classifyGitInvocation } from "../git/policy";
 import { RTK_DISPLAY_SUBCOMMANDS } from "../git/policy-tables";
 import { filterCoAuthorTrailers, loadAllowedTrailers } from "../utils/coauthors";
+import { validateCommitMessageText } from "../utils/commit-message";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
@@ -57,7 +58,15 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
     return;
   }
 
-  const execArgs = await applyTrailerPolicy(rest, verdict.subcommand, config, rec);
+  const policy = await applyTrailerPolicy(rest, verdict.subcommand, config, rec);
+  if (policy.violation !== null) {
+    log("error", `git blocked: ${policy.violation}`);
+    raw(`  refused: git ${rest.join(" ")}`);
+    rec?.event(`git:${verdict.subcommand}`, "blocked", policy.violation);
+    process.exitCode = 1;
+    return;
+  }
+  const execArgs = policy.args;
   const proc = Bun.spawnSync(["git", ...execArgs], {
     cwd: config.worktreeRoot,
     stdout: "pipe",
@@ -97,23 +106,30 @@ function captureOutput(rec: RunRecorder | null, exit: number, out: string, err: 
 
 /**
  * Strip LLM Co-Authored-By trailers from -m/--message values (and -F
- * message files on commit); real co-authors are kept verbatim.
+ * message files on commit); real co-authors are kept verbatim. The
+ * commit-message hygiene gate (literal \n/\t, subject width) is validated
+ * on the same values — a violation blocks the whole invocation.
  */
 async function applyTrailerPolicy(
   args: readonly string[],
   subcommand: string,
   config: WorktreeConfig,
   rec: RunRecorder | null,
-): Promise<string[]> {
-  if (subcommand !== "commit" && subcommand !== "merge") return [...args];
+): Promise<{ args: string[]; violation: string | null; }> {
+  if (subcommand !== "commit" && subcommand !== "merge") {
+    return { args: [...args], violation: null };
+  }
   const allowed = loadAllowedTrailers(config.repoRoot);
   const out = [...args];
   let stripped = 0;
   let kept = 0;
+  let violation: string | null = null;
   const filterText = (text: string): string | null => {
     const filtered = filterCoAuthorTrailers(text, allowed);
     stripped += filtered.stripped.length;
     kept += filtered.kept.length;
+    const reason = validateCommitMessageText(filtered.message);
+    if (reason !== null && violation === null) violation = reason;
     return filtered.stripped.length > 0 ? filtered.message : null;
   };
   for (let i = 0; i < out.length; i++) {
@@ -146,7 +162,7 @@ async function applyTrailerPolicy(
     log("warn", `stripped ${stripped} LLM Co-Authored-By trailer(s) (${kept} kept)`);
     rec?.event(`git:${subcommand}`, "trailers", `stripped=${stripped} kept=${kept}`);
   }
-  return out;
+  return { args: out, violation };
 }
 
 /** Rewrite a -F message file with trailers stripped; returns the new path. */

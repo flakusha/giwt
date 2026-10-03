@@ -49,6 +49,11 @@ describe("parseGlobalArgs", () => {
     expect(parseGlobalArgs(["-c", "credential.helper=evil", "fetch"]).error).toBeTruthy();
     expect(parseGlobalArgs(["-c", "core.hooksPath=/evil", "status"]).error).toBeTruthy();
     expect(parseGlobalArgs(["-c", "core.sshCommand=evil", "push"]).error).toBeTruthy();
+    // Pinned identity: one-shot user.name/user.email overrides are refused.
+    expect(parseGlobalArgs(["-c", "user.email=sneaky@evil", "commit", "-m", "x"]).error)
+      .toBeTruthy();
+    expect(parseGlobalArgs(["-c", "user.name=sneaky", "commit", "-m", "x"]).error).toBeTruthy();
+    expect(parseGlobalArgs(["-cuser.name=sneaky", "commit"]).error).toBeTruthy();
     expect(parseGlobalArgs(["--config-env", "commit.gpgsign=SECRET", "commit"]).error).toBeTruthy();
     expect(parseGlobalArgs(["--config-env=core.hooksPath=V", "status"]).error).toBeTruthy();
   });
@@ -198,6 +203,16 @@ describe("classifyGitInvocation — destructive and gpg blocks", () => {
     ) {
       expect(verdict(args).verdict, args.join(" ")).toBe("block");
     }
+  });
+
+  test("commit --author is refused — identity is pinned to repo credentials", () => {
+    expect(verdict(["commit", "--author", "Evil <e@evil>", "-m", "x"]).verdict).toBe("block");
+    expect(verdict(["commit", "--author=Evil <e@evil>", "-m", "x"]).verdict).toBe("block");
+  });
+
+  test("one-shot user identity overrides block through classification", () => {
+    expect(verdict(["-c", "user.email=sneaky@evil", "commit", "-m", "x"]).verdict).toBe("block");
+    expect(verdict(["-c", "user.name=sneaky", "commit", "-m", "x"]).verdict).toBe("block");
   });
 
   test("editor-requiring commit shapes block", () => {

@@ -135,6 +135,10 @@ export const DENY_OVERRIDE_KEYS: readonly string[] = [
   "core.hookspath",
   "core.sshcommand",
   "gpg.format",
+  // Author/committer identity is pinned to the repo credentials — a one-shot
+  // override is exactly the spoof `giwt git` exists to stop.
+  "user.name",
+  "user.email",
 ];
 
 /** `-c` config override keys blocked only when set falsy. */

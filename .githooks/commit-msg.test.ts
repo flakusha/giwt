@@ -131,4 +131,24 @@ describe("commit-msg LLM trailer gate", () => {
     expect(r.exitCode).toBe(0);
     expect(r.msg()).toBe("feat: x\n\n");
   });
+
+  test("rejects a literal backslash-n sequence", () => {
+    const repo = makeRepo();
+    const r = runHook(repo, "msg.txt", "feat: x\\n\\nbody\n");
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("escape sequence");
+  });
+
+  test("rejects a subject wider than 72 chars", () => {
+    const repo = makeRepo();
+    const r = runHook(repo, "msg.txt", `${"x".repeat(73)}\n\nbody\n`);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("subject is 73 chars");
+  });
+
+  test("accepts a subject at exactly 72 chars", () => {
+    const repo = makeRepo();
+    const r = runHook(repo, "msg.txt", `${"x".repeat(72)}\n`);
+    expect(r.exitCode).toBe(0);
+  });
 });
