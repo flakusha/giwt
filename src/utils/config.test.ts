@@ -18,7 +18,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   branchToPath,
   configureGpgSigningSilently,
@@ -230,16 +230,47 @@ const BASE_CONFIG = {
   settings: DEFAULT_SETTINGS,
 } as const;
 
+/** Real repo + linked worktrees: makeRepo is not enough for findWorktree,
+ * whose fast path verifies HEAD via git and whose fallback scans
+ * `git worktree list --porcelain`. */
+function makeWorktreeRepo(): { repoRoot: string; treeDir: string; } {
+  const repoRoot = makeRepo();
+  const treeDir = resolve(repoRoot, "tree");
+  mkdirSync(treeDir);
+  return { repoRoot, treeDir };
+}
+
+/** Add a linked worktree for `branch` at `path`, creating the branch. */
+function addWorktree(repoRoot: string, branch: string, path: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  git(["worktree", "add", "-b", branch, path], repoRoot);
+}
+
+/** Capture process.stderr.write (log("error") routes there); restore on done. */
+function captureStderr(fn: () => unknown): string {
+  const chunks: string[] = [];
+  const original = process.stderr.write.bind(process.stderr);
+  (process.stderr as { write: unknown; }).write = (chunk: unknown) => {
+    chunks.push(String(chunk));
+    return true;
+  };
+  try {
+    fn();
+  } finally {
+    (process.stderr as { write: unknown; }).write = original;
+  }
+  return chunks.join("");
+}
+
 describe("findWorktree", () => {
-  it("returns the worktree path when <treeDir>/<dirName>/.git exists", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-findwt-hit-"));
+  it("returns the default treeDir path when its HEAD matches the branch", () => {
+    const { repoRoot, treeDir } = makeWorktreeRepo();
     try {
-      const wtPath = resolve(root, "feat-x");
-      mkdirSync(wtPath);
-      writeFileSync(resolve(wtPath, ".git"), "gitdir: /tmp/somewhere\n");
-      expect(findWorktree("feat/x", { ...BASE_CONFIG, treeDir: root })).toBe(wtPath);
+      const wtPath = resolve(treeDir, "feat-x");
+      addWorktree(repoRoot, "feat/x", wtPath);
+      expect(findWorktree("feat/x", { ...BASE_CONFIG, repoRoot, treeDir })).toBe(wtPath);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(repoRoot, { recursive: true, force: true });
     }
   });
 
@@ -260,6 +291,62 @@ describe("findWorktree", () => {
       expect(findWorktree("feat/x", { ...BASE_CONFIG, treeDir: root })).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("finds a worktree created at a custom path outside treeDir", () => {
+    const { repoRoot, treeDir } = makeWorktreeRepo();
+    try {
+      const customPath = resolve(repoRoot, "elsewhere", "feat-x");
+      addWorktree(repoRoot, "feat/x", customPath);
+      // Old behavior: only treeDir/feat-x was checked → null.
+      expect(findWorktree("feat/x", { ...BASE_CONFIG, repoRoot, treeDir })).toBe(customPath);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a collision and returns the other branch's custom-path worktree", () => {
+    const { repoRoot, treeDir } = makeWorktreeRepo();
+    try {
+      addWorktree(repoRoot, "feature-foo", resolve(treeDir, "feature-foo"));
+      const customPath = resolve(repoRoot, "elsewhere", "feature-foo");
+      addWorktree(repoRoot, "feature/foo", customPath);
+      const stderr = captureStderr(() => {
+        const found = findWorktree("feature/foo", { ...BASE_CONFIG, repoRoot, treeDir });
+        expect(found).toBe(customPath);
+      });
+      expect(stderr).toContain("path collision");
+      expect(stderr).toContain("feature-foo");
+      expect(stderr).toContain("feature/foo");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a collision and returns null when the branch has no other worktree", () => {
+    const { repoRoot, treeDir } = makeWorktreeRepo();
+    try {
+      addWorktree(repoRoot, "feature-foo", resolve(treeDir, "feature-foo"));
+      const stderr = captureStderr(() => {
+        expect(findWorktree("feature/foo", { ...BASE_CONFIG, repoRoot, treeDir })).toBeNull();
+      });
+      expect(stderr).toContain("path collision");
+      expect(stderr).toContain("feature-foo");
+      expect(stderr).toContain("feature/foo");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores detached worktrees when scanning the porcelain list", () => {
+    const { repoRoot, treeDir } = makeWorktreeRepo();
+    try {
+      const detachedPath = resolve(repoRoot, "elsewhere", "detached");
+      git(["worktree", "add", "--detach", detachedPath], repoRoot);
+      expect(findWorktree("main", { ...BASE_CONFIG, repoRoot, treeDir })).not.toBe(detachedPath);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
     }
   });
 });

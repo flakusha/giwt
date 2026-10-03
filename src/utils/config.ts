@@ -7,7 +7,7 @@
 
 import { existsSync, symlinkSync } from "fs";
 import { dirname, resolve } from "path";
-import { findRepoRoot, getWorktreeRoot, gitSync } from "./git";
+import { findRepoRoot, getWorktreeRoot, gitSync, gitSyncQuiet } from "./git";
 import { log } from "./output";
 import { type GiwtSettings, loadSettings } from "./settings";
 
@@ -95,6 +95,14 @@ export async function loadConfig(): Promise<WorktreeConfig> {
   };
 }
 
+/**
+ * Map a branch name to its tree-directory name. The slash→dash mapping is
+ * intentionally lossy (`feature/foo` and `feature-foo` collide): a reversible
+ * encoding would rename every existing tree dir on disk, breaking already-
+ * checked-out worktrees. Collisions are surfaced at lookup time by
+ * `findWorktree`, which verifies the default path's checked-out branch before
+ * trusting it and falls back to `git worktree list` otherwise.
+ */
 export function branchToPath(branch: string): string {
   return branch.replace(/\//g, "-");
 }
@@ -127,11 +135,54 @@ export function configureGpgSigningSilently(
   log("success", `GPG signing enabled (key: ${agentGpgKeyId.slice(0, 8)}...)`);
 }
 
+/**
+ * Find the worktree checked out on `branch`.
+ *
+ * Fast path: the default `treeDir/<dirName>` path. Because `branchToPath` is
+ * lossy (`feature/foo` → `feature-foo`), an existing directory there is only
+ * trusted after verifying its HEAD actually points at `branch` — a different
+ * branch means a name collision, which is logged and the scan proceeds.
+ *
+ * Fallback: `git worktree list --porcelain` from the main checkout, so
+ * worktrees created at custom paths (outside treeDir) are still found.
+ * Returns null when no listed worktree has `branch` checked out.
+ */
 export function findWorktree(branch: string, config: WorktreeConfig): string | null {
   const dirName = branchToPath(branch);
   const wtPath = resolve(config.treeDir, dirName);
-  if (existsSync(resolve(wtPath, ".git"))) return wtPath;
-  return null;
+  if (existsSync(resolve(wtPath, ".git"))) {
+    const headRef = gitSyncQuiet(wtPath, "symbolic-ref", "--short", "HEAD");
+    if (headRef === branch) return wtPath;
+    if (headRef) {
+      log("error", `path collision: ${wtPath} holds branch '${headRef}', not '${branch}'`);
+    }
+  }
+  return findListedWorktree(config.repoRoot, branch);
+}
+
+/**
+ * Scan `git worktree list --porcelain` for a worktree with `branch` checked
+ * out. Skips detached entries; requires an exact branch-name match.
+ */
+function findListedWorktree(repoRoot: string, branch: string): string | null {
+  const porcelain = gitSyncQuiet(repoRoot, "worktree", "list", "--porcelain");
+  let path = "";
+  let currentBranch = "";
+  let detached = false;
+  for (const line of porcelain.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("worktree ")) {
+      if (path && currentBranch === branch && !detached) return path;
+      path = trimmed.slice(9);
+      currentBranch = "";
+      detached = false;
+    } else if (trimmed.startsWith("branch ")) {
+      currentBranch = trimmed.slice(7).replace(/^refs\/heads\//, "");
+    } else if (trimmed === "detached") {
+      detached = true;
+    }
+  }
+  return path && currentBranch === branch && !detached ? path : null;
 }
 
 /**
