@@ -65,6 +65,22 @@
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
     "status": "done"
   },
+  "BUG-DELETE-STASH-DANCE-AFTER-STAGING-MERGE-LANDS": {
+    "hash": "9a794bc",
+    "git_issue": "9a794bc",
+    "extid": "BUG-DELETE-STASH-DANCE-AFTER-STAGING-MERGE-LANDS",
+    "type": "BUG",
+    "title": "delete stash dance after staging merge lands",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "stash",
+      "finalize"
+    ],
+    "source": ".plan/tickets/BUG-delete-stash-dance-after-staging-merge-lands.md",
+    "status": "Not Started"
+  },
   "BUG-DOCTOR-CHECK-CAPS-FINDINGS-AT-20-WITH-NO-TRUNCATION-NOTICE-S": {
     "hash": "1a15e58",
     "git_issue": "1a15e58",
@@ -779,6 +795,38 @@
     "source": ".plan/tickets/FEAT-ledger-schema-v2-writer.md",
     "status": "done"
   },
+  "FEAT-MERGE-IN-STAGING-WORKTREE-WITH-REF-MOVE": {
+    "hash": "1098041",
+    "git_issue": "1098041",
+    "extid": "FEAT-MERGE-IN-STAGING-WORKTREE-WITH-REF-MOVE",
+    "type": "FEAT",
+    "title": "merge in staging worktree with ref move",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "staging",
+      "finalize"
+    ],
+    "source": ".plan/tickets/FEAT-merge-in-staging-worktree-with-ref-move.md",
+    "status": "Not Started"
+  },
+  "FEAT-NARROW-FINALIZE-LOCK-TO-MERGE-STEPS": {
+    "hash": "86a7491",
+    "git_issue": "86a7491",
+    "extid": "FEAT-NARROW-FINALIZE-LOCK-TO-MERGE-STEPS",
+    "type": "FEAT",
+    "title": "narrow finalize lock to merge steps",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "lock",
+      "finalize"
+    ],
+    "source": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
+    "status": "Not Started"
+  },
   "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {
     "hash": "5c8332a",
     "git_issue": "5c8332a",
@@ -952,6 +1000,38 @@
     ],
     "source": ".plan/tickets/FEAT-ticket-close-writes-md-status-plus-issue-state.md",
     "status": "done"
+  },
+  "FEAT-TICKET-HEADER-CONFLICT-RESOLVER-IN-REBASE-LOOP": {
+    "hash": "fe3c1f4",
+    "git_issue": "fe3c1f4",
+    "extid": "FEAT-TICKET-HEADER-CONFLICT-RESOLVER-IN-REBASE-LOOP",
+    "type": "FEAT",
+    "title": "ticket-header conflict resolver in rebase loop",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "plan",
+      "reconcile"
+    ],
+    "source": ".plan/tickets/FEAT-ticket-header-conflict-resolver-in-rebase-loop.md",
+    "status": "Not Started"
+  },
+  "FEAT-UNIVERSAL-POST-MERGE-PLAN-RECONCILIATION": {
+    "hash": "b99bf6e",
+    "git_issue": "b99bf6e",
+    "extid": "FEAT-UNIVERSAL-POST-MERGE-PLAN-RECONCILIATION",
+    "type": "FEAT",
+    "title": "universal post-merge plan reconciliation",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "plan",
+      "finalize"
+    ],
+    "source": ".plan/tickets/FEAT-universal-post-merge-plan-reconciliation.md",
+    "status": "Not Started"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
     "hash": "c42bc39",
@@ -1434,6 +1514,22 @@
     ],
     "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
     "status": "done"
+  },
+  "TASK-SHARD-TICKETS-INDEX-OR-STOP-PER-BRANCH-INDEX-COMMITS": {
+    "hash": "461e906",
+    "git_issue": "461e906",
+    "extid": "TASK-SHARD-TICKETS-INDEX-OR-STOP-PER-BRANCH-INDEX-COMMITS",
+    "type": "TASK",
+    "title": "shard tickets index or stop per-branch index commits",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "index"
+    ],
+    "source": ".plan/tickets/TASK-shard-tickets-index-or-stop-per-branch-index-commits.md",
+    "status": "Not Started"
   },
   "TASK-SHOW-STATE-RESOLVE-PLAN-TICKETS-FILENAME-SLUGS": {
     "hash": "6bf73b8",
