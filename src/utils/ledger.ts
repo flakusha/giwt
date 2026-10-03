@@ -23,24 +23,23 @@
 import { existsSync } from "fs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "path";
+import {
+  formatRecord,
+  LEDGER_FILENAME,
+  LEDGER_MAX_MSG,
+  LEDGER_MAX_RECORDS,
+  type LedgerRecord,
+  type LedgerRecordV1,
+  type LedgerRecordView,
+  normalizeRecord,
+} from "./ledger-core";
 import { log, raw } from "./output";
 
-export interface LedgerRecord {
-  v: 1;
-  /** ISO-8601 UTC, seconds precision. */
-  ts: string;
-  pid: number;
-  cmd: string;
-  /** Resolved current branch at dispatch (same source as the run
-   *  record's meta.branch); "" when unknown. Never a subcommand or other
-   *  positional argument. */
-  branch: string;
-  msg: string;
-}
+// Re-exported so `./utils/ledger` import paths keep working while the
+// pure schema primitives live in ledger-core.
+export { formatRecord, LEDGER_FILENAME, LEDGER_MAX_MSG, LEDGER_MAX_RECORDS } from "./ledger-core";
+export type { LedgerRecord, LedgerRecordView } from "./ledger-core";
 
-export const LEDGER_FILENAME = ".ledger.jsonl";
-export const LEDGER_MAX_RECORDS = 50;
-export const LEDGER_MAX_MSG = 280;
 export const LEDGER_DUMP_DEFAULT = 10;
 
 /** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record). */
@@ -141,7 +140,8 @@ export function appendLedger(
     if (!existsSync(treeDir)) return;
     const base = defaultMessage(cmd, args);
     const msg = truncateMsg(said ? `${base} :: ${said}` : base);
-    const record: LedgerRecord = {
+    // Phase 0: writers still emit v1; only readers normalize.
+    const record: LedgerRecordV1 = {
       v: 1,
       ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       pid: process.pid,
@@ -165,35 +165,23 @@ export function appendLedger(
  * @param last - max records to return (capped at LEDGER_MAX_RECORDS)
  * @returns parsed records, oldest first
  */
-export function readLedger(treeDir: string, last: number): LedgerRecord[] {
+export function readLedger(treeDir: string, last: number): LedgerRecordView[] {
   const capped = Math.max(1, Math.min(last, LEDGER_MAX_RECORDS));
   try {
     const path = resolve(treeDir, LEDGER_FILENAME);
     if (!existsSync(path)) return [];
     const lines = readFileSync(path, "utf8").split("\n").filter((l) => l.trim().length > 0);
-    const out: LedgerRecord[] = [];
+    const out: LedgerRecordView[] = [];
     for (const line of lines.slice(-capped)) {
       try {
-        const parsed = JSON.parse(line) as LedgerRecord;
-        if (parsed && parsed.v === 1 && typeof parsed.msg === "string") out.push(parsed);
+        const parsed = normalizeRecord(JSON.parse(line));
+        if (parsed !== null) out.push(parsed);
       } catch { /* skip corrupt line */ }
     }
     return out;
   } catch {
     return [];
   }
-}
-
-/**
- * One-line chat rendering: `[09-10 06:55] [#1234] [branch] cmd: msg`.
- *
- * @param record - ledger record to render
- * @returns single display line
- */
-export function formatRecord(record: LedgerRecord): string {
-  const shortTs = record.ts.slice(5, 16).replace("T", " ");
-  const branch = record.branch.length > 0 ? record.branch : "-";
-  return `[${shortTs}] [#${record.pid}] [${branch}] ${record.cmd}: ${record.msg}`;
 }
 
 /**

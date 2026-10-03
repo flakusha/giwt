@@ -40,6 +40,12 @@ import {
   readLedger,
   truncateMsg,
 } from "./ledger";
+import {
+  type LedgerRecord,
+  type LedgerRecordView,
+  normalizeRecord,
+  parseLedgerTail,
+} from "./ledger-core";
 
 /** Fresh ledger tree dir per test. Removed in the file-level afterEach —
  *  even a failed test cannot leak its fixture into /tmp. */
@@ -117,7 +123,11 @@ describe("appendLedger/readLedger", () => {
       expect(records[0]!.cmd).toBe("new");
       expect(records[0]!.branch).toBe("my-branch");
       expect(records[0]!.msg).toBe("new my-branch :: working on auth");
-      expect(records[0]!.v).toBe(1);
+      // Writers emit v1; readers surface the normalized v2 view.
+      expect(records[0]!.v).toBe(2);
+      expect(records[0]!.state).toBe("observed");
+      expect(records[0]!.agent).toBe(`pid:${process.pid}`);
+      expect(records[0]!.seq).toBe(0);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -293,25 +303,44 @@ describe("ledger branch field hygiene", () => {
 
 describe("formatRecord", () => {
   it("renders the one-line chat shape", () => {
-    expect(formatRecord({
-      v: 1,
-      ts: "2026-09-10T06:55:01Z",
-      pid: 1234,
-      cmd: "new",
-      branch: "my-branch",
-      msg: "new my-branch",
-    })).toBe("[09-10 06:55] [#1234] [my-branch] new: new my-branch");
+    expect(formatRecord(
+      normalizeRecord({
+        v: 1,
+        ts: "2026-09-10T06:55:01Z",
+        pid: 1234,
+        cmd: "new",
+        branch: "my-branch",
+        msg: "new my-branch",
+      })!,
+    )).toBe("[09-10 06:55] [#1234] [my-branch] new: new my-branch");
   });
 
   it("renders missing branch as -", () => {
-    expect(formatRecord({
-      v: 1,
-      ts: "2026-09-10T06:55:01Z",
-      pid: 7,
-      cmd: "status",
-      branch: "",
-      msg: "status",
-    })).toContain("[-] status: status");
+    expect(formatRecord(
+      normalizeRecord({
+        v: 1,
+        ts: "2026-09-10T06:55:01Z",
+        pid: 7,
+        cmd: "status",
+        branch: "",
+        msg: "status",
+      })!,
+    )).toContain("[-] status: status");
+  });
+
+  it("is byte-identical for a fixed v2 record", () => {
+    const record: LedgerRecord = {
+      v: 2,
+      ts: "2026-10-03T09:04:02Z",
+      pid: 4242,
+      agent: "omp",
+      cmd: "finalize",
+      branch: "feat-x",
+      msg: "finalize feat-x",
+      state: "finished",
+      seq: 7,
+    };
+    expect(formatRecord(record)).toBe("[10-03 09:04] [#4242] [feat-x] finalize: finalize feat-x");
   });
 });
 
@@ -503,6 +532,159 @@ describe("ledger failure and display paths", () => {
       mkdirSync(join(dir, LEDGER_FILENAME));
       expect(() => appendCommitOutcome(dir, "commit-wt", "dev", "abc1234567890", "fix: x"))
         .not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("normalizeRecord", () => {
+  it("passes a valid v2 record through unchanged", () => {
+    const v2: LedgerRecordView = {
+      v: 2,
+      ts: "2026-10-03T09:00:00Z",
+      pid: 11,
+      agent: "omp",
+      cmd: "new",
+      branch: "b",
+      msg: "new b",
+      state: "in-progress",
+      seq: 3,
+      error: { message: "gate failed", code: 1, gates: ["tsc"] },
+    };
+    expect(normalizeRecord(v2)).toEqual(v2);
+  });
+
+  it("normalizes a v1 record to the v2 view", () => {
+    expect(normalizeRecord({
+      v: 1,
+      ts: "2026-09-10T06:55:01Z",
+      pid: 1234,
+      cmd: "new",
+      branch: "my-branch",
+      msg: "new my-branch",
+    })).toEqual({
+      v: 2,
+      ts: "2026-09-10T06:55:01Z",
+      pid: 1234,
+      agent: "pid:1234",
+      cmd: "new",
+      branch: "my-branch",
+      msg: "new my-branch",
+      state: "observed",
+      seq: 0,
+    });
+  });
+
+  it("rejects garbage", () => {
+    expect(normalizeRecord(null)).toBeNull();
+    expect(normalizeRecord("line")).toBeNull();
+    expect(normalizeRecord({ v: 3 })).toBeNull();
+    expect(normalizeRecord([1, 2])).toBeNull();
+  });
+
+  it("rejects records with missing msg or ts", () => {
+    expect(normalizeRecord({ v: 1, ts: "2026-09-10T06:55:01Z", pid: 1, cmd: "c", branch: "" }))
+      .toBeNull();
+    expect(
+      normalizeRecord({
+        v: 2,
+        pid: 1,
+        agent: "a",
+        cmd: "c",
+        branch: "",
+        msg: "m",
+        state: "finished",
+        seq: 0,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("parseLedgerTail", () => {
+  const v1Line = (msg: string): string =>
+    JSON.stringify({ v: 1, ts: "2026-10-03T09:00:00Z", pid: 1, cmd: "a", branch: "x", msg });
+
+  it("returns only complete lines and resumes at the partial tail", () => {
+    const one = v1Line("m1");
+    const two = v1Line("m2");
+    const text = `${one}\n${two}\n${v1Line("par").slice(0, 12)}`;
+    const tail = parseLedgerTail(text, 0);
+    expect(tail.records.map((r) => r.msg)).toEqual(["m1", "m2"]);
+    expect(tail.offset).toBe(one.length + 1 + two.length + 1);
+    // Completing the trailing line and resuming from tail.offset yields only the third record.
+    const rest = parseLedgerTail(`${text}${v1Line("par").slice(12)}\n`, tail.offset);
+    expect(rest.records.map((r) => r.msg)).toEqual(["par"]);
+  });
+
+  it("offset equals text.length when text ends with a newline", () => {
+    const line = v1Line("m");
+    const text = `${line}\n`;
+    expect(parseLedgerTail(text, 0)).toEqual({
+      records: [normalizeRecord(JSON.parse(line))!],
+      offset: text.length,
+    });
+  });
+
+  it("fromOffset beyond length returns no records and keeps the offset", () => {
+    expect(parseLedgerTail("{}\n", 999)).toEqual({ records: [], offset: 999 });
+  });
+
+  it("treats a negative fromOffset as 0 and skips bad lines", () => {
+    const tail = parseLedgerTail(`not-json\n${v1Line("m")}\n`, -5);
+    expect(tail.records.map((r) => r.msg)).toEqual(["m"]);
+  });
+});
+
+describe("readLedger mixed-version fixture", () => {
+  it("normalizes v1 and v2 lines, newest last", () => {
+    const dir = mkdtempSync(join(tmpdir(), "giwt-ledger-core-"));
+    try {
+      writeFileSync(
+        join(dir, LEDGER_FILENAME),
+        JSON.stringify({
+          v: 1,
+          ts: "2026-09-18T12:00:00Z",
+          pid: 111,
+          cmd: "old",
+          branch: "dev",
+          msg: "v1 line",
+        }) + "\n" + JSON.stringify({
+          v: 2,
+          ts: "2026-10-03T09:00:00Z",
+          pid: 222,
+          agent: "omp",
+          cmd: "new",
+          branch: "feat",
+          msg: "v2 line",
+          state: "finished",
+          seq: 4,
+        }) + "\n",
+      );
+      const records = readLedger(dir, 10);
+      expect(records.length).toBe(2);
+      expect(records[0]).toEqual({
+        v: 2,
+        ts: "2026-09-18T12:00:00Z",
+        pid: 111,
+        agent: "pid:111",
+        cmd: "old",
+        branch: "dev",
+        msg: "v1 line",
+        state: "observed",
+        seq: 0,
+      });
+      expect(records[1]).toEqual({
+        v: 2,
+        ts: "2026-10-03T09:00:00Z",
+        pid: 222,
+        agent: "omp",
+        cmd: "new",
+        branch: "feat",
+        msg: "v2 line",
+        state: "finished",
+        seq: 4,
+      });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

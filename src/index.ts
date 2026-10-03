@@ -45,7 +45,6 @@ export {
   appendLedger,
   extractSayArgs,
   LEDGER_DUMP_DEFAULT,
-  LEDGER_FILENAME,
   LEDGER_MAX_MSG,
   LEDGER_MAX_RECORDS,
   printRecentLedger,
@@ -53,6 +52,24 @@ export {
   truncateMsg,
 } from "./utils/ledger";
 export type { LedgerRecord, SayArgs } from "./utils/ledger";
+
+// Ledger schema v2 core (pure primitives; writers still emit v1 in Phase 0).
+export {
+  formatRecord,
+  LEDGER_FILENAME,
+  LEDGER_SCHEMA_VERSION,
+  newRecord,
+  normalizeRecord,
+  parseLedgerTail,
+} from "./utils/ledger-core";
+export type {
+  LedgerError,
+  LedgerReadState,
+  LedgerRecordAny,
+  LedgerRecordV1,
+  LedgerRecordV2,
+  LedgerState,
+} from "./utils/ledger-core";
 
 // Run records (<repoRoot>/.tmp/giwt/runs/ — they must survive worktree removal)
 export {
