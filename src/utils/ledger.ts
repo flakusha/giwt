@@ -43,14 +43,14 @@ export const LEDGER_MAX_RECORDS = 50;
 export const LEDGER_MAX_MSG = 280;
 export const LEDGER_DUMP_DEFAULT = 10;
 
-/** Commands that skip the generic auto-append: readers, plus writers
- * like `gripe` that compose their own richer record. */
+/** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record). */
 export const LEDGER_SILENT_COMMANDS: Record<string, true> = {
   gripe: true,
   help: true,
   ledger: true,
   plan: true,
   runs: true,
+  task: true,
 };
 
 /**

@@ -22,7 +22,7 @@ giwt is a **bun-only CLI** for git worktree / GPG-signed commit / git-issue (tic
 ## Key Directories
 
 - `src/cli.ts` — entry point/bin; dispatch (`main()`), exit codes; registry in `src/cli-registry.ts`, USAGE table in `src/cli-usage.ts`.
-- `src/commands/` — one module per subcommand (34); `resolver.ts` is a helper, not a command.
+- `src/commands/` — one module per subcommand (35, incl. `task`); `resolver.ts` is a helper, not a command.
 - `src/utils/` — config/settings/ledger/runlog/output (logger)/git plumbing/GPG/credentials/colors/message.
 - `src/index.ts` — **public API surface** (`exports["."]`); re-exports are a compatibility promise; external consumers import by absolute path or `giwt`.
 - `src/tickets/` — ticket-index sync logic.

@@ -43,6 +43,7 @@ import { execute as signCmd } from "./commands/sign";
 import { state } from "./commands/state";
 import { execute as statusCmd } from "./commands/status";
 import { sync } from "./commands/sync";
+import { task } from "./commands/task";
 import { ticket } from "./commands/ticket";
 import { tmp } from "./commands/tmp";
 import { runGpgUnlock } from "./gpg-unlock";
@@ -212,6 +213,11 @@ export const commands: Record<string, CommandHandler> = {
   "sync": {
     description: "Sync ticket index with files + git issues",
     run: sync,
+  },
+  "task": {
+    description:
+      "Render an agent task prompt: flags -> generic implementation/finalization guidance, user directive last",
+    run: task,
   },
   "ticket": {
     description: "Create ticket file + git issue; close/copy/3way subactions",
