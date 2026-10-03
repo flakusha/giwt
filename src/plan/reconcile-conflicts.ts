@@ -13,7 +13,7 @@
  */
 
 import { log } from "../utils/output";
-import { resolveGenerated } from "./reconcile-conflicts/generated";
+import { completeGeneratedReconcile, resolveGenerated } from "./reconcile-conflicts/generated";
 import { isAncestorOf, runGit, unmergedPaths } from "./reconcile-conflicts/git-io";
 import { autoResolveSupersets } from "./reconcile-conflicts/supersets";
 
@@ -55,7 +55,10 @@ export function rebaseWithPlanReconciliation(
   const autoResolved: string[] = [];
 
   while (result.exitCode !== 0) {
-    const resolved = resolveGenerated(root, planDir, ticketsPath);
+    // Per-round resolution is deliberately cheap (index three-way merge only;
+    // other artifacts take the replayed side). The expensive regenerate walk
+    // runs once, after the loop.
+    const resolved = resolveGenerated({ root, planDir, ticketsPath });
     generatedConflicts.push(...resolved);
     const supersets = autoResolveSupersets(root);
     autoResolved.push(...supersets);
@@ -67,6 +70,12 @@ export function rebaseWithPlanReconciliation(
     }
     result = runGit(root, "rebase", "--continue");
     output += result.stdout + result.stderr;
+  }
+
+  if (result.exitCode === 0 && generatedConflicts.length > 0) {
+    // One regeneration + one amend for the whole replayed tail, instead of
+    // one regeneration per replayed commit.
+    completeGeneratedReconcile(root, planDir, ticketsPath);
   }
 
   return { exitCode: 0, output, generatedConflicts, autoResolved };

@@ -169,6 +169,43 @@ test("resolves generated conflicts across successive rebase commits", () => {
       ".plan/tickets/index.json",
     ]);
     expect(git(root, "status", "--porcelain")).toBe("");
+    // The merged index is committed in the final replayed commit (single
+    // amend), not just staged in the worktree.
+    expect(git(root, "show", "HEAD:.plan/tickets/index.json")).toContain("feature-two");
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("takes the replayed side for non-index artifacts, then regenerates once", () => {
+  const fixtureValue = fixture();
+  const { root } = fixtureValue;
+  try {
+    git(root, "checkout", "-q", "main");
+    writeFileSync(join(root, ".plan/feature-matrix.md"), "main matrix row\n");
+    git(root, "add", "-f", ".plan/feature-matrix.md");
+    git(root, "commit", "-qm", "main matrix");
+    git(root, "checkout", "-q", "feature");
+    writeFileSync(join(root, ".plan/feature-matrix.md"), "feature matrix row\n");
+    git(root, "add", "-f", ".plan/feature-matrix.md");
+    git(root, "commit", "-qm", "feature matrix");
+    writeJson(root, ".plan/tickets/index.json", {
+      "TASK-ONE": { status: "done", tags: ["base", "feature-two"] },
+      "TASK-TWO": { status: "done", tags: ["base", "feature-two"] },
+    });
+    git(root, "add", "-f", ".plan/tickets/index.json");
+    git(root, "commit", "-qm", "feature index");
+
+    const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+    expect(result.exitCode).toBe(0);
+    expect(result.generatedConflicts).toContain(".plan/feature-matrix.md");
+    expect(git(root, "status", "--porcelain")).toBe("");
+    // The committed artifact is the regenerated projection of the merged
+    // index — neither conflict side survives.
+    const committed = git(root, "show", "HEAD:.plan/feature-matrix.md");
+    expect(committed).not.toContain("main matrix row");
+    expect(committed).not.toContain("feature matrix row");
+    expect(readFileSync(join(root, ".plan/feature-matrix.md"), "utf8")).toBe(committed);
   } finally {
     fixtureValue.cleanup();
   }
@@ -311,6 +348,9 @@ test("regenerates the epic docs when a generated conflict is resolved", () => {
     expect(index).toContain("| in-progress | Alpha | high | 3 | 1 |");
     expect(index).toContain("**Tags:** core, alpha");
     expect(git(root, "status", "--porcelain")).toBe("");
+    // The regeneration is folded into the final replayed commit (single
+    // amend), not left staged or dropped.
+    expect(git(root, "show", "HEAD:.plan/epics-index.md")).toBe(index);
   } finally {
     fixtureValue.cleanup();
   }
