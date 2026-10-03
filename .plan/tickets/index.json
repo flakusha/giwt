@@ -50,6 +50,23 @@
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
     "status": "done"
   },
+  "BUG-DOCTOR-CHECK-CAPS-FINDINGS-AT-20-WITH-NO-TRUNCATION-NOTICE-S": {
+    "hash": "1a15e58",
+    "git_issue": "1a15e58",
+    "extid": "BUG-DOCTOR-CHECK-CAPS-FINDINGS-AT-20-WITH-NO-TRUNCATION-NOTICE-S",
+    "type": "BUG",
+    "title": "doctor check caps findings at 20 with no truncation notice - silently hides 113 of 134 real findings",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "doctor",
+      "check",
+      "reporting"
+    ],
+    "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
+    "status": "Not Started"
+  },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
     "extid": "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK",
@@ -226,6 +243,41 @@
     ],
     "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
     "status": "done"
+  },
+  "BUG-RECONCILE-CONFLICTS-COMMIT-PATH-DOES-NOT-PIN-GPG-SIGNING-FLA": {
+    "hash": "9988000",
+    "git_issue": "9988000",
+    "extid": "BUG-RECONCILE-CONFLICTS-COMMIT-PATH-DOES-NOT-PIN-GPG-SIGNING-FLA",
+    "type": "BUG",
+    "title": "reconcile-conflicts commit path does not pin GPG signing flags - unsigned commit, no error",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "reconcile-conflicts",
+      "gpg",
+      "finalize"
+    ],
+    "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md",
+    "status": "Not Started"
+  },
+  "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-": {
+    "hash": "e120fa8",
+    "git_issue": "e120fa8",
+    "extid": "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-",
+    "type": "BUG",
+    "title": "resolveDiffBase returns merge-base instead of the requested target, silently mis-scoping diff-base gates",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "gates",
+      "diff-base",
+      "checks"
+    ],
+    "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
+    "status": "Not Started"
   },
   "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
     "hash": "adccccd",
@@ -1133,6 +1185,23 @@
     ],
     "source": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md",
     "status": "done"
+  },
+  "TASK-PRE-COMMIT-HOOK-S-2S-RATIONALE-FOR-THE-UNCONDITIONAL-FULL-GA": {
+    "hash": "663605b",
+    "git_issue": "663605b",
+    "extid": "TASK-PRE-COMMIT-HOOK-S-2S-RATIONALE-FOR-THE-UNCONDITIONAL-FULL-GA",
+    "type": "TASK",
+    "title": "pre-commit hook's '~2s' rationale for the unconditional full gate is stale by ~19x",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "hooks",
+      "githooks",
+      "pre-commit"
+    ],
+    "source": ".plan/tickets/TASK-pre-commit-hook-s-2s-rationale-for-the-unconditional-full-ga.md",
+    "status": "Not Started"
   },
   "TASK-REACH-PARITY-WITH-THE-LOOP-LORE-WORKTREE-FORK-SO-IT-CAN-BE-D": {
     "hash": "c750cd1",
