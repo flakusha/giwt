@@ -10,8 +10,8 @@
  *   - `finalize/state.ts`        — abort-state slot + signal-safe rollback plumbing
  *   - `finalize/gates.ts`        — prechecks + Step-2 check gate + fanout slots
  *   - `finalize/checks.ts`       — check/test runners + failure reporting
- *   - `finalize/merge.ts`        — stash/restore helpers + CLI arg parsing
- *   - `finalize/merge-exec.ts`   — Step 5 merge strategies (rebase/squash/direct)
+ *   - `finalize/merge.ts`        — squash-message/CLI arg helpers (--onto)
+ *   - `finalize/staging.ts`      — Step 5 merge in an ephemeral staging worktree
  *   - `finalize/run.ts`          — runFinalize orchestration (Steps 1–5.5)
  *   - `finalize/teardown.ts`     — Steps 6/7 worktree + branch teardown
  *
@@ -79,7 +79,7 @@ export async function finalize(
   if (!branch) {
     log("error", "branch name required");
     raw(
-      "  Usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--jobs <n>]",
+      "  Usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--onto <branch>] [--force] [--gates <csv>] [--skip-gates <csv>] [--jobs <n>]",
     );
     process.exit(1);
   }
@@ -107,25 +107,23 @@ export async function finalize(
     process.exit(1);
   }
 
-  // Resolve the merge target the way getRootBranch does — but refuse a
-  // detached main checkout instead of silently falling back to the literal
-  // "master", which would merge the feature branch into a ref the operator
-  // never named and rewrite it in place (TASK-reach-parity AC 1). Preflight:
-  // must run BEFORE checkDevMergeable/acquireFinalizeLock so a refusal never
-  // takes the lock or touches the dev checkout.
-  const showCurrent = Bun.spawnSync(["git", "-C", config.repoRoot, "branch", "--show-current"], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const targetBranch = showCurrent.stdout.toString().trim();
-  if (!targetBranch) {
-    const headSha = gitSync(config.repoRoot, "rev-parse", "HEAD");
-    log(
-      "error",
-      `${config.repoRoot}: main checkout is detached at ${headSha} - checkout the root branch (or stash) before finalizing`,
-    );
-    raw(`  Then: git -C ${config.repoRoot} checkout <root-branch>`);
+  // Target ref: --onto wins, else the configured root branch
+  // (FEAT-merge-in-staging-worktree-with-ref-move). The staging merge moves
+  // refs/heads/<target> via update-ref CAS — the dev checkout no longer
+  // needs to hold the target, so a detached dev is fine (lazy dev sync
+  // warns instead of refusing, and never auto-stashes).
+  const targetBranch = parsed.onto || config.settings.branches.root;
+  const refCheck = Bun.spawnSync(
+    ["git", "-C", config.repoRoot, "show-ref", "--verify", "--quiet", `refs/heads/${targetBranch}`],
+    {
+      env: isolatedGitEnv(),
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+  if (refCheck.exitCode !== 0) {
+    log("error", `target branch '${targetBranch}' not found`);
+    raw(`  Then: pass --onto <branch>, or set [branches] root in giwt.toml`);
     process.exit(1);
   }
 

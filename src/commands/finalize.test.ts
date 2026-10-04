@@ -308,6 +308,10 @@ beforeEach(() => {
     treeDir,
     settings: structuredClone(DEFAULT_SETTINGS),
   };
+  // The staging merge targets the configured root branch (--onto ||
+  // settings root) — point the fixture's root at the branch it actually
+  // creates so finalize integrates onto main.
+  config.settings.branches.root = "main";
 });
 
 afterEach(() => {
@@ -1101,7 +1105,8 @@ describe("finalize rebase strategy", () => {
     expect(run.output).toContain("Step 1: Checking worktree state...");
     expect(run.output).toContain("Worktree clean");
     expect(run.output).toContain("Rebased successfully");
-    expect(run.output).toContain("Fast-forward merged");
+    expect(run.output).toContain("main moved to");
+    expect(run.output).toContain("dev checkout synced to main");
     expect(run.output).toContain("Worktree removed");
     expect(run.output).toContain("Branch deleted");
     expect(run.output).toContain("Finalized 'feature/x' \u2014 merged to main");
@@ -1120,7 +1125,10 @@ describe("finalize rebase strategy", () => {
 
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("Rebase conflicts");
-    expect(run.output).toContain(`cd ${wtPath} && git rebase --continue`);
+    expect(run.output).toContain("resolve in the staging worktree");
+    expect(run.output).toContain("git rebase --continue");
+    // The source worktree is untouched; the staging worktree holds the
+    // conflict state for resolution.
     expect(existsSync(wtPath)).toBe(true);
   });
 
@@ -1164,6 +1172,9 @@ describe("finalize rebase strategy", () => {
       `${JSON.stringify({ tickets: ["FEAT-DEMO"] })}\n`,
     );
     // Minimal plan state so Step 5.5's runSync --fix has something to stage.
+    // Deliberately NOT committed: the file is ignored (global dot-dir
+    // ignore), so it does not dirty the dev snapshot for the lazy sync, and
+    // reconcileScopedPlan's `add -f` stages it as the reconciliation payload.
     mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
     writeFileSync(join(root, ".plan", "tickets", "index.json"), "{}\n");
 
@@ -1179,7 +1190,7 @@ describe("finalize rebase strategy", () => {
     expect(existsSync(wtPath)).toBe(false);
   });
 
-  test("stashes a dirty dev checkout and restores it after the merge", async () => {
+  test("keeps a dirty dev checkout dirty — the merge happens in staging", async () => {
     featureWorktree();
     writeFileSync(join(root, "seed.txt"), "local edit\n");
     writeFileSync(join(root, "untracked.txt"), "scratch\n");
@@ -1187,23 +1198,28 @@ describe("finalize rebase strategy", () => {
     const run = await driveFinalize(["feature/x"]);
 
     expect(run.exitCode).toBeNull();
-    expect(run.output).toContain("Stashed dirty dev checkout as 'worktree-finalize-");
-    expect(run.output).toContain("Restored stash 'worktree-finalize-");
+    expect(run.output).toContain("not fast-forwarded to main (dirty working tree)");
+    expect(run.output).toContain("main moved to");
+    // The user's dirt is untouched — never stashed, never reset.
     expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local edit\n");
     expect(readFileSync(join(root, "untracked.txt"), "utf8")).toBe("scratch\n");
     expect(git(["stash", "list"]).trim()).toBe("");
+    // The target ref moved even though dev did not.
+    expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feature work");
   });
 
-  test("refuses to proceed when the dev checkout cannot be stashed", async () => {
+  test("merges in staging even when the dev checkout cannot be touched", async () => {
     featureWorktree();
     writeFileSync(join(root, "seed.txt"), "local edit\n");
-    // A stale index lock makes `git stash push` fail while the tree stays dirty.
+    // A stale index lock makes any dev-side index write (stash push, merge)
+    // fail — the staging path must not care about dev's git state.
     writeFileSync(join(root, ".git", "index.lock"), "");
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBe(1);
-    expect(run.output).toContain("failed to stash dirty dev checkout");
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("main moved to");
+    expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feature work");
   });
 
   // Intentional contract change from
@@ -1254,7 +1270,7 @@ describe("finalize direct strategy", () => {
   );
 
   test.skipIf(!gpgTooling)(
-    "reports a conflicted direct merge and preserves the dev stash",
+    "discards staging and leaves the target untouched when the direct merge conflicts",
     async () => {
       const wtPath = addWorktree("feature/x");
       commitFile(wtPath, "seed.txt", "branch side\n", "branch edit");
@@ -1265,10 +1281,13 @@ describe("finalize direct strategy", () => {
       const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "direct", "--force"]);
 
       expect(run.exitCode).toBe(1);
-      expect(run.output).toContain("Stashed dirty dev checkout as 'worktree-finalize-");
-      expect(run.output).toContain("Merge conflicts \u2014 resolve on main");
-      // A pop onto the conflicted dev tree cannot succeed, so the entry stays.
-      expect(git(["stash", "list"])).toContain("worktree-finalize-");
+      expect(run.output).toContain("Direct merge conflicts — staging discarded, main untouched");
+      // Dev was never involved: no stash dance, scratch file untouched.
+      expect(git(["stash", "list"]).trim()).toBe("");
+      expect(readFileSync(join(root, "untracked.txt"), "utf8")).toBe("scratch\n");
+      // The target ref did not move; a retry is unblocked.
+      expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("main edit");
+      expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
     },
   );
 
@@ -1293,7 +1312,12 @@ describe("finalize direct strategy", () => {
       `  worktreeRoot: ${JSON.stringify(root)},`,
       `  treeDir: ${JSON.stringify(treeDir)},`,
       `  agentGpgKeyId: ${JSON.stringify(gpgKeyId)},`,
-      `  settings: ${JSON.stringify(DEFAULT_SETTINGS)},`,
+      `  settings: ${
+        JSON.stringify({
+          ...DEFAULT_SETTINGS,
+          branches: { ...DEFAULT_SETTINGS.branches, root: "main" },
+        })
+      },`,
       `});`,
     ].join("\n");
     const child = Bun.spawnSync([process.execPath, "-e", code], {
@@ -1335,7 +1359,12 @@ describe("finalize direct strategy", () => {
         `  worktreeRoot: ${JSON.stringify(root)},`,
         `  treeDir: ${JSON.stringify(treeDir)},`,
         `  agentGpgKeyId: ${JSON.stringify(gpgKeyId)},`,
-        `  settings: ${JSON.stringify(DEFAULT_SETTINGS)},`,
+        `  settings: ${
+          JSON.stringify({
+            ...DEFAULT_SETTINGS,
+            branches: { ...DEFAULT_SETTINGS.branches, root: "main" },
+          })
+        },`,
         `});`,
       ].join("\n");
       const child = Bun.spawnSync([process.execPath, "-e", code], {
@@ -1359,23 +1388,22 @@ describe("finalize direct strategy", () => {
   );
 });
 
-describe("finalize detached root guard", () => {
-  test("refuses when the main checkout HEAD is detached", async () => {
+describe("finalize detached dev checkout", () => {
+  test("warns and stays when the dev checkout HEAD is detached", async () => {
     const wtPath = featureWorktree();
-    const branchSha = git(["rev-parse", "feature/x"]).trim();
     git(["checkout", "-q", "--detach"]);
-    const headSha = git(["rev-parse", "HEAD"]).trim();
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBe(1);
-    expect(run.output).toContain("main checkout is detached at");
-    expect(run.output).toContain(headSha);
-    expect(run.output).toContain("checkout the root branch (or stash) before finalizing");
-    // Preflight refusal: no lock taken, feature branch untouched.
-    expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
-    expect(git(["rev-parse", "feature/x"]).trim()).toBe(branchSha);
-    expect(existsSync(wtPath)).toBe(true);
+    // The staging merge no longer requires dev to hold the target: it
+    // succeeds, the target ref moves, and dev stays detached with a warning.
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("dev checkout not fast-forwarded to main (on detached HEAD)");
+    expect(run.output).toContain("main moved to");
+    expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feature work");
+    // Dev's checkout content did not change (still at the old main).
+    expect(existsSync(join(root, "feature.txt"))).toBe(false);
+    expect(existsSync(wtPath)).toBe(false);
   });
 });
 
@@ -1405,7 +1433,7 @@ describe("finalize squash strategy", () => {
     },
   );
 
-  test.skipIf(!gpgTooling)("rolls dev back to HEAD when the stash pop conflicts", async () => {
+  test.skipIf(!gpgTooling)("keeps a dirty dev checkout dirty through a squash merge", async () => {
     const wtPath = addWorktree("feature/x");
     commitFile(wtPath, "seed.txt", "branch side\n", "branch edit");
     writeFileSync(join(root, "seed.txt"), "local scribble\n");
@@ -1413,35 +1441,42 @@ describe("finalize squash strategy", () => {
 
     const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "squash"]);
 
-    expect(run.output).toContain("stash pop conflicted \u2014 resetting dev to post-merge HEAD");
-    expect(run.output).toContain("preserved");
-    expect(run.output).toContain("Your pre-merge work is still on the stash stack");
-    expect(git(["stash", "list"])).toContain("worktree-finalize-");
-    // Post-merge HEAD now includes the squash commit (the squash step
-    // commits the staged integration), so the roll-back-to-HEAD target
-    // carries the branch's content, not the pre-merge file.
-    expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("branch side\n");
-  });
-
-  test.skipIf(!gpgTooling)("fails the run when the squash merge itself fails", async () => {
-    featureWorktree();
-    config.agentGpgKeyId = gpgKeyId;
-    // A stale index lock makes `git merge --squash` fail after the GPG gate.
-    writeFileSync(join(root, ".git", "index.lock"), "");
-
-    const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "squash"]);
-
-    expect(run.exitCode).toBe(1);
-    expect(run.output).toContain("Squash merge failed");
+    // The old flow stashed, squash-merged in dev, then reset dev on stash-pop
+    // conflict. Staging never touches dev: the dirt survives verbatim and the
+    // squash commit lands on the target ref regardless.
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("Squash merged: feat: X");
+    expect(run.output).toContain("not fast-forwarded to main (dirty working tree)");
+    expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local scribble\n");
+    expect(git(["stash", "list"]).trim()).toBe("");
+    expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feat: X");
   });
 
   test.skipIf(!gpgTooling)(
-    "unwinds the staged squash and unblocks retry when the squash commit fails",
+    "squash merges in staging even when the dev index is locked",
+    async () => {
+      featureWorktree();
+      config.agentGpgKeyId = gpgKeyId;
+      // A stale index lock makes any dev-side index write fail — staging
+      // must not care about dev's git state.
+      writeFileSync(join(root, ".git", "index.lock"), "");
+
+      const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "squash"]);
+
+      expect(run.exitCode).toBeNull();
+      expect(run.output).toContain("Squash merged: feat: X");
+      expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feat: X");
+    },
+  );
+
+  test.skipIf(!gpgTooling)(
+    "leaves the target untouched and retry unblocked when the squash commit fails",
     async () => {
       featureWorktree();
       config.agentGpgKeyId = gpgKeyId;
       // A failing pre-commit hook makes `git commit -F` fail AFTER
-      // `git merge --squash` successfully staged the integration.
+      // `git merge --squash` successfully staged the integration (the hook
+      // is shared via the common git dir, so staging runs it too).
       writeFileSync(join(root, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 1\n");
       chmodSync(join(root, ".git", "hooks", "pre-commit"), 0o755);
 
@@ -1449,13 +1484,11 @@ describe("finalize squash strategy", () => {
 
       expect(run.exitCode).toBe(1);
       expect(run.output).toContain("Squash commit failed");
-      expect(run.output).toContain("Unwound the staged squash");
-      // The staged squash was unwound: a plain retry is not blocked by the
-      // staged-entries gate.
+      expect(run.output).toContain("the target ref is untouched");
+      // Nothing landed: main is still at seed, dev untouched, and the branch
+      // survives for a plain retry.
+      expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("seed");
       expect(git(["status", "--porcelain"], root)).toBe("");
-      // The finally-restore ran (no bypassed process.exit): no leaked stash.
-      expect(git(["stash", "list"])).not.toContain("worktree-finalize-");
-      // Exit happened before teardown: branch + worktree survive for a retry.
       expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
     },
   );

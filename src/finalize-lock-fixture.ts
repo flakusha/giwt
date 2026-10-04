@@ -83,7 +83,7 @@ if (mode === "slot") {
   setInterval(() => {}, 1000);
 } else if (mode === "exit") {
   // Operator-error path: any `process.exit(1)` call inside runFinalize
-  // helpers (stashDevForMerge, restoreDevFromStash, etc.) takes this
+  // helpers (finalize merge/abort helpers, etc.) takes this
   // route. Before the fix this leaked the lock because `process.exit`
   // aborts the call stack before the outer finally runs.
   process.exit(1);

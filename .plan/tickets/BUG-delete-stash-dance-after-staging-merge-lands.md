@@ -3,7 +3,7 @@
 
 # BUG: delete stash dance after staging merge lands
 
-**Status:** Not Started
+**Status:** Done — landed with FEAT-merge-in-staging-worktree (staging.ts / staging-sync.ts / staging-tree.ts split)
 **Priority:** medium
 **Effort:** Medium
 **Tags:** stash, finalize
@@ -18,7 +18,7 @@ Blocked on the staging-worktree ticket. Call sites to remove: merge-exec.ts:76 (
 
 **Acceptance Criteria:**
 
-- [ ] Zero stashDevForMerge / restoreDevFromStash call sites on the finalize path
-- [ ] abort.ts legacy path retained with a drain note, or removed if no leftovers remain
-- [ ] The abort-header versus restore-body reset contradiction is closed
-- [ ] Full suite green
+- [x] Zero stashDevForMerge / restoreDevFromStash call sites on the finalize path (both functions deleted entirely)
+- [x] abort.ts legacy path retained with a drain note, or removed if no leftovers remain (kept: selectFinalizeStashes drain scan; state.ts signal handler carries the legacy-stashLabel note)
+- [x] The abort-header versus restore-body reset contradiction is closed (restoreDevFromStash and its unscoped `reset --hard` no longer exist; the only forced checkout left is the pre-CAS-snapshot-verified dev sync in staging-sync.ts)
+- [x] Full suite green (`bun run check` 2026-10-04: lint, typecheck, knip, jscpd, size, coverage ratchet, tests)

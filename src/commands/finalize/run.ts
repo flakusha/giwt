@@ -16,7 +16,7 @@ import { closeScopedIssues, readScopedMeta, reconcileScopedPlan } from "../scope
 import { resolveDiffBase, runTests } from "./checks";
 import { ensureWorktreeClean } from "./clean-state";
 import { runCheckGateStep } from "./gates";
-import { executeMergeStep } from "./merge-exec";
+import { executeStagingMerge } from "./staging";
 import { teardownFinalizedWorktree } from "./teardown";
 
 export async function runFinalize(
@@ -202,20 +202,40 @@ export async function runFinalize(
   // queued finalizer waits seconds, not the gate storm
   // (FEAT-narrow-finalize-lock-to-merge-steps).
   runMergePhase(() => {
-    executeMergeStep(branch, mergeStrategy, force, config, wtPath, targetBranch, alreadyMerged);
+    // Merge in the ephemeral staging worktree (never in dev); the target
+    // ref moves via update-ref CAS and dev syncs lazily.
+    const staged = executeStagingMerge(
+      branch,
+      mergeStrategy,
+      force,
+      config,
+      targetBranch,
+      alreadyMerged,
+    );
 
-    // Record the merge result while the tree still exists: the run record
-    // itself lives under repoRoot now, but the SHA is the durable answer to
-    // "what did this finalize land" (head of the target branch post-merge).
-    activeRun()?.outcome({ mergeCommit: gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD") });
+    // Record the merge result: the SHA is the durable answer to "what did
+    // this finalize land" (the CAS-moved target ref, not dev's HEAD — dev
+    // may legitimately lag when its working tree was dirty).
+    const mergeCommit = staged?.targetSha
+      ?? gitSyncQuiet(config.repoRoot, "rev-parse", `refs/heads/${targetBranch}`);
+    activeRun()?.outcome({ mergeCommit });
 
     // Step 5.5: scoped-worktree plan reconciliation (post-merge). runSync --fix
     // maps the closed issues' Done state into the merged .md files and index,
     // the generated plan artifacts are regenerated, and the result lands as a
-    // signed in-place commit on the target branch.
+    // signed in-place commit on the target branch. It commits in the dev
+    // checkout, so it only runs when the lazy sync actually moved dev onto
+    // the new target — a dirty/detached dev would commit on the wrong base.
     if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
-      log("info", "Step 5.5: scoped-worktree plan reconciliation...");
-      reconcileScopedPlan(config);
+      if (staged?.devSynced) {
+        log("info", "Step 5.5: scoped-worktree plan reconciliation...");
+        reconcileScopedPlan(config);
+      } else {
+        log(
+          "warn",
+          `Step 5.5 skipped: dev checkout not synced to ${targetBranch} — re-run 'giwt sync --fix' after syncing manually`,
+        );
+      }
     }
 
     teardownFinalizedWorktree(branch, wtPath, config, alreadyMerged, targetBranch);

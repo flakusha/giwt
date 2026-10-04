@@ -4,7 +4,6 @@
 
 import { isolatedGitEnv } from "../../utils/git";
 import { log, raw } from "../../utils/output";
-import { restoreDevFromStash } from "./merge";
 
 // Signals we treat as user-initiated cancellation. SIGINT (Ctrl-C), SIGTERM
 // (orchestrator kill), SIGHUP (terminal close / parent shell exit). All three
@@ -204,29 +203,14 @@ function handleSignalAbort(sig: FinalizeSignal): void {
         raw(`  Stderr: ${abort.stderr.toString().trim()}`);
       }
     }
-    if (state.stashLabel) {
-      log("info", `Restoring stash '${state.stashLabel}'...`);
-      // Use the same restoreDevFromStash logic the success path uses, but
-      // pass `state.mergeHead ?? state.repoRoot` as the recovery HEAD —
-      // if no merge was in progress, we just want to pop the stash back
-      // onto a clean tree (HEAD is fine).
-      const fallbackHead = state.mergeHead ?? "HEAD";
-      try {
-        restoreDevFromStash(state.repoRoot, state.stashLabel, fallbackHead);
-      } catch (err) {
-        // restoreDevFromStash calls process.exit on unrecoverable errors;
-        // we wrap defensively so a thrown JS error doesn't bypass our exit.
-        log("warn", `stash restore errored: ${(err as Error).message}`);
-      }
-    }
+    // Legacy stashLabel slot: the staging merge never stashes, so no
+    // rollback restore is needed — leftover stashes from older giwt
+    // versions are drained by `giwt abort`'s finalize-stash scan.
     raw("");
     raw(`  Recovery commands if anything looks off:`);
     raw(`    cd ${state.repoRoot}`);
     if (state.mergeInProgress) {
       raw(`    git merge --abort          # clean dev if not already`);
-    }
-    if (state.stashLabel) {
-      raw(`    git stash list             # find your pre-merge stash`);
     }
   } else {
     log("warn", "no in-progress merge or stash to roll back");

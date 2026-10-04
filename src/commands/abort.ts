@@ -45,7 +45,7 @@
  * - The full `abort` orchestrator still calls `git` via spawnSync and
  *   therefore must run against a real git repo (one per test fixture).
  */
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { resolve } from "path";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
@@ -62,10 +62,10 @@ import {
   selectFinalizeStashes,
   stashIndex,
 } from "./abort/helpers";
+import { pruneStagingWorktrees } from "./finalize/staging-tree";
 
 export {
   DEV_IN_PROGRESS_HEADS,
-  FINALIZE_STASH_PREFIX,
   type FsOps,
   isOrphanRebaseMarker,
   LOCK_FILENAME,
@@ -231,6 +231,23 @@ export async function abort(
     }
   } else {
     log("info", "No lockfile present");
+  }
+
+  // 3.5. Prune orphan staging worktrees (FEAT-merge-in-staging-worktree):
+  // a SIGKILL mid-finalize leaves tree/.finalize-<branch>-<pid> registered
+  // as a worktree. The target ref never moved (the CAS is atomic), so
+  // removing the directory loses nothing.
+  if (existsSync(config.treeDir)) {
+    const orphans = readdirSync(config.treeDir).filter((entry) => entry.startsWith(".finalize-"));
+    if (orphans.length > 0) {
+      log("info", `Found ${orphans.length} orphan staging worktree(s)`);
+      for (const entry of orphans) {
+        log("info", `  ${entry}`);
+      }
+      if (!dryRun) pruneStagingWorktrees(config);
+    } else {
+      log("info", "No orphan staging worktrees");
+    }
   }
 
   // 4. Final state report.
