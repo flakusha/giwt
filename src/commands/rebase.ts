@@ -5,6 +5,7 @@ import { type RebaseResult, rebaseWithPlanReconciliation } from "../plan/reconci
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
+import { scopedSignFlags } from "./scoped-worktree";
 
 /** One-line summary of strict-superset auto-resolutions, if any occurred. */
 function reportAutoResolved(result: RebaseResult): void {
@@ -93,6 +94,7 @@ export async function rebase(
     target,
     config.settings.paths.planDir,
     config.settings.paths.tickets,
+    scopedSignFlags(config.agentGpgKeyId),
   );
 
   reportAutoResolved(result);

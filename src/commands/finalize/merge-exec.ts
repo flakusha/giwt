@@ -9,6 +9,7 @@ import type { WorktreeConfig } from "../../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../../utils/git";
 import { assertAgentGpgUnlocked } from "../../utils/gpg";
 import { log, raw } from "../../utils/output";
+import { scopedSignFlags } from "../scoped-worktree";
 import {
   branchToSquashMessage,
   gpgMergeFlags,
@@ -42,6 +43,7 @@ export function executeMergeStep(
       targetBranch,
       config.settings.paths.planDir,
       config.settings.paths.tickets,
+      scopedSignFlags(config.agentGpgKeyId),
     );
     if (rebaseResult.exitCode !== 0) {
       if (rebaseResult.output.trim()) raw(rebaseResult.output.trimEnd());

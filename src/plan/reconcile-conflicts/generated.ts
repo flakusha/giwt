@@ -111,11 +111,18 @@ export function resolveGenerated(
  * the merged sources, stage them, and fold the result into the final replayed
  * commit with a single `commit --amend`. Only call after the rebase loop has
  * completed successfully (it throws on add/amend failure).
+ *
+ * `signFlags` pins `-c commit.gpgsign=true -c user.signingkey=...` onto the
+ * amend (BUG-reconcile-conflicts-…-gpg): the reconcile commit is the only
+ * commit-producing path that relied on ambient repo-local config, which is
+ * absent on a fresh clone or CI runner — an unsigned commit with no error.
+ * Mirrors scopedSignFlags(); empty/absent key degrades to [].
  */
 export function completeGeneratedReconcile(
   root: string,
   planDir: string,
   ticketsPath: string,
+  signFlags: string[] = [],
 ): void {
   regenerate(root, planDir, ticketsPath);
   for (const path of generatedPaths(root, planDir, ticketsPath)) {
@@ -127,7 +134,7 @@ export function completeGeneratedReconcile(
       throw new Error(`reconcile: git add ${path} failed: ${added.stderr.trim()}`);
     }
   }
-  const amended = runGit(root, "commit", "--amend", "--no-edit");
+  const amended = runGit(root, ...signFlags, "commit", "--amend", "--no-edit");
   if (amended.exitCode !== 0) {
     throw new Error(`reconcile: git commit --amend failed: ${amended.stderr.trim()}`);
   }

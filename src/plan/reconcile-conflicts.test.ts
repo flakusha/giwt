@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
@@ -389,6 +389,78 @@ test("does not auto-resolve when a source file conflicts alongside a generated o
     expect(unmerged).toContain("README.md");
     expect(unmerged).toContain(".plan/tickets/index.json");
     expect(git(root, "ls-files", "-u")).toContain(".plan/tickets/index.json");
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("pinned sign flags reach the reconcile amend commit (BUG-reconcile-conflicts GPG)", () => {
+  const fixtureValue = fixture();
+  const { root } = fixtureValue;
+  // Stub gpg on PATH: appends its argv to a marker file so the test proves
+  // git actually attempted signing AND that the pinned key reached gpg.
+  const binDir = join(root, ".gpg-bin");
+  const marker = join(root, ".gpg-called");
+  mkdirSync(binDir, { recursive: true });
+  const stub = join(binDir, "gpg");
+  // git's signing interface requires the signature on stdout and a
+  // [GNUPG:] SIG_CREATED status line on stderr, else it fatal-fails.
+  writeFileSync(
+    stub,
+    `#!/bin/sh\necho "$@" >> ${marker}\necho "-----BEGIN PGP SIGNATURE-----"\necho "[GNUPG:] SIG_CREATED " >&2\nexit 0\n`,
+  );
+  chmodSync(stub, 0o755);
+  try {
+    git(root, "config", "commit.gpgsign", "true");
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    try {
+      const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets", [
+        "-c",
+        "commit.gpgsign=true",
+        "-c",
+        "user.signingkey=TESTKEY",
+      ]);
+      expect(result.exitCode).toBe(0);
+      expect(result.generatedConflicts.length).toBeGreaterThan(0);
+    } finally {
+      process.env.PATH = oldPath;
+    }
+    // The pinned signing key reached gpg during the amend — without the
+    // flags the ambient config (no user.signingkey) signs with the default
+    // identity and TESTKEY would never appear in gpg's argv.
+    expect(existsSync(marker)).toBe(true);
+    expect(readFileSync(marker, "utf8")).toContain("TESTKEY");
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("no pinned flags keeps the amend unsigned and un-probed", () => {
+  const fixtureValue = fixture();
+  const { root } = fixtureValue;
+  const binDir = join(root, ".gpg-bin");
+  const marker = join(root, ".gpg-called");
+  mkdirSync(binDir, { recursive: true });
+  const stub = join(binDir, "gpg");
+  // git's signing interface requires the signature on stdout and a
+  // [GNUPG:] SIG_CREATED status line on stderr, else it fatal-fails.
+  writeFileSync(
+    stub,
+    `#!/bin/sh\necho "$@" >> ${marker}\necho "-----BEGIN PGP SIGNATURE-----"\necho "[GNUPG:] SIG_CREATED " >&2\nexit 0\n`,
+  );
+  chmodSync(stub, 0o755);
+  try {
+    // Fixture default: commit.gpgsign=false, and no signFlags passed.
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${oldPath ?? ""}`;
+    try {
+      const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+      expect(result.exitCode).toBe(0);
+    } finally {
+      process.env.PATH = oldPath;
+    }
+    expect(existsSync(marker)).toBe(false);
   } finally {
     fixtureValue.cleanup();
   }

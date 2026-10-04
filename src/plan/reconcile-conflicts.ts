@@ -34,6 +34,11 @@ export function rebaseWithPlanReconciliation(
   target: string,
   planDir: string,
   ticketsPath: string,
+  /** GPG pin flags for the rebase replays and the final amend commit
+   * (BUG-reconcile-conflicts GPG): `git rebase` re-signs the whole replayed
+   * tail, so the flags must wrap the rebase invocation itself, not only the
+   * reconcile amend. */
+  signFlags: string[] = [],
 ): RebaseResult {
   // A contained target means there is nothing to replay, but `git rebase` still
   // rewrites and re-signs the branch's whole tail byte-identically - and each
@@ -49,7 +54,7 @@ export function rebaseWithPlanReconciliation(
     };
   }
 
-  let result = runGit(root, "rebase", target);
+  let result = runGit(root, ...signFlags, "rebase", target);
   let output = result.stdout + result.stderr;
   const generatedConflicts: string[] = [];
   const autoResolved: string[] = [];
@@ -68,14 +73,14 @@ export function rebaseWithPlanReconciliation(
     ) {
       return { exitCode: result.exitCode, output, generatedConflicts, autoResolved };
     }
-    result = runGit(root, "rebase", "--continue");
+    result = runGit(root, ...signFlags, "rebase", "--continue");
     output += result.stdout + result.stderr;
   }
 
   if (result.exitCode === 0 && generatedConflicts.length > 0) {
     // One regeneration + one amend for the whole replayed tail, instead of
     // one regeneration per replayed commit.
-    completeGeneratedReconcile(root, planDir, ticketsPath);
+    completeGeneratedReconcile(root, planDir, ticketsPath, signFlags);
   }
 
   return { exitCode: 0, output, generatedConflicts, autoResolved };
