@@ -4,9 +4,10 @@
 # The project gate is `bun run check` (= fmt:check + lint + lint:md + lint:sh
 #   + deadcode (knip) + duplication (jscpd) + tsc --noEmit + bun test).
 # tsc is project-wide by design (no per-file tsconfig mode) and the
-# suite runs in ~2s, so there is no staged-files-only fast path — the
-# full gate IS the fast path. Staged-file detection only decides
-# whether the gate needs to run at all.
+# full suite alone is ~38s measured (1357 tests / 74 files; the whole
+# gate adds fmt/lint/knip/jscpd on top), so there is no
+# staged-files-only fast path — the full gate IS the fast path.
+# Staged-file detection only decides whether the gate needs to run at all.
 #
 # Install: git config core.hooksPath .githooks && chmod +x .githooks/pre-commit
 
