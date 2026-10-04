@@ -16,7 +16,7 @@ import {
 } from "./parse.ts";
 import type { SpawnFn } from "./spawn.ts";
 import { tail, toFindings } from "./spawn.ts";
-import { CHECK_MAX_FINDINGS, type CheckFinding, type CheckResult } from "./types.ts";
+import { capFindings, type CheckFinding, type CheckResult } from "./types.ts";
 import { toolBin } from "./util.ts";
 
 export async function runLint(root: string, spawn: SpawnFn): Promise<CheckResult> {
@@ -50,7 +50,7 @@ export async function runLint(root: string, spawn: SpawnFn): Promise<CheckResult
       : tool === "oxlint"
       ? parseOxlintJson(out, root)
       : parseBiomeOutput(out, root);
-    return { ...base, tool, findings: toFindings(findings) };
+    return { ...base, tool, ...toFindings(findings) };
   } catch (e) {
     if (res.exitCode === 0 || !out.trim()) return { ...base, tool, findings: [] };
     return {
@@ -76,14 +76,14 @@ export async function runTypecheck(root: string, spawn: SpawnFn): Promise<CheckR
   if (errors.length > 0) {
     return {
       ...base,
-      findings: errors.slice(0, CHECK_MAX_FINDINGS).map((e) => ({
+      ...capFindings(errors.map((e) => ({
         file: e.file,
         line: e.line,
         rule: e.code,
         message: e.message,
         severity: "error" as const,
         kind: "bug" as const,
-      })),
+      }))),
     };
   }
   if (res.exitCode !== 0) {
@@ -116,14 +116,14 @@ export async function runTests(
   if (failures.length > 0) {
     return {
       ...base,
-      findings: failures.slice(0, CHECK_MAX_FINDINGS).map((f) => ({
+      ...capFindings(failures.map((f) => ({
         file: "",
         line: 0,
         rule: "test",
         message: f.name,
         severity: "error" as const,
         kind: "bug" as const,
-      })),
+      }))),
     };
   }
   if (res.exitCode !== 0) {

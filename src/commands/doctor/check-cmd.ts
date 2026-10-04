@@ -30,11 +30,16 @@ function doctorCheckEmoji(record: Record<string, unknown> | unknown): string {
     ok: boolean;
     skipped?: string;
     findings: Array<{ severity: string; }>;
+    findingsTotal?: number;
   };
   if (rec.skipped !== undefined) return `⏭️ ${rec.id} skipped`;
   const hasError = !rec.ok || rec.findings.some((f) => f.severity === "error");
   const mark = hasError ? "❌" : rec.findings.length > 0 ? "⚠️" : "✅";
-  return `${mark} ${rec.id} (${rec.findings.length} finding(s))`;
+  const hidden = rec.findingsTotal === undefined
+    ? 0
+    : rec.findingsTotal - rec.findings.length;
+  const suffix = hidden > 0 ? `, +${hidden} more not shown` : "";
+  return `${mark} ${rec.id} (${rec.findings.length} finding(s)${suffix})`;
 }
 
 export async function runDoctorCheck(args: string[], config: WorktreeConfig): Promise<void> {
@@ -129,7 +134,10 @@ export async function runDoctorCheck(args: string[], config: WorktreeConfig): Pr
     )
     .map((c) => c.id);
   const skippedCount = report.checks.filter((c) => c.skipped !== undefined).length;
-  const findingCount = report.checks.reduce((n, c) => n + c.findings.length, 0);
+  const findingCount = report.checks.reduce(
+    (n, c) => n + (c.findingsTotal ?? c.findings.length),
+    0,
+  );
   const passedCount = report.checks.length - skippedCount - failedIds.length;
   activeRun()?.outcome({
     doctor: `${passedCount}/${report.checks.length} ok, ${failedIds.length} failed, `
@@ -169,6 +177,11 @@ export async function runDoctorCheck(args: string[], config: WorktreeConfig): Pr
     raw(`   [${tag}] ${check.id} (${check.tool}) — ${check.findings.length} finding(s)`);
     for (const f of check.findings) {
       raw(`       ${f.file}:${f.line} [${f.rule}] ${f.message}`);
+    }
+    // BUG-doctor-check-caps: the cap used to truncate silently — the reader
+    // could not tell a complete report from a capped one.
+    if (check.findingsTotal !== undefined) {
+      raw(`       … ${check.findingsTotal - check.findings.length} more not shown`);
     }
     for (const note of check.notes ?? []) {
       raw(`       ${note}`);

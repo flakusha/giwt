@@ -10,7 +10,15 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -657,6 +665,33 @@ describe("doctor() check subcommand", () => {
       configFor(cleanRoot),
     );
     expect(ok.out.trim()).toMatch(/^✅ todo \(0 finding\(s\)\)$/);
+  });
+
+  it("prints an omission notice when findings exceed the cap", async () => {
+    // Stub tsc via the repo-pinned node_modules/.bin resolution: the check
+    // emits 25 parseable tsc errors, so the human renderer must print the
+    // "… N more not shown" notice after the first 20 findings.
+    const root = tsRepo();
+    const errors = Array.from(
+      { length: 25 },
+      (_, i) => `src/index.ts(${i + 1},7): error TS2322: bad ${i + 1}`,
+    ).join("\n");
+    mkdirSync(join(root, "node_modules", ".bin"), { recursive: true });
+    const tsc = join(root, "node_modules", ".bin", "tsc");
+    writeFileSync(tsc, `#!/bin/sh\ncat ${join(root, "tsc-out.txt")}\nexit 2\n`);
+    chmodSync(tsc, 0o755);
+    writeFileSync(join(root, "tsc-out.txt"), `${errors}\n`);
+    // typecheck only applies to projects with a tsconfig.json.
+    writeFileSync(join(root, "tsconfig.json"), "{}\n");
+
+    const { out, exitCode } = await runCheck(
+      ["--checks", "typecheck", "--root", root, "--jobs=1"],
+      configFor(root),
+    );
+    expect(out).toContain("— 20 finding(s)");
+    // AC: fails if the notice is missing.
+    expect(out).toContain("… 5 more not shown");
+    expect(exitCode).toBe(1);
   });
 
   it("marks non-applicable checks as skipped", async () => {

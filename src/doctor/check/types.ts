@@ -47,6 +47,11 @@ export interface CheckResult {
   /** Present when the check failed to run (stderr tail, capped). */
   error?: string;
   findings: CheckFinding[];
+  /** Pre-cap total when CHECK_MAX_FINDINGS truncated `findings` — the
+   *  renderer's "… N more not shown" notice is computed from it
+   *  (BUG-doctor-check-caps: truncation used to be silent). Absent when
+   *  nothing was truncated; additive, so v1 consumers stay compatible. */
+  findingsTotal?: number;
   /** Human-readable summary lines (e.g. scratchpad sizes/ages); the doctor
    *  renderer prints them after the findings. Additive to the v1 report
    *  contract — consumers that ignore it stay compatible. */
@@ -70,3 +75,18 @@ export interface DoctorCheckReport {
 
 /** Max findings kept per check (bounds JSON + human output). */
 export const CHECK_MAX_FINDINGS = 20;
+
+/** Slice mapped findings to the report cap, recording the pre-cap total when
+ *  the cap truncated (BUG-doctor-check-caps-findings-at-20-with-no-):
+ *  truncation used to be silent and readers could not tell a complete report
+ *  from a capped one. Spread the result into the CheckResult. */
+export function capFindings(findings: CheckFinding[]): {
+  findings: CheckFinding[];
+  findingsTotal?: number;
+} {
+  if (findings.length <= CHECK_MAX_FINDINGS) return { findings };
+  return {
+    findings: findings.slice(0, CHECK_MAX_FINDINGS),
+    findingsTotal: findings.length,
+  };
+}

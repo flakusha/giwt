@@ -12,7 +12,7 @@ import { join } from "node:path";
 import type { SpawnFn } from "./spawn.ts";
 import { tail } from "./spawn.ts";
 import {
-  CHECK_MAX_FINDINGS,
+  capFindings,
   type CheckFinding,
   type CheckResult,
   type CheckSeverity,
@@ -161,14 +161,14 @@ async function runKnip(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const findings = parseKnipIssues(data);
   return {
     ...base,
-    findings: findings.slice(0, CHECK_MAX_FINDINGS).map((f) => ({
+    ...capFindings(findings.map((f) => ({
       file: f.file,
       line: f.line ?? 0,
       rule: `knip:${f.kind}`,
       message: `${f.kind}: ${f.name}`,
       severity: (f.kind === "issue" ? "error" : "warning") as CheckSeverity,
       kind: (f.kind === "issue" ? "bug" : "task") as "bug" | "task",
-    })),
+    }))),
   };
 }
 
@@ -209,20 +209,18 @@ async function runJscpd(root: string, spawn: SpawnFn): Promise<CheckResult> {
     return {
       ...base,
       // Configs may report absolute paths ("absolute": true) — relativize.
-      findings: parseJscpdReport(data)
-        .slice(0, CHECK_MAX_FINDINGS)
-        .map((c) => {
-          const a = relToRoot(root, c.a);
-          const b = relToRoot(root, c.b);
-          return {
-            file: a,
-            line: c.lineA,
-            rule: "duplication",
-            message: `${c.lines} duplicated lines: ${a}:${c.lineA} ↔ ${b}:${c.lineB}`,
-            severity: "warning" as const,
-            kind: "task" as const,
-          };
-        }),
+      ...capFindings(parseJscpdReport(data).map((c) => {
+        const a = relToRoot(root, c.a);
+        const b = relToRoot(root, c.b);
+        return {
+          file: a,
+          line: c.lineA,
+          rule: "duplication",
+          message: `${c.lines} duplicated lines: ${a}:${c.lineA} ↔ ${b}:${c.lineB}`,
+          severity: "warning" as const,
+          kind: "task" as const,
+        };
+      })),
     };
   } finally {
     try {

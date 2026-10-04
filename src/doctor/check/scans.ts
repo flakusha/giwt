@@ -162,5 +162,5 @@ export function runScratchpad(
   notes.push(
     ...largestDirs(scratchRoot, 5).map((d) => `${d.path} — ${formatScratchMb(d.bytes)}`),
   );
-  return { ...base, findings: toFindings(items), notes };
+  return { ...base, ...toFindings(items), notes };
 }

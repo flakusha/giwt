@@ -6,7 +6,7 @@
  * time budget and kill the child when the budget wins.
  */
 
-import { CHECK_MAX_FINDINGS, type CheckFinding } from "./types.ts";
+import { capFindings, type CheckFinding } from "./types.ts";
 
 /** Per-check subprocess budget in ms. A wedged child must not hold a
  *  worker slot forever; override via `[doctor] timeout_ms` / `--timeout`. */
@@ -122,13 +122,13 @@ export function tail(text: string, max = 500): string {
 
 export function toFindings(
   items: Array<{ file: string; line: number; rule: string; message: string; error: boolean; }>,
-): CheckFinding[] {
-  return items.slice(0, CHECK_MAX_FINDINGS).map((f) => ({
+): { findings: CheckFinding[]; findingsTotal?: number } {
+  return capFindings(items.map((f) => ({
     file: f.file,
     line: f.line,
     rule: f.rule,
     message: f.message,
     severity: f.error ? ("error" as const) : ("warning" as const),
     kind: f.error ? ("bug" as const) : ("task" as const),
-  }));
+  })));
 }

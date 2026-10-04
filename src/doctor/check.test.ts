@@ -1139,3 +1139,48 @@ describe("check subprocess timeout", () => {
     }
   });
 });
+
+describe("finding cap transparency (BUG-doctor-check-caps)", () => {
+  const tscErrors = (n: number): string =>
+    Array.from(
+      { length: n },
+      (_, i) => `src/a.ts(${i + 1},1): error TS2322: bad ${i + 1}`,
+    ).join("\n");
+
+  it("records the pre-cap total when typecheck findings exceed the cap", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "tsconfig.json", "{}\n");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const report = await runDoctorChecks(root, {
+        checks: ["typecheck"],
+        spawn: () => ({ exitCode: 2, stdout: tscErrors(25), stderr: "" }),
+      });
+      const typecheck = report.checks[0]!;
+      expect(typecheck.findings).toHaveLength(20);
+      // The omission notice the renderer prints is derived from this field:
+      // without it the truncation is silent again.
+      expect(typecheck.findingsTotal).toBe(25);
+      expect(checkExitCode(report)).toBe(1);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("omits findingsTotal when nothing was truncated", async () => {
+    const root = makeRepo();
+    try {
+      write(root, "tsconfig.json", "{}\n");
+      write(root, "src/a.ts", "export const x = 1;\n");
+      const report = await runDoctorChecks(root, {
+        checks: ["typecheck"],
+        spawn: () => ({ exitCode: 2, stdout: tscErrors(3), stderr: "" }),
+      });
+      const typecheck = report.checks[0]!;
+      expect(typecheck.findings).toHaveLength(3);
+      expect(typecheck.findingsTotal).toBeUndefined();
+    } finally {
+      cleanup(root);
+    }
+  });
+});
