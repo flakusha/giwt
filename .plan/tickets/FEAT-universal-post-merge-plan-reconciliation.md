@@ -3,7 +3,7 @@
 
 # FEAT: universal post-merge plan reconciliation
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** plan, finalize
@@ -18,7 +18,8 @@ run.ts:209-212 runs reconcileScopedPlan only when scopedMeta is not null. Non-sc
 
 **Acceptance Criteria:**
 
-- [ ] Every non-alreadyMerged finalize runs plan reconciliation with commit-if-dirty
-- [ ] alreadyMerged path unchanged (no empty commit)
-- [ ] Idempotent rerun skips the commit
-- [ ] Tests cover scoped and non-scoped paths
+- [x] Every non-alreadyMerged finalize runs plan reconciliation with commit-if-dirty
+- [x] alreadyMerged path unchanged (no empty commit)
+- [x] Idempotent rerun skips the commit
+- [x] Tests cover scoped and non-scoped paths
+**Resolved:** 2026-10-04T01:42:42.910Z Landed: Step 5.5 universal; commit subject now chore(plan): post-merge reconciliation

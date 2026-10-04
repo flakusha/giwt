@@ -1075,7 +1075,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/FEAT-universal-post-merge-plan-reconciliation.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-VALIDATE-FIX-FLAG-AUTO-FIX-GATES": {
     "hash": "c42bc39",
