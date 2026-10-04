@@ -1388,7 +1388,7 @@
       "worktrees"
     ],
     "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",

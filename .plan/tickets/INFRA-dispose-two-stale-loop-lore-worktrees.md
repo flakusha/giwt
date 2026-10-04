@@ -3,7 +3,7 @@
 
 # INFRA: dispose two stale loop lore worktrees
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** worktrees
@@ -27,3 +27,5 @@ Acceptance: each branch is either merged with a renumbered migration or explicit
 - [ ] Implementation complete
 - [ ] Tests passing
 - [ ] Documentation updated
+
+**Resolved:** 2026-10-04 registry-driven close: git issue 5c90e55 (registry tip: 23a31e7 Konstantin Fedotov Close issue)
