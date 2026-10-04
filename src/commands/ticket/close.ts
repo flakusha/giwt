@@ -73,7 +73,9 @@ export async function closeTickets(args: string[], config: WorktreeConfig): Prom
   }
   if (ids.length === 0) {
     log("error", "ticket id required");
-    raw(`  Usage: ticket close <extid...> [--note "text"] [--json|--toml|--emoji]`);
+    raw(
+      `  Usage: ticket close <hash|extid|slug|slug.md>... [--note "text"] [--json|--toml|--emoji]`,
+    );
     process.exit(1);
   }
 
@@ -81,7 +83,7 @@ export async function closeTickets(args: string[], config: WorktreeConfig): Prom
   const planRoot = config.worktreeRoot;
   const index = readTicketIndex(planRoot, ticketsPath);
   const resolved = ids.map((id) => {
-    const hit = lookupTicket(index, id);
+    const hit = lookupTicket(index, id, config.repoRoot);
     if (!hit) {
       throw new Error(
         `${id}: no ticket index entry in ${resolve(planRoot, ticketsPath, "index.json")}`,

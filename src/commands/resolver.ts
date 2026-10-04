@@ -56,7 +56,10 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
   // lowercase kebab extid TASK-my-title, and lookups must round-trip it.
   const extidPattern = /^[a-z]+-[a-z0-9-]+$/i;
   if (!extidPattern.test(stripped)) {
-    return { hash: input, raw: input };
+    // Hash passthrough (BUG-ticket-id-inputs-): the stripped form is what
+    // callers match hashes with — a pasted `40464b1.md` must not leak the
+    // suffix into the hash.
+    return { hash: stripped, raw: input };
   }
 
   const lines = gitSync(repoRoot, "issue", "ls", "--all").split("\n");
@@ -71,5 +74,32 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
     }
   }
 
+  return null;
+}
+
+/**
+ * Inverse of resolveExtid for hash-form input (BUG-ticket-id-inputs-):
+ * walk the registry for the issue whose hash starts with the pasted
+ * prefix and return its title extid. Null for non-hex input, unknown
+ * hashes, and environments without the git-issue CLI — callers fall
+ * through to their own unknown-ticket errors, so a swallowed git
+ * failure only costs the hash form, never masks a real match.
+ */
+export function extidForHash(repoRoot: string, input: string): string | null {
+  if (!/^[0-9a-f]{7,40}$/.test(input)) return null;
+  let lines: string[];
+  try {
+    lines = gitSync(repoRoot, "issue", "ls", "--all").split("\n");
+  } catch {
+    return null;
+  }
+  for (const line of lines) {
+    const match = line.match(/([0-9a-f]{7,40})\s+/);
+    if (match?.[1] && match[1].startsWith(input)) {
+      // extractExtid anchors at the title start; ls lines lead with the
+      // hash and a `[state]` marker, so match against the title only.
+      return extractExtid(line.slice(match[0].length).replace(/^\[[^\]]*\]\s*/, ""));
+    }
+  }
   return null;
 }

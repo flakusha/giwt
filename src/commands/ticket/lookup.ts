@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "path";
 import type { IndexEntry } from "../../tickets/sync-ticket";
-import { resolveExtid } from "../resolver";
+import { extidForHash, resolveExtid } from "../resolver";
 
 const ISSUE_HASH_RE = /^[0-9a-f]{7,}$/;
 
@@ -27,19 +27,32 @@ export function readTicketIndex(
 
 /** Resolve a `name|extid` operand against a parsed index: exact key match
  * (case-insensitive) first, then the `.md` basename of the entry's
- * `source` so `copy` accepts the plain file-name form. */
+ * `source` so `copy` accepts the plain file-name form.
+ *
+ * `registryRoot` enables the hash fallback (BUG-ticket-id-inputs-): a
+ * pasted git-issue hash resolves to its title extid via the shared
+ * registry walk, then re-runs the same two index passes. */
 export function lookupTicket(
   index: Record<string, IndexEntry>,
   input: string,
+  registryRoot?: string,
 ): { extid: string; entry: IndexEntry; } | null {
-  const wanted = input.replace(/\.md$/i, "").toLowerCase();
-  for (const [key, entry] of Object.entries(index)) {
-    if (key.toLowerCase() === wanted) return { extid: key, entry };
-  }
-  for (const [key, entry] of Object.entries(index)) {
-    if (basename(entry.source ?? "").replace(/\.md$/i, "").toLowerCase() === wanted) {
-      return { extid: key, entry };
+  const match = (wanted: string): { extid: string; entry: IndexEntry; } | null => {
+    for (const [key, entry] of Object.entries(index)) {
+      if (key.toLowerCase() === wanted) return { extid: key, entry };
     }
+    for (const [key, entry] of Object.entries(index)) {
+      if (basename(entry.source ?? "").replace(/\.md$/i, "").toLowerCase() === wanted) {
+        return { extid: key, entry };
+      }
+    }
+    return null;
+  };
+  const direct = match(input.replace(/\.md$/i, "").toLowerCase());
+  if (direct) return direct;
+  if (registryRoot !== undefined) {
+    const extid = extidForHash(registryRoot, input);
+    if (extid) return match(extid.toLowerCase());
   }
   return null;
 }

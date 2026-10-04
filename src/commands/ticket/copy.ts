@@ -58,8 +58,8 @@ export async function copyTickets(args: string[], config: WorktreeConfig): Promi
   const { ids, to, from } = parseCopyArgs(rest);
   if (ids.length === 0 || Boolean(to) === Boolean(from)) {
     log("error", "ticket ids and exactly one of --to/--from required");
-    raw("  Usage: ticket copy <name|extid...> --to <checkout-path>   (copy out)");
-    raw("         ticket copy <name|extid...> --from <checkout-path> (copy in)");
+    raw("  Usage: ticket copy <hash|name|extid|slug|slug.md>... --to <checkout-path>   (copy out)");
+    raw("         ticket copy <hash|name|extid|slug|slug.md>... --from <checkout-path> (copy in)");
     process.exit(1);
   }
 
@@ -82,7 +82,7 @@ export async function copyTickets(args: string[], config: WorktreeConfig): Promi
 
   const records: CopyRecord[] = [];
   for (const id of ids) {
-    const hit = lookupTicket(index, id);
+    const hit = lookupTicket(index, id, sourceRoot);
     if (!hit) {
       throw new Error(
         `${id}: no ticket index entry in ${resolve(sourceRoot, ticketsPath, "index.json")}`,

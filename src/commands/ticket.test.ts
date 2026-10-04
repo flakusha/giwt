@@ -804,6 +804,63 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket close — registry roun
     }
   });
 
+  it("accepts the git-issue hash (short prefix) as the operand", async () => {
+    const { repo, cleanup } = makeTicketRepo("giwt-close-hash-");
+    const prevCwd = process.cwd();
+    try {
+      const hash = createIssueFor(repo, "TASK-CLOSE-HASH-PROBE");
+      const mdRel = ".plan/tickets/TASK-close-hash-probe.md";
+      writeFileSync(join(repo, mdRel), ticketMd("close hash probe", "In Progress", "probe body"));
+      writeIndexAt(repo, {
+        "TASK-CLOSE-HASH-PROBE": { hash, extid: "TASK-CLOSE-HASH-PROBE", source: mdRel },
+      });
+
+      process.chdir(repo);
+      const config = await loadConfig();
+      const cap = captureOut();
+      try {
+        await closeTickets([hash.slice(0, 7)], config);
+      } finally {
+        cap.restore();
+      }
+
+      expect(readFileSync(join(repo, mdRel), "utf8")).toContain("**Status:** Done");
+      expect(git(repo, "issue", "show", hash)).toContain("[closed]");
+      expect(cap.text()).toContain("TASK-CLOSE-HASH-PROBE");
+    } finally {
+      process.chdir(prevCwd);
+      cleanup();
+    }
+  });
+
+  it("ticket copy accepts the git-issue hash as the operand", async () => {
+    const { repo, cleanup } = makeTicketRepo("giwt-copy-hash-");
+    const other = join(repo, "..", "other-checkout");
+    const prevCwd = process.cwd();
+    try {
+      initRepoWithCommit(other);
+      const hash = createIssueFor(repo, "TASK-COPY-HASH-PROBE");
+      const mdRel = ".plan/tickets/TASK-copy-hash-probe.md";
+      writeFileSync(join(repo, mdRel), ticketMd("copy hash probe", "In Progress", "b"));
+      writeIndexAt(repo, {
+        "TASK-COPY-HASH-PROBE": { hash, extid: "TASK-COPY-HASH-PROBE", source: mdRel },
+      });
+
+      process.chdir(repo);
+      const config = await loadConfig();
+      const cap = captureOut();
+      try {
+        await copyTickets([hash.slice(0, 7), "--to", other], config);
+      } finally {
+        cap.restore();
+      }
+      expect(readFileSync(join(other, mdRel), "utf8")).toContain("copy hash probe");
+    } finally {
+      process.chdir(prevCwd);
+      cleanup();
+    }
+  });
+
   it("closes many ids in one run (multi-id)", async () => {
     const { repo, cleanup } = makeTicketRepo("giwt-close-multi-");
     const prevCwd = process.cwd();

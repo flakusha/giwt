@@ -22,7 +22,7 @@ import { runSync, STATUS_LINE_RE } from "../tickets/sync-index";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
-import { resolveExtid } from "./resolver";
+import { extidForHash, resolveExtid } from "./resolver";
 
 export interface ScopedMeta {
   /** Uppercase extids of the scoped tickets. */
@@ -112,8 +112,9 @@ interface ScopedTicket {
   filename: string;
 }
 
-/** Resolve ticket ids (extid, filename slug, slug.md) against the managed
- * plan tickets dir. Unmatched ids are a hard error — before worktree add. */
+/** Resolve ticket ids (extid, filename slug, slug.md, or the git-issue
+ * hash — BUG-ticket-id-inputs-) against the managed plan tickets dir.
+ * Unmatched ids are a hard error — before worktree add. */
 export function resolveScopedTickets(config: WorktreeConfig, ids: string[]): ScopedTicket[] {
   const dir = resolve(config.worktreeRoot, config.settings.paths.tickets);
   const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".md")) : [];
@@ -121,16 +122,27 @@ export function resolveScopedTickets(config: WorktreeConfig, ids: string[]): Sco
   for (const id of ids) {
     const bare = id.replace(/\.md$/i, "").toLowerCase();
     const found = files.find((f) => f.replace(/\.md$/i, "").toLowerCase() === bare);
+    // Hash fallback (BUG-ticket-id-inputs-): resolve the pasted git-issue
+    // hash to its title extid, then match the file by the same
+    // extid↔slug convention the filename pass uses.
+    let hashed: string | undefined;
     if (!found) {
+      const extid = extidForHash(config.repoRoot, id);
+      hashed = extid
+        ? files.find((f) => f.replace(/\.md$/i, "").toUpperCase() === extid.toUpperCase())
+        : undefined;
+    }
+    if (!found && !hashed) {
       log("error", `unknown ticket id '${id}' (no match in ${dir})`);
       process.exit(1);
     }
     // Extid convention: the filename slug uppercased is the registry extid
     // (sync-index derives index keys the same way).
+    const matched = found ?? hashed!;
     out.push({
-      extid: found.replace(/\.md$/i, "").toUpperCase(),
-      path: join(dir, found),
-      filename: found,
+      extid: matched.replace(/\.md$/i, "").toUpperCase(),
+      path: join(dir, matched),
+      filename: matched,
     });
   }
   return out;

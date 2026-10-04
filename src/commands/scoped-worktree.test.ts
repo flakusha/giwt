@@ -22,7 +22,7 @@ import { type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { execute as createWorktree } from "./create";
-import { extractExtid, resolveExtid } from "./resolver";
+import { extidForHash, extractExtid, resolveExtid } from "./resolver";
 import {
   applyScopedTickets,
   closeScopedIssues,
@@ -419,5 +419,51 @@ describe("scoped worktree creation", () => {
     // Generated artifacts were regenerated as part of the same pass.
     expect(readFileSync(join(cfg.repoRoot, ".plan", "feature-matrix.md"), "utf8"))
       .not.toContain("STALE");
+  });
+});
+
+describe.skipIf(Bun.which("git-issue") === null)("scoped ticket id — hash form", () => {
+  test("resolves a raw git-issue hash to the ticket file", () => {
+    const cfg = makeRepo("hash");
+    git(cfg.repoRoot, "issue", "create", "FEAT-demo-ticket: demo ticket", "-m", "body");
+    const line = git(cfg.repoRoot, "issue", "ls", "--all", "--format", "oneline")
+      .split("\n")
+      .find((l) => l.includes("FEAT-demo-ticket"));
+    if (!line) throw new Error("fixture: no issue created");
+    const hash = line.split(" ")[0]!;
+
+    const scoped = resolveScopedTickets(cfg, [hash.slice(0, 7)]);
+    expect(scoped).toHaveLength(1);
+    expect(scoped[0]!.extid).toBe("FEAT-DEMO-TICKET");
+    expect(scoped[0]!.filename).toBe("FEAT-demo-ticket.md");
+  });
+
+  test("still refuses an unknown hash before any git mutation", () => {
+    const cfg = makeRepo("hash-unknown");
+    const exits: number[] = [];
+    exitSpy(exits);
+    try {
+      resolveScopedTickets(cfg, ["deadbee"]);
+      throw new Error("should have exited");
+    } catch (e) {
+      if (!(e instanceof Error) || !e.message.startsWith("__exit:")) throw e;
+    } finally {
+      restoreExit();
+    }
+    expect(exits).toEqual([1]);
+  });
+});
+
+describe("extidForHash", () => {
+  test("returns null for non-hex input without touching the registry", () => {
+    expect(extidForHash("/nonexistent-repo", "TASK-not-a-hash")).toBeNull();
+  });
+});
+
+describe("resolveExtid hash passthrough", () => {
+  test("strips a pasted .md suffix from the hash passthrough", () => {
+    const resolved = resolveExtid("/nonexistent-repo", "40464b1.md");
+    expect(resolved?.hash).toBe("40464b1");
+    expect(resolved?.raw).toBe("40464b1.md");
   });
 });
