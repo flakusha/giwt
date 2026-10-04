@@ -1059,7 +1059,7 @@
       "reconcile"
     ],
     "source": ".plan/tickets/FEAT-ticket-header-conflict-resolver-in-rebase-loop.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-UNIVERSAL-POST-MERGE-PLAN-RECONCILIATION": {
     "hash": "b99bf6e",

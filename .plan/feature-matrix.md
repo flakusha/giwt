@@ -52,12 +52,12 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | observability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | output | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| plan | 6 | 4 | 0 | 0 | 0 | 0 | 2 |
+| plan | 6 | 5 | 0 | 0 | 0 | 0 | 1 |
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | policy | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | pre-commit | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | rebase | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| reconcile | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reconcile-conflicts | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reliability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reporting | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -94,7 +94,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 96 | 88 | 0 | 0 | 0 | 0 | 8 |
+| (unbound) | 96 | 89 | 0 | 0 | 0 | 0 | 7 |
 
 ## Ticket detail
 

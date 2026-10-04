@@ -3,7 +3,7 @@
 
 # FEAT: ticket-header conflict resolver in rebase loop
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** plan, reconcile
@@ -18,7 +18,8 @@ The rebase loop in reconcile-conflicts.ts:61-64 has two auto-resolvers: resolveG
 
 **Acceptance Criteria:**
 
-- [ ] Header-only conflicts on ticket .md files auto-resolve and stage in the rebase loop
-- [ ] Done-wins, tag-union, and issue-ref-append each pinned by a fixture test
-- [ ] Body-prose and delete/modify conflicts still stop the rebase for manual resolution
-- [ ] No new status/tag parsing - reuses sync-normalize and sync-md
+- [x] Header-only conflicts on ticket .md files auto-resolve and stage in the rebase loop
+- [x] Done-wins, tag-union, and issue-ref-append each pinned by a fixture test
+- [x] Body-prose and delete/modify conflicts still stop the rebase for manual resolution
+- [x] No new status/tag parsing - reuses sync-normalize and sync-md
+**Resolved:** 2026-10-04T01:50:02.581Z Landed: resolveTicketHeaderConflicts pass (done-wins, tag-union, issue-ref-append) wired into the rebase loop
