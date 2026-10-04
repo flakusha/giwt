@@ -139,6 +139,14 @@ describe("parseTaskArgs", () => {
     expect(() => parseTaskArgs(["--roster", "-F", "f.txt"])).toThrow(TaskArgError);
   });
 
+  it("accepts --vocab and conflicts it with task text, -m, -F, and --roster", () => {
+    expect(parseTaskArgs(["--vocab"]).vocab).toBe(true);
+    expect(() => parseTaskArgs(["--vocab", "fix", "it"])).toThrow(TaskArgError);
+    expect(() => parseTaskArgs(["--vocab", "-m", "x"])).toThrow(TaskArgError);
+    expect(() => parseTaskArgs(["--vocab", "-F", "f.txt"])).toThrow(TaskArgError);
+    expect(() => parseTaskArgs(["--vocab", "--roster"])).toThrow(TaskArgError);
+  });
+
   it("derives kebab slugs capped at 40 chars", () => {
     expect(directiveSlug("Fix the Login Race! (v2)")).toBe("fix-the-login-race-v2");
     expect(directiveSlug("!!!")).toBe("");
@@ -159,6 +167,33 @@ describe("task handler output", () => {
     expect(out).toContain("- Gates: on finalization run the gates related");
     expect(out).toContain("## Directive (user - authoritative)");
     expect(out.trimEnd().endsWith("add retry logic")).toBe(true);
+  });
+
+  it("emits the flag vocabulary as JSON that round-trips through the parser", async () => {
+    const spy = spyOn(process.stdout, "write").mockImplementation(() => true);
+    await task(["--vocab"], stubConfig);
+    const out = spy.mock.calls.map((c) => String(c[0])).join("");
+    spy.mockRestore();
+    const vocab = JSON.parse(out);
+    expect(Array.isArray(vocab.flags)).toBe(true);
+    expect(vocab.flags).toContain("-m");
+    expect(vocab.values["-s"]).toContain("min");
+    expect(vocab.noValue).toContain("--worktree");
+    for (const flag of vocab.flags) {
+      const value = vocab.values[flag]?.[0];
+      const argv = value !== undefined
+        ? [flag, value]
+        : vocab.noValue.includes(flag)
+        ? [flag]
+        : [flag, "x"];
+      let err: unknown;
+      try {
+        parseTaskArgs(argv);
+      } catch (e) {
+        err = e;
+      }
+      expect(err === undefined || !(err as Error).message.includes("unknown flag")).toBe(true);
+    }
   });
 
   it("suppresses finalization for -j 0 and names --jobs otherwise", async () => {

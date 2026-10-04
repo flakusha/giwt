@@ -9,6 +9,8 @@
  * the positional directive (joined with spaces).
  */
 
+import { FLAG_TOKENS, SKILLS_MODES } from "./vocab";
+
 export type SkillsMode = "min" | "max" | "reasonable";
 export type TaskDepth = "shallow" | "deep";
 
@@ -38,6 +40,8 @@ export interface TaskFlags {
   docs: string[];
   /** --roster: print the open-work roster as JSON instead of rendering. */
   roster: boolean;
+  /** --vocab: print the flag vocabulary as JSON instead of rendering. */
+  vocab: boolean;
 }
 
 export class TaskArgError extends Error {
@@ -45,37 +49,6 @@ export class TaskArgError extends Error {
     super(message);
   }
 }
-
-/** Flag tokens `task` accepts. Static table per repo convention. */
-const FLAG_TOKENS: Record<string, true> = {
-  "-m": true,
-  "-d": true,
-  "--message": true,
-  "--directive": true,
-  "-F": true,
-  "--file": true,
-  "-j": true,
-  "--jobs": true,
-  "-a": true,
-  "--agents": true,
-  "--good": true,
-  "--fast": true,
-  "-g": true,
-  "--gates": true,
-  "--strict": true,
-  "--shallow": true,
-  "--deep": true,
-  "-s": true,
-  "--skills": true,
-  "-w": true,
-  "--worktree": true,
-  "--base": true,
-  "--tickets": true,
-  "--follow": true,
-  "--careful": true,
-  "--docs": true,
-  "--roster": true,
-};
 
 /** Required value for a value-taking flag; missing value is a parse
  * error naming the flag (unlike --tickets/--follow/--careful/--docs,
@@ -96,7 +69,9 @@ function parseCount(token: string, value: string | undefined, min: number): numb
 }
 
 function parseSkills(value: string | undefined): SkillsMode {
-  if (value === "min" || value === "max" || value === "reasonable") return value;
+  if (value !== undefined && (SKILLS_MODES as readonly string[]).includes(value)) {
+    return value as SkillsMode;
+  }
   throw new TaskArgError(`invalid -s/--skills value: ${value ?? "<missing>"} (min|max|reasonable)`);
 }
 
@@ -125,6 +100,7 @@ export function parseTaskArgs(args: string[]): TaskFlags {
     careful: [],
     docs: [],
     roster: false,
+    vocab: false,
   };
   let sawDirectiveFlag = false;
   let sawFile = false;
@@ -252,6 +228,9 @@ export function parseTaskArgs(args: string[]): TaskFlags {
         sawRoster = true;
         flags.roster = true;
         break;
+      case "--vocab":
+        flags.vocab = true;
+        break;
     }
   }
   if (positionals.length > 0 && (sawDirectiveFlag || sawFile)) {
@@ -265,6 +244,11 @@ export function parseTaskArgs(args: string[]): TaskFlags {
   if (sawRoster && (positionals.length > 0 || sawDirectiveFlag || sawFile)) {
     throw new TaskArgError(
       "--roster takes no directive; it is mutually exclusive with task text (positional, -m/--message, -F/--file)",
+    );
+  }
+  if (flags.vocab && (positionals.length > 0 || sawDirectiveFlag || sawFile || sawRoster)) {
+    throw new TaskArgError(
+      "--vocab takes no task input; it is mutually exclusive with task text (positional, -m/--message, -F/--file) and --roster",
     );
   }
   if (positionals.length > 0) flags.directive = positionals.join(" ");

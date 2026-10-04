@@ -24,6 +24,7 @@ import {
   TaskArgError,
   type TaskFlags,
 } from "./task/args";
+import { taskFlagVocab } from "./task/vocab";
 import { readTicketIndex } from "./ticket/lookup";
 
 export const TASK_USAGE = `  <directive...> [flags]
@@ -31,6 +32,7 @@ export const TASK_USAGE = `  <directive...> [flags]
   -m, -d, --message, --directive <t>   explicit directive text
   -F, --file <path>         read directive from file ("-" = stdin)
   --roster                  print the open-work roster as JSON (no task text)
+  --vocab                   print the flag vocabulary as JSON (no task text)
   -j, --jobs <n>            finalization jobs; 0 = do not finalize (default: CLI default)
   -a, --agents <n>          subagent budget: 0 none, -1 unbounded, N cap (default: omit)
   --good <n>, --fast <n>    explicit good/fast subagent split (conflicts with -a 0)
@@ -213,6 +215,10 @@ export async function task(args: string[], config: WorktreeConfig): Promise<void
       process.exit(1);
     }
     throw e;
+  }
+  if (flags.vocab) {
+    raw(JSON.stringify(taskFlagVocab(), null, 2));
+    return;
   }
   if (flags.roster) {
     raw(JSON.stringify(collectRoster(config), null, 2));
