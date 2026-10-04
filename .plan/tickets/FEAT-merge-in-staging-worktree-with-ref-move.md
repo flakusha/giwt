@@ -3,7 +3,7 @@
 
 # FEAT: merge in staging worktree with ref move
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Large
 **Tags:** staging, finalize
@@ -18,9 +18,10 @@ Today the merge runs in the dev checkout: stashDevForMerge (3 call sites at merg
 
 **Acceptance Criteria:**
 
-- [ ] Merge executes in an ephemeral staging worktree; the dev checkout never sees MERGE_HEAD
-- [ ] update-ref carries the old-SHA expectation; a concurrent mover fails cleanly
-- [ ] --onto accepts any ref and defaults to the settings root
-- [ ] Lazy dev sync: clean tree fast-forwards, dirty/detached warns and stays
-- [ ] abort prunes an orphan staging worktree; no stash helpers on the new path
-- [ ] Tests: happy path, CAS contention, simulated-kill orphan, dirty-dev warning
+- [x] Merge executes in an ephemeral staging worktree; the dev checkout never sees MERGE_HEAD
+- [x] update-ref carries the old-SHA expectation; a concurrent mover fails cleanly
+- [x] --onto accepts any ref and defaults to the settings root
+- [x] Lazy dev sync: clean tree fast-forwards, dirty/detached warns and stays
+- [x] abort prunes an orphan staging worktree; no stash helpers on the new path
+- [x] Tests: happy path, CAS contention, simulated-kill orphan, dirty-dev warning
+**Resolved:** 2026-10-04T01:37:15.301Z Landed cf94b52: detached staging worktree + CAS update-ref + lazy dev sync; stash dance deleted

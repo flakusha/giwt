@@ -853,7 +853,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/FEAT-merge-in-staging-worktree-with-ref-move.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-NARROW-FINALIZE-LOCK-TO-MERGE-STEPS": {
     "hash": "86a7491",
