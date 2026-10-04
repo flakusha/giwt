@@ -15,7 +15,7 @@ import {
 } from "../../utils/scratch.ts";
 import { OPENER_TEARDOWN_METHODS, scanLeaks } from "../leaks.ts";
 import { toFindings } from "./spawn.ts";
-import { CHECK_MAX_FINDINGS, type CheckFinding, type CheckResult } from "./types.ts";
+import { capFindings, type CheckFinding, type CheckResult } from "./types.ts";
 
 /**
  * `leaks` — test files opening resources (createTestDb, Bun.spawn) with no
@@ -32,20 +32,22 @@ export function runLeaks(root: string): CheckResult {
   };
   return {
     ...base,
-    findings: scanLeaks(root).slice(0, CHECK_MAX_FINDINGS).map((m) => {
-      const teardowns = OPENER_TEARDOWN_METHODS[m.opener]
-        .map((t) => `${m.var}.${t}()`)
-        .join("/");
-      return {
-        file: m.file,
-        line: m.line,
-        rule: `leaks:${m.opener}`,
-        message: `${m.opener}() bound to '${m.var}' is never torn down — no ${teardowns}, `
-          + `no afterAll/afterEach/t.cleanup usage`,
-        severity: "warning",
-        kind: "task",
-      };
-    }),
+    ...capFindings(
+      scanLeaks(root).map((m) => {
+        const teardowns = OPENER_TEARDOWN_METHODS[m.opener]
+          .map((t) => `${m.var}.${t}()`)
+          .join("/");
+        return {
+          file: m.file,
+          line: m.line,
+          rule: `leaks:${m.opener}`,
+          message: `${m.opener}() bound to '${m.var}' is never torn down — no ${teardowns}, `
+            + `no afterAll/afterEach/t.cleanup usage`,
+          severity: "warning" as const,
+          kind: "task" as const,
+        };
+      }),
+    ),
   };
 }
 

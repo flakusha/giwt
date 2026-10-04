@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
+  capFindings,
   CHECK_MAX_FINDINGS,
   type CheckFinding,
   type CheckResult,
@@ -203,13 +204,16 @@ export function runTodo(root: string): CheckResult {
   });
   return {
     ...base,
-    findings: matches.slice(0, CHECK_MAX_FINDINGS).map((m) => ({
+    // The collect walk itself stops at CHECK_MAX_FINDINGS * 2 matches, so
+    // findingsTotal is the collected total: the notice is honest about what
+    // was found up to that bound (matching the pre-existing walk cap).
+    ...capFindings(matches.map((m) => ({
       file: relative(root, m.file),
       line: m.line,
       rule: m.marker,
       message: m.text || "(no description)",
       severity: (m.marker === "FIXME" ? "error" : "warning") as CheckSeverity,
       kind: (m.marker === "FIXME" ? "bug" : "task") as "bug" | "task",
-    })),
+    }))),
   };
 }

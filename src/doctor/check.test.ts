@@ -1183,4 +1183,21 @@ describe("finding cap transparency (BUG-doctor-check-caps)", () => {
       cleanup(root);
     }
   });
+
+  it("records the pre-cap total for the todo check above the cap", async () => {
+    const root = makeRepo();
+    try {
+      const markers = Array.from(
+        { length: 25 },
+        (_, i) => `// TODO: item ${i + 1}\n`,
+      ).join("");
+      write(root, "src/a.ts", markers);
+      const report = await runDoctorChecks(root, { checks: ["todo"] });
+      const todo = report.checks[0]!;
+      expect(todo.findings).toHaveLength(20);
+      expect(todo.findingsTotal).toBe(25);
+    } finally {
+      cleanup(root);
+    }
+  });
 });
