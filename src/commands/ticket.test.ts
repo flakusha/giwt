@@ -13,9 +13,10 @@
  *      (getWorktreeRoot()), never in the main checkout;
  *   2. the git issue is created in the *shared registry* (config.repoRoot
  *      = main repo's .git, visible from every worktree);
- *   3. `runSync --fix` run in the worktree adopts the new ticket into the
- *      worktree-local index.json while the main checkout's index stays
- *      byte-identical.
+ *   3. `runSync --fix` run in the worktree writes no worktree-local
+ *      index.json (the target branch stays canonical; the index is
+ *      regenerated there post-merge) while the main checkout's index
+ *      stays byte-identical.
  *
  * Resource contract (parallel-safe): each run owns a mkdtemp'd fixture root
  * containing its own git repo, linked worktree, and git-issue store (issues
@@ -44,6 +45,7 @@ import {
   ticket,
   type TicketFlags,
 } from "./ticket";
+import { readTicketIndex } from "./ticket/lookup";
 
 /** Hermetic env for fixture git calls: concurrent test files may mutate
  * process.env (e.g. GNUPGHOME); spawned git must not inherit that. */
@@ -218,9 +220,56 @@ describe("parseTicketArgs — flags anywhere in the tail", () => {
   });
 });
 
+describe("readTicketIndex — missing index degrades", () => {
+  test("returns {} when the checkout has no index.json (worktree contract)", () => {
+    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    try {
+      mkdirSync(join(base, ".plan", "tickets"), { recursive: true });
+      expect(readTicketIndex(base, ".plan/tickets")).toEqual({});
+    } finally {
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  test("still throws with the path named for a corrupt index", () => {
+    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    try {
+      mkdirSync(join(base, ".plan", "tickets"), { recursive: true });
+      writeFileSync(join(base, ".plan", "tickets", "index.json"), "{not json");
+      expect(() => readTicketIndex(base, ".plan/tickets")).toThrow(/invalid JSON/);
+    } finally {
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  test("copyTickets against an index-less checkout fails per-id, not on the missing file", async () => {
+    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    const prevCwd = process.cwd();
+    try {
+      initRepoWithCommit(base);
+      mkdirSync(join(base, ".plan", "tickets"), { recursive: true });
+      // Valid copy target: without it, target validation fails before the
+      // index lookup — this test pins the index-less per-id failure path.
+      initRepoWithCommit(join(base, "out"));
+      writeFileSync(
+        join(base, ".plan", "tickets", "TASK-md-only.md"),
+        "# TASK: md only\n\n**Status:** ⬜ Not Started\n",
+      );
+      process.chdir(base);
+      const config = await loadConfig();
+      await expect(copyTickets(["TASK-MD-ONLY", "--to", "out"], config)).rejects.toThrow(
+        /TASK-MD-ONLY: no ticket index entry/,
+      );
+    } finally {
+      process.chdir(prevCwd);
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("ticket command inside a linked worktree", () => {
   it.skipIf(Bun.which("git-issue") === null)(
-    "creates the .md in the worktree, the issue in the shared registry, and sync adopts it into the worktree-local index",
+    "creates the .md in the worktree, the issue in the shared registry, and sync writes no worktree-local index",
     async () => {
       const base = mkdtempSync(join(tmpdir(), "giwt-ticket-wt-"));
       const repo = join(base, "proj");
@@ -273,16 +322,11 @@ describe("ticket command inside a linked worktree", () => {
         expect(issues).toContain("TASK-worktree-ticket-creation-works");
         expect(issues).toContain("worktree ticket creation works");
 
-        // ── 3. Sync adopts the new ticket into the worktree-local index ──
+        // ── 3. Sync in the worktree writes NO index.json (target branch
+        // stays canonical; index.json is regenerated post-merge) ──
         runSync(config.worktreeRoot, { fix: true, ticketsPath: ".plan/tickets" });
 
-        const wtIndex: Record<string, { source?: string; }> = JSON.parse(
-          readFileSync(join(wt, ".plan", "tickets", "index.json"), "utf8"),
-        );
-        expect(wtIndex["TASK-WORKTREE-TICKET-CREATION-WORKS"]).toBeDefined();
-        expect(wtIndex["TASK-WORKTREE-TICKET-CREATION-WORKS"]?.source).toBe(
-          ".plan/tickets/TASK-worktree-ticket-creation-works.md",
-        );
+        expect(existsSync(join(wt, ".plan", "tickets", "index.json"))).toBe(false);
         // The main checkout's index is untouched — byte-identical.
         expect(readFileSync(mainIndexPath, "utf8")).toBe(mainIndexBefore);
       } finally {

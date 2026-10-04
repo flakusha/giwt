@@ -7,10 +7,11 @@
  *
  * The command wiring resolves the *worktree* root and hands it to runSync
  * (sync.ts, plan.ts, finalize.ts, doctor.ts); these fixture repos prove the
- * contract end to end: a sync run inside a linked worktree recalculates only
- * that worktree's .plan/tickets/index.json. The main checkout's index stays
- * byte-identical, and sibling worktrees never cross-adopt each other's
- * tickets.
+ * contract end to end: a fix-mode sync inside a linked worktree applies
+ * fixes in memory but writes NO worktree-local index.json — the target
+ * branch stays canonical and the index is regenerated there post-merge.
+ * The main checkout's index stays byte-identical, and sibling worktrees
+ * never cross-adopt each other's tickets.
  *
  * Resource contract (parallel-safe): each test owns a private fixture built
  * with mkdtempSync() under os.tmpdir() — a real git repo plus linked
@@ -165,22 +166,11 @@ describe("runSync worktree isolation", () => {
       const exit = runSync(wt, { fix: true, ticketsPath: ".plan/tickets" });
 
       if (gitIssueLsAvailable(wt)) {
-        // Adoption: the worktree's own index gains its own orphan, with a
-        // "pending" hash (the fixture repo has no git issues to link).
+        // Worktree fix run applies fixes in memory but writes NO index.json:
+        // the target branch stays canonical and the index is regenerated
+        // there post-merge.
         expect(exit).toBe(0);
-        const wtIndexPath = join(wt, ".plan/tickets", "index.json");
-        expect(existsSync(wtIndexPath)).toBe(true);
-        const wtIndex = JSON.parse(readFileSync(wtIndexPath, "utf8")) as Record<
-          string,
-          { hash: string; source: string; title: string; }
-        >;
-        const adopted = wtIndex["TASK-WT-ONLY-TICKET"];
-        expect(adopted).toBeDefined();
-        expect(adopted?.hash).toBe("pending");
-        expect(adopted?.source).toBe(".plan/tickets/TASK-wt-only-ticket.md");
-        expect(adopted?.title).toBe("wt only ticket");
-        // The main checkout's ticket never leaked into the worktree's index.
-        expect("TASK-MAIN-ONLY-TICKET" in wtIndex).toBe(false);
+        expect(existsSync(join(wt, ".plan/tickets", "index.json"))).toBe(false);
       } else {
         // Documented refusal: registry unreadable → --fix must not guess.
         expect(exit).toBe(1);
@@ -244,16 +234,13 @@ describe("runSync worktree isolation", () => {
 
       if (gitIssueLsAvailable(wt2)) {
         expect(exit).toBe(0);
-        const wt2Index = JSON.parse(
-          readFileSync(join(wt2, ".plan/tickets", "index.json"), "utf8"),
-        ) as Record<string, unknown>;
-        // Only the invoking worktree's own ticket was adopted.
-        expect(Object.keys(wt2Index)).toEqual(["TASK-WT2-ONLY-TICKET"]);
       } else {
         expect(exit).toBe(1);
       }
 
-      // Neither the sibling worktree nor the main checkout gained an index.
+      // No index.json anywhere: the invoking worktree, its sibling, or the
+      // main checkout — worktree fix runs never write one.
+      expect(existsSync(join(wt2, ".plan/tickets", "index.json"))).toBe(false);
       expect(existsSync(join(wt1, ".plan/tickets", "index.json"))).toBe(false);
       expect(existsSync(join(main, ".plan/tickets", "index.json"))).toBe(false);
       expect(syncResidue(wt2)).toEqual([]);

@@ -8,15 +8,20 @@ import { extidForHash, resolveExtid } from "../resolver";
 
 const ISSUE_HASH_RE = /^[0-9a-f]{7,}$/;
 
-/** Parse a checkout's ticket index (`.plan/tickets/index.json`). Throws
- * with the path named — repo convention for input errors. */
+/** Parse a checkout's ticket index (`.plan/tickets/index.json`). A missing
+ * index yields `{}` (worktrees carry none); a corrupt one throws with the
+ * path named — repo convention for input errors. */
 export function readTicketIndex(
   checkoutRoot: string,
   ticketsPath: string,
 ): Record<string, IndexEntry> {
   const indexPath = resolve(checkoutRoot, ticketsPath, "index.json");
+  // Missing index degrades to an empty one: worktrees no longer carry a
+  // per-branch index.json (it is regenerated post-merge on the target
+  // branch), so lookups proceed on .md-only data. Corrupt index stays an
+  // error.
   if (!existsSync(indexPath)) {
-    throw new Error(`${indexPath}: no ticket index (run 'giwt sync --fix' first)`);
+    return {};
   }
   try {
     return JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntry>;

@@ -39,10 +39,11 @@
  *   - sync-fix-{status,index,issues}.ts  individual fix passes
  */
 
-import { existsSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { log, raw } from "../utils/output";
 import { applyFixes } from "./sync-fixes";
+import { persistIndexCanonical } from "./sync-index-write";
 import { acquireFixLock, releaseFixLock } from "./sync-lock";
 import { type SyncOptions } from "./sync-options";
 import { parseTicketFile } from "./sync-parse";
@@ -217,16 +218,14 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
         Object.entries(fixedIndex).sort(([a], [b]) => a.localeCompare(b)),
       );
 
-      // Atomic write: temp file + rename, so a crash mid-write cannot
-      // truncate index.json.
-      const tmpPath = `${INDEX_PATH}.tmp-${process.pid}`;
-      writeFileSync(tmpPath, JSON.stringify(sorted, null, 2) + "\n");
-      renameSync(tmpPath, INDEX_PATH);
+      // Per-branch index commits are stopped: the target branch stays
+      // canonical and index.json is regenerated there post-merge. In a
+      // linked worktree the write is skipped — see sync-index-write.ts.
+      persistIndexCanonical(repoRoot, INDEX_PATH, sorted);
     } finally {
       // Never leak the lock on a failed fix run.
       releaseFixLock(LOCK_PATH);
     }
-    raw(`Wrote ${INDEX_PATH}`);
 
     if (report.fixesApplied.length > 0) {
       raw(`\nChanges:`);
