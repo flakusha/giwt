@@ -11,9 +11,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   isAncestorOf,
   mergeIndexRecords,
@@ -117,7 +117,7 @@ const BASE_INDEX = {
 };
 
 function fixture(ticketsPath = ".plan/tickets", baseIndex: unknown = BASE_INDEX): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-plan-reconcile-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-plan-reconcile-"));
   const cleanup = (): void => rmSync(root, { recursive: true, force: true });
   try {
     git(root, "init", "-q", "-b", "main");

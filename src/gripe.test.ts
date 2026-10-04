@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -15,7 +16,6 @@
 
 import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { gripe } from "./commands/gripe";
@@ -24,7 +24,7 @@ import { readLedger } from "./utils/ledger";
 import { DEFAULT_SETTINGS } from "./utils/settings";
 
 function makeConfig(): { config: WorktreeConfig; dir: string; } {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-gripe-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-gripe-"));
   return {
     config: { repoRoot: dir, worktreeRoot: dir, treeDir: dir, settings: DEFAULT_SETTINGS },
     dir,

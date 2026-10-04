@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -12,7 +13,6 @@
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { WorktreeConfig } from "../utils/config";
@@ -36,7 +36,7 @@ function git(cwd: string, ...args: string[]): void {
 
 /** Fixture repo; chdir in so ticket's getWorktreeRoot resolves here. */
 function makeRepo(): WorktreeConfig {
-  const root = mkdtempSync(join(tmpdir(), "giwt-ticket-flags-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-ticket-flags-"));
   temps.push(root);
   git(root, "init", "-q", "-b", "main");
   git(root, "config", "user.email", "test@example.com");

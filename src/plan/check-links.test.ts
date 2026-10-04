@@ -9,8 +9,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   checkFile,
   checkSrcComments,
@@ -32,7 +32,7 @@ interface Fixture {
 }
 
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-links-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-links-"));
   return {
     root,
     cleanup: () => rmSync(root, { recursive: true, force: true }),

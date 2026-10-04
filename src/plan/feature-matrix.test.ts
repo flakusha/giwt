@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -12,7 +13,6 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type IndexEntry } from "../tickets/sync-ticket";
 import { buildMatrix, generateMatrixMarkdown, genMatrix, matrixOutput } from "./feature-matrix";
@@ -165,7 +165,7 @@ describe("matrix gate", () => {
   let outPath: string;
 
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "giwt-matrix-gate-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-matrix-gate-"));
     planDir = join(root, ".plan");
     indexPath = join(planDir, "tickets", "index.json");
     outPath = join(planDir, "feature-matrix.md");
@@ -276,7 +276,7 @@ describe("plan matrix: machine output flags", () => {
   });
 
   test("--json parses back to the FeatureMatrix (compact)", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-matrix-flags-"));
     makeFixture();
     const result = runCli(["--json"]);
     expect(result.exitCode).toBe(0);
@@ -289,7 +289,7 @@ describe("plan matrix: machine output flags", () => {
   });
 
   test("--toml round-trips via Bun.TOML.parse", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-matrix-flags-"));
     makeFixture();
     const result = runCli(["--toml"]);
     expect(result.exitCode).toBe(0);
@@ -300,7 +300,7 @@ describe("plan matrix: machine output flags", () => {
   });
 
   test("--emoji prints one summary line", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-matrix-flags-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-matrix-flags-"));
     makeFixture();
     const result = runCli(["--emoji"]);
     expect(result.exitCode).toBe(0);

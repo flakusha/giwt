@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -18,7 +19,6 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { extractMessageInput, validateMessage } from "./message";
@@ -28,7 +28,7 @@ let origIsTTY: boolean;
 let origStdinText: typeof Bun.stdin.text;
 
 beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "giwt-msg-"));
+  tmp = mkdtempSync(join(scratchRoot(), "giwt-msg-"));
   origIsTTY = process.stdin.isTTY;
   origStdinText = Bun.stdin.text;
 });

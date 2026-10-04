@@ -16,10 +16,10 @@
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { execute as createWorktree } from "./create";
 import { extidForHash, extractExtid, resolveExtid } from "./resolver";
@@ -54,7 +54,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function makeRepo(slug: string): WorktreeConfig {
-  const root = mkdtempSync(join(tmpdir(), `giwt-scoped-${slug}-`));
+  const root = mkdtempSync(join(scratchRoot(), `giwt-scoped-${slug}-`));
   tempRoots.push(root);
   git(root, "init", "-q", "-b", "main");
   git(root, "config", "user.email", "giwt-test@localhost");

@@ -36,7 +36,7 @@
  *   scratchpad_orphan_warn = 100 / scratchpad_oldest_warn_days = 30
  *   [tmp]
  *   root = "/tmp"              # cleanup root — only /tmp, $TMPDIR, os.tmpdir() allowed
- *   prefixes = ["giwt-", ...]  # name allowlist for `giwt tmp --apply` candidates
+ *   prefixes = ["giwt", ...]   # name allowlist for `giwt tmp --apply` candidates
  *   max_age_hours = 6          # entries younger than this are never deleted
  *   [status.aliases]
  *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate

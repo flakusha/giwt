@@ -13,7 +13,6 @@
 
 import { describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
   colorize,
@@ -27,6 +26,7 @@ import {
   setColorMode,
   setOutputFormat,
 } from "./output";
+import { scratchRoot } from "./scratch-tmp";
 
 function capture(fn: () => void): { out: string; err: string; } {
   const outSpy = spyOn(process.stdout, "write");
@@ -209,7 +209,7 @@ describe("env-driven module resolution", () => {
   // coverage). Subprocess code is not counted by the in-process profiler.
   test("invalid GIWT_LOG and GIWT_OUTPUT warn once at load", () => {
     const script = join(
-      mkdtempSync(join(tmpdir(), "giwt-output-env-")),
+      mkdtempSync(join(scratchRoot(), "giwt-output-env-")),
       "load-output.ts",
     );
     writeFileSync(

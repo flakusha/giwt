@@ -15,10 +15,10 @@
 
 import { describe, expect, it } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { RunRecorder } from "../utils/runlog.ts";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   DEFAULT_SCRATCH_CONFIG,
   DEFAULT_SCRATCHPAD_THRESHOLDS,
@@ -42,7 +42,7 @@ import {
 } from "./check.ts";
 
 function makeRepo(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-check-"));
+  return mkdtempSync(join(scratchRoot(), "giwt-check-"));
 }
 
 function write(root: string, rel: string, content: string): void {

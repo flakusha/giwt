@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -24,7 +25,6 @@
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
@@ -64,7 +64,7 @@ function gitExit(args: string[], cwd: string = root): number {
 
 beforeEach(() => {
   setLogLevel("info");
-  root = mkdtempSync(join(tmpdir(), "giwt-new-branch-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-new-branch-"));
   git(["init", "--initial-branch=master"]);
   git(["config", "user.email", "test@example.com"]);
   git(["config", "user.name", "Test"]);

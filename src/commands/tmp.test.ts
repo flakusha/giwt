@@ -7,7 +7,7 @@
  * default, --apply deletion, and delete-time revalidation.
  *
  * Resource contract (parallel-safe): EVERY test owns a private
- * mkdtempSync(join(tmpdir(), "giwt-tmp-test-")) fixture root — itself
+ * mkdtempSync(join(scratchRoot(), "giwt-tmp-test-")) fixture root — itself
  * under the allowed /tmp tree, so validateTmpRoot accepts it — and a
  * config whose [tmp] settings point AT the fixture root, never at /tmp
  * itself. All fixtures are removed in the file-level afterEach; ages are
@@ -26,9 +26,9 @@ import {
   utimesSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import {
   DEFAULT_TMP_OPTIONS,
@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 function makeRoot(): string {
-  root = mkdtempSync(join(tmpdir(), "giwt-tmp-test-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-tmp-test-"));
   tempRoots.push(root);
   return root;
 }

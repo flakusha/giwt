@@ -49,8 +49,8 @@ import {
   test,
 } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { credentials } from "../utils/credentials";
@@ -206,7 +206,7 @@ async function runMerge(
 beforeEach(() => {
   setLogLevel("info");
   setOutputFormat("simple");
-  root = mkdtempSync(join(tmpdir(), "giwt-merge-test-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-merge-test-"));
   git(["init", "-q", "-b", "main"]);
   git(["config", "user.email", "test@giwt.local"]);
   git(["config", "user.name", "giwt test"]);
@@ -214,7 +214,7 @@ beforeEach(() => {
   writeFileSync(join(root, "seed.txt"), "seed\n");
   git(["add", "."]);
   git(["commit", "-qm", "seed"]);
-  treesRoot = mkdtempSync(join(tmpdir(), "giwt-merge-trees-"));
+  treesRoot = mkdtempSync(join(scratchRoot(), "giwt-merge-trees-"));
   treeDir = resolve(treesRoot, "tree");
   mkdirSync(treeDir);
   config = { repoRoot: root, worktreeRoot: root, treeDir, settings: DEFAULT_SETTINGS };
@@ -227,7 +227,7 @@ afterEach(() => {
 
 beforeAll(() => {
   if (!gpgTooling) return;
-  const home = mkdtempSync(join(tmpdir(), "giwt-merge-gpg-"));
+  const home = mkdtempSync(join(scratchRoot(), "giwt-merge-gpg-"));
   // pinentry /bin/false: any accidental prompt dies instantly instead of
   // hanging the suite. Empty passphrase: the cancel-mode trial sign in
   // assertAgentGpgUnlocked() succeeds, so the gate passes without a cache warm.

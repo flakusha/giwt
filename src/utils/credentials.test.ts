@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -12,7 +13,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentCredentials } from "./credentials";
 
@@ -22,7 +22,7 @@ const repoRoot = join(import.meta.dir, "../..");
 
 beforeEach(() => {
   savedCwd = process.cwd();
-  fixture = mkdtempSync(join(tmpdir(), "giwt-credentials-"));
+  fixture = mkdtempSync(join(scratchRoot(), "giwt-credentials-"));
   process.chdir(fixture);
 });
 
@@ -113,7 +113,7 @@ describe("credentials loader edge cases (in-process module instances)", () => {
   // behaviors: the upward walk landing on a parent .credentials.env, and the
   // direct-execution shell output.
   it("walks up to a parent .credentials.env and emits shell lines as the main script", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-credentials-parent-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-credentials-parent-"));
     const child = join(base, "nested", "child");
     mkdirSync(child, { recursive: true });
     writeFileSync(

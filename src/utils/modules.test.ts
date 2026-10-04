@@ -6,9 +6,9 @@
  */
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isUsableModulesDir, linkNodeModules } from "./modules";
+import { scratchRoot } from "./scratch-tmp";
 
 const temps: string[] = [];
 
@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 function scratch(): string {
-  const dir = join(tmpdir(), `wt-modules-${Date.now()}-${Math.floor(Math.random() * 1e6)}`);
+  const dir = join(scratchRoot(), `wt-modules-${Date.now()}-${Math.floor(Math.random() * 1e6)}`);
   mkdirSync(dir, { recursive: true });
   temps.push(dir);
   return dir;

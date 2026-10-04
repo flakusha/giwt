@@ -17,7 +17,6 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
   branchToPath,
@@ -27,6 +26,7 @@ import {
   loadConfig,
   resolveBranch,
 } from "./config";
+import { scratchRoot } from "./scratch-tmp";
 import { DEFAULT_SETTINGS } from "./settings";
 
 /** Run git in `cwd` with the ambient GIT_* context stripped. */
@@ -48,7 +48,7 @@ function git(args: string[], cwd: string): string {
 
 /** Minimal real git repo with one commit — loadConfig/resolveBranch need it. */
 function makeRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-config-repo-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-config-repo-"));
   git(["init", "-q", "-b", "main"], root);
   git(["config", "user.email", "test@giwt.local"], root);
   git(["config", "user.name", "giwt test"], root);
@@ -61,8 +61,8 @@ function makeRepo(): string {
 
 describe("linkWorktreeCredentials", () => {
   it("symlinks root credentials into the worktree", () => {
-    const root = mkdtempSync(join(tmpdir(), "ll-creds-root-"));
-    const wt = mkdtempSync(join(tmpdir(), "ll-creds-wt-"));
+    const root = mkdtempSync(join(scratchRoot(), "ll-creds-root-"));
+    const wt = mkdtempSync(join(scratchRoot(), "ll-creds-wt-"));
     try {
       writeFileSync(join(root, ".credentials.env"), "AGENT_GPG_KEY_ID=test");
       linkWorktreeCredentials(root, wt);
@@ -74,8 +74,8 @@ describe("linkWorktreeCredentials", () => {
   });
 
   it("skips silently when root has no credentials file", () => {
-    const root = mkdtempSync(join(tmpdir(), "ll-creds-noroot-"));
-    const wt = mkdtempSync(join(tmpdir(), "ll-creds-nowt-"));
+    const root = mkdtempSync(join(scratchRoot(), "ll-creds-noroot-"));
+    const wt = mkdtempSync(join(scratchRoot(), "ll-creds-nowt-"));
     try {
       linkWorktreeCredentials(root, wt);
       expect(existsSync(join(wt, ".credentials.env"))).toBe(false);
@@ -86,8 +86,8 @@ describe("linkWorktreeCredentials", () => {
   });
 
   it("keeps an existing worktree credentials file", () => {
-    const root = mkdtempSync(join(tmpdir(), "ll-creds-keep-root-"));
-    const wt = mkdtempSync(join(tmpdir(), "ll-creds-keep-wt-"));
+    const root = mkdtempSync(join(scratchRoot(), "ll-creds-keep-root-"));
+    const wt = mkdtempSync(join(scratchRoot(), "ll-creds-keep-wt-"));
     try {
       writeFileSync(join(root, ".credentials.env"), "AGENT_GPG_KEY_ID=root");
       const wtCreds = join(wt, ".credentials.env");
@@ -275,7 +275,7 @@ describe("findWorktree", () => {
   });
 
   it("returns null when the worktree directory does not exist", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-findwt-miss-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-findwt-miss-"));
     try {
       expect(findWorktree("feat/x", { ...BASE_CONFIG, treeDir: root })).toBeNull();
     } finally {
@@ -284,7 +284,7 @@ describe("findWorktree", () => {
   });
 
   it("returns null when the path exists but has no .git file", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-findwt-detached-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-findwt-detached-"));
     try {
       const wtPath = resolve(root, "feat-x");
       mkdirSync(wtPath);
@@ -408,7 +408,7 @@ describe("configureGpgSigningSilently", () => {
   });
 
   it("sets commit.gpgsign + user.signingkey when both keys exist", async () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-gpgcfg-ok-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-gpgcfg-ok-"));
     git2(["init", "-q"], root);
     await withStubGpg(async () => {
       configureGpgSigningSilently(root, "0123456789ABCDEF");
@@ -418,7 +418,7 @@ describe("configureGpgSigningSilently", () => {
   });
 
   it("falls back silently when gpg --list-keys misses (cold cache)", async () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-gpgcfg-cold-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-gpgcfg-cold-"));
     git2(["init", "-q"], root);
     await withStubGpg(async () => {
       configureGpgSigningSilently(root, "0123456789ABCDEF");
@@ -427,7 +427,7 @@ describe("configureGpgSigningSilently", () => {
   });
 
   it("falls back silently when --list-secret-keys misses (key locked)", async () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-gpgcfg-locked-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-gpgcfg-locked-"));
     git2(["init", "-q"], root);
     await withStubGpg(async () => {
       configureGpgSigningSilently(root, "0123456789ABCDEF");

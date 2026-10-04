@@ -10,9 +10,9 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gitSync, isolatedGitEnv } from "../utils/git";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { resolveStatus, STATUS_ENUM } from "./status-vocab";
 import {
   ALL_GATES,
@@ -37,7 +37,7 @@ interface Fixture {
 }
 
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-validate-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-validate-"));
   const planDir = join(root, ".plan");
   const ticketsDir = join(planDir, "tickets");
   const epicsDir = join(planDir, "epics");
@@ -1416,8 +1416,8 @@ describe("validate / worktree path resolution", () => {
     // Simulates the ticket evidence: `giwt plan validate` run inside
     // tree/<branch> with an absolute tickets path configured — the plan
     // files live in the main checkout, not under the worktree root.
-    const wtRoot = mkdtempSync(join(tmpdir(), "giwt-wt-"));
-    const mainRoot = mkdtempSync(join(tmpdir(), "giwt-main-"));
+    const wtRoot = mkdtempSync(join(scratchRoot(), "giwt-wt-"));
+    const mainRoot = mkdtempSync(join(scratchRoot(), "giwt-main-"));
     const planDir = join(mainRoot, ".plan");
     const ticketsDir = join(planDir, "tickets");
     const epicsDir = join(planDir, "epics");

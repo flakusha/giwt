@@ -3,7 +3,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   collectCoAuthors,
@@ -12,6 +11,7 @@ import {
   squashMessageWithCoAuthors,
 } from "./coauthors";
 import { isolatedGitEnv } from "./git";
+import { scratchRoot } from "./scratch-tmp";
 
 function git(root: string, ...args: string[]): string {
   const r = Bun.spawnSync(["git", "-C", root, ...args], {
@@ -26,7 +26,7 @@ function git(root: string, ...args: string[]): string {
 }
 
 function makeRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-coauthors-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-coauthors-"));
   git(root, "init", "-q", "-b", "main");
   git(root, "config", "user.email", "giwt-test@localhost");
   git(root, "config", "user.name", "giwt test");
@@ -67,7 +67,7 @@ describe("filterCoAuthorTrailers", () => {
 
 describe("loadAllowedTrailers", () => {
   test("parses ALLOWED_TRAILERS from .credentials.env (walk-up)", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-creds-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-creds-"));
     const sub = join(root, "deep", "deeper");
     mkdirSync(sub, { recursive: true });
     writeFileSync(
@@ -82,7 +82,7 @@ describe("loadAllowedTrailers", () => {
   });
 
   test("returns [] when no credentials file exists", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-nocreds-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-nocreds-"));
     try {
       // HOME fallback may still find a real one; assert array-typed only.
       expect(Array.isArray(loadAllowedTrailers(root))).toBe(true);
@@ -92,7 +92,7 @@ describe("loadAllowedTrailers", () => {
   });
 
   test("unreadable .credentials.env degrades to []", () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-badcreds-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-badcreds-"));
     // A DIRECTORY named .credentials.env: existsSync true, readFileSync throws.
     mkdirSync(join(root, ".credentials.env"));
     try {

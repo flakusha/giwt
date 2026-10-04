@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -13,7 +14,6 @@
 
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "./config";
 import { findRepoRoot, getWorktreeRoot } from "./git";
@@ -62,7 +62,7 @@ const LAYOUTS: Array<[string, string]> = [
 describe("worktree root resolution", () => {
   for (const [label, rel] of LAYOUTS) {
     it(`resolves both roots in a ${label} worktree`, () => {
-      const base = mkdtempSync(join(tmpdir(), "giwt-wtroot-"));
+      const base = mkdtempSync(join(scratchRoot(), "giwt-wtroot-"));
       const repo = join(base, "proj");
       const wt = join(base, rel);
       try {
@@ -81,7 +81,7 @@ describe("worktree root resolution", () => {
   }
 
   it("loadConfig splits worktreeRoot from repoRoot inside a worktree", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-loadcfg-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-loadcfg-"));
     const repo = join(base, "proj");
     const wt = join(repo, "tree", "wt");
     const prevCwd = process.cwd();
@@ -102,7 +102,7 @@ describe("worktree root resolution", () => {
   });
 
   it("loadConfig keeps both roots identical at the main repo", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-loadcfg-main-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-loadcfg-main-"));
     const prevCwd = process.cwd();
     try {
       initRepoWithCommit(join(base, "proj"));

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
  * Tests for `giwt docs` — corpus discovery, list/show/search/dump.
  *
  * Resource contract (parallel-safe): EVERY test owns a private
- * `mkdtempSync(join(tmpdir(), "giwt-docs-<slug>-"))` root, passed to the
+ * `mkdtempSync(join(scratchRoot(), "giwt-docs-<slug>-"))` root, passed to the
  * handler via `config.worktreeRoot` (the handler never consults cwd), and
  * removes it in afterEach. process.exit and process.exitCode spies are
  * saved/restored per test.
@@ -13,7 +14,6 @@
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { docs } from "./docs";
@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 function makeRoot(slug: string): string {
-  root = mkdtempSync(join(tmpdir(), `giwt-docs-${slug}-`));
+  root = mkdtempSync(join(scratchRoot(), `giwt-docs-${slug}-`));
   return root;
 }
 

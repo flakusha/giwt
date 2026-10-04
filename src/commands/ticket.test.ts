@@ -27,12 +27,12 @@
 
 import { describe, expect, it, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveStatus } from "../plan/status-vocab";
 import { TICKET_REQUIRED_SECTIONS } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
 import { loadConfig } from "../utils/config";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   closeTicketFile,
   closeTickets,
@@ -222,7 +222,7 @@ describe("parseTicketArgs — flags anywhere in the tail", () => {
 
 describe("readTicketIndex — missing index degrades", () => {
   test("returns {} when the checkout has no index.json (worktree contract)", () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-idx-"));
     try {
       mkdirSync(join(base, ".plan", "tickets"), { recursive: true });
       expect(readTicketIndex(base, ".plan/tickets")).toEqual({});
@@ -232,7 +232,7 @@ describe("readTicketIndex — missing index degrades", () => {
   });
 
   test("still throws with the path named for a corrupt index", () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-idx-"));
     try {
       mkdirSync(join(base, ".plan", "tickets"), { recursive: true });
       writeFileSync(join(base, ".plan", "tickets", "index.json"), "{not json");
@@ -243,7 +243,7 @@ describe("readTicketIndex — missing index degrades", () => {
   });
 
   test("copyTickets against an index-less checkout fails per-id, not on the missing file", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-idx-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-idx-"));
     const prevCwd = process.cwd();
     try {
       initRepoWithCommit(base);
@@ -271,7 +271,7 @@ describe("ticket command inside a linked worktree", () => {
   it.skipIf(Bun.which("git-issue") === null)(
     "creates the .md in the worktree, the issue in the shared registry, and sync writes no worktree-local index",
     async () => {
-      const base = mkdtempSync(join(tmpdir(), "giwt-ticket-wt-"));
+      const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-wt-"));
       const repo = join(base, "proj");
       const wt = join(repo, "tree", "wt");
       const prevCwd = process.cwd();
@@ -369,7 +369,7 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket issue metadata (real gi
   }
 
   it("applies flags to the .md and the git issue, and warns on a repeated title", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-meta-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-meta-"));
     const repo = join(base, "proj");
     const prevCwd = process.cwd();
     try {
@@ -511,7 +511,7 @@ function writeIndexAt(root: string, entries: Record<string, FixtureEntry>): void
 
 /** Scratch repo with `.plan/tickets/` ready. */
 function makeTicketRepo(tag: string): { base: string; repo: string; cleanup: () => void; } {
-  const base = mkdtempSync(join(tmpdir(), tag));
+  const base = mkdtempSync(join(scratchRoot(), tag));
   const repo = join(base, "proj");
   initRepoWithCommit(repo);
   mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
@@ -535,7 +535,7 @@ function makeConflictRepo(
   tag: string,
   mode: "modify" | "add-add" = "modify",
 ): { root: string; rel: string; cleanup: () => void; } {
-  const base = mkdtempSync(join(tmpdir(), tag));
+  const base = mkdtempSync(join(scratchRoot(), tag));
   const root = join(base, "proj");
   initRepoWithCommit(root);
   const rel = ".plan/tickets/TASK-conflict-probe.md";
@@ -578,7 +578,7 @@ function makeConflictRepo(
 
 describe("ticket closeTicketFile — pure .md rewrite", () => {
   it("canonicalizes header status, ticks boxes, appends Resolved with note", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-close-pure-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-close-pure-"));
     try {
       const f = join(dir, "t.md");
       const lines = [
@@ -606,7 +606,7 @@ describe("ticket closeTicketFile — pure .md rewrite", () => {
   });
 
   it("preserves the line's own colon spelling while canonicalizing the value", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-close-pure2-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-close-pure2-"));
     try {
       const f = join(dir, "t.md");
       writeFileSync(f, "**Status**: In Progress\n- [ ] box\n");
@@ -720,7 +720,7 @@ describe("ticket close/copy/3way — arg and error-path coverage", () => {
   });
 
   it("copy --to= form copies bytes; unknown id and non-checkout throw naming them", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-copy-form-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-copy-form-"));
     const repo = join(base, "proj");
     initRepoWithCommit(repo);
     const other = join(base, "other");
@@ -1032,7 +1032,7 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket close — registry roun
 
 describe("ticket copy — checkout-to-checkout .md copies", () => {
   it("copies bytes out with --to and in with --from, --json record round-trips", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-copy-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-copy-"));
     const repo = join(base, "proj");
     const wt = join(repo, "tree", "wt");
     const wt2 = join(repo, "tree", "wt2");
@@ -1106,7 +1106,7 @@ describe("ticket copy — checkout-to-checkout .md copies", () => {
   });
 
   it("refuses when source and target checkout are the same directory", async () => {
-    const base = mkdtempSync(join(tmpdir(), "giwt-ticket-copy-same-"));
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-copy-same-"));
     const repo = join(base, "proj");
     const prevCwd = process.cwd();
     try {

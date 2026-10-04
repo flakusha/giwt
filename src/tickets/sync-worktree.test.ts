@@ -14,7 +14,8 @@
  * never cross-adopt each other's tickets.
  *
  * Resource contract (parallel-safe): each test owns a private fixture built
- * with mkdtempSync() under os.tmpdir() — a real git repo plus linked
+ * with mkdtempSync() under the giwt scratch root (/tmp/giwt/) — a real git
+ * repo plus linked
  * worktrees from `git worktree add` — and removes it in `finally`, so a
  * failing test cannot leak into others. No test chdir's (runSync takes root
  * parameters), no fixed paths, no shared mutable state, no ordering
@@ -39,9 +40,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { runSync } from "./sync-index";
 
 // ── Fixture helpers ────────────────────────────────────────────
@@ -148,7 +149,7 @@ function quiet(): { restore: () => void; } {
 
 describe("runSync worktree isolation", () => {
   test("--fix recalculation is isolated to the invoking worktree", () => {
-    const dir = mkdtempSync(join(tmpdir(), "sync-worktree-"));
+    const dir = mkdtempSync(join(scratchRoot(), "sync-worktree-"));
     const silencer = quiet();
     try {
       const { main, wts } = initRepoWithWorktrees(dir, 1);
@@ -189,7 +190,7 @@ describe("runSync worktree isolation", () => {
   });
 
   test("dry-run from the main checkout sees only main state and writes nothing", () => {
-    const dir = mkdtempSync(join(tmpdir(), "sync-worktree-"));
+    const dir = mkdtempSync(join(scratchRoot(), "sync-worktree-"));
     const silencer = quiet();
     try {
       const { main, wts } = initRepoWithWorktrees(dir, 1);
@@ -222,7 +223,7 @@ describe("runSync worktree isolation", () => {
   });
 
   test("divergent sibling worktrees do not cross-adopt", () => {
-    const dir = mkdtempSync(join(tmpdir(), "sync-worktree-"));
+    const dir = mkdtempSync(join(scratchRoot(), "sync-worktree-"));
     const silencer = quiet();
     try {
       const { main, wts } = initRepoWithWorktrees(dir, 2);

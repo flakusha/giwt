@@ -2,12 +2,12 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, relative, resolve } from "path";
 import type { WorktreeConfig } from "../../utils/config";
 import { parseOutFlags, renderRecords } from "../../utils/emit";
 import { gitSync, isolatedGitEnv } from "../../utils/git";
 import { log, raw } from "../../utils/output";
+import { scratchRoot } from "../../utils/scratch-tmp";
 
 const STAGE_LABELS = ["BASE", "OURS", "THEIRS"] as const;
 
@@ -42,7 +42,7 @@ function readBlob(root: string, sha: string): { content: string; bytes: number; 
  * a real three-way conflict never yields an 'identical' pair. */
 export function hunkCount(a: string, b: string): number {
   if (a === b) return 0;
-  const dir = mkdtempSync(join(tmpdir(), "giwt-3way-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-3way-"));
   try {
     writeFileSync(join(dir, "a"), a);
     writeFileSync(join(dir, "b"), b);

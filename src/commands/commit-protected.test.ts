@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -28,7 +29,6 @@
 
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
@@ -56,7 +56,7 @@ function git(args: string[], cwd: string = root): string {
 }
 
 function gitFixture(): void {
-  root = mkdtempSync(join(tmpdir(), "giwt-v3-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-v3-"));
   git(["init", "-q", "-b", "master"]);
   git(["config", "user.email", "t@t"]);
   git(["config", "user.name", "t"]);
@@ -218,7 +218,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   test("reports unconfigured git author in the target checkout", async () => {
     // Fresh repo without user.name/user.email — the author lookup fails
     // before any signing attempt.
-    const bare = mkdtempSync(join(tmpdir(), "giwt-noauthor-"));
+    const bare = mkdtempSync(join(scratchRoot(), "giwt-noauthor-"));
     try {
       git(["init", "-q", "-b", "master"], bare);
       git(["config", "commit.gpgsign", "false"], bare);

@@ -16,8 +16,10 @@
  *                   any scan or delete. See validateTmpRoot().
  *  2. NAME GATE   — a top-level entry is a candidate only when its name
  *                   matches the `[tmp] prefixes` allowlist (giwt/harness
- *                   test-fixture prefixes by default). Unknown names are
- *                   reported, never deleted.
+ *                   test-fixture prefixes by default; the bare "giwt"
+ *                   entry covers both the per-project /tmp/giwt/ scratch
+ *                   root (see utils/scratch-tmp.ts) and legacy giwt-*
+ *                   strays). Unknown names are reported, never deleted.
  *  3. OWNER GATE  — only entries owned by the current euid are candidates;
  *                   root's and other users' files are reported, never
  *                   touched.
@@ -83,12 +85,9 @@ export interface TmpScanOptions {
 /** Defaults when settings carry no [tmp] overrides. */
 export const DEFAULT_TMP_OPTIONS: TmpScanOptions = {
   prefixes: [
-    "giwt-",
+    "giwt",
     "wt-modules-",
     "pkgjson-",
-    "giwt-git-msg-",
-    "giwt-check-slots-test-",
-    "giwt-finalize-test-",
     "sync-ticket-",
     "loop-lore-",
   ],

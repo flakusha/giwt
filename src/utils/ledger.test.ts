@@ -23,7 +23,7 @@
 
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { hostname, tmpdir } from "node:os";
+import { hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -48,6 +48,7 @@ import {
   normalizeRecord,
   parseLedgerTail,
 } from "./ledger-core";
+import { scratchRoot } from "./scratch-tmp";
 
 /** Fresh ledger tree dir per test. Removed in the file-level afterEach —
  *  even a failed test cannot leak its fixture into /tmp. */
@@ -57,7 +58,7 @@ afterEach(() => {
 });
 
 function makeTreeDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-ledger-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-ledger-"));
   tempRoots.push(dir);
   return dir;
 }
@@ -640,7 +641,7 @@ describe("parseLedgerTail", () => {
 
 describe("readLedger mixed-version fixture", () => {
   it("normalizes v1 and v2 lines, newest last", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-ledger-core-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-ledger-core-"));
     try {
       writeFileSync(
         join(dir, LEDGER_FILENAME),

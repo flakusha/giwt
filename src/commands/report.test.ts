@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -9,7 +10,6 @@
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { setOutputFormat } from "../utils/output";
@@ -58,7 +58,7 @@ beforeEach(() => {
   // labels the report command actually prints (e.g. `(main) no report`).
   process.env.NO_COLOR = "1";
   setOutputFormat("simple");
-  root = mkdtempSync(join(tmpdir(), "giwt-report-test-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-report-test-"));
   mkdirSync(join(root, ".tmp"), { recursive: true });
   treeDir = resolve(root, "tree");
   mkdirSync(treeDir);

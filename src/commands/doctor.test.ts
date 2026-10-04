@@ -19,8 +19,8 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 
 import type { DoctorCheckReport } from "../doctor/check.ts";
 import { detectProject } from "../doctor/detect.ts";
@@ -91,7 +91,7 @@ describe("parseArgs", () => {
 describe("writeAll", () => {
   let root: string;
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "giwt-doctor-writeall-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-doctor-writeall-"));
   });
   afterEach(() => {
     rmSync(root, { recursive: true, force: true });
@@ -192,7 +192,7 @@ describe("writeAll", () => {
 describe("detectProject (sanity, contract surface for doctor)", () => {
   let root: string;
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "giwt-doctor-detect-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-doctor-detect-"));
   });
   afterEach(() => {
     rmSync(root, { recursive: true, force: true });
@@ -222,7 +222,7 @@ afterEach(() => {
 });
 
 function scratchDir(): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-doctor-e2e-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-doctor-e2e-"));
   dirs.push(root);
   return root;
 }

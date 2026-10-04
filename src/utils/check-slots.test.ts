@@ -9,7 +9,6 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
@@ -19,6 +18,7 @@ import {
   checkSlotCapacity,
   checkSlotWaitMs,
 } from "./check-slots";
+import { scratchRoot } from "./scratch-tmp";
 
 /** Fresh empty slot root per test. Removed deterministically in the
  *  file-level afterEach below — even a failed test cannot leak its
@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 function newSlotRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-slots-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-slots-"));
   tempRoots.push(root);
   return root;
 }

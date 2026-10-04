@@ -18,7 +18,6 @@
 
 import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   effectiveCacheTtl,
@@ -27,6 +26,7 @@ import {
   warmCacheViaPassphrase,
 } from "./gpg-unlock";
 import { credentials } from "./utils/credentials";
+import { scratchRoot } from "./utils/scratch-tmp";
 
 const gpgBin = Bun.which("gpg");
 const gpgConnectAgent = Bun.which("gpg-connect-agent");
@@ -51,7 +51,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
     let home: string;
 
     beforeAll(() => {
-      home = mkdtempSync(join(tmpdir(), "gpg-unlock-test-"));
+      home = mkdtempSync(join(scratchRoot(), "gpg-unlock-test-"));
       // pinentry /bin/false: any accidental prompt dies instantly instead of
       // hanging the suite; ttl 30/90 exercises effectiveCacheTtl's min().
       writeFileSync(
@@ -188,8 +188,8 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
     }
 
     beforeAll(() => {
-      home = mkdtempSync(join(tmpdir(), "giwt-gpg-unlock-cli-"));
-      passHome = mkdtempSync(join(tmpdir(), "giwt-gpg-unlock-home-"));
+      home = mkdtempSync(join(scratchRoot(), "giwt-gpg-unlock-cli-"));
+      passHome = mkdtempSync(join(scratchRoot(), "giwt-gpg-unlock-home-"));
       writeFileSync(
         join(home, "gpg-agent.conf"),
         "default-cache-ttl 30\nmax-cache-ttl 90\npinentry-program /bin/false\n",
@@ -393,7 +393,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
 
 describe("effectiveCacheTtl config parsing (temp GNUPGHOME)", () => {
   test("missing config falls back to default-cache-ttl 600", () => {
-    const home = mkdtempSync(join(tmpdir(), "giwt-gpg-ttl-none-"));
+    const home = mkdtempSync(join(scratchRoot(), "giwt-gpg-ttl-none-"));
     const prev = process.env.GNUPGHOME;
     process.env.GNUPGHOME = home;
     try {
@@ -406,7 +406,7 @@ describe("effectiveCacheTtl config parsing (temp GNUPGHOME)", () => {
   });
 
   test("last occurrence wins and inline comments are ignored", () => {
-    const home = mkdtempSync(join(tmpdir(), "giwt-gpg-ttl-conf-"));
+    const home = mkdtempSync(join(scratchRoot(), "giwt-gpg-ttl-conf-"));
     const prev = process.env.GNUPGHOME;
     process.env.GNUPGHOME = home;
     writeFileSync(
@@ -423,7 +423,7 @@ describe("effectiveCacheTtl config parsing (temp GNUPGHOME)", () => {
   });
 
   test("default-cache-ttl caps below max-cache-ttl", () => {
-    const home = mkdtempSync(join(tmpdir(), "giwt-gpg-ttl-min-"));
+    const home = mkdtempSync(join(scratchRoot(), "giwt-gpg-ttl-min-"));
     const prev = process.env.GNUPGHOME;
     process.env.GNUPGHOME = home;
     writeFileSync(join(home, "gpg-agent.conf"), "default-cache-ttl 40\nmax-cache-ttl 900\n");

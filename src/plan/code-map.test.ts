@@ -10,8 +10,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   buildMap,
   type CodeMap,
@@ -29,7 +29,7 @@ interface Fixture {
 }
 
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-codemap-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-codemap-"));
   return {
     root,
     cleanup: () => rmSync(root, { recursive: true, force: true }),

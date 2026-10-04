@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { task, TASK_USAGE } from "./task";
 import { directiveSlug, isGateCsv, parseTaskArgs, TaskArgError } from "./task/args";
@@ -273,7 +273,7 @@ describe("task handler output", () => {
   // contract (parallel-safe): unique mkdtemp git repo per test, torn
   // down in finally; spawn is bounded by a 30s spawn timeout.
   it("reads the directive from -F - via dispatch (stdin subprocess)", async () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-task-stdin-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-task-stdin-"));
     try {
       const gitEnv: Record<string, string> = {};
       for (const [key, value] of Object.entries(process.env)) {
@@ -313,7 +313,7 @@ describe("task handler output", () => {
   });
 
   it("reads the directive from -F file", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-task-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-task-"));
     try {
       const file = join(dir, "directive.txt");
       writeFileSync(file, "ship the thing\n");
@@ -328,7 +328,7 @@ describe("task handler output", () => {
   });
 
   it("--roster prints a parseable JSON array of open-work entries", async () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-task-roster-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-task-roster-"));
     try {
       mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
       writeFileSync(

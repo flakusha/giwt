@@ -10,8 +10,8 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { parseTicketFile } from "./sync-index";
 import { batchCommitObjectExists } from "./sync-reconcile";
 import {
@@ -30,7 +30,7 @@ afterEach(() => {
 });
 
 function makeRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "sync-ticket-"));
+  const root = mkdtempSync(join(scratchRoot(), "sync-ticket-"));
   tempRoots.push(root);
   mkdirSync(join(root, ".plan/tickets"), { recursive: true });
   mkdirSync(join(root, ".plan/epics"), { recursive: true });

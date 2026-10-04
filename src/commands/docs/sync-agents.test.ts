@@ -16,9 +16,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../../utils/config";
+import { scratchRoot } from "../../utils/scratch-tmp";
 import { docs } from "../docs";
 import { agentFileBytes, flattenName } from "./sync-agents";
 
@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 function makeRoot(slug: string): string {
-  root = mkdtempSync(join(tmpdir(), `giwt-sync-agents-${slug}-`));
+  root = mkdtempSync(join(scratchRoot(), `giwt-sync-agents-${slug}-`));
   return root;
 }
 

@@ -31,7 +31,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   type FsOps,
@@ -43,6 +42,7 @@ import {
   selectFinalizeStashes,
   type StashEntry,
 } from "./commands/abort";
+import { scratchRoot } from "./utils/scratch-tmp";
 
 // --------------------------------------------------------------------------
 // In-memory fs helper (unit tests)
@@ -247,7 +247,7 @@ interface FakeRepo {
 }
 
 function freshFakeRepo(): FakeRepo {
-  const root = mkdtempSync(join(tmpdir(), "abort-test-"));
+  const root = mkdtempSync(join(scratchRoot(), "abort-test-"));
   const init = spawnSync("git", ["init", "-q", "-b", "dev", root], { encoding: "utf8" });
   if (init.status !== 0) {
     throw new Error(`git init failed: ${init.stderr}`);

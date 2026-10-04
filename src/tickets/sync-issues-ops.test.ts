@@ -8,7 +8,7 @@
  * (duplicates, dangling refs, unparsed foreign issues).
  *
  * Resource contract (parallel-safe): every test builds its own mkdtemp repo
- * under os.tmpdir() and removes it in afterEach — no fixed paths, no shared
+ * under the giwt scratch root (/tmp/giwt/) and removes it in afterEach — no fixed paths, no shared
  * fixtures, no env mutation. Registry-dependent tests run the real
  * `git issue` CLI, gated by a module-load probe, mirroring
  * sync-index-run.test.ts.
@@ -25,9 +25,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runValidate } from "../plan/validate";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { runSync, vocabStatusTarget } from "./sync-index";
 import { type IndexEntry } from "./sync-ticket";
 
@@ -64,7 +64,7 @@ function gitOut(cwd: string, ...args: string[]): string {
 
 /** Probe the `git issue` CLI once at module load in a throwaway repo. */
 function probeGitIssueCli(): boolean {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-issue-ops-probe-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-issue-ops-probe-"));
   try {
     gitOut(dir, "init", "-q", "-b", "main");
     gitOut(dir, "config", "user.email", "giwt-test@example.com");
@@ -84,7 +84,7 @@ const GIT_ISSUE_AVAILABLE = probeGitIssueCli();
 
 /** Scratch repo; caller owns the temp dir (pushed to `temps`). */
 function makeRepo(): string {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-issue-ops-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-issue-ops-"));
   temps.push(dir);
   const root = join(dir, "repo");
   mkdirSync(root, { recursive: true });

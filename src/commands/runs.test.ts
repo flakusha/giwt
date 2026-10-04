@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -14,7 +15,6 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CLI = join(import.meta.dir, "..", "cli.ts");
@@ -50,7 +50,7 @@ afterEach(() => {
 
 describe("runs: machine output flags", () => {
   test("--json parses back to run records (compact)", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedRun("2026-01-01T00-00-00", {
       v: 1,
       cmd: "test",
@@ -79,7 +79,7 @@ describe("runs: machine output flags", () => {
   });
 
   test("--toml round-trips via Bun.TOML.parse", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedRun("2026-01-02T00-00-00", {
       v: 1,
       cmd: "sync",
@@ -102,7 +102,7 @@ describe("runs: machine output flags", () => {
   });
 
   test("--emoji prints one ✅/❌ line per run", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedRun("2026-01-03T00-00-00", {
       v: 1,
       cmd: "ok-run",
@@ -192,7 +192,7 @@ function seedFailRun(name: string, capture: string): string {
 
 describe("runs triage", () => {
   test("--json extracts failing blocks with context lines", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("triage-me-111", FAIL_LOG_A);
     const result = runCli(["triage", "triage-me", "--json"]);
     expect(result.exitCode).toBe(0);
@@ -217,7 +217,7 @@ describe("runs triage", () => {
   });
 
   test("--toml round-trips triage records via Bun.TOML.parse", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("triage-me-222", FAIL_LOG_A);
     const result = runCli(["triage", "triage-me", "--toml"]);
     expect(result.exitCode).toBe(0);
@@ -230,7 +230,7 @@ describe("runs triage", () => {
   });
 
   test("--emoji prints one ❌ line per failure", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("triage-me-333", FAIL_LOG_A);
     const result = runCli(["triage", "triage-me", "--emoji"]);
     expect(result.exitCode).toBe(0);
@@ -241,7 +241,7 @@ describe("runs triage", () => {
   });
 
   test("human output groups failures by file with context", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("triage-me-444", FAIL_LOG_A);
     const result = runCli(["triage", "triage-me"]);
     expect(result.exitCode).toBe(0);
@@ -252,7 +252,7 @@ describe("runs triage", () => {
   });
 
   test("failure-free capture reports no failures in both output modes", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("clean-555", CLEAN_LOG);
     const human = runCli(["triage", "clean"]);
     expect(human.exitCode).toBe(0);
@@ -263,7 +263,7 @@ describe("runs triage", () => {
   });
 
   test("accepts an explicit run dir path", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     const dir = seedFailRun("pathy-666", FAIL_LOG_A);
     const result = runCli(["triage", dir, "--json"]);
     expect(result.exitCode).toBe(0);
@@ -271,14 +271,14 @@ describe("runs triage", () => {
   });
 
   test("unknown run id errors naming it with exit 1", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     const result = runCli(["triage", "no-such-run"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr + result.stdout).toContain("no run record matching 'no-such-run'");
   });
 
   test("missing triage target errors with usage and exit 1", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     const result = runCli(["triage"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr + result.stdout).toContain("usage: giwt runs triage");
@@ -287,7 +287,7 @@ describe("runs triage", () => {
 
 describe("runs diff", () => {
   test("--json set-diffs failure identities between two runs", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("diff-a-777", FAIL_LOG_A);
     seedFailRun("diff-b-888", FAIL_LOG_B);
     const result = runCli(["diff", "diff-a", "diff-b", "--json"]);
@@ -312,7 +312,7 @@ describe("runs diff", () => {
   });
 
   test("human output prints new and fixed sections and never gates", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("diff-a-999", FAIL_LOG_A);
     seedFailRun("diff-b-201", FAIL_LOG_B);
     const result = runCli(["diff", "diff-a", "diff-b"]);
@@ -325,7 +325,7 @@ describe("runs diff", () => {
   });
 
   test("identical failure sets report no changes with exit 0", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("diff-a-202", FAIL_LOG_A);
     seedFailRun("diff-b-203", FAIL_LOG_A);
     const result = runCli(["diff", "diff-a", "diff-b"]);
@@ -334,7 +334,7 @@ describe("runs diff", () => {
   });
 
   test("unknown run id on either side errors naming it with exit 1", () => {
-    root = mkdtempSync(join(tmpdir(), "giwt-runs-test-"));
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
     seedFailRun("diff-a-204", FAIL_LOG_A);
     const result = runCli(["diff", "diff-a", "ghost-run"]);
     expect(result.exitCode).toBe(1);

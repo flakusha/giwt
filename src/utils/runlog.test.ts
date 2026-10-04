@@ -33,9 +33,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beginRun, finishActiveRun, formatOutcome, listRuns, readRunEvents } from "./runlog";
+import { scratchRoot } from "./scratch-tmp";
 import { DEFAULT_SETTINGS } from "./settings";
 
 function makeConfig(maxRuns = 200): {
@@ -43,7 +43,7 @@ function makeConfig(maxRuns = 200): {
   root: string;
   wt: string;
 } {
-  const root = mkdtempSync(join(tmpdir(), "giwt-runlog-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-runlog-"));
   // A worktree that is NOT the repo root — finalize removes it, run
   // records must live on under `root`.
   const wt = join(root, "tree", "feat-x");

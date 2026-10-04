@@ -58,7 +58,6 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { branchToPath, type WorktreeConfig } from "../utils/config";
@@ -67,6 +66,7 @@ import { isolatedGitEnv } from "../utils/git";
 import { readLedger } from "../utils/ledger";
 import { setLogLevel, setOutputFormat } from "../utils/output";
 import { beginRun } from "../utils/runlog";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { finalize } from "./finalize";
 import { installFailureGripe } from "./finalize/checks";
@@ -81,7 +81,7 @@ import { teardownFinalizedWorktree } from "./finalize/teardown";
 // Check-fanout slots must stay hermetic: these tests drive the real
 // finalize() in-process, so Step 2's slot acquisition would otherwise write
 // into the developer's ~/.cache. Fixed throwaway slot root + zero wait.
-process.env.GIWT_CHECK_SLOT_DIR = join(tmpdir(), `giwt-check-slots-test-${process.pid}`);
+process.env.GIWT_CHECK_SLOT_DIR = join(scratchRoot(), `giwt-check-slots-test-${process.pid}`);
 process.env.GIWT_CHECK_SLOT_WAIT_MS = "0";
 
 const GPG_UID = "giwt-finalize-test@example.local";
@@ -284,7 +284,7 @@ function driveWithoutGpgCredentials(
 beforeEach(() => {
   setLogLevel("info");
   setOutputFormat("simple");
-  root = mkdtempSync(join(tmpdir(), "giwt-finalize-test-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-finalize-test-"));
   git(["init", "-q", "-b", "main"]);
   git(["config", "user.email", "test@giwt.local"]);
   git(["config", "user.name", "giwt finalize test"]);
@@ -295,10 +295,10 @@ beforeEach(() => {
   writeFileSync(join(root, "seed.txt"), "seed\n");
   git(["add", "."]);
   git(["commit", "-qm", "seed"]);
-  treesRoot = mkdtempSync(join(tmpdir(), "giwt-finalize-trees-"));
+  treesRoot = mkdtempSync(join(scratchRoot(), "giwt-finalize-trees-"));
   treeDir = resolve(treesRoot, "tree");
   mkdirSync(treeDir);
-  toolsRoot = mkdtempSync(join(tmpdir(), "giwt-finalize-tools-"));
+  toolsRoot = mkdtempSync(join(scratchRoot(), "giwt-finalize-tools-"));
   toolsDir = resolve(toolsRoot, "tools");
   mkdirSync(toolsDir);
   argsPath = join(toolsDir, "check-args.txt");
@@ -326,7 +326,7 @@ afterEach(() => {
 
 beforeAll(() => {
   if (!gpgTooling) return;
-  const home = mkdtempSync(join(tmpdir(), "giwt-finalize-gpg-"));
+  const home = mkdtempSync(join(scratchRoot(), "giwt-finalize-gpg-"));
   // pinentry /bin/false: an accidental prompt dies instantly instead of
   // hanging the suite. Empty passphrase: the cancel-mode trial sign in
   // assertAgentGpgUnlocked() succeeds, so the gate passes without a warm cache.

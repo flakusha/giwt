@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -17,7 +18,6 @@
 
 import { describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { reportHeldLock } from "./finalize";
 
@@ -48,7 +48,7 @@ function reapedPid(): number {
 
 describe("reportHeldLock (FIX-errors-carry-no-remedy)", () => {
   test("dead holder: prints path, PID, dead, age, and the abort recovery", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-lock-dead-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-lock-dead-"));
     try {
       const lockPath = join(dir, ".worktree-finalize.lock");
       writeFileSync(lockPath, String(reapedPid()));
@@ -67,7 +67,7 @@ describe("reportHeldLock (FIX-errors-carry-no-remedy)", () => {
   });
 
   test("alive holder: prints PID and alive, no manual-removal hint", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-lock-alive-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-lock-alive-"));
     try {
       const lockPath = join(dir, ".worktree-finalize.lock");
       writeFileSync(lockPath, String(process.pid));
@@ -82,7 +82,7 @@ describe("reportHeldLock (FIX-errors-carry-no-remedy)", () => {
   });
 
   test("empty lockfile (crashed run): still names path and recovery", () => {
-    const dir = mkdtempSync(join(tmpdir(), "giwt-lock-empty-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-lock-empty-"));
     try {
       const lockPath = join(dir, ".worktree-finalize.lock");
       writeFileSync(lockPath, "");

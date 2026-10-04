@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -11,7 +12,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyFixes, parseFileMap, reconcile } from "./backlog-sync";
 
@@ -21,7 +21,7 @@ interface Fixture {
 }
 
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-backlog-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-backlog-"));
   const backlogDir = join(root, "backlog");
   mkdirSync(backlogDir, { recursive: true });
   return {

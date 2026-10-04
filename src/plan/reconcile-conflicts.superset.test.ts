@@ -22,12 +22,12 @@
 
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rebase } from "../commands/rebase";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { setLogLevel } from "../utils/output";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import {
   type RebaseResult,
@@ -78,7 +78,7 @@ interface Fixture {
  *  so the generated-plan reconciler is inert and only the superset pass can
  *  act. `integration` and `feature` diverge by appending to the same file. */
 function makeRepo(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-superset-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-superset-"));
   const cleanup = (): void => rmSync(root, { recursive: true, force: true });
   try {
     git(root, "init", "-q", "-b", "main");
@@ -239,7 +239,7 @@ describe("giwt rebase command reports auto-resolutions", () => {
   });
 
   test("completes the rebase and logs the per-file warn plus summary line", async () => {
-    const root = mkdtempSync(join(tmpdir(), "giwt-superset-cmd-"));
+    const root = mkdtempSync(join(scratchRoot(), "giwt-superset-cmd-"));
     const cleanup = (): void => rmSync(root, { recursive: true, force: true });
     try {
       git(root, "init", "-q", "-b", "main");

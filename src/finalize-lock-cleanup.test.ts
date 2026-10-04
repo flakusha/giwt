@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -28,14 +29,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { acquireFinalizeLock, lockRetryDelayMs } from "./commands/finalize";
 
 let tmp: string;
 
 beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "giwt-finalize-lock-"));
+  tmp = mkdtempSync(join(scratchRoot(), "giwt-finalize-lock-"));
 });
 
 afterEach(() => {
@@ -133,7 +133,7 @@ describe("finalize lock cleanup", () => {
     // Real-child proof for the slot half of the exit hook: a process dying
     // while holding a slot must free it, or a SIGKILLed agent's slot would
     // narrow the machine-wide capacity until reboot.
-    const slotRoot = mkdtempSync(join(tmpdir(), "giwt-check-slots-fixture-"));
+    const slotRoot = mkdtempSync(join(scratchRoot(), "giwt-check-slots-fixture-"));
     try {
       const r = await runFixture("slot", slotRoot);
       expect(r.exitCode).toBe(1);

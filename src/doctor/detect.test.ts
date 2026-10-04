@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -17,14 +18,13 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { isolatedGitEnv } from "../utils/git.ts";
 import { detectProject } from "./detect.ts";
 
 function makeRepo(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-detect-"));
+  return mkdtempSync(join(scratchRoot(), "giwt-detect-"));
 }
 
 function write(p: string, content: string): void {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
@@ -24,7 +24,7 @@ function git(root: string, ...args: string[]): string {
 }
 
 function makeRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-gitcmd-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-gitcmd-"));
   git(root, "init", "-q", "-b", "main");
   git(root, "config", "user.email", "giwt-test@localhost");
   git(root, "config", "user.name", "giwt test");
@@ -231,14 +231,14 @@ describe("giwt git passthrough", () => {
       msgFile,
       "feat: from file\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n",
     );
-    const before = readdirSync(tmpdir()).filter((n) => n.startsWith("giwt-git-msg-"));
+    const before = readdirSync(scratchRoot()).filter((n) => n.startsWith("giwt-git-msg-"));
     await gitPassthrough(["commit", "-F", msgFile], settingsWith({ rtk: "off" }));
     expect(process.exitCode).toBe(0);
     const body = git(root, "log", "-1", "--format=%B");
     expect(body).toContain("feat: from file");
     expect(body).not.toContain("Claude");
     // Throwaway filtered copy (no active run) must not outlive the spawn.
-    const leaked = readdirSync(tmpdir()).filter((n) =>
+    const leaked = readdirSync(scratchRoot()).filter((n) =>
       n.startsWith("giwt-git-msg-") && !before.includes(n)
     );
     expect(leaked).toEqual([]);

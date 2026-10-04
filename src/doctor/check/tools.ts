@@ -7,8 +7,8 @@
  */
 
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../../utils/scratch-tmp";
 import type { SpawnFn } from "./spawn.ts";
 import { tail } from "./spawn.ts";
 import { capFindings, type CheckFinding, type CheckResult, type CheckSeverity } from "./types.ts";
@@ -169,7 +169,7 @@ async function runKnip(root: string, spawn: SpawnFn): Promise<CheckResult> {
 
 async function runJscpd(root: string, spawn: SpawnFn): Promise<CheckResult> {
   const base = { id: "jscpd" as const, tool: "jscpd", ok: true, findings: [] as CheckFinding[] };
-  const outDir = mkdtempSync(join(tmpdir(), "giwt-doctor-jscpd-"));
+  const outDir = mkdtempSync(join(scratchRoot(), "giwt-doctor-jscpd-"));
   try {
     const cfg = join(root, ".jscpd.json");
     // NOTE: no --exit-code flag — its spelling differs across jscpd

@@ -5,7 +5,7 @@
  * Tests for `giwt clean` and the shared scratchpad scanner.
  *
  * Resource contract (parallel-safe): EVERY test owns a private
- * `mkdtempSync(join(tmpdir(), "giwt-clean-<slug>-"))` root — no fixed or
+ * `mkdtempSync(join(scratchRoot(), "giwt-clean-<slug>-"))` root — no fixed or
  * shared paths anywhere — and removes it with `rmSync(root, { recursive:
  * true, force: true })` in a `finally`. File ages are simulated with
  * `utimesSync` against a fixed NOW (never sleeps), and scanScratch gets
@@ -24,11 +24,11 @@ import {
   utimesSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { scanScratch } from "../utils/scratch";
 import type { ScratchClass, ScratchConfig, ScratchScan } from "../utils/scratch";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS, type GiwtSettings } from "../utils/settings";
 import { clean } from "./clean";
 
@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 function makeRoot(slug: string): string {
-  root = mkdtempSync(join(tmpdir(), `giwt-clean-${slug}-`));
+  root = mkdtempSync(join(scratchRoot(), `giwt-clean-${slug}-`));
   return root;
 }
 

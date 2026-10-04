@@ -29,8 +29,8 @@ import {
   utimesSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { parseTicketFile, runSync, type SyncSummary } from "./sync-index";
 import { type IndexEntry } from "./sync-ticket";
 
@@ -61,7 +61,7 @@ function gitOut(cwd: string, ...args: string[]): string {
 
 /** Probe the `git issue` CLI in a throwaway repo (module load, once). */
 function probeGitIssueCli(): boolean {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-git-issue-probe-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-git-issue-probe-"));
   try {
     gitOut(dir, "init", "-q", "-b", "main");
     gitOut(dir, "config", "user.email", "giwt-test@example.com");
@@ -82,7 +82,7 @@ function probeGitIssueCli(): boolean {
 const GIT_ISSUE_AVAILABLE = probeGitIssueCli();
 
 function tempDir(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-sync-run-"));
+  return mkdtempSync(join(scratchRoot(), "giwt-sync-run-"));
 }
 
 /** Scratch git repo with one seed commit (git repo → `git issue ls` works). */

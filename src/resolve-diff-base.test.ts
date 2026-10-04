@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -24,7 +25,6 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { resolveDiffBase } from "./commands/finalize";
@@ -42,7 +42,7 @@ function run(cmd: string[], cwd: string): string {
 }
 
 beforeEach(() => {
-  workDir = mkdtempSync(join(tmpdir(), "giwt-resolve-diff-base-"));
+  workDir = mkdtempSync(join(scratchRoot(), "giwt-resolve-diff-base-"));
   // init, identity, initial commit on master
   run(["git", "init", "--initial-branch=master"], workDir);
   run(["git", "config", "user.email", "test@example.com"], workDir);
@@ -83,7 +83,7 @@ describe("resolveDiffBase", () => {
     // Fail-closed validation: the merge-base call is retained purely to
     // reject invalid refs; without it an invalid target would flow into
     // the check runner and crash downstream with a confusing stack trace.
-    const orphanDir = mkdtempSync(join(tmpdir(), "giwt-orphan-"));
+    const orphanDir = mkdtempSync(join(scratchRoot(), "giwt-orphan-"));
     try {
       run(["git", "init", "--initial-branch=main"], orphanDir);
       run(["git", "config", "user.email", "test@example.com"], orphanDir);
@@ -105,7 +105,7 @@ describe("resolveDiffBase", () => {
     //  - over-report: fileC's content was independently reproduced on the
     //    target — present in the merge-base scope, absent from the target
     //    scope (identical trees cancel in a two-dot diff).
-    const dir = mkdtempSync(join(tmpdir(), "giwt-diffbase-divergence-"));
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-diffbase-divergence-"));
     try {
       run(["git", "init", "--initial-branch=master"], dir);
       run(["git", "config", "user.email", "test@example.com"], dir);

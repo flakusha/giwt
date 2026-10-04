@@ -12,7 +12,6 @@
  */
 
 import { unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { classifyGitInvocation } from "../git/policy";
 import { RTK_DISPLAY_SUBCOMMANDS } from "../git/policy-tables";
@@ -23,6 +22,7 @@ import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import type { RunRecorder } from "../utils/runlog";
+import { scratchRoot } from "../utils/scratch-tmp";
 
 export async function gitPassthrough(args: string[], config: WorktreeConfig): Promise<void> {
   const rest = args[0] === "--" ? args.slice(1) : args;
@@ -205,7 +205,7 @@ async function filterMessageFile(
   if (replacement === null) return null;
   const newPath = rec !== null
     ? rec.capturePath("commit-msg-filtered.txt")
-    : join(tmpdir(), `giwt-git-msg-${process.pid}-${Date.now()}`);
+    : join(scratchRoot(), `giwt-git-msg-${process.pid}-${Date.now()}`);
   try {
     writeFileSync(newPath, replacement);
   } catch {

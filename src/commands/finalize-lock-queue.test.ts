@@ -30,8 +30,8 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import { acquireFinalizeLock, queuePollDelayMs, queueWaitMs } from "./finalize";
 
 const FIXTURE_PATH = join(import.meta.dirname, "../finalize-lock-fixture.ts");
@@ -41,7 +41,7 @@ const QUEUE_NAME = `${LOCK_NAME}.queue`;
 let tmp: string;
 
 beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "giwt-finalize-queue-"));
+  tmp = mkdtempSync(join(scratchRoot(), "giwt-finalize-queue-"));
 });
 
 afterEach(() => {

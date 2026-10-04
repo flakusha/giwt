@@ -20,8 +20,8 @@
 
 import { describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 import {
   applicableChecks,
   CHECK_IDS,
@@ -34,7 +34,7 @@ import { findLeaksInText, hasTestFiles, scanLeaks } from "./leaks.ts";
 import type { LeakMatch } from "./leaks.ts";
 
 function makeRepo(): string {
-  return mkdtempSync(join(tmpdir(), "giwt-leaks-"));
+  return mkdtempSync(join(scratchRoot(), "giwt-leaks-"));
 }
 
 function write(root: string, rel: string, content: string): void {

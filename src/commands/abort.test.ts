@@ -24,8 +24,8 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scratchRoot } from "../utils/scratch-tmp";
 
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
@@ -45,7 +45,7 @@ function git(args: string[], cwd: string = root): string {
 }
 
 function makeRepo(): WorktreeConfig {
-  root = mkdtempSync(join(tmpdir(), "giwt-abort-"));
+  root = mkdtempSync(join(scratchRoot(), "giwt-abort-"));
   temps.push(root);
   Bun.spawnSync(["git", "init", "-q", "-b", "main", root], { env: isolatedGitEnv() });
   git(["config", "user.email", "giwt-test@localhost"]);

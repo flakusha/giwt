@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -19,7 +20,6 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CLI = join(import.meta.dir, "..", "cli.ts");
@@ -48,7 +48,7 @@ function gitOut(cwd: string, ...args: string[]): string {
 }
 
 function probeGitIssueCli(): boolean {
-  const dir = mkdtempSync(join(tmpdir(), "giwt-sync-flag-probe-"));
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-sync-flag-probe-"));
   try {
     gitOut(dir, "init", "-q", "-b", "main");
     gitOut(dir, "config", "user.email", "giwt-test@example.com");
@@ -70,7 +70,7 @@ const GIT_ISSUE_AVAILABLE = probeGitIssueCli();
 
 /** Fresh git repo rooted at the fixture itself (REPO_ROOT target). */
 function makeRepo(slug: string): string {
-  root = mkdtempSync(join(tmpdir(), `giwt-sync-flags-${slug}-`));
+  root = mkdtempSync(join(scratchRoot(), `giwt-sync-flags-${slug}-`));
   gitOut(root, "init", "-q", "-b", "main");
   gitOut(root, "config", "user.email", "giwt-test@example.com");
   gitOut(root, "config", "user.name", "giwt test");

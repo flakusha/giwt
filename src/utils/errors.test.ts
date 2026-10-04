@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "./scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -9,7 +10,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "./config";
 import { reportMissingBase, reportMissingBranch } from "./errors";
@@ -33,7 +33,7 @@ function git(args: string[], cwd: string): string {
 
 /** Build a minimal git repo with exactly the requested branch set on top of one commit. */
 function makeRepo(branches: string[]): string {
-  const root = mkdtempSync(join(tmpdir(), "giwt-errors-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-errors-"));
   git(["init", "-q", "-b", "main"], root);
   git(["config", "user.email", "t@g.local"], root);
   git(["config", "user.name", "t"], root);

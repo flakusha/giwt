@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -9,7 +10,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { collectEpics, genDocs, generateIndex, parseEpic } from "./gen-docs";
 
@@ -22,7 +22,7 @@ interface Fixture {
 }
 
 function makeFixture(): Fixture {
-  const root = mkdtempSync(join(tmpdir(), "giwt-gendocs-"));
+  const root = mkdtempSync(join(scratchRoot(), "giwt-gendocs-"));
   const epicsDir = join(root, ".plan/epics");
   mkdirSync(epicsDir, { recursive: true });
   return {
