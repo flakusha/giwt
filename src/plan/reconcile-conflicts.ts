@@ -4,11 +4,13 @@
 /**
  * Rebase with automatic .plan/ conflict reconciliation — public surface.
  *
- * `rebaseWithPlanReconciliation` loops `git rebase` + two auto-resolve
+ * `rebaseWithPlanReconciliation` loops `git rebase` + three auto-resolve
  * passes: generated-plan artifacts are merged/regenerated (see
- * ./reconcile-conflicts/generated), and content conflicts whose two stages
+ * ./reconcile-conflicts/generated), content conflicts whose two stages
  * form a strict superset relationship are resolved to the superset side
- * (see ./reconcile-conflicts/supersets). Anything else stops the rebase and
+ * (see ./reconcile-conflicts/supersets), and ticket .md header conflicts
+ * are merged by rule — done-wins, tag union, issue-ref append — (see
+ * ./reconcile-conflicts/ticket-headers). Anything else stops the rebase and
  * is returned to the caller.
  */
 
@@ -16,6 +18,7 @@ import { log } from "../utils/output";
 import { completeGeneratedReconcile, resolveGenerated } from "./reconcile-conflicts/generated";
 import { isAncestorOf, runGit, unmergedPaths } from "./reconcile-conflicts/git-io";
 import { autoResolveSupersets } from "./reconcile-conflicts/supersets";
+import { resolveTicketHeaderConflicts } from "./reconcile-conflicts/ticket-headers";
 
 export { isAncestorOf } from "./reconcile-conflicts/git-io";
 export { mergeIndexRecords } from "./reconcile-conflicts/json-merge";
@@ -67,8 +70,10 @@ export function rebaseWithPlanReconciliation(
     generatedConflicts.push(...resolved);
     const supersets = autoResolveSupersets(root);
     autoResolved.push(...supersets);
+    const headerResolved = resolveTicketHeaderConflicts(root, ticketsPath);
+    autoResolved.push(...headerResolved);
     if (
-      (resolved.length === 0 && supersets.length === 0)
+      (resolved.length === 0 && supersets.length === 0 && headerResolved.length === 0)
       || unmergedPaths(root).length > 0
     ) {
       return { exitCode: result.exitCode, output, generatedConflicts, autoResolved };

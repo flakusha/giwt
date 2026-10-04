@@ -28,7 +28,23 @@ export const STATUS_LINE_RE =
  */
 export function parseTicketFile(filePath: string, source?: string): TicketFile | null {
   try {
-    const ticketText = readFileSync(filePath, "utf8");
+    return parseTicketText(readFileSync(filePath, "utf8"), filePath, source);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse ticket text (same contract as {@link parseTicketFile}, but on an
+ * in-memory string) — lets the rebase conflict resolver parse conflict
+ * stages without materializing temp files.
+ */
+export function parseTicketText(
+  ticketText: string,
+  filePath: string,
+  source?: string,
+): TicketFile | null {
+  try {
     const lines = ticketText.split("\n").slice(0, 30); // header region only
     const header = lines.join("\n");
 

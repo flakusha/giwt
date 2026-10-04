@@ -19,6 +19,57 @@ import {
   mergeIndexRecords,
   rebaseWithPlanReconciliation,
 } from "./reconcile-conflicts";
+import { mergeTicketHeader } from "./reconcile-conflicts/ticket-headers";
+
+// ── ticket-header rule merge (FEAT-ticket-header-conflict-resolver) ──
+
+const OURS_MD = `# BUG: sample ticket
+
+**Status:** In Progress
+**Priority:** high
+**Tags:** stash, finalize
+
+Body of the ours side.
+`;
+
+const THEIRS_DONE = `# BUG: sample ticket
+
+**Status:** Done
+**Priority:** high
+**Tags:** finalize, plan
+
+Body of the theirs side.
+`;
+
+describe("mergeTicketHeader", () => {
+  test("done wins regardless of side", () => {
+    const merged = mergeTicketHeader(OURS_MD, THEIRS_DONE, "BUG-sample.md");
+    expect(merged).toContain("**Status:** Done");
+    // Ours' body survives — only the header is merged.
+    expect(merged).toContain("Body of the ours side.");
+  });
+
+  test("tags union keeps ours first and dedupes", () => {
+    const merged = mergeTicketHeader(OURS_MD, THEIRS_DONE, "BUG-sample.md");
+    expect(merged).toContain("**Tags:** stash, finalize, plan");
+  });
+
+  test("issue ref from theirs is appended when ours lacks one", () => {
+    const withIssue = THEIRS_DONE.replace(
+      "Body of the theirs side.",
+      "Body of the theirs side.\n\n  issue: 461e906\n",
+    );
+    const merged = mergeTicketHeader(OURS_MD, withIssue, "BUG-sample.md");
+    expect(merged).toContain("issue: 461e906");
+  });
+
+  test("non-done status keeps ours (replayed side wins, plan-vocab)", () => {
+    const theirsDraft = THEIRS_DONE.replace("**Status:** Done", "**Status:** Draft");
+    const merged = mergeTicketHeader(OURS_MD, theirsDraft, "BUG-sample.md");
+    // Status rewrites use the plan-vocab target, same as the sync fixers.
+    expect(merged).toContain("**Status:** in_progress");
+  });
+});
 
 function git(root: string, ...args: string[]): string {
   const result = Bun.spawnSync(["git", "-C", root, ...args], {
