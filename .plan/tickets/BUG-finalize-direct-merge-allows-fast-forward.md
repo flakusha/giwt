@@ -34,3 +34,5 @@ The `--no-edit` flag allows the merge to use the default message, but doesn't pr
 - [ ] The direct merge strategy documents whether fast-forward is allowed
 - [ ] Or: add a `--no-ff` flag to force a merge commit
 - [ ] A regression test covers the fast-forward case
+
+git issue: f8b8aa9

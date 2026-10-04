@@ -41,3 +41,5 @@ Compare with `stashDevForMerge` in `src/commands/finalize/merge.ts:68-76` which 
 - [ ] Step 1 checks for untracked files via `git ls-files --others --exclude-standard`
 - [ ] Untracked files are reported in the error message
 - [ ] A regression test covers the untracked-files case
+
+git issue: 7aaa984

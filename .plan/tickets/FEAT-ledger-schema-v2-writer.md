@@ -24,3 +24,5 @@ Source of truth: ledger-redesign.md §2.2 (v2 schema: state/agent/seq/error), §
 - [ ] No cli basename argument; NO repo key on the record
 - [ ] `readLedger` normalizes v1+v2 via `normalizeRecord`; keeps existsSync early return + best-effort try/catch
 - [ ] Phase-0-before-Phase-1 gate: MUST NOT land before FEAT-ledger-core-canonical-module
+
+git issue: 2491db8

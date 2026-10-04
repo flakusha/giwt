@@ -23,3 +23,5 @@ Scope is the single-repo subset of ledger-redesign.md: §§2.1-2.4 (record shape
 - [ ] `ledger-core.ts` has no fs/process/imports (pure)
 - [ ] `readLedger` uses `normalizeRecord` (v1 output byte-identical); writer still emits v1
 - [ ] Phase-0-before-Phase-1 gate: FEAT-ledger-schema-v2-writer MUST NOT land before this ticket
+
+git issue: 4a5b9ba

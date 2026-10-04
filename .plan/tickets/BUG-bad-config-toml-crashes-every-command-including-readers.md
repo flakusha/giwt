@@ -27,3 +27,5 @@ Verified: `loadSettings` with a malformed global file throws `invalid TOML (TOML
 - [ ] Malformed global/local TOML degrades to warn + defaults (or a one-line error naming the file)
 - [ ] `ledger`, `runs`, `plan` work with a broken config file
 - [ ] Test pins malformed-TOML behavior
+
+git issue: 4813397

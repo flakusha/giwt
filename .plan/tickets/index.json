@@ -36,7 +36,7 @@
     "status": "done"
   },
   "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS": {
-    "hash": "pending",
+    "hash": "4813397",
     "extid": "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS",
     "type": "BUG",
     "title": "bad config TOML crashes every command including readers",
@@ -48,7 +48,8 @@
       "cli"
     ],
     "source": ".plan/tickets/BUG-bad-config-toml-crashes-every-command-including-readers.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "4813397"
   },
   "BUG-BROWSER-E2E-404-ALLOWLIST-MASKS-REAL-404S": {
     "hash": "2929526",
@@ -99,7 +100,7 @@
     "status": "done"
   },
   "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE": {
-    "hash": "pending",
+    "hash": "42334ee",
     "extid": "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE",
     "type": "BUG",
     "title": "finalize alreadyMerged check is incomplete — rev-list count misses content-equivalent branches",
@@ -111,10 +112,11 @@
       "merge"
     ],
     "source": ".plan/tickets/BUG-finalize-alreadymerged-check-is-incomplete.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "42334ee"
   },
   "BUG-FINALIZE-BRANCHTOPATH-IS-LOSSY": {
-    "hash": "pending",
+    "hash": "5b6c4d7",
     "extid": "BUG-FINALIZE-BRANCHTOPATH-IS-LOSSY",
     "type": "BUG",
     "title": "finalize branchToPath is lossy — feature/foo and feature-foo map to same directory",
@@ -127,7 +129,8 @@
       "naming"
     ],
     "source": ".plan/tickets/BUG-finalize-branchtopath-is-lossy.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "5b6c4d7"
   },
   "BUG-FINALIZE-CHECK-FAILURE-REPORT-NEVER-NAMES-FAILED-GATES-CHECK": {
     "hash": "pending",
@@ -146,7 +149,7 @@
     "git_issue": "3022ea0"
   },
   "BUG-FINALIZE-DIRECT-MERGE-ALLOWS-FAST-FORWARD": {
-    "hash": "pending",
+    "hash": "f8b8aa9",
     "extid": "BUG-FINALIZE-DIRECT-MERGE-ALLOWS-FAST-FORWARD",
     "type": "BUG",
     "title": "finalize direct merge allows fast-forward — no merge commit created",
@@ -158,10 +161,11 @@
       "merge"
     ],
     "source": ".plan/tickets/BUG-finalize-direct-merge-allows-fast-forward.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "f8b8aa9"
   },
   "BUG-FINALIZE-FINDWORKTREE-ONLY-CHECKS-TREE-DIR": {
-    "hash": "pending",
+    "hash": "c0f621d",
     "extid": "BUG-FINALIZE-FINDWORKTREE-ONLY-CHECKS-TREE-DIR",
     "type": "BUG",
     "title": "finalize findWorktree only checks `tree/<dirName>` — misses worktrees at custom paths",
@@ -174,7 +178,8 @@
       "discovery"
     ],
     "source": ".plan/tickets/BUG-finalize-findworktree-only-checks-tree-dir.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "c0f621d"
   },
   "BUG-FINALIZE-LEAKS-WORKTREE-AND-BRANCH-WHEN-THE-TARGET-ALREADY-C": {
     "hash": "f16f955",
@@ -205,7 +210,7 @@
     "status": "done"
   },
   "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES": {
-    "hash": "pending",
+    "hash": "7aaa984",
     "extid": "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES",
     "type": "BUG",
     "title": "finalize step1 doesnt check untracked files — silent data loss on worktree removal",
@@ -218,10 +223,11 @@
       "data-loss"
     ],
     "source": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "7aaa984"
   },
   "BUG-FINALIZE-TEARDOWN-BRANCH-DELETION-FALLBACK-IS-SILENT": {
-    "hash": "pending",
+    "hash": "0cbf647",
     "extid": "BUG-FINALIZE-TEARDOWN-BRANCH-DELETION-FALLBACK-IS-SILENT",
     "type": "BUG",
     "title": "finalize teardown branch deletion -d to -D fallback is silent — discards unmerged commits without warning",
@@ -234,10 +240,11 @@
       "data-loss"
     ],
     "source": ".plan/tickets/BUG-finalize-teardown-branch-deletion-fallback-is-silent.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "0cbf647"
   },
   "BUG-FINALIZE-TEARDOWN-DOESNT-VERIFY-WORKTREE-EXISTS": {
-    "hash": "pending",
+    "hash": "e59a82b",
     "extid": "BUG-FINALIZE-TEARDOWN-DOESNT-VERIFY-WORKTREE-EXISTS",
     "type": "BUG",
     "title": "finalize teardown doesnt verify worktree exists — confusing error on externally-removed worktree",
@@ -249,10 +256,11 @@
       "teardown"
     ],
     "source": ".plan/tickets/BUG-finalize-teardown-doesnt-verify-worktree-exists.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "e59a82b"
   },
   "BUG-FINALIZE-TEARDOWN-WORKTREE-REMOVAL-FAILURE-IS-NON-FATAL": {
-    "hash": "pending",
+    "hash": "854662b",
     "extid": "BUG-FINALIZE-TEARDOWN-WORKTREE-REMOVAL-FAILURE-IS-NON-FATAL",
     "type": "BUG",
     "title": "finalize teardown worktree removal failure is non-fatal — leaks worktree dir and admin entry",
@@ -264,7 +272,8 @@
       "teardown"
     ],
     "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "854662b"
   },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
     "hash": "7c1a34d",
@@ -337,7 +346,7 @@
     "status": "done"
   },
   "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS": {
-    "hash": "pending",
+    "hash": "afe3bf9",
     "extid": "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS",
     "type": "BUG",
     "title": "ledger append race drops records under concurrent agents",
@@ -349,7 +358,8 @@
       "concurrency"
     ],
     "source": ".plan/tickets/BUG-ledger-append-race-drops-records-under-concurrent-agents.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "afe3bf9"
   },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
@@ -431,6 +441,23 @@
     "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md",
     "status": "done"
   },
+  "BUG-RECONCILE-GPG-AMEND-TEST-FLAKES-UNDER-PARALLEL-GATE-LOAD": {
+    "hash": "78e2841",
+    "git_issue": "78e2841",
+    "extid": "BUG-RECONCILE-GPG-AMEND-TEST-FLAKES-UNDER-PARALLEL-GATE-LOAD",
+    "type": "BUG",
+    "title": "reconcile gpg amend test flakes under parallel gate load",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "gpg",
+      "flaky",
+      "tests"
+    ],
+    "source": ".plan/tickets/BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load.md",
+    "status": "Not Started"
+  },
   "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-": {
     "hash": "e120fa8",
     "git_issue": "e120fa8",
@@ -450,7 +477,7 @@
     "status": "done"
   },
   "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
-    "hash": "pending",
+    "hash": "4e5f505",
     "extid": "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV",
     "type": "BUG",
     "title": "squash commit failure strands staged changes in dev",
@@ -462,10 +489,11 @@
       "squash"
     ],
     "source": ".plan/tickets/BUG-squash-commit-failure-strands-staged-changes-in-dev.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "4e5f505"
   },
   "BUG-STATUS-VOCAB-ANNOTATION-REGEX-REJECTS-NESTED-PARENTHESES": {
-    "hash": "pending",
+    "hash": "a250526",
     "extid": "BUG-STATUS-VOCAB-ANNOTATION-REGEX-REJECTS-NESTED-PARENTHESES",
     "type": "BUG",
     "title": "status-vocab annotation regex rejects nested parentheses",
@@ -477,7 +505,8 @@
       "plan-validate"
     ],
     "source": ".plan/tickets/BUG-status-vocab-annotation-regex-rejects-nested-parentheses.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "a250526"
   },
   "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
     "hash": "adccccd",
@@ -779,7 +808,7 @@
     "status": "done"
   },
   "FEAT-LEDGER-CORE-CANONICAL-MODULE": {
-    "hash": "pending",
+    "hash": "4a5b9ba",
     "extid": "FEAT-LEDGER-CORE-CANONICAL-MODULE",
     "type": "FEAT",
     "title": "ledger-core canonical module",
@@ -791,10 +820,11 @@
       "shared-module"
     ],
     "source": ".plan/tickets/FEAT-ledger-core-canonical-module.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "4a5b9ba"
   },
   "FEAT-LEDGER-SCHEMA-V2-WRITER": {
-    "hash": "pending",
+    "hash": "2491db8",
     "extid": "FEAT-LEDGER-SCHEMA-V2-WRITER",
     "type": "FEAT",
     "title": "ledger schema v2 writer",
@@ -806,7 +836,8 @@
       "schema-v2"
     ],
     "source": ".plan/tickets/FEAT-ledger-schema-v2-writer.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "2491db8"
   },
   "FEAT-MERGE-IN-STAGING-WORKTREE-WITH-REF-MOVE": {
     "hash": "1098041",
@@ -838,7 +869,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {
     "hash": "5c8332a",

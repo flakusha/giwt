@@ -39,3 +39,5 @@ Compare with `src/commands/remove.ts:82-87` which exits 1 on worktree removal fa
 - [ ] The failure is recorded in the run record outcome and ledger gripe
 - [ ] The branch deletion step is skipped when worktree removal fails (or at least warned about)
 - [ ] A regression test asserts the non-fatal path
+
+git issue: 854662b

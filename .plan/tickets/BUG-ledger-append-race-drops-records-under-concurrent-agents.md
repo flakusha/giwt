@@ -32,3 +32,5 @@ Repro sketch: two parallel CLI invocations sharing a treeDir → `.ledger.jsonl`
 - [ ] Concurrent appends never lose records (atomic append or temp-file + rename; `LEDGER_MAX_RECORDS` prune preserved)
 - [ ] `enrichOwnRecord` cannot clobber a concurrent append
 - [ ] Regression test drives concurrent appends and asserts both records land
+
+git issue: afe3bf9

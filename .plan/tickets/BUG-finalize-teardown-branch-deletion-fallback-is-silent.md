@@ -44,3 +44,5 @@ Compare with `src/commands/remove.ts`: `execute` (lines 91-99) checks `branchMer
 - [ ] A warning is printed that unmerged commits are being discarded
 - [ ] The tip SHA is reported so the commit stays recoverable from the reflog
 - [ ] A regression test asserts the warning is printed
+
+git issue: 0cbf647

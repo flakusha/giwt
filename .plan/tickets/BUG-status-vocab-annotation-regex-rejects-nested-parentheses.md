@@ -27,3 +27,5 @@ Verified live via `resolveStatus`: `Done (landed on master: x)` → valid, but `
 - [ ] Single-level annotations and the `open (planning)` alias behavior unchanged
 - [ ] The leaks ticket validates without editing its Status line
 - [ ] Test pins a nested-paren annotation case
+
+git issue: a250526

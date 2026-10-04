@@ -31,3 +31,5 @@ if (squashCommit.exitCode !== 0) {
 - [ ] Squash-commit failure leaves no silent loss: staged squash is unwound or the run prints exact recovery (reset + worktree/branch cleanup)
 - [ ] A retry after the failure is not a dead end
 - [ ] Regression test covers commit-after-successful-squash-stage failure
+
+git issue: 4e5f505

@@ -33,3 +33,5 @@ The teardown should verify the worktree path exists before attempting removal, a
 - [ ] If the worktree is already gone, a clear message is printed
 - [ ] The branch deletion step handles the missing-worktree case correctly
 - [ ] A regression test covers the externally-removed case
+
+git issue: e59a82b

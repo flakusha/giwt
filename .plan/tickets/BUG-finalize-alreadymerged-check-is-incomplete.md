@@ -31,3 +31,5 @@ The check should use `git merge-base --is-ancestor` or `git cherry` to verify th
 - [ ] The `alreadyMerged` check uses `git merge-base --is-ancestor` or `git cherry`
 - [ ] Branches with 0 commits but unmerged changes are handled correctly
 - [ ] A regression test covers the edge case
+
+git issue: 42334ee

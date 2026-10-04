@@ -31,3 +31,5 @@ The function should also check `git worktree list` to find worktrees at custom p
 - [ ] `findWorktree` falls back to `git worktree list` when the default path doesn't exist
 - [ ] Worktrees at custom paths are found and finalized correctly
 - [ ] A regression test covers the custom-path case
+
+git issue: c0f621d

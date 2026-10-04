@@ -28,3 +28,5 @@ The conversion is lossy — there is no reverse mapping. If a user has both `fea
 - [ ] `branchToPath` uses a reversible encoding (e.g., URL encoding or a mapping table)
 - [ ] Or: the collision is detected and reported
 - [ ] A regression test covers the collision case
+
+git issue: 5b6c4d7
