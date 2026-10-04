@@ -253,6 +253,7 @@ describe("reconcile orphan detection", () => {
       priority: "medium",
       epic: "",
       tags: [],
+      upstream: "",
       hash: null,
       gitIssue: null,
       source: ".plan/tickets/TASK-NEW.md",

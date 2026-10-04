@@ -81,6 +81,9 @@ export function renderTicketFile(
   if (flags.tags.length > 0) {
     content += `**Tags:** ${flags.tags.join(", ")}\n`;
   }
+  if (flags.upstream) {
+    content += `**Upstream:** ${flags.upstream}\n`;
+  }
   content += `\n**Summary:**\n\n${body || "No description provided."}\n\n`;
   content +=
     `**Context:**\n\n(fill in before starting: why this change, constraints, alternatives considered.)\n\n`;

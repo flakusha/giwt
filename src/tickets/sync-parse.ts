@@ -20,7 +20,7 @@ export const STATUS_LINE_RE =
 /**
  * Parse a ticket .md file into a TicketFile.
  *
- * Metadata fields (**Status:**, **Priority:**, **Epic:**, **Tags:**) are
+ * Metadata fields (**Status:**, **Priority:**, **Epic:**, **Tags:**, **Upstream:**) are
  * matched against the header region (first 30 lines) only — whole-file
  * matching captured body prose into the epic field. The git-issue
  * reference is still matched against the whole file: applyFixes appends
@@ -63,6 +63,7 @@ export function parseTicketText(
     const priorityMatch = header.match(/\*\*Priority:\*\*\s*(.+)/i);
     const epicMatch = header.match(/\*\*Epic:\*\*\s*(.+)/i);
     const tagsMatch = header.match(/\*\*Tags:\*\*\s*(.+)/);
+    const upstreamMatch = header.match(/\*\*Upstream:\*\*\s*(.+)/i);
 
     // Extract type from heading
     const typeMatch = titleMatch?.match(
@@ -98,6 +99,7 @@ export function parseTicketText(
       priority: priorityMatch?.[1]?.trim() ?? "medium",
       epic: epicMatch?.[1]?.trim() ?? "",
       tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
+      upstream: upstreamMatch?.[1]?.trim() ?? "",
       hash: gitIssueMatch?.[1] ?? null,
       gitIssue: gitIssueMatch?.[1] ?? null,
       source: source ?? filePath,

@@ -15,6 +15,7 @@ export interface TicketFile {
   priority: string;
   epic: string;
   tags: string[];
+  upstream: string;
   hash: string | null;
   gitIssue: string | null;
   /** Repo-relative source path (`.plan/tickets/x.md` or `.plan/epics/x.md`). */

@@ -31,6 +31,7 @@ import { join } from "node:path";
 import { resolveStatus } from "../plan/status-vocab";
 import { TICKET_REQUIRED_SECTIONS } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
+import { parseTicketText } from "../tickets/sync-parse";
 import { loadConfig } from "../utils/config";
 import { scratchRoot } from "../utils/scratch-tmp";
 import {
@@ -144,6 +145,7 @@ describe("renderTicketFile — generated template is gate-clean", () => {
     epic: "some-epic",
     tags: ["a", "b"],
     effort: "Small",
+    upstream: "",
   };
 
   it("emits a Status the status-vocab gate accepts as already canonical", () => {
@@ -168,6 +170,39 @@ describe("renderTicketFile — generated template is gate-clean", () => {
     const content = renderTicketFile("TASK", "some title", FLAGS, "body");
     expect(content).not.toMatch(/^## (Summary|Context|Acceptance Criteria)$/m);
     expect(content).not.toContain("⬜");
+  });
+});
+
+describe("renderTicketFile — Upstream header line", () => {
+  it("renders **Upstream:** after Tags when --upstream is given", () => {
+    const { flags } = parseTicketArgs(["--upstream", "owner/repo#123"]);
+    expect(flags.upstream).toBe("owner/repo#123");
+    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    expect(content).toContain("**Upstream:** owner/repo#123");
+  });
+
+  it("accepts the -u short flag", () => {
+    const { flags } = parseTicketArgs(["-u", "owner/repo#123"]);
+    expect(flags.upstream).toBe("owner/repo#123");
+  });
+
+  it("emits no Upstream line when the flag is absent", () => {
+    const { flags } = parseTicketArgs(["body"]);
+    expect(flags.upstream).toBe("");
+    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    expect(content).not.toMatch(/\*\*Upstream:\*\*/);
+  });
+
+  it("parseTicketText round-trips the field", () => {
+    const { flags } = parseTicketArgs(["--upstream", "owner/repo#123"]);
+    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    const tf = parseTicketText(content, "BUG-t.md");
+    expect(tf?.upstream).toBe("owner/repo#123");
+    const absent = parseTicketText(
+      renderTicketFile("BUG", "t", { ...flags, epic: "e", upstream: "" }, "body"),
+      "BUG-t.md",
+    );
+    expect(absent?.upstream).toBe("");
   });
 });
 

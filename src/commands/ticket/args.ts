@@ -12,6 +12,8 @@ const FLAG_TOKENS: Record<string, true> = {
   "--epic": true,
   "--effort": true,
   "--tag": true,
+  "-u": true,
+  "--upstream": true,
 };
 
 export interface TicketFlags {
@@ -20,6 +22,7 @@ export interface TicketFlags {
   epic: string;
   tags: string[];
   effort: string;
+  upstream: string;
 }
 
 /** Apply one flag + its value token to a flags record. Undefined value
@@ -53,6 +56,11 @@ function applyFlag(flags: TicketFlags, token: string, value: string | undefined)
       }
       break;
     }
+    case "-u":
+    case "--upstream": {
+      if (value !== undefined) flags.upstream = value;
+      break;
+    }
   }
 }
 
@@ -72,7 +80,14 @@ export interface ParsedTicketArgs {
  * dash-leading body keeps working; extra positionals are ignored, matching
  * the old args.slice(3) scan. */
 export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
-  const flags: TicketFlags = { labels: [], priority: "", epic: "", effort: "Medium", tags: [] };
+  const flags: TicketFlags = {
+    labels: [],
+    priority: "",
+    epic: "",
+    effort: "Medium",
+    tags: [],
+    upstream: "",
+  };
   const positionals: string[] = [];
   for (let i = 0; i < tail.length; i++) {
     const token = tail[i];
