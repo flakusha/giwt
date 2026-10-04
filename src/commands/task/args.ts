@@ -36,6 +36,8 @@ export interface TaskFlags {
   follow: string[];
   careful: string[];
   docs: string[];
+  /** --roster: print the open-work roster as JSON instead of rendering. */
+  roster: boolean;
 }
 
 export class TaskArgError extends Error {
@@ -72,6 +74,7 @@ const FLAG_TOKENS: Record<string, true> = {
   "--follow": true,
   "--careful": true,
   "--docs": true,
+  "--roster": true,
 };
 
 /** Required value for a value-taking flag; missing value is a parse
@@ -121,9 +124,11 @@ export function parseTaskArgs(args: string[]): TaskFlags {
     follow: [],
     careful: [],
     docs: [],
+    roster: false,
   };
   let sawDirectiveFlag = false;
   let sawFile = false;
+  let sawRoster = false;
   let sawShallow = false;
   let sawDeep = false;
   const positionals: string[] = [];
@@ -243,6 +248,10 @@ export function parseTaskArgs(args: string[]): TaskFlags {
         if (v !== undefined) flags.docs.push(v);
         break;
       }
+      case "--roster":
+        sawRoster = true;
+        flags.roster = true;
+        break;
     }
   }
   if (positionals.length > 0 && (sawDirectiveFlag || sawFile)) {
@@ -252,6 +261,11 @@ export function parseTaskArgs(args: string[]): TaskFlags {
   }
   if (sawDirectiveFlag && sawFile) {
     throw new TaskArgError("-m/--message and -F/--file are mutually exclusive");
+  }
+  if (sawRoster && (positionals.length > 0 || sawDirectiveFlag || sawFile)) {
+    throw new TaskArgError(
+      "--roster takes no directive; it is mutually exclusive with task text (positional, -m/--message, -F/--file)",
+    );
   }
   if (positionals.length > 0) flags.directive = positionals.join(" ");
   if (flags.strict && flags.gates !== undefined) {

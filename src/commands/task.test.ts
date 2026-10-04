@@ -132,6 +132,13 @@ describe("parseTaskArgs", () => {
     expect(parseTaskArgs(["-g", "lint,format"]).gates).toBe("lint,format");
   });
 
+  it("accepts --roster and rejects it with task text", () => {
+    expect(parseTaskArgs(["--roster"]).roster).toBe(true);
+    expect(() => parseTaskArgs(["--roster", "-m", "x"])).toThrow(TaskArgError);
+    expect(() => parseTaskArgs(["--roster", "fix", "it"])).toThrow(TaskArgError);
+    expect(() => parseTaskArgs(["--roster", "-F", "f.txt"])).toThrow(TaskArgError);
+  });
+
   it("derives kebab slugs capped at 40 chars", () => {
     expect(directiveSlug("Fix the Login Race! (v2)")).toBe("fix-the-login-race-v2");
     expect(directiveSlug("!!!")).toBe("");
@@ -285,6 +292,35 @@ describe("task handler output", () => {
     }
   });
 
+  it("--roster prints a parseable JSON array of open-work entries", async () => {
+    const root = mkdtempSync(join(tmpdir(), "giwt-task-roster-"));
+    try {
+      mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
+      writeFileSync(
+        join(root, ".plan", "tickets", "TASK-alpha.md"),
+        "# TASK: alpha work\n\n**Status:** open\n",
+      );
+      writeFileSync(
+        join(root, ".plan", "tickets", "BUG-done.md"),
+        "# BUG: finished work\n\n**Status:** Done\n",
+      );
+      const rosterConfig = {
+        worktreeRoot: root,
+        settings: { paths: { tickets: ".plan/tickets" } },
+      } as unknown as Parameters<typeof task>[1];
+      const spy = spyOn(process.stdout, "write").mockImplementation(() => true);
+      await task(["--roster"], rosterConfig);
+      const out = spy.mock.calls.map((c) => String(c[0])).join("");
+      spy.mockRestore();
+      const roster = JSON.parse(out) as Array<{ id: string; title: string; source: string; }>;
+      expect(Array.isArray(roster)).toBe(true);
+      expect(roster).toHaveLength(1);
+      expect(roster[0]).toMatchObject({ id: "TASK-alpha", title: "alpha work", source: "plan" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("prints usage and exits 1 on parse errors and missing text", async () => {
     const capturedErr = capture();
     const exits: number[] = [];
@@ -303,5 +339,6 @@ describe("task handler output", () => {
     }
     expect(exits).toEqual([1, 1]);
     expect(TASK_USAGE).toContain("--gates");
+    expect(TASK_USAGE).toContain("--roster");
   });
 });

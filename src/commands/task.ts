@@ -8,6 +8,12 @@
  * no repo mutation, no git calls; the ledger row lands via dispatch.
  */
 
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { resolveFromRoot } from "../plan/validate";
+import { parseTicketFile } from "../tickets/sync-index";
+import { normalizeStatus } from "../tickets/sync-normalize";
+import type { IndexEntry } from "../tickets/sync-ticket-types";
 import type { WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
 import {
@@ -18,11 +24,13 @@ import {
   TaskArgError,
   type TaskFlags,
 } from "./task/args";
+import { readTicketIndex } from "./ticket/lookup";
 
 export const TASK_USAGE = `  <directive...> [flags]
   <directive...>            task text (positional); conflicts with -m/-F
   -m, -d, --message, --directive <t>   explicit directive text
   -F, --file <path>         read directive from file ("-" = stdin)
+  --roster                  print the open-work roster as JSON (no task text)
   -j, --jobs <n>            finalization jobs; 0 = do not finalize (default: CLI default)
   -a, --agents <n>          subagent budget: 0 none, -1 unbounded, N cap (default: omit)
   --good <n>, --fast <n>    explicit good/fast subagent split (conflicts with -a 0)
@@ -146,8 +154,55 @@ function renderTask(flags: TaskFlags, directive: string): string {
   return `${lines.join("\n")}\n`;
 }
 
+/** One machine-readable open-work entry: `giwt task --roster`. */
+export interface RosterEntry {
+  id: string;
+  title: string;
+  source: "plan";
+}
+
+/**
+ * Open-work roster: ticket-index entries (`.plan/tickets/index.json`, keyed
+ * by extid) merged with unindexed `.plan/tickets/*.md` plan files, done-
+ * class entries filtered out. Read-only reuse of the sync/lookup readers —
+ * no subprocesses. Sorted by id for stable output.
+ */
+export function collectRoster(config: WorktreeConfig): RosterEntry[] {
+  const ticketsPath = config.settings.paths.tickets;
+  const root = config.worktreeRoot;
+  const byId = new Map<string, RosterEntry>();
+  const put = (id: string, title: string): void => {
+    byId.set(id.toLowerCase(), { id, title, source: "plan" });
+  };
+  const isOpen = (status: string | undefined): boolean =>
+    status === undefined || normalizeStatus(status) !== "done";
+
+  let index: Record<string, IndexEntry> = {};
+  try {
+    index = readTicketIndex(root, ticketsPath);
+  } catch {
+    index = {}; // corrupt index degrades to the .md scan below
+  }
+  for (const [extid, entry] of Object.entries(index)) {
+    if (!isOpen(entry.status)) continue;
+    put(extid, entry.title || extid);
+  }
+
+  const ticketsDir = resolveFromRoot(root, ticketsPath);
+  if (existsSync(ticketsDir)) {
+    for (const name of readdirSync(ticketsDir).filter((f) => f.endsWith(".md")).sort()) {
+      const ticket = parseTicketFile(join(ticketsDir, name), join(ticketsPath, name));
+      if (ticket === null || !isOpen(ticket.status)) continue;
+      const id = name.replace(/\.md$/, "");
+      if (byId.has(id.toLowerCase())) continue; // index entry wins
+      put(id, ticket.title);
+    }
+  }
+  return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
 /** Handler: parse, resolve the directive (-F file/stdin), render. */
-export async function task(args: string[], _config: WorktreeConfig): Promise<void> {
+export async function task(args: string[], config: WorktreeConfig): Promise<void> {
   let flags: TaskFlags;
   try {
     flags = parseTaskArgs(args);
@@ -158,6 +213,10 @@ export async function task(args: string[], _config: WorktreeConfig): Promise<voi
       process.exit(1);
     }
     throw e;
+  }
+  if (flags.roster) {
+    raw(JSON.stringify(collectRoster(config), null, 2));
+    return;
   }
   let directive = flags.directive;
   if (flags.file !== undefined) {
