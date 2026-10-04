@@ -22,7 +22,20 @@ export async function rebase(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  const [branch, onto] = args;
+  // Flag parsing: --autostash anywhere; unknown flags refused.
+  const flags: string[] = [];
+  const positionals: string[] = [];
+  for (const arg of args) {
+    if (arg === "--autostash") flags.push(arg);
+    else if (arg.startsWith("--")) {
+      log("error", `unknown flag '${arg}'`);
+      raw("  Usage: giwt rebase <branch> [onto] [--autostash]");
+      process.exit(1);
+    } else positionals.push(arg);
+  }
+  const autostash = flags.includes("--autostash");
+
+  const [branch, onto] = positionals;
   const target = onto || config.settings.branches.root;
 
   if (!branch) {
@@ -60,6 +73,9 @@ export async function rebase(
   const wtPath = findWorktree(branch, config);
   if (!wtPath) {
     log("error", `no worktree found for branch '${branch}'`);
+    raw(
+      `  Next: create it with 'giwt new-branch ${branch} [base]', then re-run; plain branches cannot be rebased this way.`,
+    );
     process.exit(1);
   }
 
@@ -71,20 +87,29 @@ export async function rebase(
     process.exit(1);
   }
 
-  // Check worktree clean
-  const dirty = Bun.spawnSync(["git", "-C", wtPath, "diff", "--quiet"], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const staged = Bun.spawnSync(["git", "-C", wtPath, "diff", "--cached", "--quiet"], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
-    log("error", `uncommitted changes in worktree '${branch}'`);
-    process.exit(1);
+  // Check worktree clean. Untracked files are deliberately not probed: they
+  // cannot block a rebase (`git diff` ignores them) and git's autostash
+  // stashes tracked changes only, so they are left untouched either way.
+  if (!autostash) {
+    const dirty = Bun.spawnSync(["git", "-C", wtPath, "diff", "--quiet"], {
+      env: isolatedGitEnv(),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const staged = Bun.spawnSync(["git", "-C", wtPath, "diff", "--cached", "--quiet"], {
+      env: isolatedGitEnv(),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
+      log("error", `uncommitted changes in worktree '${branch}' (${wtPath})`);
+      raw(`  cd ${wtPath} && git add -A && git commit -m 'feat: ...'`);
+      raw(`  cd ${wtPath} && git stash`);
+      raw(
+        "  Or rerun with --autostash to stash and restore tracked changes around the rebase",
+      );
+      process.exit(1);
+    }
   }
 
   log("info", `Rebasing '${branch}' onto '${target}'...`);
@@ -95,6 +120,7 @@ export async function rebase(
     config.settings.paths.planDir,
     config.settings.paths.tickets,
     scopedSignFlags(config.agentGpgKeyId),
+    autostash,
   );
 
   reportAutoResolved(result);

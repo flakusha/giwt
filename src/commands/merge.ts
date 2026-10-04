@@ -50,6 +50,9 @@ export async function merge(
     gitSync(config.repoRoot, "rev-parse", "--verify", source);
   } catch {
     log("error", `source branch '${source}' does not exist`);
+    raw(
+      `  Next: create it with 'giwt new-branch ${source} [base]', or check the spelling against 'git branch --list'.`,
+    );
     process.exit(1);
   }
 
@@ -66,6 +69,9 @@ export async function merge(
   );
   if (dirty.exitCode !== 0 || staged.exitCode !== 0) {
     log("error", `uncommitted changes in worktree '${branch}'`);
+    raw(
+      `  Next: commit or stash first: git -C ${wtPath} stash  (restore later with 'git stash pop').`,
+    );
     process.exit(1);
   }
   // Verify GPG is configured AND unlocked — exits 1 on cold cache.

@@ -61,17 +61,17 @@ function buildParser() {
 }
 
 /**
- * Commands that mutate worktree layout (create/rebase/remove/merge trees).
+ * Commands that mutate worktree layout (create/remove/merge trees).
  * They must run from the main repo root — the guard is applied centrally
- * here so new commands cannot forget it. `finalize`/`agent-merge` are the
- * documented exemptions (they resolve the worktree from a branch argument).
+ * here so new commands cannot forget it. `finalize`/`agent-merge`/`rebase`
+ * are the documented exemptions (they resolve the worktree from a branch
+ * argument, so they are cwd-independent).
  */
 const ROOT_ONLY_COMMANDS: Record<string, true> = {
   cleanup: true,
   create: true,
   merge: true,
   new: true,
-  rebase: true,
   remove: true,
 };
 

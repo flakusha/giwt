@@ -22,8 +22,9 @@ export async function commit(
   config: WorktreeConfig,
 ): Promise<void> {
   const onProtected = args.includes("--on-protected");
+  const noVerify = args.includes("--no-verify");
   const { rest, message: messageInput } = await extractMessageInput(
-    args.filter((a) => a !== "--on-protected"),
+    args.filter((a) => a !== "--on-protected" && a !== "--no-verify"),
   );
   const message = messageInput ?? rest.join(" ");
 
@@ -49,6 +50,9 @@ export async function commit(
   // Verify agent credentials
   if (!config.agentGpgKeyId) {
     log("error", "AGENT_GPG_KEY_ID not set in .credentials.env");
+    raw(
+      "  Add AGENT_GPG_KEY_ID=<keyid> to .credentials.env (walked up from the repo root), then re-run",
+    );
     process.exit(1);
   }
 
@@ -107,7 +111,10 @@ export async function commit(
       "commit.gpgsign=true",
       "commit",
       "-S",
-      "--no-verify",
+      // Hook bypass is opt-in: default runs the consuming repo's pre-commit
+      // (git generates its own hook-scoped env, so isolatedGitEnv() here does
+      // not starve the hook of toolchain context).
+      ...(noVerify ? ["--no-verify"] : []),
       `--author=${authorName} <${authorEmail}>`,
       "-m",
       message,
@@ -126,6 +133,11 @@ export async function commit(
   if (result.exitCode !== 0) {
     log("error", `commit failed (exit ${result.exitCode})`);
     log("error", String(result.stderr.toString()).replace(/\n$/, ""));
+    if (!noVerify) {
+      raw(
+        "  If the pre-commit hook is the blocker and you have already run the gate, re-run with --no-verify",
+      );
+    }
     process.exit(1);
   }
 

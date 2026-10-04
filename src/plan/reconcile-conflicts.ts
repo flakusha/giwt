@@ -42,6 +42,11 @@ export function rebaseWithPlanReconciliation(
    * tail, so the flags must wrap the rebase invocation itself, not only the
    * reconcile amend. */
   signFlags: string[] = [],
+  /** Pass git's native `--autostash`: tracked working-tree changes are
+   * stashed before the rebase and popped after it completes. git keeps the
+   * stash when the pop conflicts, so user work is never dropped. Untracked
+   * files are never stashed. */
+  autostash = false,
 ): RebaseResult {
   // A contained target means there is nothing to replay, but `git rebase` still
   // rewrites and re-signs the branch's whole tail byte-identically - and each
@@ -57,7 +62,7 @@ export function rebaseWithPlanReconciliation(
     };
   }
 
-  let result = runGit(root, ...signFlags, "rebase", target);
+  let result = runGit(root, ...signFlags, "rebase", ...(autostash ? ["--autostash"] : []), target);
   let output = result.stdout + result.stderr;
   const generatedConflicts: string[] = [];
   const autoResolved: string[] = [];

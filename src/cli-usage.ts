@@ -25,9 +25,9 @@ export const USAGE: Record<string, string> = {
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
   "commit":
-    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\" [--on-protected]\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              required when the current branch is protected",
+    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\" [--on-protected] [--no-verify]\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              required when the current branch is protected\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)",
   "commit-wt":
-    "<branch> [-F <file>|--message-file <file>] \"<message>\" [--on-protected]\n  <branch>                    worktree branch (or protected branch with --on-protected)\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              commit directly in the main checkout of a protected branch",
+    "<branch> [-F <file>|--message-file <file>] \"<message>\" [--on-protected] [--no-verify]\n  <branch>                    worktree branch (or protected branch with --on-protected)\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              commit directly in the main checkout of a protected branch\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)",
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
@@ -57,7 +57,7 @@ export const USAGE: Record<string, string> = {
     "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --diff-base <ref>, --json)\n  status        .plan/ health summary (--tickets: per-ticket Status + unticked acceptance counts; --json|--toml|--emoji)",
   "prs": "",
   "rebase":
-    "<branch> [onto]\n  <branch>   worktree branch\n  [onto]     target ref (default: root branch)",
+    "<branch> [onto] [--autostash]\n  <branch>       worktree branch\n  [onto]         target ref (default: root branch)\n  --autostash    stash tracked changes, rebase, then pop; on pop conflict the stash is kept and the worktree left dirty (exit 0)\n                 untracked files are never stashed and never block the rebase",
   "remove":
     "<branch> [--branch-only] [--force]\n  <branch>        worktree branch to remove\n  --branch-only   delete the branch even when no worktree exists\n  --force         with --branch-only: delete even when unmerged (prints recovery SHA)",
   "report": "",

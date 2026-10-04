@@ -24,7 +24,7 @@ import { scratchRoot } from "../utils/scratch-tmp";
  */
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
@@ -355,6 +355,13 @@ describe("rebase dirty-worktree guard", () => {
 
     const out = await runExpectExit1(() => rebase(["feature", TARGET], config));
     expect(out).toContain("uncommitted changes in worktree 'feature'");
+    // The refusal names the worktree path and both remedies
+    // (FIX-errors-carry-no-remedy, matching finalize/clean-state.ts), plus
+    // the --autostash escape hatch.
+    expect(out).toContain(wtPath);
+    expect(out).toContain(`cd ${wtPath} && git add -A && git commit -m 'feat: ...'`);
+    expect(out).toContain(`cd ${wtPath} && git stash`);
+    expect(out).toContain("--autostash");
     expect(git(["rev-parse", "feature"]).trim()).toBe(before);
     // The edit survives untouched: no rebase ran, and the remedy is the
     // user's own dirty file, not a conflict we created.
@@ -379,6 +386,52 @@ describe("rebase dirty-worktree guard", () => {
     expect(out).toContain("uncommitted changes in worktree 'feature'");
     expect(git(["rev-parse", "feature"]).trim()).toBe(before);
     expect(git(["status", "--porcelain"], wtPath).trimEnd()).toBe("M  base.txt");
+  });
+});
+
+describe("rebase --autostash (BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch)", () => {
+  test("a dirty tracked file survives the rebase and is restored", async () => {
+    const config = makeRepo();
+    divergeTarget();
+    const before = git(["rev-parse", "feature"]).trim();
+    writeFileSync(join(wtPath, "base.txt"), "uncommitted\n");
+    expect(gitExit(["diff", "--quiet"], wtPath)).not.toBe(0);
+
+    const out = await runExpectSuccess(() => rebase(["feature", TARGET, "--autostash"], config));
+    expect(out).toContain(`Rebased 'feature' onto '${TARGET}'`);
+    // The rebase genuinely replayed: HEAD moved and the target is contained.
+    expect(git(["rev-parse", "feature"]).trim()).not.toBe(before);
+    expect(gitExit(["merge-base", "--is-ancestor", TARGET, "HEAD"], wtPath)).toBe(0);
+    // The autostash roundtrip: the working-tree edit is back, still unstaged.
+    expect(readFileSync(join(wtPath, "base.txt"), "utf8")).toBe("uncommitted\n");
+    expect(git(["status", "--porcelain"], wtPath).trimEnd()).toBe(" M base.txt");
+    // git popped its own autostash; nothing is left on the stash stack.
+    expect(git(["stash", "list"], wtPath)).toBe("");
+  });
+
+  test("rejects unknown flags like the remove command does", async () => {
+    const config = makeRepo();
+    divergeTarget();
+    const out = await runExpectExit1(() => rebase(["feature", TARGET, "--no-such"], config));
+    expect(out).toContain("unknown flag '--no-such'");
+    expect(out).toContain("Usage: giwt rebase <branch> [onto] [--autostash]");
+  });
+});
+
+describe("rebase cwd independence (TASK-rebase-must-run-from-the-repo-root)", () => {
+  test("runs from inside the target worktree directory", async () => {
+    const config = makeRepo();
+    divergeTarget();
+    const prev = process.cwd();
+    process.chdir(wtPath);
+    try {
+      const out = await runExpectSuccess(() => rebase(["feature", TARGET], config));
+      expect(out).toContain(`Rebased 'feature' onto '${TARGET}'`);
+      expect(gitExit(["merge-base", "--is-ancestor", TARGET, "HEAD"], wtPath)).toBe(0);
+      expect(git(["status", "--porcelain"], wtPath)).toBe("");
+    } finally {
+      process.chdir(prev);
+    }
   });
 });
 

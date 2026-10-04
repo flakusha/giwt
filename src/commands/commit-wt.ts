@@ -20,8 +20,9 @@ export async function commitWt(
   config: WorktreeConfig,
 ): Promise<void> {
   const onProtected = args.includes("--on-protected");
+  const noVerify = args.includes("--no-verify");
   const { rest, message: messageInput } = await extractMessageInput(
-    args.filter((a) => a !== "--on-protected"),
+    args.filter((a) => a !== "--on-protected" && a !== "--no-verify"),
   );
   const [branch, ...messageParts] = rest;
   const message = messageInput ?? messageParts.join(" ");
@@ -51,6 +52,9 @@ export async function commitWt(
     const checkoutBranch = gitSyncQuiet(config.repoRoot, "branch", "--show-current");
     if (checkoutBranch !== branch) {
       log("error", `main checkout is on '${checkoutBranch ?? "(detached)"}', not '${branch}'`);
+      raw(
+        `  Next: check out '${branch}' in the main checkout first, or commit on the current branch instead.`,
+      );
       process.exit(1);
     }
     log("warn", `direct commit on protected branch '${branch}' (--on-protected)`);
@@ -58,6 +62,7 @@ export async function commitWt(
   } else {
     if (onProtected) {
       log("error", `--on-protected given but '${branch}' is not a protected branch`);
+      raw("  Next: drop --on-protected to commit in the worktree, or name a protected branch.");
       process.exit(1);
     }
     wtPath = resolve(config.treeDir, branchToPath(branch));
@@ -65,6 +70,9 @@ export async function commitWt(
 
   if (!existsSync(resolve(wtPath, ".git"))) {
     log("error", `worktree not found for branch '${branch}'`);
+    raw(
+      `  Next: create it with 'giwt new-branch ${branch} [base]', or check the spelling against 'giwt list'.`,
+    );
     process.exit(1);
   }
 
@@ -91,6 +99,9 @@ export async function commitWt(
   // Verify credentials
   if (!credentials.found) {
     log("error", "AGENT_GPG_KEY_ID/NAME/EMAIL not set — check .credentials.env");
+    raw(
+      "  Next: add AGENT_GPG_KEY_ID/NAME/EMAIL to .credentials.env (walked up from the repo root), then re-run.",
+    );
     process.exit(1);
   }
 
@@ -114,37 +125,43 @@ export async function commitWt(
   raw(`  GPG Key:   ${credentials.keyId.slice(0, 8)}...`);
   raw(`  Message:   ${message.split("\n")[0]}`);
 
-  // Execute commit
-  const result = Bun.spawnSync(
-    [
-      "git",
-      "-C",
-      wtPath,
-      "-c",
-      `user.signingkey=${credentials.keyId}`,
-      "-c",
-      "commit.gpgsign=true",
-      "commit",
-      "-S",
-      "--no-verify",
-      `--author=${authorName} <${authorEmail}>`,
-      "-m",
-      message,
-    ],
-    {
-      stdout: "pipe",
-      stderr: "pipe",
-      env: {
-        ...isolatedGitEnv(),
-        GIT_COMMITTER_NAME: credentials.name,
-        GIT_COMMITTER_EMAIL: credentials.email,
-      },
+  // Execute commit. By default the consuming repo's pre-commit hook runs
+  // (git honours core.hooksPath itself); --no-verify is an explicit opt-out.
+  // isolatedGitEnv() stripping GIT_*/harness vars does not starve the hook:
+  // git generates its own hook-scoped environment when it invokes pre-commit.
+  const commitArgs = [
+    "git",
+    "-C",
+    wtPath,
+    "-c",
+    `user.signingkey=${credentials.keyId}`,
+    "-c",
+    "commit.gpgsign=true",
+    "commit",
+    "-S",
+    ...(noVerify ? ["--no-verify"] : []),
+    `--author=${authorName} <${authorEmail}>`,
+    "-m",
+    message,
+  ];
+  const result = Bun.spawnSync(commitArgs, {
+    stdout: "pipe",
+    stderr: "pipe",
+    env: {
+      ...isolatedGitEnv(),
+      GIT_COMMITTER_NAME: credentials.name,
+      GIT_COMMITTER_EMAIL: credentials.email,
     },
-  );
+  });
 
   if (result.exitCode !== 0) {
     log("error", `commit failed (exit ${result.exitCode})`);
-    log("error", String(result.stderr.toString()).replace(/\n$/, ""));
+    const stderrTail = String(result.stderr.toString()).replace(/\n$/, "");
+    const lines = stderrTail.split("\n");
+    log("error", lines.slice(-20).join("\n"));
+    if (!noVerify) {
+      raw("  Rejected by a commit hook? Re-run with --no-verify to skip it (explicit opt-in)");
+    }
     process.exit(1);
   }
 
