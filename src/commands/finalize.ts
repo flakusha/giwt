@@ -129,52 +129,68 @@ export async function finalize(
     process.exit(1);
   }
 
-  // Refuse concurrent or in-flight dev-checkout operations BEFORE doing
-  // anything that mutates `repoRoot`. See BUG-finalize-race: two concurrent
-  // finalizes race on stash push/pop around an in-place merge, which can leave
-  // files in "modified" instead of cancelling cleanly. The precheck is the
-  // hard invariant; the lock is best-effort single-flight.
+  // Fail-fast precheck only: the authoritative mergeable check re-runs under
+  // the lock just before the merge — across minutes of gates this pre-lock
+  // result goes stale (TOCTOU), so it must never be the sole guard.
   checkDevMergeable(config.repoRoot);
-  const releaseFinalizeLock = acquireFinalizeLock(config.repoRoot);
-  // Publish the release fn so the `process.on('exit')` cleanup (installed
-  // by installSignalHandlers) can call it on every termination path —
-  // including operator-error paths inside runFinalize that call
-  // `process.exit(1)` directly and bypass the outer try/finally. The outer
-  // finally still calls release() on the success/error path; release is
-  // idempotent so the `exit` handler and the finally racing is harmless.
-  publishActiveLockRelease(releaseFinalizeLock);
-  // Install signal handlers AFTER acquiring the lock. Order matters:
-  // 1. lock first — so a signal can't race against an unlocked dev tree;
-  // 2. handlers second — they release the lock during rollback.
-  // Uninstall runs in `finally` BEFORE clearing the module-scoped release,
-  // otherwise the handler could be invoked after the release fn is gone and
-  // try to call a stale closure. The signal exit code (130) is propagated
-  // by process.exit inside the handler, so the cleanup below only runs on
-  // the happy / operator-error path.
-  installSignalHandlers();
-  try {
+  // The lock + signal handlers are acquired at the MERGE phase, not here:
+  // steps 1-4 (checks, tests) run unlocked so a queued finalizer ages its
+  // base by seconds instead of the whole gate storm
+  // (FEAT-narrow-finalize-lock-to-merge-steps).
+  //
+  // Gates-phase signal path, stated explicitly: with no handler installed a
+  // SIGINT/SIGTERM/SIGHUP takes Node's default disposition and terminates
+  // the process. That is safe — no lock is held, no merge is in progress,
+  // and the `process.on('exit')` cleanup is not installed yet either, so
+  // there is nothing to roll back and nothing to release.
+  const runMergePhase = <T>(merge: () => T): T => {
+    const releaseFinalizeLock = acquireFinalizeLock(config.repoRoot);
+    // Publish the release fn so the `process.on('exit')` cleanup (installed
+    // by installSignalHandlers) can call it on every termination path —
+    // including operator-error paths inside the merge phase that call
+    // `process.exit(1)` directly and bypass this try/finally. The finally
+    // still calls release() on the success/error path; release is
+    // idempotent so the `exit` handler and the finally racing is harmless.
+    publishActiveLockRelease(releaseFinalizeLock);
+    // Install signal handlers AFTER acquiring the lock. Order matters:
+    // 1. lock first — so a signal can't race against an unlocked dev tree;
+    // 2. handlers second — they release the lock during rollback.
+    // Uninstall runs in `finally` BEFORE clearing the module-scoped release,
+    // otherwise the handler could be invoked after the release fn is gone and
+    // try to call a stale closure. The signal exit code (130) is propagated
+    // by process.exit inside the handler, so the cleanup below only runs on
+    // the happy / operator-error path.
+    installSignalHandlers();
     try {
-      await runFinalize(
-        branch,
-        mergeStrategy,
-        force,
-        gatesFilter,
-        skipGatesFilter,
-        planGatesFilter,
-        jobs,
-        config,
-        wtPath,
-        targetBranch,
-      );
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      appendGripe(config.treeDir, branch, `finalize ${branch} failed: ${reason}`);
-      throw error;
+      // Re-check under the lock: the pre-gates check went stale across the
+      // gate storm. A dev checkout that turned dirty mid-gates (staged
+      // entries, mid-merge sentinels) must refuse here instead of being
+      // stashed through the merge.
+      checkDevMergeable(config.repoRoot);
+      return merge();
     } finally {
       uninstallSignalHandlers();
+      releaseFinalizeLock();
+      publishActiveLockRelease(null);
     }
-  } finally {
-    releaseFinalizeLock();
-    publishActiveLockRelease(null);
+  };
+  try {
+    await runFinalize(
+      branch,
+      mergeStrategy,
+      force,
+      gatesFilter,
+      skipGatesFilter,
+      planGatesFilter,
+      jobs,
+      config,
+      wtPath,
+      targetBranch,
+      runMergePhase,
+    );
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    appendGripe(config.treeDir, branch, `finalize ${branch} failed: ${reason}`);
+    throw error;
   }
 }

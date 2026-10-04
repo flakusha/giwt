@@ -3,7 +3,7 @@
 
 # FEAT: narrow finalize lock to merge steps
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** lock, finalize

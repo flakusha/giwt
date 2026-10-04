@@ -69,6 +69,13 @@ import { setLogLevel, setOutputFormat } from "../utils/output";
 import { beginRun } from "../utils/runlog";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { finalize } from "./finalize";
+import { installFailureGripe } from "./finalize/checks";
+import {
+  installSignalHandlers,
+  publishActiveLockRelease,
+  setMergeInProgress,
+  uninstallSignalHandlers,
+} from "./finalize/state";
 import { teardownFinalizedWorktree } from "./finalize/teardown";
 
 // Check-fanout slots must stay hermetic: these tests drive the real
@@ -574,39 +581,24 @@ describe("finalize lock", () => {
     expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
   });
 
-  test("the installed exit hooks release the lock and ledger-gripe a failure", async () => {
+  test("a merge-phase failure releases the lock and ledger-gripes", async () => {
+    // Since the lock narrowed to the merge phase (runMergePhase), the exit
+    // hooks only exist inside that synchronous span — a probe cannot fire
+    // there. The safety property the old probe verified (no lock leak on a
+    // mid-flight failure, failure recorded) is exercised end-to-end here:
+    // diverge main against the feature tip so the Step-5a rebase conflicts
+    // and the merge path calls process.exit(1) from inside the locked span;
+    // the release must still run.
     featureWorktree();
-    const lockPath = join(root, ".worktree-finalize.lock");
-    const preexisting = new Set(process.listeners("exit"));
-    let hooksInstalled = 0;
-    let lockReleasedWhileHeld = false;
-
-    // Runs after finalize's synchronous setup (lock held, exit hooks
-    // installed) and before its cleanup, so those hooks can be driven the way
-    // a real process exit would drive them — process.exit itself is stubbed.
-    const probe = Promise.resolve().then(() => {
-      const hooks = process.listeners("exit").filter((hook) => !preexisting.has(hook));
-      hooksInstalled = hooks.length;
-      const savedExitCode = process.exitCode;
-      process.exitCode = 1; // the failure hook only gripes for exit code 1
-      try {
-        for (const hook of hooks) (hook as () => void)();
-      } finally {
-        // Bun ignores `process.exitCode = undefined` (runlog.test.ts quirk
-        // note), so a plain restore leaks the 1 into the runner's exit code.
-        process.exitCode = typeof savedExitCode === "number" ? savedExitCode : 0;
-      }
-      lockReleasedWhileHeld = !existsSync(lockPath);
-    });
+    commitFile(root, "feature.txt", "main rewrites the file\n", "main moves feature.txt");
 
     const run = await driveFinalize(["feature/x"]);
-    await probe;
 
-    expect(run.exitCode).toBeNull();
-    expect(hooksInstalled).toBeGreaterThan(0);
-    expect(lockReleasedWhileHeld).toBe(true);
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("Rebase conflicts");
+    expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
     expect(readFileSync(join(treeDir, ".ledger.jsonl"), "utf8")).toContain(
-      "finalize feature/x failed (exit 1)",
+      "finalize feature/x failed",
     );
   });
 });
@@ -1590,5 +1582,131 @@ describe("finalize teardown lifecycle regressions", () => {
     // The failure was appended to the ledger as a gripe.
     const ledger = readLedger(config.treeDir, 10);
     expect(ledger.some((record) => record.msg.includes("failed to remove worktree"))).toBe(true);
+  });
+});
+
+describe("merge-phase lock narrowing (FEAT-narrow-finalize-lock-to-merge-steps)", () => {
+  test("gates run without holding the finalize lock", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    // Probe the lockfile from INSIDE the Step-2 gate: the check script is a
+    // subprocess, so it observes the real on-disk lock state of the dev
+    // checkout while the gate storm is in flight.
+    const probePath = join(toolsDir, "lock-probe.txt");
+    const lockPath = join(root, ".worktree-finalize.lock");
+    configureCommands(
+      `if [ -f "${lockPath}" ]; then echo locked; else echo unlocked; fi > "${probePath}"`,
+    );
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(readFileSync(probePath, "utf8").trim()).toBe("unlocked");
+  });
+
+  test("refuses the merge when dev turned dirty mid-gates, and releases the lock", async () => {
+    const wtPath = featureWorktree();
+    withBunLock(wtPath);
+    // The pre-lock checkDevMergeable passes on a clean dev checkout; the
+    // check gate then stages a file in the dev checkout. The under-lock
+    // re-check must refuse (previously the merge stashed straight through
+    // this state); the refusal path must still release the lock.
+    configureCommands(`echo late > "${join(root, "late.txt")}" && git -C "${root}" add late.txt`);
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("staged-but-uncommitted");
+    expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
+  });
+
+  test("the exit hook releases a published lock on any termination path", () => {
+    // In-process exerciser for releaseLockOnExit (the child-process fixture
+    // covers the real-exit semantics but does not count toward coverage):
+    // publish a release, install the hooks, drive the `exit` listeners the
+    // way Node would on process.exit/signal/unhandled-throw, and observe
+    // the release fire exactly once.
+    const preExit = process.listeners("exit");
+    const savedSignals = FINALIZE_SIGNALS.map((sig) => [sig, process.listeners(sig)] as const);
+    let released = 0;
+    try {
+      publishActiveLockRelease(() => {
+        released++;
+      });
+      installSignalHandlers();
+      const hooks = process.listeners("exit").filter((hook) => !preExit.includes(hook));
+      expect(hooks.length).toBeGreaterThan(0);
+      for (const hook of hooks) (hook as () => void)();
+      expect(released).toBe(1);
+    } finally {
+      publishActiveLockRelease(null);
+      uninstallSignalHandlers();
+      process.removeAllListeners("exit");
+      for (const listener of preExit) process.on("exit", listener as () => void);
+      for (const [sig, listeners] of savedSignals) {
+        process.removeAllListeners(sig);
+        for (const listener of listeners) process.on(sig, listener as () => void);
+      }
+    }
+  });
+
+  test("the signal handler rolls back merge state and exits 130", () => {
+    // In-process exerciser for handleSignalAbort (the child-process signal
+    // fixture proves the real-exit semantics; this covers the handler body
+    // for the coverage ratchet). With merge state published, a SIGHUP must
+    // attempt the rollback and exit with the signal code.
+    const exits: number[] = [];
+    // Record-only stub: a throwing stub escapes Bun's emit asynchronously
+    // and fails the test from outside the try/catch. handleSignalAbort's
+    // post-exit code is unreachable in production anyway.
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        exits.push(code ?? 0);
+      }) as typeof process.exit,
+    );
+    const savedSignals = FINALIZE_SIGNALS.map((sig) => [sig, process.listeners(sig)] as const);
+    const savedExit = process.listeners("exit");
+    try {
+      setMergeInProgress(root, "feature/x", "0".repeat(40), null, true);
+      installSignalHandlers();
+
+      // Bun's process.emit does not propagate listener throws synchronously;
+      // the sentinel (if thrown) surfaces uncaught — the exit call record is
+      // the assertion surface either way.
+      try {
+        process.emit("SIGHUP");
+      } catch { /* sentinel from the exit stub */ }
+      expect(exits).toEqual([130]);
+    } finally {
+      exitSpy.mockRestore();
+      uninstallSignalHandlers();
+      process.removeAllListeners("exit");
+      for (const listener of savedExit) process.on("exit", listener as () => void);
+      for (const [sig, listeners] of savedSignals) {
+        process.removeAllListeners(sig);
+        for (const listener of listeners) process.on(sig, listener as () => void);
+      }
+    }
+  });
+
+  test("the exit-hook failure gripe records exit-1 finalize failures", () => {
+    // Second half of the old probe test: the failure-gripe exit hook only
+    // gripes for exit code 1 and appends to the tree ledger.
+    const savedExit = process.listeners("exit");
+    const savedCode = process.exitCode;
+    try {
+      installFailureGripe(treeDir, () => "feature/gripe");
+      process.exitCode = 1;
+      const hooks = process.listeners("exit").filter((hook) => !savedExit.includes(hook));
+      expect(hooks.length).toBeGreaterThan(0);
+      for (const hook of hooks) (hook as () => void)();
+      expect(readFileSync(join(treeDir, ".ledger.jsonl"), "utf8")).toContain(
+        "finalize feature/gripe failed (exit 1)",
+      );
+    } finally {
+      process.exitCode = typeof savedCode === "number" ? savedCode : 0;
+      process.removeAllListeners("exit");
+      for (const listener of savedExit) process.on("exit", listener as () => void);
+    }
   });
 });

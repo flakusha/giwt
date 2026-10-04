@@ -30,6 +30,7 @@ export async function runFinalize(
   config: WorktreeConfig,
   wtPath: string,
   targetBranch: string,
+  runMergePhase: <T>(merge: () => T) => T,
 ): Promise<void> {
   section(`Finalizing '${branch}'`);
   // Shared-state view: what agents recorded lately, before mutating dev.
@@ -195,21 +196,28 @@ export async function runFinalize(
     closeScopedIssues(config.repoRoot, scopedMeta.tickets);
   }
 
-  executeMergeStep(branch, mergeStrategy, force, config, wtPath, targetBranch, alreadyMerged);
+  // Merge phase: the only locked span of finalize. Steps 1-4 above ran
+  // unlocked; from here through teardown the finalize lock + signal
+  // handlers are held (installed by the injected runMergePhase), so a
+  // queued finalizer waits seconds, not the gate storm
+  // (FEAT-narrow-finalize-lock-to-merge-steps).
+  runMergePhase(() => {
+    executeMergeStep(branch, mergeStrategy, force, config, wtPath, targetBranch, alreadyMerged);
 
-  // Record the merge result while the tree still exists: the run record
-  // itself lives under repoRoot now, but the SHA is the durable answer to
-  // "what did this finalize land" (head of the target branch post-merge).
-  activeRun()?.outcome({ mergeCommit: gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD") });
+    // Record the merge result while the tree still exists: the run record
+    // itself lives under repoRoot now, but the SHA is the durable answer to
+    // "what did this finalize land" (head of the target branch post-merge).
+    activeRun()?.outcome({ mergeCommit: gitSyncQuiet(config.repoRoot, "rev-parse", "HEAD") });
 
-  // Step 5.5: scoped-worktree plan reconciliation (post-merge). runSync --fix
-  // maps the closed issues' Done state into the merged .md files and index,
-  // the generated plan artifacts are regenerated, and the result lands as a
-  // signed in-place commit on the target branch.
-  if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
-    log("info", "Step 5.5: scoped-worktree plan reconciliation...");
-    reconcileScopedPlan(config);
-  }
+    // Step 5.5: scoped-worktree plan reconciliation (post-merge). runSync --fix
+    // maps the closed issues' Done state into the merged .md files and index,
+    // the generated plan artifacts are regenerated, and the result lands as a
+    // signed in-place commit on the target branch.
+    if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
+      log("info", "Step 5.5: scoped-worktree plan reconciliation...");
+      reconcileScopedPlan(config);
+    }
 
-  teardownFinalizedWorktree(branch, wtPath, config, alreadyMerged, targetBranch);
+    teardownFinalizedWorktree(branch, wtPath, config, alreadyMerged, targetBranch);
+  });
 }

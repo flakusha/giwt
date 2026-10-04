@@ -42,7 +42,7 @@ let ACTIVE_FINALIZE_COUNT = 0;
 // any unhandled throw unwind through the `exit` event before the process
 // actually terminates, so this catches the operator-error paths
 // (`process.exit(1)` inside helper functions, signal-triggered exit) that
-// bypass the outer `try { runFinalize(...) } finally { release() }` block.
+// bypass the merge-phase try/finally in finalize.ts (runMergePhase).
 // SIGKILL (`kill -9`) bypasses every handler; that is what `giwt abort` is for. release is idempotent (catches ENOENT) so double-release
 // from a benign race is harmless.
 let ACTIVE_LOCK_RELEASE: (() => void) | null = null;
@@ -175,7 +175,7 @@ function releaseLockOnExit(): void {
 }
 /**
  * Signal handler: transactional rollback + exit 130. Runs even if the
- * surrounding `try { await runFinalize(...) } finally { release() }` would
+ * merge-phase try/finally in finalize.ts (runMergePhase) would
  * have run — we explicitly do NOT rely on that finally for two reasons:
  *
  *   1. Signal-triggered exit bypasses user JS code entirely. The first
