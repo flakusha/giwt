@@ -3,7 +3,7 @@
 
 # BUG: doctor check caps findings at 20 with no truncation notice - silently hides 113 of 134 real findings
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** doctor, check, reporting
@@ -43,7 +43,9 @@ cap. The notice is the smaller diff; `--all` is more useful.
 
 **Acceptance Criteria:**
 
-- [ ] Capped output states how many findings were omitted (e.g. "… 114 more not shown")
-- [ ] Uncapped output is unchanged
-- [ ] JSON output carries the same information as the human output
-- [ ] A test covers the "more findings than the cap" case and fails if the notice is missing
+- [x] Capped output states how many findings were omitted (e.g. "… 114 more not shown")
+- [x] Uncapped output is unchanged (findingsTotal absent; notice lines suppressed)
+- [x] JSON output carries the same information as the human output (findingsTotal on the CheckResult contract, additive)
+- [x] A test covers the "more findings than the cap" case and fails if the notice is missing (injected-spawn 25-error case + end-to-end stubbed-tsc doctor check)
+
+**Resolved:** 2026-10-04T00:14:00Z fixed in 2c51542: capFindings records findingsTotal; human/emoji renderers print the omission notice; outcome summary totals pre-cap counts

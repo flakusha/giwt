@@ -3,7 +3,7 @@
 
 # BUG: reconcile-conflicts commit path does not pin GPG signing flags - unsigned commit, no error
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** reconcile-conflicts, gpg, finalize
@@ -41,7 +41,9 @@ and no warning.
 
 **Acceptance Criteria:**
 
-- [ ] The reconcile commit path pins `-c commit.gpgsign=true -c user.signingkey=<key>` the same way the four reference paths do
-- [ ] Fix mirrors `scopedSignFlags()` (`src/commands/scoped-worktree.ts:231-235`) — 2 lines, no new abstraction
-- [ ] Empty/absent agent key degrades to `[]`, matching `scopedSignFlags()`
-- [ ] Test asserts the flags reach the commit invocation
+- [x] The reconcile commit path pins `-c commit.gpgsign=true -c user.signingkey=<key>` the same way the four reference paths do
+- [x] Fix mirrors `scopedSignFlags()` (`src/commands/scoped-worktree.ts:231-235`) — 2 lines, no new abstraction (flags threaded as `signFlags: string[]` from both callers; wrapped around the rebase invocation too, since `git rebase` re-signs the whole replayed tail)
+- [x] Empty/absent agent key degrades to `[]`, matching `scopedSignFlags()`
+- [x] Test asserts the flags reach the commit invocation (stub-gpg fixture: pinned key appears in gpg argv during replay + amend; no flags keeps gpg un-probed)
+
+**Resolved:** 2026-10-04T00:13:00Z fixed in 6e0ff45: both callers pass scopedSignFlags(config.agentGpgKeyId) through rebaseWithPlanReconciliation; stub-gpg tests prove the pinned key reaches gpg

@@ -96,7 +96,7 @@
       "reporting"
     ],
     "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE": {
     "hash": "pending",
@@ -429,7 +429,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-": {
     "hash": "e120fa8",

@@ -12,7 +12,7 @@ Total tickets: **107** — untagged: **41** — unbound to epic: **94**
 | Tag | Total | done | in_progress | open | draft | cancelled | other |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | abort | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| check | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| check | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | classifier | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | cleanup | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -23,17 +23,17 @@ Total tickets: **107** — untagged: **41** — unbound to epic: **94**
 | data-loss | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | diff-base | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | discovery | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| doctor | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | drift | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | dx | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| finalize | 18 | 13 | 0 | 0 | 0 | 0 | 5 |
+| finalize | 18 | 14 | 0 | 0 | 0 | 0 | 4 |
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | git | 12 | 6 | 0 | 0 | 0 | 0 | 6 |
 | githooks | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| gpg | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| gpg | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | hooks | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
 | index | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -57,9 +57,9 @@ Total tickets: **107** — untagged: **41** — unbound to epic: **94**
 | pre-commit | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | rebase | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| reconcile-conflicts | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| reconcile-conflicts | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reliability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| reporting | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| reporting | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | rerouting | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | research | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | rtk | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -93,7 +93,7 @@ Total tickets: **107** — untagged: **41** — unbound to epic: **94**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 94 | 81 | 0 | 0 | 0 | 0 | 13 |
+| (unbound) | 94 | 83 | 0 | 0 | 0 | 0 | 11 |
 
 ## Ticket detail
 
