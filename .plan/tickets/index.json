@@ -80,7 +80,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/BUG-delete-stash-dance-after-staging-merge-lands.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-DOCTOR-CHECK-CAPS-FINDINGS-AT-20-WITH-NO-TRUNCATION-NOTICE-S": {
     "hash": "1a15e58",

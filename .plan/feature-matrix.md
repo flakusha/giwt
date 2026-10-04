@@ -28,7 +28,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | dx | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| finalize | 18 | 15 | 0 | 0 | 0 | 0 | 3 |
+| finalize | 18 | 16 | 0 | 0 | 0 | 0 | 2 |
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | flaky | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -71,7 +71,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | shared-module | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | squash | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | staging | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| stash | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| stash | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | status-vocab | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | sync | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | teardown | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -94,7 +94,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 96 | 85 | 0 | 0 | 0 | 0 | 11 |
+| (unbound) | 96 | 86 | 0 | 0 | 0 | 0 | 10 |
 
 ## Ticket detail
 
