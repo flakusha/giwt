@@ -3,7 +3,7 @@
 
 # TASK: pre-commit hook's '~2s' rationale for the unconditional full gate is stale by ~19x
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** hooks, githooks, pre-commit
@@ -42,6 +42,7 @@ Any staged-files fast path should be preceded by timing the whole
 
 **Acceptance Criteria:**
 
-- [ ] The `~2s` claim at `.githooks/pre-commit:4-7` is corrected to a measured figure (or the claim is removed and replaced with a pointer to where timings are recorded)
-- [ ] If the rationale is rewritten to justify the design on other grounds, it cites those grounds rather than a runtime
-- [ ] Comment change passes `shfmt -ln posix -i 2 -d .githooks` and `shellcheck`
+- [x] The `~2s` claim at `.githooks/pre-commit:4-7` is corrected to a measured figure (or the claim is removed and replaced with a pointer to where timings are recorded)
+- [x] If the rationale is rewritten to justify the design on other grounds, it cites those grounds rather than a runtime
+- [x] Comment change passes `shfmt -ln posix -i 2 -d .githooks` and `shellcheck`
+**Resolved:** 2026-10-04T02:02:47.751Z Landed: comment corrected with measured ~38s/1357-test figures; design change (staged-files fast path) left optional per ticket

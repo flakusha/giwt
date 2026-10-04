@@ -33,10 +33,10 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | git | 12 | 12 | 0 | 0 | 0 | 0 | 0 |
-| githooks | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| githooks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gpg | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
-| hooks | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| hooks | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | index | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | isolation | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | ledger | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -55,7 +55,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | plan | 6 | 5 | 0 | 0 | 0 | 0 | 1 |
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | policy | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| pre-commit | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | rebase | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reconcile-conflicts | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -94,7 +94,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 96 | 92 | 0 | 0 | 0 | 0 | 4 |
+| (unbound) | 96 | 93 | 0 | 0 | 0 | 0 | 3 |
 
 ## Ticket detail
 

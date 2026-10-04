@@ -1539,7 +1539,7 @@
       "pre-commit"
     ],
     "source": ".plan/tickets/TASK-pre-commit-hook-s-2s-rationale-for-the-unconditional-full-ga.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-REACH-PARITY-WITH-THE-LOOP-LORE-WORKTREE-FORK-SO-IT-CAN-BE-D": {
     "hash": "c750cd1",
