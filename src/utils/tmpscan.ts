@@ -15,7 +15,7 @@
  *                   /run — or an unrecognized path — hard-refuses before
  *                   any scan or delete. See validateTmpRoot().
  *  2. NAME GATE   — a top-level entry is a candidate only when its name
- *                   matches the `[tmp] prefixes` allowlist (giwt/loop-lore
+ *                   matches the `[tmp] prefixes` allowlist (giwt/harness
  *                   test-fixture prefixes by default). Unknown names are
  *                   reported, never deleted.
  *  3. OWNER GATE  — only entries owned by the current euid are candidates;
@@ -82,7 +82,17 @@ export interface TmpScanOptions {
 
 /** Defaults when settings carry no [tmp] overrides. */
 export const DEFAULT_TMP_OPTIONS: TmpScanOptions = {
-  prefixes: ["giwt-", "sync-ticket-", "loop-lore-"],
+  prefixes: [
+    "giwt-",
+    "wt-modules-",
+    "pkgjson-",
+    "giwt-git-msg-",
+    "giwt-check-slots-test-",
+    "giwt-finalize-test-",
+    "probe-",
+    "sync-ticket-",
+    "loop-lore-",
+  ],
   maxAgeHours: 6,
 };
 

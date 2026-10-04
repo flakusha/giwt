@@ -30,7 +30,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { DEFAULT_SETTINGS } from "../utils/settings";
-import { deleteTmpCandidate, scanTmp, validateTmpRoot } from "../utils/tmpscan";
+import {
+  DEFAULT_TMP_OPTIONS,
+  deleteTmpCandidate,
+  scanTmp,
+  validateTmpRoot,
+} from "../utils/tmpscan";
 import { tmp } from "./tmp";
 
 const HOUR = 3_600_000;
@@ -139,6 +144,8 @@ describe("scanTmp gates", () => {
     makeAged("fix-old", 8);
     makeAged("fix-fresh", 1); // age gate
     makeAged("other-old", 8); // prefix gate
+    makeAged("wt-modules-abc123", 8); // default family: candidate
+    makeAged("giwt-git-msg-42-1690000000", 8); // default family: candidate
     symlinkSync("/etc", join(root, "fix-link")); // type gate (symlink)
     writeFileSync(join(root, "fix-file"), "data");
     utimesSync(
@@ -147,9 +154,18 @@ describe("scanTmp gates", () => {
       new Date(Date.now() - 8 * HOUR),
     );
 
-    const scan = scanTmp(root, { prefixes: ["fix-"], maxAgeHours: 6 }, Date.now());
+    const scan = scanTmp(
+      root,
+      { prefixes: [...DEFAULT_TMP_OPTIONS.prefixes, "fix-"], maxAgeHours: 6 },
+      Date.now(),
+    );
     const names = scan.candidates.map((c) => c.name);
-    expect(names).toEqual(["fix-old", "fix-file"]); // bytes desc, deterministic
+    expect(names).toEqual([
+      "fix-old",
+      "giwt-git-msg-42-1690000000",
+      "wt-modules-abc123",
+      "fix-file",
+    ]); // bytes desc, deterministic
     const skipFor = (n: string) => scan.skips.find((s) => s.name === n)?.reason;
     expect(skipFor("fix-fresh")).toBe("age");
     expect(skipFor("other-old")).toBe("prefix");

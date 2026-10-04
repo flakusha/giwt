@@ -11,7 +11,7 @@
  * subcommands. Exit code is git's, via process.exitCode.
  */
 
-import { writeFileSync } from "node:fs";
+import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { classifyGitInvocation } from "../git/policy";
@@ -63,6 +63,7 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
     log("error", `git blocked: ${policy.violation}`);
     raw(`  refused: git ${rest.join(" ")}`);
     rec?.event(`git:${verdict.subcommand}`, "blocked", policy.violation);
+    removeTempFiles(policy.tempFiles);
     process.exitCode = 1;
     return;
   }
@@ -81,6 +82,9 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
   const exit = proc.exitCode ?? 0;
   const out = proc.stdout.toString();
   const err = proc.stderr.toString();
+  // git has read any filtered -F temp files; remove them (best-effort —
+  // runlog captures are intentionally left in place).
+  removeTempFiles(policy.tempFiles);
 
   captureOutput(rec, exit, out, err);
   rec?.event(
@@ -91,6 +95,15 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
   writeConsole(rtkMode, verdict.subcommand, execArgs, config, out, err);
   // Non-zero only: dispatch already records 0 when the handler returns clean.
   if (exit !== 0) process.exitCode = exit;
+}
+
+/** Best-effort removal of filtered -F throwaway temp files we created. */
+function removeTempFiles(tempFiles: readonly string[]): void {
+  for (const tempFile of tempFiles) {
+    try {
+      unlinkSync(tempFile);
+    } catch { /* best-effort cleanup */ }
+  }
 }
 
 /** Full raw evidence: one capture file with exit code, stdout, stderr. */
@@ -115,12 +128,16 @@ async function applyTrailerPolicy(
   subcommand: string,
   config: WorktreeConfig,
   rec: RunRecorder | null,
-): Promise<{ args: string[]; violation: string | null; }> {
+): Promise<{ args: string[]; violation: string | null; tempFiles: string[]; }> {
   if (subcommand !== "commit" && subcommand !== "merge") {
-    return { args: [...args], violation: null };
+    return { args: [...args], violation: null, tempFiles: [] };
   }
   const allowed = loadAllowedTrailers(config.repoRoot);
   const out = [...args];
+  // Temp files we ourselves created (rec === null path of filterMessageFile);
+  // removed by gitPassthrough once git has read them. Runlog captures are
+  // runlog-owned and never listed here.
+  const tempFiles: string[] = [];
   let stripped = 0;
   let kept = 0;
   let violation: string | null = null;
@@ -147,12 +164,12 @@ async function applyTrailerPolicy(
     } else if (subcommand === "commit" && (tok === "-F" || tok === "--file")) {
       const path = out[i + 1];
       if (path !== undefined) {
-        const replacement = await filterMessageFile(path, filterText, rec);
+        const replacement = await filterMessageFile(path, filterText, rec, tempFiles);
         if (replacement !== null) out[i + 1] = replacement;
       }
     } else if (subcommand === "commit" && (/^-F./.test(tok) || tok.startsWith("--file="))) {
       const path = tok.startsWith("--file=") ? tok.slice(7) : tok.slice(2);
-      const replacement = await filterMessageFile(path, filterText, rec);
+      const replacement = await filterMessageFile(path, filterText, rec, tempFiles);
       if (replacement !== null) {
         out[i] = tok.startsWith("--file=") ? `--file=${replacement}` : `-F${replacement}`;
       }
@@ -162,14 +179,21 @@ async function applyTrailerPolicy(
     log("warn", `stripped ${stripped} LLM Co-Authored-By trailer(s) (${kept} kept)`);
     rec?.event(`git:${subcommand}`, "trailers", `stripped=${stripped} kept=${kept}`);
   }
-  return { args: out, violation };
+  return { args: out, violation, tempFiles };
 }
 
-/** Rewrite a -F message file with trailers stripped; returns the new path. */
+/**
+ * Rewrite a -F message file with trailers stripped; returns the new path.
+ * When no run recorder is active the filtered copy is a throwaway temp file
+ * under $TMPDIR, recorded in `tempFiles` for gitPassthrough to unlink once
+ * git has read it. Runlog captures (rec !== null) are runlog-owned and are
+ * never tracked for removal.
+ */
 async function filterMessageFile(
   path: string,
   filterText: (text: string) => string | null,
   rec: RunRecorder | null,
+  tempFiles: string[],
 ): Promise<string | null> {
   let content: string;
   try {
@@ -187,6 +211,7 @@ async function filterMessageFile(
   } catch {
     return null;
   }
+  if (rec === null) tempFiles.push(newPath);
   return newPath;
 }
 

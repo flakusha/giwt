@@ -4,15 +4,22 @@
 /**
  * Tests for worktree node_modules health + linking.
  */
-import { describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, readlinkSync, symlinkSync } from "node:fs";
+import { afterEach, describe, expect, test } from "bun:test";
+import { existsSync, mkdirSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isUsableModulesDir, linkNodeModules } from "./modules";
 
+const temps: string[] = [];
+
+afterEach(() => {
+  for (const dir of temps.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
 function scratch(): string {
   const dir = join(tmpdir(), `wt-modules-${Date.now()}-${Math.floor(Math.random() * 1e6)}`);
   mkdirSync(dir, { recursive: true });
+  temps.push(dir);
   return dir;
 }
 

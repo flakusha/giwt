@@ -318,6 +318,10 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
   rmSync(treesRoot, { recursive: true, force: true });
   rmSync(toolsRoot, { recursive: true, force: true });
+  // Step 2's slot acquisition writes under the hermetic slot root pinned
+  // above; without this the per-pid dir outlives every test run.
+  const slotDir = process.env.GIWT_CHECK_SLOT_DIR;
+  if (slotDir) rmSync(slotDir, { recursive: true, force: true });
 });
 
 beforeAll(() => {
