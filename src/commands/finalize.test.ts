@@ -1174,7 +1174,7 @@ describe("finalize rebase strategy", () => {
     // Minimal plan state so Step 5.5's runSync --fix has something to stage.
     // Deliberately NOT committed: the file is ignored (global dot-dir
     // ignore), so it does not dirty the dev snapshot for the lazy sync, and
-    // reconcileScopedPlan's `add -f` stages it as the reconciliation payload.
+    // reconcilePlanPostMerge's `add -f` stages it as the reconciliation payload.
     mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
     writeFileSync(join(root, ".plan", "tickets", "index.json"), "{}\n");
 
@@ -1182,12 +1182,47 @@ describe("finalize rebase strategy", () => {
 
     expect(run.exitCode).toBeNull();
     expect(run.output).toContain("Scoped worktree: closing 1 ticket issue(s)...");
-    expect(run.output).toContain("Step 5.5: scoped-worktree plan reconciliation...");
+    expect(run.output).toContain("Step 5.5: post-merge plan reconciliation...");
     // The unresolvable extid is tolerated (warn), the reconciliation lands.
     expect(run.output).toContain("could not resolve FEAT-DEMO in the registry");
     expect(git(["log", "-1", "--format=%s"]).trim())
-      .toBe("chore(plan): scoped-worktree reconciliation");
+      .toBe("chore(plan): post-merge reconciliation");
     expect(existsSync(wtPath)).toBe(false);
+  });
+
+  test("reconciles the plan on a NON-scoped finalize (universal step 5.5)", async () => {
+    const wtPath = featureWorktree();
+    // Plan drift on main that nobody repaired until now: an orphan ticket
+    // file (ignored, so it does not dirty the dev snapshot for the lazy
+    // sync) that reconcilePlanPostMerge's `add -f` stages and commits.
+    mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
+    writeFileSync(join(root, ".plan", "tickets", "index.json"), "{}\n");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    // No scoped metadata — reconciliation still runs (universal).
+    expect(run.output).not.toContain("Scoped worktree: closing");
+    expect(run.output).toContain("Step 5.5: post-merge plan reconciliation...");
+    expect(git(["log", "-1", "--format=%s"]).trim())
+      .toBe("chore(plan): post-merge reconciliation");
+    expect(existsSync(wtPath)).toBe(false);
+  });
+
+  test("alreadyMerged finalize runs no reconciliation (no empty commit)", async () => {
+    featureWorktree();
+    // Merge the branch by hand first so finalize sees alreadyMerged.
+    git(["merge", "--ff-only", "feature/x"]);
+    mkdirSync(join(root, ".plan", "tickets"), { recursive: true });
+    writeFileSync(join(root, ".plan", "tickets", "index.json"), "{}\n");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("already contained");
+    expect(run.output).not.toContain("Step 5.5");
+    // Still on the merge commit — no reconciliation commit was layered on.
+    expect(git(["log", "-1", "--format=%s"]).trim()).toBe("feature work");
   });
 
   test("keeps a dirty dev checkout dirty — the merge happens in staging", async () => {

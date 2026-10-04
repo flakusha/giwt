@@ -28,7 +28,7 @@ import {
   closeScopedIssues,
   parseScopeFlags,
   readScopedMeta,
-  reconcileScopedPlan,
+  reconcilePlanPostMerge,
   resolveScopedTickets,
   scopedSignFlags,
 } from "./scoped-worktree";
@@ -240,7 +240,7 @@ describe("scoped worktree creation", () => {
       ((c: unknown) => (logs.push(String(c)), true)) as never,
     );
     try {
-      reconcileScopedPlan(cfg);
+      reconcilePlanPostMerge(cfg);
     } finally {
       spy.mockRestore();
     }
@@ -409,13 +409,13 @@ describe("scoped worktree creation", () => {
       ((c: unknown) => (logs.push(String(c)), true)) as never,
     );
     try {
-      reconcileScopedPlan(cfg);
+      reconcilePlanPostMerge(cfg);
     } finally {
       spy.mockRestore();
     }
     expect(logs.join("")).toContain("plan reconciliation committed");
     const log = git(cfg.repoRoot, "log", "--oneline", "-1");
-    expect(log).toContain("scoped-worktree reconciliation");
+    expect(log).toContain("post-merge reconciliation");
     // Generated artifacts were regenerated as part of the same pass.
     expect(readFileSync(join(cfg.repoRoot, ".plan", "feature-matrix.md"), "utf8"))
       .not.toContain("STALE");

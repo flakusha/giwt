@@ -12,7 +12,7 @@ import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../../utils/git";
 import { printRecentLedger } from "../../utils/ledger";
 import { log, raw, section } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
-import { closeScopedIssues, readScopedMeta, reconcileScopedPlan } from "../scoped-worktree";
+import { closeScopedIssues, readScopedMeta, reconcilePlanPostMerge } from "../scoped-worktree";
 import { resolveDiffBase, runTests } from "./checks";
 import { ensureWorktreeClean } from "./clean-state";
 import { runCheckGateStep } from "./gates";
@@ -220,16 +220,18 @@ export async function runFinalize(
       ?? gitSyncQuiet(config.repoRoot, "rev-parse", `refs/heads/${targetBranch}`);
     activeRun()?.outcome({ mergeCommit });
 
-    // Step 5.5: scoped-worktree plan reconciliation (post-merge). runSync --fix
-    // maps the closed issues' Done state into the merged .md files and index,
-    // the generated plan artifacts are regenerated, and the result lands as a
-    // signed in-place commit on the target branch. It commits in the dev
-    // checkout, so it only runs when the lazy sync actually moved dev onto
-    // the new target — a dirty/detached dev would commit on the wrong base.
-    if (!alreadyMerged && scopedMeta !== null && scopedMeta.tickets.length > 0) {
+    // Step 5.5: universal post-merge plan reconciliation. runSync --fix maps
+    // the closed issues' Done state into the merged .md files and index, the
+    // generated plan artifacts are regenerated, and the result lands as a
+    // signed in-place commit on the target branch — for every non-
+    // alreadyMerged finalize, not only scoped worktrees. It commits in the
+    // dev checkout, so it only runs when the lazy sync actually moved dev
+    // onto the new target — a dirty/detached dev would commit on the wrong
+    // base.
+    if (!alreadyMerged) {
       if (staged?.devSynced) {
-        log("info", "Step 5.5: scoped-worktree plan reconciliation...");
-        reconcileScopedPlan(config);
+        log("info", "Step 5.5: post-merge plan reconciliation...");
+        reconcilePlanPostMerge(config);
       } else {
         log(
           "warn",

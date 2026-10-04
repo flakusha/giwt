@@ -247,14 +247,19 @@ export function scopedSignFlags(agentGpgKeyId: string | undefined): string[] {
 }
 
 /**
- * Finalize Step 5.5: post-merge plan reconciliation on the target branch
- * checkout (repoRoot). runSync --fix repairs the merged index/tickets, the
- * generated artifacts are regenerated in place, and the result is committed
- * on the target branch. Idempotent: a rerun after a crash finds a consistent
- * tree and skips the commit.
+ * Finalize Step 5.5: post-merge plan reconciliation on the target checkout
+ * (repoRoot) — for EVERY non-alreadyMerged finalize, not only scoped
+ * worktrees (FEAT-universal-post-merge-plan-reconciliation). runSync --fix
+ * repairs the merged index/tickets, generated artifacts are regenerated,
+ * and the result commits on the target branch. Idempotent: a rerun after a
+ * crash finds a consistent tree and skips the commit. No plan dir → no-op.
  */
-export function reconcileScopedPlan(config: WorktreeConfig): void {
+export function reconcilePlanPostMerge(config: WorktreeConfig): void {
   const planDir = resolve(config.repoRoot, config.settings.paths.planDir);
+  if (!existsSync(planDir)) {
+    log("info", "Step 5.5: no plan dir — nothing to reconcile");
+    return;
+  }
   runSync(config.repoRoot, { fix: true, ticketsPath: config.settings.paths.tickets });
   const matrixPath = join(planDir, "feature-matrix.md");
   if (existsSync(matrixPath)) {
@@ -285,7 +290,7 @@ export function reconcileScopedPlan(config: WorktreeConfig): void {
       ...signFlags,
       "commit",
       "-m",
-      "chore(plan): scoped-worktree reconciliation",
+      "chore(plan): post-merge reconciliation",
     );
     log("success", "Step 5.5: plan reconciliation committed");
   } else {
