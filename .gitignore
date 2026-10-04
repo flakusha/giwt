@@ -129,6 +129,13 @@ tree/
 !.githooks/commit-msg
 !.githooks/commit-msg.test.ts
 
+# oxlint custom-rule plugin ships with the repo (override the global .*/ ignore)
+!.oxlint/
+.oxlint/*
+!.oxlint/plugins/
+.oxlint/plugins/*
+!.oxlint/plugins/giwt-style.js
+
 # Tool scratch reports (jscpd output dir, knip cache)
 .tmp/jscpd-report.json/
 .tmp/knip-cache.json
