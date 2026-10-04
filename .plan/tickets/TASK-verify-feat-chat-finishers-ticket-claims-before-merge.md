@@ -3,7 +3,7 @@
 
 # TASK: verify feat chat finishers ticket claims before merge
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** verification
@@ -29,6 +29,7 @@ Acceptance: for each of the two tickets, a file:line or commit reference recorde
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:10:34.411Z Verified 2026-10-04: component-buttons claim FALSE (no Attach/picker, 0 @asset: matches in mention-parser.ts, ACs unchecked); talkativity-skip PARTIAL (weighting/selection real, skip action/cooldown/GM-override transitions absent). Both loop-lore tickets reopened in registry (4bb38b4, 1f88051); statuses restored in p3-verify-close-batch (commit pending sibling's in-flight staged work)

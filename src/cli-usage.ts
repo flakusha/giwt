@@ -21,7 +21,7 @@ export const USAGE: Record<string, string> = {
   "tmp":
     "[--dry-run] [--apply] [--json|--toml|--emoji] [--verbose] [--max-age-hours <n>]\n  --dry-run          analysis + prune plan (default; nothing is deleted)\n  --apply            delete gated stale test-fixture candidates\n  --max-age-hours n  age floor override (settings: [tmp] max_age_hours, default 6)\n  Gates: [tmp] prefixes allowlist, current-user ownership, plain dir/file only,\n  allowed temp roots only (/tmp, $TMPDIR) — /home and system paths refuse.",
   "docs":
-    "<list|show|search|dump> [args...]\n  list            table of doc names and titles (--json supported)\n  show <name>     print a doc with its path header (--json supported)\n  search <term>   case-insensitive line search, name:line:text (--json supported)\n  dump <name>     raw file bytes, pipe-safe (no header, no color)",
+    "<list|show|search|dump|sync-agents> [args...]\n  list            table of doc names and titles (--json supported)\n  show <name>     print a doc with its path header (--json supported)\n  search <term>   case-insensitive line search, name:line:text (--json supported)\n  dump <name>     raw file bytes, pipe-safe (no header, no color)\n  sync-agents     mirror corpus into an agents dir (default .agents) (--dir <path>, --json|--toml|--emoji)",
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
   "commit":

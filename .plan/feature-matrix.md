@@ -80,7 +80,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | tickets | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | timeout | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | validate | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| verification | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | worktree | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | (untagged) | 42 | 41 | 0 | 0 | 0 | 0 | 1 |
@@ -94,7 +94,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 96 | 93 | 0 | 0 | 0 | 0 | 3 |
+| (unbound) | 96 | 94 | 0 | 0 | 0 | 0 | 2 |
 
 ## Ticket detail
 

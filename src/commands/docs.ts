@@ -27,6 +27,7 @@ import {
   resolveName,
   utf8OrThrow,
 } from "./docs/corpus";
+import { syncAgents } from "./docs/sync-agents";
 
 interface Hit {
   name: string;
@@ -40,7 +41,8 @@ const USAGE_TEXT = "Usage: giwt docs <list|show|search|dump> [args...]\n"
   + "  list            table of doc names and titles (--json|--toml|--emoji supported)\n"
   + "  show <name>     print a doc with its path header (--json|--toml|--emoji supported)\n"
   + "  search <term>   case-insensitive line search, name:line:text (--json|--toml|--emoji supported)\n"
-  + "  dump <name>     raw file bytes, pipe-safe (no header, no color)";
+  + "  dump <name>     raw file bytes, pipe-safe (no header, no color)\n"
+  + "  sync-agents     mirror corpus into an agents dir (default .agents) (--dir <path>, --json|--toml|--emoji)";
 
 function exitWithError(message: string): never {
   log("error", message);
@@ -184,6 +186,12 @@ export async function docs(args: string[], config: WorktreeConfig): Promise<void
         exitWithError("docs dump requires exactly one <name> argument");
       }
       dumpDoc(loadCorpus(root), positionals[0]!);
+      return;
+    }
+    case "sync-agents": {
+      // No positional args allowed; --dir etc. are parsed inside
+      // syncAgents (parseOutFlags only lifts the out-format flags).
+      syncAgents(loadCorpus(root), root, rest, format);
       return;
     }
     default:
