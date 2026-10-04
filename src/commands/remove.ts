@@ -172,6 +172,19 @@ function removeBranchOnly(branch: string, force: boolean, config: WorktreeConfig
   }
   const sha = verify.stdout.toString().trim();
 
+  // git refuses any delete of the repo-root checkout (even -D) — surface a
+  // remedy-carrying error instead of gitRun's raw throw on the --force path.
+  const headRef = Bun.spawnSync(["git", "-C", config.repoRoot, "symbolic-ref", "--quiet", "HEAD"], {
+    env: isolatedGitEnv(),
+    stdout: "pipe",
+    stderr: "ignore",
+  });
+  if (headRef.exitCode === 0 && headRef.stdout.toString().trim() === `refs/heads/${branch}`) {
+    log("error", `branch '${branch}' is checked out in ${config.repoRoot} — switch away first`);
+    raw(`  Then: giwt remove ${branch} --branch-only${force ? " --force" : ""}`);
+    process.exit(1);
+  }
+
   if (!branchMerged(branch, config) && !force) {
     log("error", `branch '${branch}' is not fully merged (tip ${sha})`);
     raw(`  Recover later with: git branch -D ${branch} # or re-run with --force`);

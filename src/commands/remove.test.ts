@@ -297,6 +297,32 @@ describe("remove --branch-only", () => {
     expect(cap.lines()).toContain("no such branch: 'no-such-branch'");
   });
 
+  test("refuses the branch checked out in the repo root (even --force), with a switch-away remedy", async () => {
+    // The fixture root IS the repo root here: create the branch at HEAD so
+    // it reads as merged, then check it out — the guard must fire before
+    // any delete, instead of gitRun's raw throw on the --force path.
+    git(["branch", "root-checked-out", "main"]);
+    git(["checkout", "-q", "root-checked-out"]);
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute(["root-checked-out", "--branch-only", "--force"], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("is checked out in");
+    expect(cap.lines()).toContain("switch away first");
+    expect(cap.lines()).toContain("giwt remove root-checked-out --branch-only --force");
+    expect(branchExists("root-checked-out")).toBe(true);
+    git(["checkout", "-q", "main"]);
+  });
+
   test("unknown flags are refused", async () => {
     const exit = mockExit();
     const cap = captureOutput();

@@ -83,7 +83,7 @@ Total tickets: **110** — untagged: **43** — unbound to epic: **97**
 | verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | worktree | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| (untagged) | 43 | 42 | 0 | 0 | 0 | 0 | 1 |
+| (untagged) | 43 | 43 | 0 | 0 | 0 | 0 | 0 |
 
 ## By epic × status
 
@@ -94,7 +94,7 @@ Total tickets: **110** — untagged: **43** — unbound to epic: **97**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 97 | 96 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 97 | 97 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

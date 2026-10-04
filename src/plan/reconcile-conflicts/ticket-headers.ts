@@ -42,6 +42,9 @@ export function mergeTicketHeader(
   if (ours === null || theirs === null) return null;
 
   // Done-wins: a done-class Status on either side closes the ticket.
+  // Note the done-class boundary: freeform states like Postponed pass
+  // normalizeStatus untouched (see sync-normalize), so they never close —
+  // the replayed side's status stands. Only done-class wins.
   const winnerStatus =
     normalizeStatus(ours.status) === "done" || normalizeStatus(theirs.status) === "done"
       ? "done"

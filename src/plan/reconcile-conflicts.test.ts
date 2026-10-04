@@ -69,6 +69,16 @@ describe("mergeTicketHeader", () => {
     // Status rewrites use the plan-vocab target, same as the sync fixers.
     expect(merged).toContain("**Status:** in_progress");
   });
+
+  test("postponed on either side does NOT close: ours (replayed side) wins", () => {
+    // Regression pin: normalizeStatus('postponed') is freeform pass-through
+    // (not the done bucket), so done-wins must not fire — the replayed
+    // side's status stands, same as any other non-done status.
+    const theirsPostponed = THEIRS_DONE.replace("**Status:** Done", "**Status:** Postponed");
+    const merged = mergeTicketHeader(OURS_MD, theirsPostponed, "BUG-sample.md");
+    expect(merged).toContain("**Status:** in_progress");
+    expect(merged).not.toContain("**Status:** Done");
+  });
 });
 
 function git(root: string, ...args: string[]): string {

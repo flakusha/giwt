@@ -950,7 +950,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-reconcile-leftover-finalize-stashes-in-a-temp-worktree.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-RECORD-PER-STEP-DURATIONMS-IN-RUN-EVENTS": {
     "hash": "d7a60af",

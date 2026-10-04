@@ -3,7 +3,7 @@
 
 # FEAT: reconcile leftover finalize stashes in a temp worktree
 
-**Status:** Postponed
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 
@@ -21,3 +21,5 @@ Feasible design if built: the stash ref is repo-global, so a temp worktree spawn
 - [ ] Success drops the entry exactly once; both existing prefix consumers coordinate via the same claim marker
 - [ ] Conflict path leaves the worktree conflicted, root untouched, entry preserved
 - [ ] USAGE + docs updated; tests cover success, conflict, and double-invocation cases
+
+**Resolved:** 2026-10-04 registry-driven close: git issue 54ac3d7 (registry tip: b395de0 Konstantin Fedotov Superseded by staging-merge architecture (see comment). Reopen only if le)
