@@ -341,3 +341,148 @@ describe("runs diff", () => {
     expect(result.stderr + result.stdout).toContain("no run record matching 'ghost-run'");
   });
 });
+
+describe("runs stats", () => {
+  /** One run record with a chosen exit state and duration. */
+  function seedStatsRun(
+    name: string,
+    opts: {
+      cmd: string;
+      args?: string[];
+      startSec?: number;
+      durSec?: number;
+      exitCode?: number;
+      failedGates?: string[];
+    },
+  ): void {
+    const startSec = opts.startSec ?? 0;
+    const iso = (sec: number): string => new Date(Date.UTC(2026, 0, 1, 0, 0, sec)).toISOString();
+    seedRun(name, {
+      v: 1,
+      cmd: opts.cmd,
+      args: opts.args ?? [],
+      said: null,
+      pid: 1,
+      repoRoot: root,
+      branch: "main",
+      start: iso(startSec),
+      ...(opts.durSec === undefined ? {} : { end: iso(startSec + opts.durSec) }),
+      ...(opts.exitCode === undefined ? {} : { exitCode: opts.exitCode }),
+      ...(opts.failedGates === undefined
+        ? {}
+        : { outcome: { failedGates: opts.failedGates } }),
+    });
+  }
+
+  test("--json aggregates per command, separating failed from unfinished", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedStatsRun("s1-900", { cmd: "sync", startSec: 0, durSec: 2, exitCode: 0 });
+    seedStatsRun("s2-901", { cmd: "sync", startSec: 10, durSec: 4, exitCode: 1 });
+    // No end and no exitCode: killed before the exit hook wrote a result.
+    seedStatsRun("s3-902", { cmd: "sync", startSec: 20 });
+    seedStatsRun("s4-903", { cmd: "ticket", startSec: 30, durSec: 1, exitCode: 0 });
+
+    const result = runCli(["stats", "--json"]);
+    expect(result.exitCode).toBe(0);
+    const summary = JSON.parse(result.stdout) as {
+      totalRuns: number;
+      commands: Array<{
+        cmd: string;
+        runs: number;
+        failed: number;
+        unfinished: number;
+        meanMs: number;
+        maxMs: number;
+      }>;
+    };
+    expect(summary.totalRuns).toBe(4);
+    const sync = summary.commands.find((c) => c.cmd === "sync")!;
+    expect(sync.runs).toBe(3);
+    // The killed run is unfinished, NOT a failure.
+    expect(sync.failed).toBe(1);
+    expect(sync.unfinished).toBe(1);
+    // 2000ms and 4000ms only — the record with no end contributes nothing.
+    expect(sync.meanMs).toBe(3000);
+    expect(sync.maxMs).toBe(4000);
+    // Ordered by run count desc.
+    expect(summary.commands[0]!.cmd).toBe("sync");
+  });
+
+  test("--json tallies outcome.failedGates and repeated cmd+args", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedStatsRun("g1-910", { cmd: "finalize", exitCode: 1, failedGates: ["lint", "coverage"] });
+    seedStatsRun("g2-911", { cmd: "finalize", exitCode: 1, failedGates: ["lint"] });
+    seedStatsRun("g3-912", { cmd: "sync", args: ["--fix"], exitCode: 0 });
+    seedStatsRun("g4-913", { cmd: "sync", args: ["--fix"], exitCode: 0 });
+    seedStatsRun("g5-914", { cmd: "sync", args: [], exitCode: 0 });
+
+    const result = runCli(["stats", "--json"]);
+    expect(result.exitCode).toBe(0);
+    const summary = JSON.parse(result.stdout) as {
+      failingGates: Array<{ gate: string; count: number; }>;
+      repeated: Array<{ invocation: string; count: number; }>;
+    };
+    expect(summary.failingGates).toEqual([
+      { gate: "lint", count: 2 },
+      { gate: "coverage", count: 1 },
+    ]);
+    // Two bare `finalize` and two `sync --fix` both repeat; the third bare
+    // `sync` (args []) is a distinct invocation and does not.
+    expect(summary.repeated).toEqual([
+      { invocation: "finalize", count: 2 },
+      { invocation: "sync --fix", count: 2 },
+    ]);
+  });
+
+  test("--last caps the window (space and = forms agree)", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedStatsRun("c1-920", { cmd: "a", startSec: 0, exitCode: 0 });
+    seedStatsRun("c2-921", { cmd: "b", startSec: 1, exitCode: 0 });
+    seedStatsRun("c3-922", { cmd: "c", startSec: 2, exitCode: 0 });
+
+    const space = runCli(["stats", "--json", "--last", "1"]);
+    const equals = runCli(["stats", "--json", "--last=1"]);
+    expect(space.exitCode).toBe(0);
+    expect(equals.exitCode).toBe(0);
+    const parsed = JSON.parse(space.stdout) as { commands: Array<{ cmd: string; }>; };
+    // Newest run only.
+    expect(parsed.commands.map((c) => c.cmd)).toEqual(["c"]);
+    expect(equals.stdout).toBe(space.stdout);
+  });
+
+  test("--emoji prints one `cmd xN` line per command", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedStatsRun("e1-930", { cmd: "sync", exitCode: 0 });
+    seedStatsRun("e2-931", { cmd: "sync", exitCode: 1 });
+    const result = runCli(["stats", "--emoji"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe("sync x2");
+  });
+
+  test("human output reports the window and never gates", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedStatsRun("h1-940", { cmd: "sync", startSec: 0, durSec: 5, exitCode: 0 });
+    seedStatsRun("h2-941", { cmd: "sync", startSec: 10, durSec: 5, exitCode: 1 });
+    const result = runCli(["stats"]);
+    // Report only: a failing run in the window never changes the exit code.
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("command");
+    expect(result.stdout).toContain("sync");
+    expect(result.stdout).toContain("50.0");
+    expect(result.stdout).toContain("2 run record(s) in window");
+  });
+
+  test("empty window reports no run records with exit 0", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    const result = runCli(["stats"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr + result.stdout).toContain("No run records");
+  });
+
+  test("unknown flag names itself and exits 1", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    const result = runCli(["stats", "--nope"]);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr + result.stdout).toContain("--nope");
+  });
+});

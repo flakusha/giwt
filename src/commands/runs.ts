@@ -13,6 +13,7 @@
  *
  * Usage: giwt runs [--last N] [--json|--toml|--emoji]
  *        giwt runs triage <run> [--json|--toml|--emoji]
+ *        giwt runs stats [--last N] [--json|--toml|--emoji]
  *        giwt runs diff <runA> <runB> [--json|--toml|--emoji]
  */
 
@@ -23,6 +24,8 @@ import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit";
 import { diffFailures, type FailBlock, parseFailBlocks } from "../utils/failtriage";
 import { colorize, log, raw } from "../utils/output";
 import { formatOutcome, listRuns, readRunEvents } from "../utils/runlog";
+
+import { stats } from "./runs-stats";
 
 /** TOML cannot represent null: drop null-valued fields from the record
  *  (said: null et al). JSON parse-back keeps every non-null field. */
@@ -201,10 +204,11 @@ export async function runs(
 ): Promise<void> {
   const { format, rest } = parseOutFlags(args);
   const subcommand = rest[0];
-  if (subcommand === "triage" || subcommand === "diff") {
+  if (subcommand === "triage" || subcommand === "diff" || subcommand === "stats") {
     rest.shift();
     if (subcommand === "triage") return triageRun(rest, config, format);
-    return diffRuns(rest, config, format);
+    if (subcommand === "diff") return diffRuns(rest, config, format);
+    return stats({ args: rest, config, format });
   }
   if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
     log("warn", `multiple output flags given — using --${format}`);

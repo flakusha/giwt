@@ -5,4 +5,5 @@
 # unaffected - pathIgnorePatterns applies to discovery, not explicit args.
 pathIgnorePatterns = ["tree/**"]
 coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["scripts/**"]
 coverageReporter = ["text", "lcov"]
