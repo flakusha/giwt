@@ -66,6 +66,23 @@
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
     "status": "done"
   },
+  "BUG-COMMIT-WT-HARDCODES-NO-VERIFY-BYPASSING-THE-CONSUMING-REPO-P": {
+    "hash": "a258bb4",
+    "git_issue": "a258bb4",
+    "extid": "BUG-COMMIT-WT-HARDCODES-NO-VERIFY-BYPASSING-THE-CONSUMING-REPO-P",
+    "type": "BUG",
+    "title": "commit-wt hardcodes --no-verify, bypassing the consuming repo pre-commit hook",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "commit-wt",
+      "hooks",
+      "git"
+    ],
+    "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md",
+    "status": "done"
+  },
   "BUG-DELETE-STASH-DANCE-AFTER-STAGING-MERGE-LANDS": {
     "hash": "9a794bc",
     "git_issue": "9a794bc",
@@ -422,6 +439,23 @@
       "worktree"
     ],
     "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
+    "status": "done"
+  },
+  "BUG-REBASE-REFUSES-A-DIRTY-WORKTREE-WITH-NO-ESCAPE-HATCH": {
+    "hash": "d22d65f",
+    "git_issue": "d22d65f",
+    "extid": "BUG-REBASE-REFUSES-A-DIRTY-WORKTREE-WITH-NO-ESCAPE-HATCH",
+    "type": "BUG",
+    "title": "rebase refuses a dirty worktree with no escape hatch",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "rebase",
+      "worktree",
+      "dx"
+    ],
+    "source": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md",
     "status": "done"
   },
   "BUG-RECONCILE-CONFLICTS-COMMIT-PATH-DOES-NOT-PIN-GPG-SIGNING-FLA": {
@@ -1570,6 +1604,24 @@
       "history-safety"
     ],
     "source": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
+    "status": "done"
+  },
+  "TASK-REBASE-MUST-RUN-FROM-THE-REPO-ROOT-WITH-NO-IN-WORKTREE-PATH-": {
+    "hash": "8b24140",
+    "git_issue": "8b24140",
+    "extid": "TASK-REBASE-MUST-RUN-FROM-THE-REPO-ROOT-WITH-NO-IN-WORKTREE-PATH-",
+    "type": "TASK",
+    "title": "rebase must run from the repo root, with no in-worktree path for agents",
+    "label": "task",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "cli",
+      "rebase",
+      "worktree",
+      "dx"
+    ],
+    "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md",
     "status": "done"
   },
   "TASK-SHARD-TICKETS-INDEX-OR-STOP-PER-BRANCH-INDEX-COMMITS": {

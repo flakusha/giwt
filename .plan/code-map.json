@@ -5,6 +5,16 @@
       "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md"
     }
   ],
+  "src/cli-usage.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md"
+    }
+  ],
   "src/cli.ts": [
     {
       "kind": "ticket",
@@ -13,6 +23,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md"
     }
   ],
   "src/commands/abort.test.ts": [
@@ -54,6 +68,10 @@
     }
   ],
   "src/commands/commit-wt.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
@@ -213,6 +231,14 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md"
     }
   ],
   "src/commands/rebase.ts": [
@@ -227,6 +253,14 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md"
     }
   ],
   "src/commands/remove.ts": [
@@ -325,6 +359,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
+    }
+  ],
+  "src/git/predicates.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
     }
   ],
   "src/index.ts": [
@@ -512,11 +552,19 @@
   "src/utils/git.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md"
     },
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md"
     }
   ],
   "src/utils/ledger-core.ts": [
