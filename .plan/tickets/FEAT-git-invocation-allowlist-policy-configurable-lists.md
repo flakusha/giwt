@@ -3,7 +3,7 @@
 
 # FEAT: git invocation allowlist policy + configurable lists
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Epic:** git-rerouting-safety
@@ -19,6 +19,7 @@ Err-closed subcommand policy in src/git/: RO/RW tables, per-subcommand predicate
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:46.595Z Landed: src/git/policy.ts classifyGitInvocation + policy-tables.ts (RC_SUBCOMMANDS/RW/BLOCK, CONFIG_WRITE_KEYS, GPG_BYPASS_TOKENS), [git] safe/allow/deny settings (deny wins), unknown blocked with hint; git.test.ts+policy.test.ts

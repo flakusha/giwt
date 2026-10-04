@@ -3,7 +3,7 @@
 
 # FEAT: zero-shot command classifier seam (prepare only)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Epic:** git-rerouting-safety
@@ -19,6 +19,7 @@ classifyGitInvocation(args, policy) is the stable seam; [git] classify setting r
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:46.867Z Landed: classifyGitInvocation seam + [git] classify reserved, only builtin accepted; classify=llm exits 1 'not supported yet' (git.test.ts:253)

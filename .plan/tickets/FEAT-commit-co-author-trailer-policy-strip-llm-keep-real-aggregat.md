@@ -3,7 +3,7 @@
 
 # FEAT: commit co-author trailer policy: strip LLM, keep real, aggregate in squash
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Epic:** git-rerouting-safety
@@ -19,6 +19,7 @@ Shared src/utils/coauthors.ts (denylist + ALLOWED_TRAILERS from .credentials.env
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:46.958Z Landed: src/utils/coauthors.ts (denylist + ALLOWED_TRAILERS walk-up), filterCoAuthorTrailers wired into giwt git commit/merge, squash aggregation squashMessageWithCoAuthors in finalize/staging.ts:160; coauthors.test.ts

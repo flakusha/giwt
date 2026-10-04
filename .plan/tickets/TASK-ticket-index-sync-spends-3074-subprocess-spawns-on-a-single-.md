@@ -3,7 +3,7 @@
 
 # TASK: ticket index sync spends 3074 subprocess spawns on a single batched git cat-file --batch-check
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 
@@ -138,6 +138,7 @@ so that whole path is inert. The cost is entirely local `fork`/`exec` +
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:47.050Z Landed: batchCatFileExists in src/tickets/sync-reconcile.ts (one cat-file --batch-check, positional stdout, gitObjectExists kept as per-ref fallback + public export); full gate green

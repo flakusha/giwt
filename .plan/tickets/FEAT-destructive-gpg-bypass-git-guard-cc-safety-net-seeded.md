@@ -3,7 +3,7 @@
 
 # FEAT: destructive + gpg-bypass git guard (cc-safety-net seeded)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Epic:** git-rerouting-safety
@@ -19,6 +19,7 @@ Block: reset --hard/--merge, clean, checkout path-restore shapes (--) / -f / pat
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:46.687Z Landed: destructive+gpg-bypass blocks in policy.ts/predicates.ts (cc-safety-net seeded shapes), policy.test.ts 'destructive and gpg blocks'

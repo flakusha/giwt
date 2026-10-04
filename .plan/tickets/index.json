@@ -456,7 +456,7 @@
       "tests"
     ],
     "source": ".plan/tickets/BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-": {
     "hash": "e120fa8",
@@ -643,7 +643,7 @@
       "coauthors"
     ],
     "source": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-COPY-TICKET-FILES-BETWEEN-WORKTREES": {
     "hash": "6f31aa3",
@@ -672,7 +672,7 @@
       "safety"
     ],
     "source": ".plan/tickets/FEAT-destructive-gpg-bypass-git-guard-cc-safety-net-seeded.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
     "hash": "7323f1b",
@@ -772,7 +772,7 @@
       "policy"
     ],
     "source": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-GIWT-GIT-PASSTHROUGH-COMMAND-FOR-HARNESS-REROUTING": {
     "hash": "ccd5711",
@@ -788,7 +788,7 @@
       "rerouting"
     ],
     "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
     "hash": "52e9b13",
@@ -969,7 +969,7 @@
       "rtk"
     ],
     "source": ".plan/tickets/FEAT-rtk-minimal-context-output-for-giwt-git.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-RUNS-FAILURE-TRIAGE-EXTRACT-FAIL-BLOCKS-AND-DIFF-TWO-RUNS": {
     "hash": "9075543",
@@ -1117,7 +1117,7 @@
       "classifier"
     ],
     "source": ".plan/tickets/FEAT-zero-shot-command-classifier-seam-prepare-only.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FIX-ABORT-LEAVES-STALE-REBASE-HEAD-AND-FINALIZE-IS-BLOCKED-BY-TH": {
     "hash": "0e92491",
@@ -1601,7 +1601,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-TICKET-INDEX-TAGS-END-TO-END-UNBOUND-TO-EPIC-ADVISORY-NOTICE": {
     "hash": "1ebe6f9",

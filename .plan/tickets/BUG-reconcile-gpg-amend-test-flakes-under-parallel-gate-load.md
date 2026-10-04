@@ -3,7 +3,7 @@
 
 # BUG: reconcile gpg amend test flakes under parallel gate load
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Tags:** gpg, flaky, tests
@@ -18,6 +18,7 @@ reconcile-conflicts.test.ts 'pinned sign flags reach the reconcile amend commit'
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:47.145Z Landed: 6e0ff45 replaced real gpg with deterministic PATH stub (SIG_CREATED shim) - no agent contention possible; >=2 consecutive green full-suite gates on 2026-10-04 (fullcheck + every gated landing)

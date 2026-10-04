@@ -14,10 +14,10 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | abort | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | check | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| classifier | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| classifier | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | cleanup | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | cli | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| coauthors | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| coauthors | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | concurrency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | config | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | data-loss | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -30,11 +30,11 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | finalize | 18 | 18 | 0 | 0 | 0 | 0 | 0 |
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| flaky | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| git | 12 | 6 | 0 | 0 | 0 | 0 | 6 |
+| git | 12 | 12 | 0 | 0 | 0 | 0 | 0 |
 | githooks | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| gpg | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| gpg | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | hooks | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
 | index | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
@@ -54,18 +54,18 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | plan | 6 | 5 | 0 | 0 | 0 | 0 | 1 |
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| policy | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| policy | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | rebase | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reconcile-conflicts | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reliability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reporting | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| rerouting | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| rerouting | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | research | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| rtk | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| rtk | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | runlog | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| safety | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| safety | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | schema-v2 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | scratchpad | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | shared-module | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -75,7 +75,7 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | status-vocab | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | sync | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | teardown | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| tests | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| tests | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | ticket | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | tickets | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | timeout | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -83,18 +83,18 @@ Total tickets: **109** — untagged: **42** — unbound to epic: **96**
 | verification | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
 | worktree | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| (untagged) | 42 | 40 | 0 | 0 | 0 | 0 | 2 |
+| (untagged) | 42 | 41 | 0 | 0 | 0 | 0 | 1 |
 
 ## By epic × status
 
 | Epic | Total | done | in_progress | open | draft | cancelled | other |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | **Tags:** plan,validate,finalize,parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| git-rerouting-safety | 6 | 0 | 0 | 0 | 0 | 0 | 6 |
+| git-rerouting-safety | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 96 | 90 | 0 | 0 | 0 | 0 | 6 |
+| (unbound) | 96 | 92 | 0 | 0 | 0 | 0 | 4 |
 
 ## Ticket detail
 

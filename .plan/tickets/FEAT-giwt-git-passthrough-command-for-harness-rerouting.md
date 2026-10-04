@@ -3,7 +3,7 @@
 
 # FEAT: giwt git passthrough command for harness rerouting
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Epic:** git-rerouting-safety
@@ -19,6 +19,7 @@ giwt git (args...): classify invocation, exec git once (exit code passthrough), 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-04T02:00:46.503Z Landed: src/commands/git.ts (classify + exec-once + run-record git-output.txt + exit passthrough + rtk writeConsole); policy in src/git/policy.ts; tests commands/git.test.ts; harness reroute via omp-plugins pre-git-giwtroute

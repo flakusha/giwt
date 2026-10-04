@@ -183,6 +183,16 @@
       "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md"
     }
   ],
+  "src/commands/git.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-rtk-minimal-context-output-for-giwt-git.md"
+    }
+  ],
   "src/commands/issues.ts": [
     {
       "kind": "ticket",
@@ -305,6 +315,16 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
+    }
+  ],
+  "src/git/policy.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
     }
   ],
   "src/index.ts": [
@@ -433,6 +453,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    }
+  ],
+  "src/tickets/sync-reconcile.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
     }
   ],
   "src/tickets/sync-ticket-index.test.ts": [
