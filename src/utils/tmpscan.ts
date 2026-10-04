@@ -89,7 +89,6 @@ export const DEFAULT_TMP_OPTIONS: TmpScanOptions = {
     "giwt-git-msg-",
     "giwt-check-slots-test-",
     "giwt-finalize-test-",
-    "probe-",
     "sync-ticket-",
     "loop-lore-",
   ],
