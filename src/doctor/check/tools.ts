@@ -11,12 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SpawnFn } from "./spawn.ts";
 import { tail } from "./spawn.ts";
-import {
-  capFindings,
-  type CheckFinding,
-  type CheckResult,
-  type CheckSeverity,
-} from "./types.ts";
+import { capFindings, type CheckFinding, type CheckResult, type CheckSeverity } from "./types.ts";
 import { relToRoot, toolBin } from "./util.ts";
 
 /** jscpd languages passed via -f (verified to exist; unknown names fail the run). */
@@ -209,18 +204,20 @@ async function runJscpd(root: string, spawn: SpawnFn): Promise<CheckResult> {
     return {
       ...base,
       // Configs may report absolute paths ("absolute": true) — relativize.
-      ...capFindings(parseJscpdReport(data).map((c) => {
-        const a = relToRoot(root, c.a);
-        const b = relToRoot(root, c.b);
-        return {
-          file: a,
-          line: c.lineA,
-          rule: "duplication",
-          message: `${c.lines} duplicated lines: ${a}:${c.lineA} ↔ ${b}:${c.lineB}`,
-          severity: "warning" as const,
-          kind: "task" as const,
-        };
-      })),
+      ...capFindings(
+        parseJscpdReport(data).map((c) => {
+          const a = relToRoot(root, c.a);
+          const b = relToRoot(root, c.b);
+          return {
+            file: a,
+            line: c.lineA,
+            rule: "duplication",
+            message: `${c.lines} duplicated lines: ${a}:${c.lineA} ↔ ${b}:${c.lineB}`,
+            severity: "warning" as const,
+            kind: "task" as const,
+          };
+        }),
+      ),
     };
   } finally {
     try {

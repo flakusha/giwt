@@ -122,7 +122,7 @@ export function tail(text: string, max = 500): string {
 
 export function toFindings(
   items: Array<{ file: string; line: number; rule: string; message: string; error: boolean; }>,
-): { findings: CheckFinding[]; findingsTotal?: number } {
+): { findings: CheckFinding[]; findingsTotal?: number; } {
   return capFindings(items.map((f) => ({
     file: f.file,
     line: f.line,
