@@ -689,6 +689,19 @@
     "source": ".plan/tickets/FEAT-docs-list-show-search-toml-and-emoji-output-parity.md",
     "status": "done"
   },
+  "FEAT-DOCS-SYNC-AGENTS-POPULATE-AGENTS-SKILL-FILES-FROM-THE-DOCS-C": {
+    "hash": "9d6f1c9",
+    "git_issue": "9d6f1c9",
+    "extid": "FEAT-DOCS-SYNC-AGENTS-POPULATE-AGENTS-SKILL-FILES-FROM-THE-DOCS-C",
+    "type": "FEAT",
+    "title": "docs sync-agents: populate .agents/ skill files from the docs corpus",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-docs-sync-agents-populate-agents-skill-files-from-the-docs-c.md",
+    "status": "done"
+  },
   "FEAT-DOCTOR-CHECK-CONCURRENCY-RUN-THE-FIVE-CHECKS-IN-PARALLEL": {
     "hash": "e3b6b3d",
     "git_issue": "e3b6b3d",
@@ -1573,7 +1586,7 @@
       "index"
     ],
     "source": ".plan/tickets/TASK-shard-tickets-index-or-stop-per-branch-index-commits.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-SHOW-STATE-RESOLVE-PLAN-TICKETS-FILENAME-SLUGS": {
     "hash": "6bf73b8",

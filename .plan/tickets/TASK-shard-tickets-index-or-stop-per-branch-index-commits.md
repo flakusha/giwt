@@ -3,7 +3,7 @@
 
 # TASK: shard tickets index or stop per-branch index commits
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Large
 **Tags:** plan, index
@@ -18,7 +18,8 @@ The ticket index (1.4 MB in loop-lore, 49 KB here) conflicts on every branch pai
 
 **Acceptance Criteria:**
 
-- [ ] Decision recorded: shard vs regen-only, with the measured conflict rate
-- [ ] Rebase-time index conflicts drop to near zero on plan-only branches
-- [ ] No silent scalar-default data-loss path remains
-- [ ] sync --fix and plan validate green on the chosen shape
+- [x] Decision recorded: shard vs regen-only, with the measured conflict rate
+- [x] Rebase-time index conflicts drop to near zero on plan-only branches
+- [x] No silent scalar-default data-loss path remains
+- [x] sync --fix and plan validate green on the chosen shape
+**Resolved:** 2026-10-04T02:19:27.826Z Resolved direction 2 (stop per-branch index commits): fix-mode runSync skips the index.json write in linked worktrees (persistIndexCanonical + isLinkedWorktree); target branch stays canonical via post-merge reconciliation + rebase-conflict index merge; readTicketIndex degrades to {} on missing index; main-checkout writes byte-identical
