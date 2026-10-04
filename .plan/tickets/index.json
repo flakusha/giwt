@@ -557,6 +557,19 @@
     "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
     "status": "done"
   },
+  "BUG-TICKET-ID-INPUTS-ACCEPT-HASH-EXTID-SLUG-EVERYWHERE": {
+    "hash": "40464b1",
+    "git_issue": "40464b1",
+    "extid": "BUG-TICKET-ID-INPUTS-ACCEPT-HASH-EXTID-SLUG-EVERYWHERE",
+    "type": "BUG",
+    "title": "ticket-id-inputs-accept-hash-extid-slug-everywhere",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-ticket-id-inputs-accept-hash-extid-slug-everywhere.md",
+    "status": "done"
+  },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
     "git_issue": "7968809",
