@@ -74,7 +74,9 @@ function gitFixture(): void {
     settings: DEFAULT_SETTINGS,
     agentGpgKeyId: "ABCDEF0123456789",
     agentGpgName: "t",
-    agentGpgEmail: "t@t",
+    // Must match the fixture repo's user.email (the AUTHOR the guard
+    // compares) — a mismatch makes the author guard process.exit mid-test.
+    agentGpgEmail: "test@giwt.local",
   };
 }
 

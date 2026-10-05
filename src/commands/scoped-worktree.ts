@@ -19,6 +19,7 @@ import { basename, join, resolve } from "node:path";
 import { buildMap, writeMap } from "../plan/code-map";
 import { genMatrix } from "../plan/feature-matrix";
 import { runSync, STATUS_LINE_RE } from "../tickets/sync-index";
+import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
@@ -194,6 +195,14 @@ export function applyScopedTickets(
     ...(scope !== undefined ? { scope } : {}),
   });
   gitSync(wtPath, "add", "-f", config.settings.paths.tickets);
+  // Guard: the scope commit is the worktree's first commit and often unsigned
+  // (no agent key) — the author line is its only identity. Env-only override.
+  assertGitAuthorIdentity({
+    cwd: wtPath,
+    expectedEmail: config.agentGpgEmail ?? "",
+    args: [],
+    source: "scope commit",
+  });
   gitSync(
     wtPath,
     "commit",
@@ -254,7 +263,7 @@ export function scopedSignFlags(agentGpgKeyId: string | undefined): string[] {
  * and the result commits on the target branch. Idempotent: a rerun after a
  * crash finds a consistent tree and skips the commit. No plan dir → no-op.
  */
-export function reconcilePlanPostMerge(config: WorktreeConfig): void {
+export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): void {
   const planDir = resolve(config.repoRoot, config.settings.paths.planDir);
   if (!existsSync(planDir)) {
     log("info", "Step 5.5: no plan dir — nothing to reconcile");
@@ -284,6 +293,14 @@ export function reconcilePlanPostMerge(config: WorktreeConfig): void {
     { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" },
   );
   if (staged.exitCode !== 0) {
+    // Guard: the reconciliation commit lands on the target branch from the
+    // repoRoot identity — refuse a tampered repo author before committing.
+    assertGitAuthorIdentity({
+      cwd: config.repoRoot,
+      expectedEmail: config.agentGpgEmail ?? "",
+      args,
+      source: "post-merge reconciliation",
+    });
     const signFlags = scopedSignFlags(config.agentGpgKeyId);
     gitSync(
       config.repoRoot,

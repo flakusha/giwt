@@ -32,6 +32,7 @@ import { runFinalize } from "./finalize/run";
 import {
   installSignalHandlers,
   publishActiveLockRelease,
+  releaseActiveStagingTeardown,
   uninstallSignalHandlers,
 } from "./finalize/state";
 
@@ -168,6 +169,10 @@ export async function finalize(
       return merge();
     } finally {
       uninstallSignalHandlers();
+      // Tear down any staging worktree the merge phase left published (a
+      // thrown merge error unwinds here before main() exits — without this
+      // the `.finalize-*` dir would linger until the next finalize/abort).
+      releaseActiveStagingTeardown();
       releaseFinalizeLock();
       publishActiveLockRelease(null);
     }

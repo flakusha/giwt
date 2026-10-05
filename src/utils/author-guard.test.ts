@@ -52,9 +52,11 @@ describe("assertAuthorMatchesCommitter", () => {
 
   beforeEach(() => {
     delete process.env[ALLOW_AUTHOR_OVERRIDE_ENV];
-    exitSpy = spyOn(process, "exit").mockImplementation((() => {
-      throw new ExitSentinel(1);
-    }) as unknown as typeof process.exit);
+    exitSpy = spyOn(process, "exit").mockImplementation(
+      (() => {
+        throw new ExitSentinel(1);
+      }) as unknown as typeof process.exit,
+    );
     stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
     rawSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
   });
@@ -74,7 +76,7 @@ describe("assertAuthorMatchesCommitter", () => {
         expectedEmail: "konstantin@example.com",
         args: [],
         source: "commit",
-      }),
+      })
     ).not.toThrow();
   });
 
@@ -85,7 +87,7 @@ describe("assertAuthorMatchesCommitter", () => {
         expectedEmail: "konstantin@example.com",
         args: [],
         source: "commit",
-      }),
+      })
     ).not.toThrow();
   });
 
@@ -96,7 +98,7 @@ describe("assertAuthorMatchesCommitter", () => {
         expectedEmail: "",
         args: [],
         source: "commit",
-      }),
+      })
     ).not.toThrow();
   });
 
@@ -138,7 +140,7 @@ describe("assertAuthorMatchesCommitter", () => {
         expectedEmail: "konstantin@example.com",
         args: [ALLOW_AUTHOR_OVERRIDE_FLAG],
         source: "commit",
-      }),
+      })
     ).not.toThrow();
     const warnOutput = stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("\n");
     expect(warnOutput).toContain("OVERRIDE");
@@ -152,7 +154,7 @@ describe("assertAuthorMatchesCommitter", () => {
         expectedEmail: "konstantin@example.com",
         args: [],
         source: "commit",
-      }),
+      })
     ).not.toThrow();
     const warnOutput = stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("\n");
     expect(warnOutput).toContain("OVERRIDE");

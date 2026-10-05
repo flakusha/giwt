@@ -233,7 +233,7 @@ export async function runFinalize(
     if (!alreadyMerged) {
       if (staged?.devSynced) {
         log("info", "Step 5.5: post-merge plan reconciliation...");
-        reconcilePlanPostMerge(config);
+        reconcilePlanPostMerge(config, args);
       } else {
         log(
           "warn",

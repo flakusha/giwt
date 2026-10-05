@@ -159,6 +159,41 @@ describe("giwt git passthrough", () => {
     expect(git(root, "rev-list", "--count", "HEAD").trim()).toBe("1");
   });
 
+  test("commit-class identity guard refuses a tampered repo author; override flag is stripped", async () => {
+    writeFileSync(join(root, "g.txt"), "g\n");
+    git(root, "add", "g.txt");
+    const guarded = { ...config, agentGpgEmail: "maintainer@localhost" } as WorktreeConfig;
+
+    // Mismatch (fixture author giwt-test@localhost vs maintainer) must refuse
+    // before the commit exists — the author guard covers raw passthrough git.
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      (() => {
+        throw new Error("__exit__:1");
+      }) as never,
+    );
+    try {
+      await gitPassthrough(["commit", "-m", "tampered"], guarded);
+      expect.unreachable("should have exited");
+    } catch (e) {
+      expect((e as Error).message).toBe("__exit__:1");
+    } finally {
+      exitSpy.mockRestore();
+    }
+    expect(git(root, "rev-list", "--count", "HEAD").trim()).toBe("1");
+
+    // The escape flag is giwt's, not git's — the override commit proceeds
+    // and the flag never reaches git's argv (not forwarded as message text).
+    process.exitCode = 0;
+    await gitPassthrough(
+      ["commit", "-m", "override landing", "--allow-author-override"],
+      guarded,
+    );
+    expect(process.exitCode).toBe(0);
+    const body = git(root, "log", "-1", "--format=%B");
+    expect(body).toContain("override landing");
+    expect(body).not.toContain("--allow-author-override");
+  });
+
   test("commit with a literal \\n sequence in -m is blocked", async () => {
     await gitPassthrough(["commit", "-m", "feat: x\\n\\nbody"], settingsWith({ rtk: "off" }));
     expect(process.exitCode).toBe(1);

@@ -148,6 +148,32 @@ describe("scoped worktree creation", () => {
     expect(existsSync(join(cfg.treeDir, "feature-x"))).toBe(false);
   });
 
+  test("applyScopedTickets refuses a tampered repo author before committing", () => {
+    const cfg = makeRepo("author-guard");
+    const guarded: WorktreeConfig = { ...cfg, agentGpgEmail: "maintainer@localhost" };
+    const wtPath = join(cfg.treeDir, "feature-x");
+    mkdirSync(wtPath, { recursive: true });
+    git(wtPath, "init", "-q", "-b", "feature-x");
+    git(wtPath, "config", "user.email", "giwt-test@localhost");
+    git(wtPath, "config", "user.name", "giwt test");
+    git(wtPath, "commit", "-q", "--allow-empty", "-m", "seed");
+
+    const exits: number[] = [];
+    exitSpy(exits);
+    try {
+      applyScopedTickets(guarded, wtPath, undefined, ["feat-demo-ticket.md"]);
+      throw new Error("should have exited");
+    } catch (e) {
+      if (!(e instanceof Error) || !e.message.startsWith("__exit:")) throw e;
+    } finally {
+      restoreExit();
+    }
+    expect(exits).toEqual([1]);
+    // Refusal preceded the scope commit — the worktree has only the seed.
+    const log = git(wtPath, "log", "--oneline");
+    expect(log).not.toContain("chore(tickets): scope");
+  });
+
   test("empty --tickets csv refuses", () => {
     const exits: number[] = [];
     exitSpy(exits);
@@ -240,7 +266,7 @@ describe("scoped worktree creation", () => {
       ((c: unknown) => (logs.push(String(c)), true)) as never,
     );
     try {
-      reconcilePlanPostMerge(cfg);
+      reconcilePlanPostMerge(cfg, []);
     } finally {
       spy.mockRestore();
     }
@@ -409,7 +435,7 @@ describe("scoped worktree creation", () => {
       ((c: unknown) => (logs.push(String(c)), true)) as never,
     );
     try {
-      reconcilePlanPostMerge(cfg);
+      reconcilePlanPostMerge(cfg, []);
     } finally {
       spy.mockRestore();
     }

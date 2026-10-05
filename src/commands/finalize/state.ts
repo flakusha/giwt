@@ -64,6 +64,19 @@ export function publishActiveLockRelease(release: (() => void) | null): void {
 export function publishActiveCheckSlotRelease(release: (() => void) | null): void {
   ACTIVE_CHECK_SLOT_RELEASE = release;
 }
+
+// Same publication pattern as the lock/check-slot releases, for the Step-5
+// ephemeral staging worktree: executeStagingMerge publishes a removeStaging
+// closure the moment `git worktree add` succeeds, so any guard-triggered or
+// error-path `process.exit` inside the merge body cannot leak the staging
+// worktree — the `exit` hook tears it down on every termination path. Cleared
+// on the success path after the explicit removeStaging.
+let ACTIVE_STAGING_TEARDOWN: (() => void) | null = null;
+
+/** Publish/clear the staging-worktree teardown. See ACTIVE_STAGING_TEARDOWN. */
+export function publishActiveStagingTeardown(teardown: (() => void) | null): void {
+  ACTIVE_STAGING_TEARDOWN = teardown;
+}
 /**
  * Release the Step-2 check-fanout slot, if one is held. The `exit` hook and
  * runFinalize's finally MUST stay in lockstep through this helper: clear the
@@ -76,6 +89,20 @@ export function releaseActiveCheckSlot(): void {
   ACTIVE_CHECK_SLOT_RELEASE = null;
   try {
     releaseSlot();
+  } catch { /* best-effort; nothing useful we can do */ }
+}
+/**
+ * Release the staging-worktree teardown, if one is held. Same lockstep
+ * discipline as releaseActiveCheckSlot: clear the global first, then
+ * run — removeStaging is idempotent (worktree remove + prune on an
+ * already-removed dir are silent no-ops), so a double call is safe.
+ */
+export function releaseActiveStagingTeardown(): void {
+  const teardown = ACTIVE_STAGING_TEARDOWN;
+  if (!teardown) return;
+  ACTIVE_STAGING_TEARDOWN = null;
+  try {
+    teardown();
   } catch { /* best-effort; nothing useful we can do */ }
 }
 /**
@@ -161,8 +188,10 @@ export function uninstallSignalHandlers(): void {
 function releaseLockOnExit(): void {
   const release = ACTIVE_LOCK_RELEASE;
   // Free the check-fanout slot first (cheap rmdir) so a slot can never
-  // outlive the process that held it.
+  // outlive the process that held it, then remove any live staging worktree
+  // (guard exits and error paths must not leak `.finalize-*` dirs).
   releaseActiveCheckSlot();
+  releaseActiveStagingTeardown();
   if (!release) return;
   // Clear the slot first so a synchronous release+exit cycle cannot
   // re-enter this handler with a stale closure (defensive — Node fires

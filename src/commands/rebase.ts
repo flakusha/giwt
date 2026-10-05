@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { type RebaseResult, rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
+import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
@@ -113,6 +114,16 @@ export async function rebase(
   }
 
   log("info", `Rebasing '${branch}' onto '${target}'...`);
+
+  // Guard: the rebase replay rewrites history with the worktree's config
+  // identity as committer (GPG signs the committer, not the author) — refuse
+  // a tampered repo author before any git mutation (see utils/author-guard).
+  assertGitAuthorIdentity({
+    cwd: wtPath,
+    expectedEmail: config.agentGpgEmail ?? "",
+    args,
+    source: "rebase",
+  });
 
   const result = rebaseWithPlanReconciliation(
     wtPath,

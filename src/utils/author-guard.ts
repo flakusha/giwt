@@ -11,8 +11,17 @@
  *
  * Escape hatch: `--allow-author-override` flag or `GIWT_ALLOW_AUTHOR_OVERRIDE=1`
  * env. Both print a loud warning so an override requires maintainer notice.
+ *
+ * COVERAGE RULE — every commit-producing path must call the guard (directly,
+ * or via assertGitAuthorIdentity) before spawning git. Guarded paths:
+ * commit, commit-wt, merge, finalize staging (all strategies — guarded once
+ * in executeStagingMerge, post worktree-add), scoped-worktree scope commit,
+ * scoped-worktree post-merge reconciliation, rebase, and the `giwt git`
+ * passthrough for commit-class subcommands. A new commit path without a
+ * guard call is a security regression.
  */
 
+import { gitSyncQuiet } from "./git";
 import { log, raw } from "./output";
 
 export const ALLOW_AUTHOR_OVERRIDE_FLAG = "--allow-author-override";
@@ -74,4 +83,30 @@ export function assertAuthorMatchesCommitter(params: AuthorGuardParams): void {
     `  Or:   pass ${ALLOW_AUTHOR_OVERRIDE_FLAG} (or set ${ALLOW_AUTHOR_OVERRIDE_ENV}=1) to override explicitly`,
   );
   process.exit(1);
+}
+
+/**
+ * Convenience wrapper for the common guard shape: read the repo-config
+ * author from `cwd` (the checkout where the commit will run), then refuse
+ * on mismatch. Sites that already read `user.email` for display call
+ * assertAuthorMatchesCommitter directly instead.
+ */
+export function assertGitAuthorIdentity(check: {
+  /** Directory whose repo config provides the author identity. */
+  cwd: string;
+  /** Expected maintainer email (config.agentGpgEmail); empty short-circuits. */
+  expectedEmail: string;
+  /** Raw CLI args, checked for `--allow-author-override`. */
+  args: string[];
+  /** Human-readable action for the error message (e.g. "commit"). */
+  source: string;
+}): void {
+  const authorEmail = gitSyncQuiet(check.cwd, "config", "user.email");
+  if (!authorEmail) return;
+  assertAuthorMatchesCommitter({
+    authorEmail,
+    expectedEmail: check.expectedEmail,
+    args: check.args,
+    source: check.source,
+  });
 }

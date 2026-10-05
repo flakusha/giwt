@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
-import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import { log, raw } from "../utils/output";
-
 
 function gpgMergeFlags(config: WorktreeConfig): string[] {
   if (!config.agentGpgKeyId) return [];

@@ -7,6 +7,7 @@
 
 import { existsSync } from "fs";
 import { resolve } from "path";
+import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { credentials } from "../utils/credentials";
 import { gitSyncQuiet, isolatedGitEnv, isProtected, stagedDependencyPaths } from "../utils/git";
@@ -14,7 +15,6 @@ import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
 import { log, raw } from "../utils/output";
-import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 
 export async function commitWt(
   args: string[],
@@ -23,7 +23,9 @@ export async function commitWt(
   const onProtected = args.includes("--on-protected");
   const noVerify = args.includes("--no-verify");
   const { rest, message: messageInput } = await extractMessageInput(
-    args.filter((a) => a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"),
+    args.filter((a) =>
+      a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"
+    ),
   );
   const [branch, ...messageParts] = rest;
   const message = messageInput ?? messageParts.join(" ");
@@ -119,10 +121,12 @@ export async function commitWt(
   // Guard: refuse to commit when the repo-config author does not match the
   // maintainer identity from .credentials.env. GPG signing validates the
   // committer, not the author — a tampered repo config would silently
-  // rewrite authorship while the signature stays valid.
+  // rewrite authorship while the signature stays valid. Compared against
+  // config.agentGpgEmail (resolved from the repo being committed to), not
+  // the import-time credentials module — same as commit.ts/merge.ts.
   assertAuthorMatchesCommitter({
     authorEmail,
-    expectedEmail: credentials.email,
+    expectedEmail: config.agentGpgEmail ?? "",
     args,
     source: "commit",
   });

@@ -15,26 +15,17 @@
  * staging-tree.ts.
  */
 
-import { unlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { rebaseWithPlanReconciliation } from "../../plan/reconcile-conflicts";
-import { loadAllowedTrailers, squashMessageWithCoAuthors } from "../../utils/coauthors";
+import { assertGitAuthorIdentity } from "../../utils/author-guard";
 import type { WorktreeConfig } from "../../utils/config";
-import { assertAuthorMatchesCommitter } from "../../utils/author-guard";
-import { gitSync, gitSyncQuiet } from "../../utils/git";
+import { gitSync } from "../../utils/git";
 import { assertAgentGpgUnlocked } from "../../utils/gpg";
 import { log, raw } from "../../utils/output";
 import { scopedSignFlags } from "../scoped-worktree";
-import { branchToSquashMessage, gpgMergeFlags } from "./merge";
+import { directMergeInStaging, squashInStaging } from "./staging-strategy";
 import { snapshotDevReadiness, syncDevLazily } from "./staging-sync";
-import {
-  checkoutTargetInStaging,
-  pruneStagingWorktrees,
-  removeStaging,
-  spawnGit,
-  stagingDirFor,
-} from "./staging-tree";
-import { setMergeInProgress } from "./state";
+import { pruneStagingWorktrees, removeStaging, spawnGit, stagingDirFor } from "./staging-tree";
+import { publishActiveStagingTeardown } from "./state";
 
 export interface StagingMergeResult {
   /** Post-merge SHA of refs/heads/<targetBranch> (the CAS-moved ref). */
@@ -91,6 +82,29 @@ export function executeStagingMerge(
     process.exit(1);
   }
 
+  // Any process.exit from here on (guard refusal below, rebase conflict,
+  // CAS refusal, failed verify) must not leak the staging worktree —
+  // publish the teardown BEFORE the guard so the guard's own exit is
+  // covered (state.ts releaseActiveStagingTeardown, same pattern as the
+  // lock release).
+  publishActiveStagingTeardown(() => removeStaging(config, stagingDir));
+  // Guard: the staging worktree inherits the repo's git config, and every
+  // commit this merge produces (rebase replay, squash, direct) is authored
+  // from that identity. Checked BEFORE any mutation so a refusal leaves no
+  // merge state behind. One guard here covers all three strategies — a
+  // per-site guard inside squashInStaging/directMergeInStaging would miss
+  // the rebase path.
+  assertGitAuthorIdentity({
+    cwd: stagingDir,
+    expectedEmail: config.agentGpgEmail ?? "",
+    args,
+    source: mergeStrategy === "rebase"
+      ? "rebase"
+      : mergeStrategy === "squash"
+      ? "squash merge"
+      : "merge",
+  });
+
   // Step 5a: rebase the branch tip onto the target inside staging — for the
   // rebase and squash strategies only, matching the old in-dev flow (direct
   // merges the raw branch tip so its conflicts stay resolvable). The dev
@@ -120,9 +134,9 @@ export function executeStagingMerge(
   const readiness = snapshotDevReadiness(config, targetBranch);
   let finalSha = newTip;
   if (mergeStrategy === "squash") {
-    finalSha = squashInStaging(branch, config, stagingDir, targetBranch, newTip, args);
+    finalSha = squashInStaging(branch, config, stagingDir, targetBranch, newTip);
   } else if (mergeStrategy === "direct") {
-    finalSha = directMergeInStaging(branch, config, stagingDir, targetBranch, newTip, args);
+    finalSha = directMergeInStaging(branch, config, stagingDir, targetBranch, newTip);
   }
 
   // Atomic CAS move of the target ref: a concurrent mover between our
@@ -146,134 +160,6 @@ export function executeStagingMerge(
 
   const devSynced = syncDevLazily(config, targetBranch, readiness);
   removeStaging(config, stagingDir);
+  publishActiveStagingTeardown(null);
   return { targetSha: finalSha, devSynced };
-}
-
-function squashInStaging(
-  branch: string,
-  config: WorktreeConfig,
-  stagingDir: string,
-  targetBranch: string,
-  newTip: string,
-  args: string[],
-): string {
-  // Real co-authors on the squashed commits survive the squash: the
-  // conventional subject gains their deduplicated Co-Authored-By trailers
-  // (LLM-vendor ones dropped by the shared policy).
-  const baseMsg = branchToSquashMessage(branch);
-  const msg = squashMessageWithCoAuthors(
-    config.repoRoot,
-    baseMsg,
-    `${targetBranch}..${branch}`,
-    loadAllowedTrailers(config.repoRoot),
-  );
-  log("info", `Step 5b: Squash merging into ${targetBranch} (staging)...`);
-  checkoutTargetInStaging(stagingDir, targetBranch);
-  const flags = gpgMergeFlags(config);
-  const preHead = gitSyncQuiet(stagingDir, "rev-parse", "HEAD");
-  setMergeInProgress(stagingDir, branch, preHead, null, true);
-  const mergeResult = spawnGit(
-    [...flags, "merge", newTip, "--squash", "-m", msg],
-    stagingDir,
-  );
-  if (mergeResult.exitCode !== 0) {
-    log("error", "Squash merge failed");
-    removeStaging(config, stagingDir);
-    process.exit(1);
-  }
-  // `git merge --squash` stages but never commits (its -m is ignored on the
-  // ff path) — produce the squash commit now, signed via the same
-  // gpgMergeFlags, with the co-author-aware message.
-  const msgFile = join(config.repoRoot, ".git", "GIWT_SQUASH_MSG");
-  writeFileSync(msgFile, `${msg}\n`);
-
-  // Guard: refuse to commit when the staging worktree's author does not match
-  // the maintainer identity. The staging worktree inherits the repo's git config;
-  // GPG signing validates the committer, not the author.
-  const authorEmail = gitSyncQuiet(stagingDir, "config", "user.email");
-  if (authorEmail) {
-    assertAuthorMatchesCommitter({
-      authorEmail,
-      expectedEmail: config.agentGpgEmail ?? "",
-      args,
-      source: "squash merge",
-    });
-  }
-  const squashCommit = spawnGit([...flags, "commit", "-F", msgFile], stagingDir);
-
-  try {
-    unlinkSync(msgFile);
-  } catch { /* best-effort scratch cleanup */ }
-  if (squashCommit.exitCode !== 0) {
-    log("error", "Squash commit failed");
-    removeStaging(config, stagingDir);
-    raw(`  Nothing was merged — the target ref is untouched; re-run finalize to retry`);
-    process.exit(1);
-  }
-  setMergeInProgress(stagingDir, branch, preHead, null, false);
-  log("success", `Squash merged: ${baseMsg}`);
-  return gitSync(stagingDir, "rev-parse", "HEAD");
-}
-
-function directMergeInStaging(
-  branch: string,
-  config: WorktreeConfig,
-  stagingDir: string,
-  targetBranch: string,
-  newTip: string,
-  args: string[],
-): string {
-  log("info", `Step 5b: Direct merging into ${targetBranch} (staging)...`);
-  checkoutTargetInStaging(stagingDir, targetBranch);
-  const flags = gpgMergeFlags(config);
-  const preHead = gitSyncQuiet(stagingDir, "rev-parse", "HEAD");
-  setMergeInProgress(stagingDir, branch, preHead, null, true);
-
-  // Guard: refuse to merge when the staging worktree's author does not match
-  // the maintainer identity. The staging worktree inherits the repo's git config;
-  // GPG signing validates the committer, not the author.
-  const authorEmail = gitSyncQuiet(stagingDir, "config", "user.email");
-  if (authorEmail) {
-    assertAuthorMatchesCommitter({
-      authorEmail,
-      expectedEmail: config.agentGpgEmail ?? "",
-      args,
-      source: "merge",
-    });
-  }
-  const mergeResult = spawnGit(
-    [
-      ...flags,
-      "merge",
-      newTip,
-      "--no-edit",
-      // Direct merge's contract is a GPG-signed merge commit; FF would skip
-      // merge-commit creation and move verify-commit onto the branch tip.
-      "--no-ff",
-    ],
-    stagingDir,
-  );
-  setMergeInProgress(stagingDir, branch, preHead, null, false);
-  if (mergeResult.exitCode !== 0) {
-    // Abandon: abort the merge and discard staging. The branch is intact,
-    // the target ref untouched, and dev was never involved — nothing to
-    // clean up anywhere (the old in-dev flow left dev mid-merge instead).
-    spawnGit(["merge", "--abort"], stagingDir);
-    removeStaging(config, stagingDir);
-    log("error", `Direct merge conflicts — staging discarded, ${targetBranch} untouched`);
-    raw(`  Then: re-run with --merge-strategy rebase to resolve conflicts incrementally`);
-    process.exit(1);
-  }
-  const mergeSha = gitSync(stagingDir, "rev-parse", "HEAD");
-  // Strict verify: assertAgentGpgUnlocked already gated against cold cache.
-  // An unsigned merge here means the gate was bypassed (e.g. passphrase
-  // expired mid-merge) — fail loudly BEFORE the CAS moves the ref.
-  const verifyResult = spawnGit(["verify-commit", mergeSha], stagingDir);
-  if (verifyResult.exitCode !== 0) {
-    removeStaging(config, stagingDir);
-    log("error", `Merge commit ${mergeSha.slice(0, 8)} is unsigned — refusing to finalize`);
-    process.exit(1);
-  }
-  log("success", `Merge commit GPG-signed (${mergeSha.slice(0, 8)})`);
-  return mergeSha;
 }

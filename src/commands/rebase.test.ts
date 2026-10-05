@@ -228,6 +228,26 @@ describe("rebase target validation (23751b8)", () => {
   });
 });
 
+describe("rebase author-identity guard", () => {
+  test("refuses a tampered repo author before any rebase runs", async () => {
+    const config = makeRepo();
+    divergeTarget();
+    // The guard compares the worktree's config author against the
+    // maintainer email from config — mismatch must refuse BEFORE the
+    // replay rewrites the feature branch (utils/author-guard coverage
+    // rule; the rebase path was unguarded until this landed).
+    const before = git(["rev-parse", "feature"]).trim();
+    const guarded: WorktreeConfig = { ...config, agentGpgEmail: "maintainer@localhost" };
+
+    const out = await runExpectExit1(() => rebase(["feature", TARGET], guarded));
+    expect(out).toContain("refusing to rebase");
+    expect(out).toContain("giwt-test@localhost");
+    expect(out).toContain("maintainer@localhost");
+    // Branch tip untouched — the refusal preceded the rebase.
+    expect(git(["rev-parse", "feature"]).trim()).toBe(before);
+  });
+});
+
 describe("rebase default target (BUG-rebase-default-target-is-the-root-branch-which-is-also-prote)", () => {
   test("no-onto form succeeds on the default config where root 'dev' is protected", async () => {
     const config = makeRepo();

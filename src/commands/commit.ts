@@ -5,8 +5,8 @@
  * Commit command — GPG-signed commit on current branch
  */
 
-import { type WorktreeConfig } from "../utils/config";
 import { assertAuthorMatchesCommitter } from "../utils/author-guard";
+import { type WorktreeConfig } from "../utils/config";
 import {
   gitSync,
   gitSyncQuiet,
@@ -25,7 +25,9 @@ export async function commit(
   const onProtected = args.includes("--on-protected");
   const noVerify = args.includes("--no-verify");
   const { rest, message: messageInput } = await extractMessageInput(
-    args.filter((a) => a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"),
+    args.filter((a) =>
+      a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"
+    ),
   );
   const message = messageInput ?? rest.join(" ");
 
