@@ -58,8 +58,8 @@ function git(args: string[], cwd: string = root): string {
 function gitFixture(): void {
   root = mkdtempSync(join(scratchRoot(), "giwt-v3-"));
   git(["init", "-q", "-b", "master"]);
-  git(["config", "user.email", "t@t"]);
-  git(["config", "user.name", "t"]);
+  git(["config", "user.email", "test@giwt.local"]);
+  git(["config", "user.name", "giwt test"]);
   git(["config", "commit.gpgsign", "false"]);
   writeFileSync(join(root, "s.txt"), "s\n");
   git(["add", "s.txt"]);

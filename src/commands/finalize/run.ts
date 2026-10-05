@@ -31,6 +31,7 @@ export async function runFinalize(
   wtPath: string,
   targetBranch: string,
   runMergePhase: <T>(merge: () => T) => T,
+  args: string[],
 ): Promise<void> {
   section(`Finalizing '${branch}'`);
   // Shared-state view: what agents recorded lately, before mutating dev.
@@ -211,6 +212,7 @@ export async function runFinalize(
       config,
       targetBranch,
       alreadyMerged,
+      args,
     );
 
     // Record the merge result: the SHA is the durable answer to "what did

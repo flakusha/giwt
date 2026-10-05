@@ -185,6 +185,7 @@ export async function finalize(
       wtPath,
       targetBranch,
       runMergePhase,
+      args,
     );
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

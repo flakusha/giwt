@@ -20,6 +20,7 @@ import { join } from "node:path";
 import { rebaseWithPlanReconciliation } from "../../plan/reconcile-conflicts";
 import { loadAllowedTrailers, squashMessageWithCoAuthors } from "../../utils/coauthors";
 import type { WorktreeConfig } from "../../utils/config";
+import { assertAuthorMatchesCommitter } from "../../utils/author-guard";
 import { gitSync, gitSyncQuiet } from "../../utils/git";
 import { assertAgentGpgUnlocked } from "../../utils/gpg";
 import { log, raw } from "../../utils/output";
@@ -54,6 +55,7 @@ export function executeStagingMerge(
   config: WorktreeConfig,
   targetBranch: string,
   alreadyMerged: boolean,
+  args: string[],
 ): StagingMergeResult | null {
   if (alreadyMerged) return null;
 
@@ -73,6 +75,19 @@ export function executeStagingMerge(
     // Gate: GPG must be configured AND unlocked before we produce a squash
     // or merge commit (cold cache previously produced unsigned commits).
     assertAgentGpgUnlocked();
+  }
+
+  // Guard: refuse to merge when the repo-config author does not match the
+  // maintainer identity from .credentials.env. The staging worktree inherits
+  // the repo's git config; GPG signing validates the committer, not the author.
+  const authorEmail = gitSyncQuiet(config.repoRoot, "config", "user.email");
+  if (authorEmail) {
+    assertAuthorMatchesCommitter({
+      authorEmail,
+      expectedEmail: config.agentGpgEmail ?? "",
+      args,
+      source: mergeStrategy === "squash" ? "squash merge" : "merge",
+    });
   }
 
   pruneStagingWorktrees(config, branch);

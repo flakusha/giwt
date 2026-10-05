@@ -25,9 +25,9 @@ export const USAGE: Record<string, string> = {
   "comment":
     "<ID> <message...>\n  <ID>    issue id\n  rest    forwarded verbatim to git issue comment (e.g. -m \"text\")",
   "commit":
-    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\" [--on-protected] [--no-verify]\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              required when the current branch is protected\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)",
+    "[-F <file>|--message-file <file>] \"<type>(scope): <description>\" [--on-protected] [--no-verify] [--allow-author-override]\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              required when the current branch is protected\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)\n  --allow-author-override     bypass the author-identity guard (prints a loud warning)",
   "commit-wt":
-    "<branch> [-F <file>|--message-file <file>] \"<message>\" [--on-protected] [--no-verify]\n  <branch>                    worktree branch (or protected branch with --on-protected)\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              commit directly in the main checkout of a protected branch\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)",
+    "<branch> [-F <file>|--message-file <file>] \"<message>\" [--on-protected] [--no-verify] [--allow-author-override]\n  <branch>                    worktree branch (or protected branch with --on-protected)\n  -F, --message-file <path>   read the message from file ('-' = stdin)\n  --on-protected              commit directly in the main checkout of a protected branch\n  --no-verify                 skip the consuming repo's pre-commit hook (opt-in;\n                              by default the hook runs via core.hooksPath)\n  --allow-author-override     bypass the author-identity guard (prints a loud warning)",
   "create": "<branch>\n  <branch>   existing branch to check out as a worktree",
   "diff": "<branch>\n  <branch>   worktree branch to diff against the root branch",
   "doctor":
@@ -35,7 +35,7 @@ export const USAGE: Record<string, string> = {
   "edit":
     "<ID> [git-issue edit options...]\n  <ID>    issue id\n  rest    forwarded verbatim to git issue edit (--label/--assignee/--priority ...)",
   "finalize":
-    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>] [--jobs <n>]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge\n  --jobs <n>             gate concurrency for the check step (check runners\n                         default to 1; raise it to trade memory for speed)",
+    "<branch> [--merge-strategy rebase|squash|direct] [--force] [--gates <csv>] [--skip-gates <csv>] [--plan-gates <csv>] [--jobs <n>] [--allow-author-override]\n  --merge-strategy <m>   merge mode\n  --force, -f            skip gates/tests, allow direct merge\n  --gates <csv>          run only these gates\n  --skip-gates <csv>     run all but these (mutually exclusive with --gates)\n  --plan-gates <csv>     run giwt plan validate with these gates before merge\n  --jobs <n>             gate concurrency for the check step (check runners\n                         default to 1; raise it to trade memory for speed)\n  --allow-author-override  bypass the author-identity guard (prints a loud warning)",
   "gi":
     "<git-issue args...>\n  forwarded verbatim to git issue; issue-taking subcommands want the id first (show/edit/state <id> ...)\n  git-issue has no close command; close with: giwt gi state <id> --close",
   "git":
@@ -50,7 +50,7 @@ export const USAGE: Record<string, string> = {
   "list":
     "[--json|--toml|--emoji]\n  --json      worktree records: branch, path, head, ahead/behind, stale\n  --toml      same records as TOML (items array)\n  --emoji     one 📁 line per worktree",
   "merge":
-    "<branch> <source>\n  <branch>   target worktree branch\n  <source>   branch merged into it",
+    "<branch> <source> [--allow-author-override]\n  <branch>   target worktree branch\n  <source>   branch merged into it\n  --allow-author-override  bypass the author-identity guard (prints a loud warning)",
   "new":
     "<branch> [base] [--scope <text>] [--tickets <csv>]\n  <branch>     new branch name\n  [base]       base ref (default: root branch)\n  --scope <t>  short explanation, persisted as **Scope:** header lines\n  --tickets <csv>  ticket ids (extid/slug/.md) copied in as In Progress + first commit; finalize closes them pre-merge and reconciles the plan post-merge",
   "plan":

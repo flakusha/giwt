@@ -6,6 +6,7 @@
  */
 
 import { type WorktreeConfig } from "../utils/config";
+import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import {
   gitSync,
   gitSyncQuiet,
@@ -89,6 +90,15 @@ export async function commit(
     raw("  Run: git config user.name 'Your Name' && git config user.email 'you@example.com'");
     process.exit(1);
   }
+
+  // Guard: refuse to commit when the repo-config author does not match the
+  // maintainer identity from .credentials.env (see commit-wt.ts for rationale).
+  assertAuthorMatchesCommitter({
+    authorEmail,
+    expectedEmail: config.agentGpgEmail,
+    args,
+    source: "commit",
+  });
 
   // Verify GPG key is in the keyring AND unlocked. The helper exits 1 on
   // any of three failure modes with an actionable hint to gpg-unlock.

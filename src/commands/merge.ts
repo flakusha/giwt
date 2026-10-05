@@ -2,9 +2,11 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { findWorktree, type WorktreeConfig } from "../utils/config";
-import { gitSync, isolatedGitEnv } from "../utils/git";
+import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
+import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import { log, raw } from "../utils/output";
+
 
 function gpgMergeFlags(config: WorktreeConfig): string[] {
   if (!config.agentGpgKeyId) return [];
@@ -78,6 +80,19 @@ export async function merge(
   // This is the gate that previously let merge.ts silently produce an
   // unsigned merge when gpgMergeFlags() returned [] on cold cache.
   assertAgentGpgUnlocked();
+
+  // Guard: read the repo-config author and refuse to merge on mismatch.
+  // The merge commit's author comes from the worktree's git config; GPG
+  // signing validates the committer, not the author.
+  const authorEmail = gitSyncQuiet(wtPath, "config", "user.email");
+  if (authorEmail) {
+    assertAuthorMatchesCommitter({
+      authorEmail,
+      expectedEmail: config.agentGpgEmail ?? "",
+      args,
+      source: "merge",
+    });
+  }
 
   const flags = gpgMergeFlags(config);
   log("info", `Merging '${source}' into '${branch}'...`);

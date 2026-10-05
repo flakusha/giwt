@@ -14,6 +14,7 @@ import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
 import { log, raw } from "../utils/output";
+import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 
 export async function commitWt(
   args: string[],
@@ -114,6 +115,17 @@ export async function commitWt(
     raw(`  Run: giwt sign ${branch}`);
     process.exit(1);
   }
+
+  // Guard: refuse to commit when the repo-config author does not match the
+  // maintainer identity from .credentials.env. GPG signing validates the
+  // committer, not the author — a tampered repo config would silently
+  // rewrite authorship while the signature stays valid.
+  assertAuthorMatchesCommitter({
+    authorEmail,
+    expectedEmail: credentials.email,
+    args,
+    source: "commit",
+  });
 
   // Verify GPG key is in the keyring AND unlocked. The helper exits 1 on
   // any of three failure modes with an actionable hint to gpg-unlock.
