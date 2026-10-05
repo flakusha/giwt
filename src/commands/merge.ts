@@ -27,7 +27,7 @@ export async function merge(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  const [branch, source] = args;
+  const [branch, source] = args.filter((a) => a !== "--allow-author-override");
 
   if (!branch || !source) {
     log("error", "branch and source required");

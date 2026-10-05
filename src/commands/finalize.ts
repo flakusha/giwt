@@ -61,7 +61,7 @@ export async function finalize(
   let skipGatesFilter = "";
   let planGatesFilter = "";
   let jobs = "";
-  const parsed = parseFinalizeArgs(args);
+  const parsed = parseFinalizeArgs(args.filter((a) => a !== "--allow-author-override"));
   branch = parsed.branch;
   mergeStrategy = parsed.mergeStrategy;
   force = parsed.force;
