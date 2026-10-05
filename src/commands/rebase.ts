@@ -6,7 +6,7 @@ import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
-import { scopedSignFlags } from "./scoped-worktree";
+import { scopedSignFlags } from "./scoped-reconcile";
 
 /** One-line summary of strict-superset auto-resolutions, if any occurred. */
 function reportAutoResolved(result: RebaseResult): void {

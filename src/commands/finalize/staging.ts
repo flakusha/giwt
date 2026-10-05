@@ -21,7 +21,7 @@ import type { WorktreeConfig } from "../../utils/config";
 import { gitSync } from "../../utils/git";
 import { assertAgentGpgUnlocked } from "../../utils/gpg";
 import { log, raw } from "../../utils/output";
-import { scopedSignFlags } from "../scoped-worktree";
+import { scopedSignFlags } from "../scoped-reconcile";
 import { directMergeInStaging, squashInStaging } from "./staging-strategy";
 import { snapshotDevReadiness, syncDevLazily } from "./staging-sync";
 import { pruneStagingWorktrees, removeStaging, spawnGit, stagingDirFor } from "./staging-tree";

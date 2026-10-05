@@ -23,14 +23,13 @@ import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { execute as createWorktree } from "./create";
 import { extidForHash, extractExtid, resolveExtid } from "./resolver";
+import { reconcilePlanPostMerge, scopedSignFlags } from "./scoped-reconcile";
 import {
   applyScopedTickets,
   closeScopedIssues,
   parseScopeFlags,
   readScopedMeta,
-  reconcilePlanPostMerge,
   resolveScopedTickets,
-  scopedSignFlags,
 } from "./scoped-worktree";
 
 const tempRoots: string[] = [];
@@ -130,6 +129,16 @@ describe("scoped worktree creation", () => {
     const meta = readScopedMeta(wtPath);
     expect(meta?.tickets).toEqual(["FEAT-DEMO-TICKET"]);
     expect(meta?.scope).toBe("demo scope");
+  });
+
+  test("scope with zero tickets skips the scope commit (no empty-commit exit 1)", () => {
+    const cfg = makeRepo("zero");
+    const headBefore = git(cfg.repoRoot, "rev-parse", "HEAD").trim();
+    applyScopedTickets(cfg, cfg.repoRoot, "solo scope", []);
+    expect(git(cfg.repoRoot, "rev-parse", "HEAD").trim()).toBe(headBefore);
+    const meta = readScopedMeta(cfg.repoRoot);
+    expect(meta?.tickets).toEqual([]);
+    expect(meta?.scope).toBe("solo scope");
   });
 
   test("unknown ticket id refuses before any git mutation", () => {
