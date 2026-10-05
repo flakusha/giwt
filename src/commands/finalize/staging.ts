@@ -77,19 +77,6 @@ export function executeStagingMerge(
     assertAgentGpgUnlocked();
   }
 
-  // Guard: refuse to merge when the repo-config author does not match the
-  // maintainer identity from .credentials.env. The staging worktree inherits
-  // the repo's git config; GPG signing validates the committer, not the author.
-  const authorEmail = gitSyncQuiet(config.repoRoot, "config", "user.email");
-  if (authorEmail) {
-    assertAuthorMatchesCommitter({
-      authorEmail,
-      expectedEmail: config.agentGpgEmail ?? "",
-      args,
-      source: mergeStrategy === "squash" ? "squash merge" : "merge",
-    });
-  }
-
   pruneStagingWorktrees(config, branch);
   const stagingDir = stagingDirFor(config, branch);
   const oldSha = gitSync(config.repoRoot, "rev-parse", `refs/heads/${targetBranch}`);
@@ -133,9 +120,9 @@ export function executeStagingMerge(
   const readiness = snapshotDevReadiness(config, targetBranch);
   let finalSha = newTip;
   if (mergeStrategy === "squash") {
-    finalSha = squashInStaging(branch, config, stagingDir, targetBranch, newTip);
+    finalSha = squashInStaging(branch, config, stagingDir, targetBranch, newTip, args);
   } else if (mergeStrategy === "direct") {
-    finalSha = directMergeInStaging(branch, config, stagingDir, targetBranch, newTip);
+    finalSha = directMergeInStaging(branch, config, stagingDir, targetBranch, newTip, args);
   }
 
   // Atomic CAS move of the target ref: a concurrent mover between our
@@ -168,6 +155,7 @@ function squashInStaging(
   stagingDir: string,
   targetBranch: string,
   newTip: string,
+  args: string[],
 ): string {
   // Real co-authors on the squashed commits survive the squash: the
   // conventional subject gains their deduplicated Co-Authored-By trailers
@@ -198,7 +186,21 @@ function squashInStaging(
   // gpgMergeFlags, with the co-author-aware message.
   const msgFile = join(config.repoRoot, ".git", "GIWT_SQUASH_MSG");
   writeFileSync(msgFile, `${msg}\n`);
+
+  // Guard: refuse to commit when the staging worktree's author does not match
+  // the maintainer identity. The staging worktree inherits the repo's git config;
+  // GPG signing validates the committer, not the author.
+  const authorEmail = gitSyncQuiet(stagingDir, "config", "user.email");
+  if (authorEmail) {
+    assertAuthorMatchesCommitter({
+      authorEmail,
+      expectedEmail: config.agentGpgEmail ?? "",
+      args,
+      source: "squash merge",
+    });
+  }
   const squashCommit = spawnGit([...flags, "commit", "-F", msgFile], stagingDir);
+
   try {
     unlinkSync(msgFile);
   } catch { /* best-effort scratch cleanup */ }
@@ -219,12 +221,26 @@ function directMergeInStaging(
   stagingDir: string,
   targetBranch: string,
   newTip: string,
+  args: string[],
 ): string {
   log("info", `Step 5b: Direct merging into ${targetBranch} (staging)...`);
   checkoutTargetInStaging(stagingDir, targetBranch);
   const flags = gpgMergeFlags(config);
   const preHead = gitSyncQuiet(stagingDir, "rev-parse", "HEAD");
   setMergeInProgress(stagingDir, branch, preHead, null, true);
+
+  // Guard: refuse to merge when the staging worktree's author does not match
+  // the maintainer identity. The staging worktree inherits the repo's git config;
+  // GPG signing validates the committer, not the author.
+  const authorEmail = gitSyncQuiet(stagingDir, "config", "user.email");
+  if (authorEmail) {
+    assertAuthorMatchesCommitter({
+      authorEmail,
+      expectedEmail: config.agentGpgEmail ?? "",
+      args,
+      source: "merge",
+    });
+  }
   const mergeResult = spawnGit(
     [
       ...flags,
