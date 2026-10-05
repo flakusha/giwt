@@ -1437,6 +1437,19 @@
     "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md",
     "status": "done"
   },
+  "TASK-ADD-AUTHOR-IDENTITY-GUARD-TO-COMMIT-MERGE-PATHS": {
+    "hash": "aee6015",
+    "git_issue": "aee6015",
+    "extid": "TASK-ADD-AUTHOR-IDENTITY-GUARD-TO-COMMIT-MERGE-PATHS",
+    "type": "TASK",
+    "title": "Add author-identity guard to commit/merge paths",
+    "label": "task",
+    "priority": "high",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md",
+    "status": "Not Started"
+  },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",
     "git_issue": "9ef7c2f",

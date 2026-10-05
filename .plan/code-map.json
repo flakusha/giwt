@@ -521,6 +521,12 @@
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
     }
   ],
+  "src/utils/author-guard.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md"
+    }
+  ],
   "src/utils/check-slots.ts": [
     {
       "kind": "ticket",

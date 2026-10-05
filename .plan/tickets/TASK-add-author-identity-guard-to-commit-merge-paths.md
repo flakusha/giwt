@@ -3,7 +3,7 @@
 
 # TASK: Add author-identity guard to commit/merge paths
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 
@@ -17,6 +17,7 @@ GPG signing validates the COMMITTER, not the AUTHOR. A tampered repo user.email 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-05T10:47:21.871Z Universal coverage landed: staging single pre-mutation guard (all strategies, rebase included), scoped scope-commit, post-merge reconcile, rebase command, giwt git passthrough commit-class gate; staging teardown published to exit hook; msg file inside staging; commit-wt identity source fixed. Commit a768455.
