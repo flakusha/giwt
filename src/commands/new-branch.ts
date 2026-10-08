@@ -10,7 +10,7 @@ import {
   type WorktreeConfig,
 } from "../utils/config";
 import { reportMissingBase } from "../utils/errors";
-import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
+import { gitSync, gitSyncQuiet, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
 import { applyScopedTickets, parseScopeFlags, resolveScopedTickets } from "./scoped-worktree";
@@ -92,6 +92,13 @@ export async function execute(
   if (existsSync(hooksDir)) {
     gitSync(wtPath, "config", "core.hooksPath", hooksDir);
     log("success", "hooks configured");
+  }
+
+  // Warn when the repo has no configured identity — commits will fail later
+  const repoEmail = gitSyncQuiet(config.repoRoot, "config", "user.email");
+  if (!repoEmail) {
+    log("warn", "repo has no user.email configured — commits will fail until you set it");
+    raw("  Run: git config user.email 'you@example.com' && git config user.name 'Your Name'");
   }
 
   linkNodeModules(config.repoRoot, wtPath);

@@ -258,6 +258,31 @@ describe("new-branch success path", () => {
     expect(git(["config", "--get", "core.hooksPath"], wtPath).trim()).toBe(hooksDir);
   });
 
+  test("warns when the repo has no configured user.email", async () => {
+    // No local identity + blank HOME/XDG_CONFIG_HOME => git resolves none.
+    // isolatedGitEnv() strips GIT_*, so HOME redirection is the hermetic lever.
+    git(["config", "--unset", "user.email"]);
+    const emptyHome = mkdtempSync(join(scratchRoot(), "giwt-nb-noid-home-"));
+    const prevHome = process.env.HOME;
+    const prevXdg = process.env.XDG_CONFIG_HOME;
+    process.env.HOME = emptyHome;
+    process.env.XDG_CONFIG_HOME = emptyHome;
+    try {
+      const wtPath = resolve(config.treeDir, "noid");
+      const out = await runExpectSuccess(() => execute(["noid", "master"], config));
+      expect(out).toContain("repo has no user.email configured");
+      expect(out).toContain("git config user.email");
+      // warning, not a block: the worktree is still created
+      expect(out).toContain(`Created: ${wtPath}`);
+    } finally {
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+      if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+      else process.env.XDG_CONFIG_HOME = prevXdg;
+      rmSync(emptyHome, { recursive: true, force: true });
+    }
+  });
+
   test("enables commit signing when the agent key has a usable secret", async () => {
     config.agentGpgKeyId = "ABCDEF0123456789";
     await withStubGpg(async () => {
