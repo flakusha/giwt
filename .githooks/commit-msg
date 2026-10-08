@@ -1,5 +1,7 @@
 #!/bin/sh
-# commit-msg hook for giwt — LLM Co-Authored-By trailer gate.
+# commit-msg hook for omp-plugins — LLM Co-Authored-By trailer gate +
+# message-shape rejects (mirrors giwt's src/utils/commit-message.ts and
+# its .githooks/commit-msg; the three must not drift).
 #
 # Agents keep injecting attribution trailers like
 #   Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
@@ -13,15 +15,17 @@
 #   2. EXEMPTION: a line that contains any entry of ALLOWED_TRAILERS in
 #      .credentials.env (comma-separated substrings, case-insensitive,
 #      file resolved by walking up from the repo top) is kept verbatim.
-#      Use it for intentionally attributed assistant accounts.
+#      Use it for intentionally attributed assistant accounts. Consent
+#      applies to the trailer allowlist ONLY — commit-identity fabrication
+#      is never consentable (identity-gate.sh checks consent first for
+#      trailers, and keeps the identity fabrication check unconditional).
 #   3. Human Co-Authored-By lines never match the denylist and pass.
 #   4. A literal backslash-n / backslash-t sequence in the message is a
-#      hallucinated newline — REJECTED (mirrors src/utils/commit-message.ts).
-#   5. The subject (first line) may not exceed 72 chars (commitlint
-#      subject-max-length) — REJECTED, not rewritten.
+#      hallucinated newline — REJECTED.
+#   5. The subject (first line) may not exceed 72 chars — REJECTED.
 #
-# Install: git config core.hooksPath .githooks && chmod +x .githooks/commit-msg
-# (same setup as .githooks/pre-commit).
+# Install: sh .githooks/.install.sh
+# (git config core.hooksPath .githooks && chmod +x .githooks/*)
 
 set -u
 
@@ -34,15 +38,15 @@ HOOK_DIR=$(cd "$(dirname "$0")" && pwd) || exit 1
 # shellcheck source=.githooks/identity-gate.sh
 . "$HOOK_DIR/identity-gate.sh" || exit 1
 
-# ── Reject hallucinated message shapes (mirrors src/utils/commit-message.ts)
-#    before any trailer processing — the author must fix and re-commit. ──
+# ── Reject hallucinated message shapes before any trailer processing —
+#    the author must fix and re-commit. ──
 if grep -qF '\n' "$MSG_FILE" || grep -qF '\t' "$MSG_FILE"; then
-  printf 'giwt commit-msg: message contains a literal \\n/\\t escape sequence — use a real newline\n' >&2
+  printf 'commit-msg: message contains a literal \\n/\\t escape sequence — use a real newline\n' >&2
   exit 1
 fi
 SUBJECT=$(head -n 1 "$MSG_FILE")
 if [ "${#SUBJECT}" -gt 72 ]; then
-  printf 'giwt commit-msg: subject is %s chars (max 72) — wrap the detail into the body\n' "${#SUBJECT}" >&2
+  printf 'commit-msg: subject is %s chars (max 72) — wrap the detail into the body\n' "${#SUBJECT}" >&2
   exit 1
 fi
 
@@ -51,9 +55,8 @@ REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null) || REPO_TOP=$(pwd)
 # LLM vendor denylist (case-insensitive, substring match on the trailer).
 DENY='claude|anthropic|openai|chatgpt|copilot|gemini|deepseek|mistral|qwen|kimi|glm|z\.ai'
 
-# ── Resolve .credentials.env (walk up from the repo top, like
-#    src/utils/credentials.ts; fall back to $HOME) and read
-#    ALLOWED_TRAILERS ──
+# ── Resolve .credentials.env (walk up from the repo top; $HOME fallback)
+#    and read ALLOWED_TRAILERS ──
 ALLOW=""
 CREDS=""
 d=$REPO_TOP
@@ -80,7 +83,7 @@ TRAILERS=$(grep -iE '^co-authored-by:' "$MSG_FILE" || true)
 #    GIT_CONFIG_GLOBAL pointed at the machine's real config is legitimate).
 #    Any fabrication/mismatch FAILs here with the source named above. ──
 if ! identity_check_commit; then
-  printf 'giwt commit-msg: REFUSED: Co-authored-by trailer(s) under a non-canonical commit identity — attribution written under an overridden identity is forged\n' >&2
+  printf 'commit-msg: REFUSED: Co-authored-by trailer(s) under a non-canonical commit identity — attribution written under an overridden identity is forged\n' >&2
   exit 1
 fi
 
@@ -134,12 +137,12 @@ IDENTITY_KEPT
 
 if [ "$STRIPPED" -gt 0 ]; then
   printf '%s\n' "$TRAILERS" | grep -viF -f "$PATTERNS" | while IFS= read -r kept; do
-    printf 'giwt commit-msg: kept allow-listed trailer: %s\n' "$kept" >&2
+    printf 'commit-msg: kept allow-listed trailer: %s\n' "$kept" >&2
   done
-  grep -viF -f "$PATTERNS" "$MSG_FILE" >"$MSG_FILE.giwt-trailer-clean" 2>/dev/null || true
-  mv "$MSG_FILE.giwt-trailer-clean" "$MSG_FILE"
+  grep -viF -f "$PATTERNS" "$MSG_FILE" >"$MSG_FILE.trailer-clean" 2>/dev/null || true
+  mv "$MSG_FILE.trailer-clean" "$MSG_FILE"
 
-  printf 'giwt commit-msg: stripped %s LLM Co-Authored-By trailer(s):\n' "$STRIPPED" >&2
+  printf 'commit-msg: stripped %s LLM Co-Authored-By trailer(s):\n' "$STRIPPED" >&2
   sed 's/^/  /' "$PATTERNS" >&2
 fi
 exit $IDENT_STATUS
