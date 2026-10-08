@@ -173,6 +173,53 @@ describe("renderTicketFile — generated template is gate-clean", () => {
   });
 });
 
+describe("renderTicketFile — body fields suppress their placeholders", () => {
+  const FLAGS: TicketFlags = {
+    labels: [],
+    priority: "medium",
+    epic: "",
+    tags: [],
+    effort: "Medium",
+    upstream: "",
+  };
+
+  it("keeps both placeholders when the body carries neither field", () => {
+    const content = renderTicketFile("BUG", "t", FLAGS, "plain body");
+    expect(content).toContain("(fill in before starting");
+    expect(content).toContain("- [ ] Implementation complete");
+    expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1);
+    expect(content.match(/\*\*Acceptance Criteria:\*\*/g)?.length).toBe(1);
+  });
+
+  it("suppresses only the Context placeholder when the body carries **Context:**", () => {
+    const body = "**Context:**\n\nfilled in by the author";
+    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    expect(content).not.toContain("(fill in before starting");
+    expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1); // the body's, not a copy
+    expect(content).toContain("- [ ] Implementation complete"); // Acceptance untouched
+  });
+
+  it("suppresses only the Acceptance placeholder when the body carries **Acceptance Criteria:**", () => {
+    const body = "**Acceptance Criteria:**\n\n- [ ] custom box";
+    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    expect(content).not.toContain("- [ ] Implementation complete");
+    expect(content.match(/\*\*Acceptance Criteria:\*\*/g)?.length).toBe(1);
+    expect(content).toContain("(fill in before starting"); // Context untouched
+  });
+
+  it("suppresses both when the body carries both fields, staying format-gate-clean", () => {
+    const body = "**Context:**\n\ntext\n\n**Acceptance Criteria:**\n\n- [ ] custom box";
+    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1);
+    expect(content.match(/\*\*Acceptance Criteria:\*\*/g)?.length).toBe(1);
+    expect(content).not.toContain("(fill in before starting");
+    expect(content).not.toContain("- [ ] Tests passing");
+    for (const section of TICKET_REQUIRED_SECTIONS) {
+      expect(content).toMatch(new RegExp(`\\*\\*${section}:\\*\\*`, "i"));
+    }
+  });
+});
+
 describe("renderTicketFile — Upstream header line", () => {
   it("renders **Upstream:** after Tags when --upstream is given", () => {
     const { flags } = parseTicketArgs(["--upstream", "owner/repo#123"]);
