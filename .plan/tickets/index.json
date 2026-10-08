@@ -391,6 +391,22 @@
     "status": "done",
     "git_issue": "6c8b279"
   },
+  "BUG-PATCH-ID-DUPLICATE-DETECTION-IS-DEFEATED-BY-A-RENAME-BETWEEN": {
+    "hash": "f56b19d",
+    "git_issue": "f56b19d",
+    "extid": "BUG-PATCH-ID-DUPLICATE-DETECTION-IS-DEFEATED-BY-A-RENAME-BETWEEN",
+    "type": "BUG",
+    "title": "patch-id duplicate detection is defeated by a rename between two identical commits",
+    "label": "bug",
+    "priority": "critical",
+    "epic": "",
+    "tags": [
+      "git",
+      "rebase"
+    ],
+    "source": ".plan/tickets/BUG-patch-id-duplicate-detection-is-defeated-by-a-rename-between.md",
+    "status": "Not Started"
+  },
   "BUG-REBASE-DEFAULT-TARGET-IS-THE-ROOT-BRANCH-WHICH-IS-ALSO-PROTE": {
     "hash": "87eaed2",
     "git_issue": "87eaed2",
@@ -510,6 +526,22 @@
     "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
     "status": "done"
   },
+  "BUG-SCOPED-MARKER-PATH-IS-CWD-RELATIVE-SO-WORKTREE-SCOPE-WRITES-": {
+    "hash": "89ae729",
+    "git_issue": "89ae729",
+    "extid": "BUG-SCOPED-MARKER-PATH-IS-CWD-RELATIVE-SO-WORKTREE-SCOPE-WRITES-",
+    "type": "BUG",
+    "title": "scoped marker path is cwd-relative so worktree scope writes fail/misplace",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "bug",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-scoped-marker-path-is-cwd-relative-so-worktree-scope-writes-.md",
+    "status": "done"
+  },
   "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
     "hash": "4e5f505",
     "extid": "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV",
@@ -620,6 +652,19 @@
     "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
     "status": "done"
   },
+  "BUG-TAG-PARSER-KEEPS-BRACKET-QUOTE-BACKTICK-ADORNMENTS-PRODUCING": {
+    "hash": "b105f44",
+    "git_issue": "b105f44",
+    "extid": "BUG-TAG-PARSER-KEEPS-BRACKET-QUOTE-BACKTICK-ADORNMENTS-PRODUCING",
+    "type": "BUG",
+    "title": "tag parser keeps bracket-quote-backtick adornments producing ghost matrix rows",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md",
+    "status": "done"
+  },
   "BUG-TICKET-ID-INPUTS-ACCEPT-HASH-EXTID-SLUG-EVERYWHERE": {
     "hash": "40464b1",
     "git_issue": "40464b1",
@@ -631,6 +676,19 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/BUG-ticket-id-inputs-accept-hash-extid-slug-everywhere.md",
+    "status": "done"
+  },
+  "BUG-TICKET-TEMPLATE-EMITS-EMPTY-CONTEXT-ACCEPTANCE-PLACEHOLDERS-": {
+    "hash": "3ef9ae8",
+    "git_issue": "3ef9ae8",
+    "extid": "BUG-TICKET-TEMPLATE-EMITS-EMPTY-CONTEXT-ACCEPTANCE-PLACEHOLDERS-",
+    "type": "BUG",
+    "title": "ticket template emits empty Context/Acceptance placeholders alongside user-supplied body fields",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-ticket-template-emits-empty-context-acceptance-placeholders-.md",
     "status": "done"
   },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
@@ -707,6 +765,22 @@
     ],
     "source": ".plan/tickets/FEAT-destructive-gpg-bypass-git-guard-cc-safety-net-seeded.md",
     "status": "done"
+  },
+  "FEAT-DETECT-RESURRECTED-FILES-IDENTICAL-CONTENT-LIVING-UNDER-TWO-": {
+    "hash": "a94907b",
+    "git_issue": "a94907b",
+    "extid": "FEAT-DETECT-RESURRECTED-FILES-IDENTICAL-CONTENT-LIVING-UNDER-TWO-",
+    "type": "FEAT",
+    "title": "detect resurrected files: identical content living under two paths after a rename",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "git",
+      "migrations"
+    ],
+    "source": ".plan/tickets/FEAT-detect-resurrected-files-identical-content-living-under-two-.md",
+    "status": "Not Started"
   },
   "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
     "hash": "7323f1b",
@@ -835,6 +909,23 @@
       "rerouting"
     ],
     "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md",
+    "status": "done"
+  },
+  "FEAT-GIWT-HISTORY-AUDIT-CLASSIFY-HISTORY-SHAPE-AND-FLAG-SUSPICIOU": {
+    "hash": "79b397b",
+    "git_issue": "79b397b",
+    "extid": "FEAT-GIWT-HISTORY-AUDIT-CLASSIFY-HISTORY-SHAPE-AND-FLAG-SUSPICIOU",
+    "type": "FEAT",
+    "title": "giwt history audit: classify history shape and flag suspicious commits before a rebase",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "git",
+      "rebase",
+      "audit"
+    ],
+    "source": ".plan/tickets/FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou.md",
     "status": "done"
   },
   "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
@@ -971,6 +1062,21 @@
       "rebase"
     ],
     "source": ".plan/tickets/FEAT-rebase-auto-resolve-superset-side-conflicts.md",
+    "status": "done"
+  },
+  "FEAT-REBASE-SKIP-DECISIONS-ARE-NOT-RECORDED-SO-DROPPED-WORK-IS-UN": {
+    "hash": "12bd322",
+    "git_issue": "12bd322",
+    "extid": "FEAT-REBASE-SKIP-DECISIONS-ARE-NOT-RECORDED-SO-DROPPED-WORK-IS-UN",
+    "type": "FEAT",
+    "title": "rebase --skip decisions are not recorded, so dropped work is unrecoverable",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "rebase"
+    ],
+    "source": ".plan/tickets/FEAT-rebase-skip-decisions-are-not-recorded-so-dropped-work-is-un.md",
     "status": "done"
   },
   "FEAT-RECONCILE-LEFTOVER-FINALIZE-STASHES-IN-A-TEMP-WORKTREE": {
@@ -1149,6 +1255,22 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-validate-skip-gates-flag.md",
     "status": "done"
+  },
+  "FEAT-WEAVE-DAMAGE-SCAN-DUPLICATED-AND-ORPHANED-BLOCKS-ARE-STRUCTU": {
+    "hash": "a03ba30",
+    "git_issue": "a03ba30",
+    "extid": "FEAT-WEAVE-DAMAGE-SCAN-DUPLICATED-AND-ORPHANED-BLOCKS-ARE-STRUCTU",
+    "type": "FEAT",
+    "title": "weave damage scan: duplicated and orphaned blocks are structurally silent",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "rebase",
+      "weave"
+    ],
+    "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md",
+    "status": "Not Started"
   },
   "FEAT-ZERO-SHOT-COMMAND-CLASSIFIER-SEAM-PREPARE-ONLY": {
     "hash": "bcdd0eb",
@@ -1448,7 +1570,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",

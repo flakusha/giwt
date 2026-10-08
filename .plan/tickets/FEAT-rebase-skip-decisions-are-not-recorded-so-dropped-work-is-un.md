@@ -3,7 +3,7 @@
 
 # FEAT: rebase --skip decisions are not recorded, so dropped work is unrecoverable
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** rebase
@@ -38,6 +38,7 @@ Acceptance:
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-08T03:48:39.052Z Landed via feat-history-audit: giwt history skips readback + giwt rebase --skip-note with durable skips.jsonl ledger.

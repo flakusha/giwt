@@ -5,6 +5,12 @@
       "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md"
     }
   ],
+  "src/chat/service/branches.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
+    }
+  ],
   "src/cli-usage.ts": [
     {
       "kind": "ticket",
@@ -309,6 +315,12 @@
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
     }
   ],
+  "src/commands/ticket/create.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-ticket-template-emits-empty-context-acceptance-placeholders-.md"
+    }
+  ],
   "src/doctor/check.ts": [
     {
       "kind": "ticket",
@@ -349,6 +361,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md"
+    }
+  ],
+  "src/frontend/ui.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
     }
   ],
   "src/git/policy.ts": [
@@ -401,6 +419,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
     }
   ],
   "src/plan/reconcile-conflicts/git-io.ts": [
@@ -467,6 +489,12 @@
       "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
     }
   ],
+  "src/test-utils/isolate-only.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
+    }
+  ],
   "src/tickets/sync-index.ts": [
     {
       "kind": "ticket",
@@ -493,6 +521,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
+    }
+  ],
+  "src/tickets/sync-parse.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md"
     }
   ],
   "src/tickets/sync-reconcile.ts": [
@@ -609,6 +643,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md"
+    }
+  ],
+  "src/utils/settings-schema.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou.md"
     }
   ],
   "src/utils/settings.ts": [

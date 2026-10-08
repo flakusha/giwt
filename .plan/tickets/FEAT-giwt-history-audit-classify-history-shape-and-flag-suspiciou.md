@@ -3,7 +3,7 @@
 
 # FEAT: giwt history audit: classify history shape and flag suspicious commits before a rebase
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Large
 **Tags:** git, rebase, audit
@@ -41,6 +41,7 @@ This umbrella does NOT implement the individual detectors. Each is filed separat
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-08T03:48:39.015Z Landed via feat-history-audit: giwt history audit with shape classification, suspicious-commit detectors, [audit] settings. Fixed mergeBases call site in 007c3d4.
