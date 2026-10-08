@@ -144,3 +144,29 @@ export type {
   ValidateOptions,
   ValidateResult,
 } from "./plan/validate";
+
+// History & weave audit detectors (src/audit/) — pure libraries returning
+// structured findings; a later workstream wires them into the `giwt history
+// audit` umbrella and standalone gates.
+export type { ChangeKind, FingerprintEntry } from "./audit/diff-tree";
+export {
+  commitFingerprint,
+  duplicateCommitFinding,
+  findAppliedDuplicates,
+} from "./audit/fingerprint";
+export type {
+  CommitFingerprint,
+  DuplicateScanOptions,
+  FingerprintMatch,
+} from "./audit/fingerprint";
+export { scanResurrectedFiles } from "./audit/resurrected";
+export type { ResurrectedScanOptions } from "./audit/resurrected";
+export type {
+  AuditDetector,
+  AuditEvidence,
+  AuditFinding,
+  AuditReason,
+  AuditSeverity,
+} from "./audit/types";
+export { scanWeaveDamage } from "./audit/weave";
+export type { WeaveScanOptions } from "./audit/weave";
