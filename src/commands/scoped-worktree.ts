@@ -31,7 +31,9 @@ const MARKER_NAME = "giwt-scoped.json";
 
 /** Absolute path of the linked worktree's git dir (where the marker lives). */
 function scopedMarkerPath(wtPath: string): string {
-  return join(gitSyncQuiet(wtPath, "rev-parse", "--git-dir"), MARKER_NAME);
+  // --git-dir may be cwd-relative (".git") for plain repos — anchor at wtPath.
+  const gitDir = gitSyncQuiet(wtPath, "rev-parse", "--git-dir");
+  return join(resolve(wtPath, gitDir), MARKER_NAME);
 }
 
 export function readScopedMeta(wtPath: string): ScopedMeta | null {

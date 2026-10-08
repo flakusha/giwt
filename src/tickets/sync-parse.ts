@@ -98,7 +98,7 @@ export function parseTicketText(
       type,
       priority: priorityMatch?.[1]?.trim() ?? "medium",
       epic: epicMatch?.[1]?.trim() ?? "",
-      tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
+      tags: tagsMatch?.[1]?.split(",").map(normalizeTagToken).filter(Boolean) ?? [],
       upstream: upstreamMatch?.[1]?.trim() ?? "",
       hash: gitIssueMatch?.[1] ?? null,
       gitIssue: gitIssueMatch?.[1] ?? null,
@@ -107,6 +107,24 @@ export function parseTicketText(
   } catch {
     return null;
   }
+}
+
+/**
+ * Normalize one comma-split **Tags:** token: strip surrounding bracket,
+ * quote, and backtick adornments — JSON-array-style headers like
+ * `**Tags:** [check, "inference", `worktree`]` must yield clean tags, not
+ * ghost `[check` / `inference]` / backticked rows in the feature matrix.
+ * Adornment-only tokens (`[]`, `""`) collapse to "" and drop out at the
+ * caller's `filter(Boolean)`. Looping (instead of one strip) handles
+ * adornments separated from the value by spaces: `[ "a" ]` → `a`.
+ */
+function normalizeTagToken(token: string): string {
+  let t = token.trim();
+  for (let prev = ""; prev !== t;) {
+    prev = t;
+    t = t.replace(/^[[\]"'`]+/, "").replace(/[[\]"'`]+$/, "").trim();
+  }
+  return t;
 }
 
 function guessType(filename: string): string {

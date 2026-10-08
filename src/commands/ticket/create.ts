@@ -85,13 +85,25 @@ export function renderTicketFile(
     content += `**Upstream:** ${flags.upstream}\n`;
   }
   content += `\n**Summary:**\n\n${body || "No description provided."}\n\n`;
-  content +=
-    `**Context:**\n\n(fill in before starting: why this change, constraints, alternatives considered.)\n\n`;
-  content += `**Acceptance Criteria:**\n\n`;
-  content += `- [ ] Implementation complete\n`;
-  content += `- [ ] Tests passing\n`;
-  content += `- [ ] Documentation updated\n`;
+  // A field present in the user body suppresses its placeholder — no
+  // duplicated (empty) sections. Detection mirrors the format gate's marker
+  // regex exactly, so "present" means what `plan validate` would count.
+  if (!hasSection(body, "Context")) {
+    content +=
+      `**Context:**\n\n(fill in before starting: why this change, constraints, alternatives considered.)\n\n`;
+  }
+  if (!hasSection(body, "Acceptance Criteria")) {
+    content += `**Acceptance Criteria:**\n\n`;
+    content += `- [ ] Implementation complete\n`;
+    content += `- [ ] Tests passing\n`;
+    content += `- [ ] Documentation updated\n`;
+  }
   return content;
+}
+
+/** Format-gate marker presence: does `raw` carry `**<section>:**` (case-insensitive)? */
+function hasSection(raw: string, section: string): boolean {
+  return new RegExp(`\\*\\*${section}:\\*\\*`, "i").test(raw);
 }
 
 export async function ticket(args: string[], config: WorktreeConfig): Promise<void> {
