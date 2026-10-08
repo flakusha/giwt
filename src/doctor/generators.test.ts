@@ -10,7 +10,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ProjectReport } from "./detect.ts";
+import { GATE_ENV_SH, IDENTITY_GATE_SH } from "./generators/identity-gate.ts";
 import {
   generateActionlint,
   generateBiome,
@@ -165,11 +168,13 @@ describe("generateDprint", () => {
 });
 
 describe("generateHooks", () => {
-  it("emits 4 hook files under .githooks/ with executable=true", () => {
+  it("emits 6 hook files under .githooks/ with executable=true", () => {
     const files = generateHooks(emptyCtx());
     const paths = files.map((f) => f.path).sort();
     expect(paths).toEqual([
       ".githooks/.install.sh",
+      ".githooks/gate-env.sh",
+      ".githooks/identity-gate.sh",
       ".githooks/pre-commit",
       ".githooks/pre-push",
       ".githooks/prepare-commit-msg",
@@ -180,6 +185,50 @@ describe("generateHooks", () => {
     expect(files.find((f) => f.path === ".githooks/.install.sh")?.content).toContain(
       "core.hooksPath",
     );
+  });
+
+  it("generated pre-commit runs the identity gate as Step 0", () => {
+    const files = generateHooks(emptyCtx());
+    const pre = files.find((f) => f.path === ".githooks/pre-commit");
+    expect(pre).toBeDefined();
+    expect(pre?.content).toContain("Step 0: commit-identity gate");
+    expect(pre?.content).toContain(". \"$HOOK_DIR/identity-gate.sh\"");
+    expect(pre?.content).toContain("identity_check_commit");
+    // Step 0 must run before the staged-files early-exit (commit-wide gate).
+    const step0 = pre?.content.indexOf("identity_check_commit") ?? -1;
+    const earlyExit = pre?.content.indexOf("No staged TS/config/md/shell files") ?? -1;
+    expect(step0).toBeGreaterThan(-1);
+    expect(earlyExit).toBeGreaterThan(step0);
+  });
+
+  it("identity gate scripts equal the canonical source (drift test)", () => {
+    const files = generateHooks(emptyCtx());
+    const gateFile = files.find((f) => f.path === ".githooks/identity-gate.sh");
+    const envFile = files.find((f) => f.path === ".githooks/gate-env.sh");
+    // Byte-identical to the canonical module exports: the generated copies
+    // cannot drift from the single definition (IDENTITY_GATE_SH / GATE_ENV_SH).
+    expect(gateFile?.content).toBe(IDENTITY_GATE_SH);
+    expect(envFile?.content).toBe(GATE_ENV_SH);
+    // Sanity: the canonical source carries the policy entry points.
+    expect(IDENTITY_GATE_SH).toContain("identity_check_commit");
+    expect(IDENTITY_GATE_SH).toContain("identity_check_trailer");
+    expect(IDENTITY_GATE_SH).toContain("identity_is_fabrication");
+    expect(GATE_ENV_SH).toContain("GATE_ENV");
+  });
+});
+
+describe("canonical identity-gate drift (giwt's own .githooks)", () => {
+  // giwt ships the same gate it installs into consumer repos. The repo's own
+  // .githooks/identity-gate.sh and .githooks/gate-env.sh MUST equal the
+  // canonical module exports, or the dogfooded gate drifts from the source.
+  const repoRoot = new URL("../../", import.meta.url).pathname;
+  it("identity-gate.sh matches the canonical source", () => {
+    const onDisk = readFileSync(join(repoRoot, ".githooks", "identity-gate.sh"), "utf8");
+    expect(onDisk).toBe(IDENTITY_GATE_SH);
+  });
+  it("gate-env.sh matches the canonical source", () => {
+    const onDisk = readFileSync(join(repoRoot, ".githooks", "gate-env.sh"), "utf8");
+    expect(onDisk).toBe(GATE_ENV_SH);
   });
 });
 

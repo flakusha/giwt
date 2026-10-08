@@ -14,7 +14,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isolatedGitEnv } from "../src/utils/git";
@@ -90,13 +90,58 @@ describe("commit-msg LLM trailer gate", () => {
     expect(r.stderr).toContain("stripped 3");
   });
 
-  test("leaves human trailers untouched", () => {
+  test("leaves non-placeholder human trailers untouched (WARNs with no canonical)", () => {
     const repo = makeRepo();
+    const body = "feat: x\n\nCo-Authored-By: Alice <alice@human.dev>\n";
+    const r = runHook(repo, "msg.txt", body);
+    expect(r.exitCode).toBe(0);
+    expect(r.msg()).toBe(body);
+    // No canonical user.email in the fixture: the identity gate WARNs, never fails.
+    expect(r.stderr).toContain("WARN: no configured user.email");
+  });
+
+  test("refuses a placeholder Co-authored-by even without a canonical", () => {
+    const repo = makeRepo();
+    const body = "feat: x\n\nCo-Authored-By: Alice <alice@example.com>\n";
+    const r = runHook(repo, "msg.txt", body);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("placeholder identity");
+  });
+
+  test("ALLOWED_TRAILERS consent outranks the placeholder heuristic for trailers", () => {
+    const repo = makeRepo();
+    writeCreds("ALLOWED_TRAILERS=\"alice@example.com\"\n");
     const body = "feat: x\n\nCo-Authored-By: Alice <alice@example.com>\n";
     const r = runHook(repo, "msg.txt", body);
     expect(r.exitCode).toBe(0);
     expect(r.msg()).toBe(body);
-    expect(r.stderr).toBe("");
+    expect(r.stderr).toContain("kept consented trailer");
+  });
+
+  test("refuses a Co-authored-by that mismatches a configured canonical", () => {
+    const repo = makeRepo();
+    // Configure the canonical identity in the fixture repo's config file
+    // directly (git config writes are prohibited for agents).
+    appendFileSync(
+      join(repo, ".git", "config"),
+      "[user]\n\temail = canonical@human.dev\n\tname = Human\n",
+    );
+    const body = "feat: x\n\nCo-Authored-By: Mallory <mallory@human.dev>\n";
+    const r = runHook(repo, "msg.txt", body);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("does not match the repo-canonical identity");
+  });
+
+  test("keeps a Co-authored-by that matches a configured canonical", () => {
+    const repo = makeRepo();
+    appendFileSync(
+      join(repo, ".git", "config"),
+      "[user]\n\temail = canonical@human.dev\n\tname = Human\n",
+    );
+    const body = "feat: x\n\nCo-Authored-By: Human <canonical@human.dev>\n";
+    const r = runHook(repo, "msg.txt", body);
+    expect(r.exitCode).toBe(0);
+    expect(r.msg()).toBe(body);
   });
 
   test("messages without trailers pass through unchanged", () => {

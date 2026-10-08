@@ -1,0 +1,235 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
+/**
+ * Canonical commit-identity gate scripts.
+ *
+ * These are the single definition of the repo-canonical identity policy.
+ * giwt doctor installs them into consumer repos; giwt's own .githooks/
+ * sources the same logic. The drift test in generators.test.ts asserts the
+ * generated copies and the repo's own .githooks copies match these exports.
+ *
+ * IDENTITY POLICY: repo-configured identity only. The repo's user.name and
+ * user.email are the canonical commit identity; agent attribution lives in
+ * the receipt/ledger, never in git metadata.
+ *
+ * Verdict matrix:
+ *   fabrication pattern in the resolved identity -> FAIL
+ *   canonical configured + resolved matches      -> pass
+ *   canonical configured + mismatch              -> FAIL
+ *   canonical absent (any scope)                 -> WARN (never fail)
+ *   Co-authored-by trailer                       -> ALLOWED_TRAILERS consent
+ *
+ * Escaping note: a NORMAL template literal (not String.raw) is used so a
+ * backslash is written \\, a backtick \` and a template marker \${; the
+ * runtime value therefore equals the shell source byte-for-byte.
+ */
+
+export const IDENTITY_GATE_SH = `#!/bin/sh
+# Commit-identity gate lib — sourced by .githooks/pre-commit and
+# .githooks/commit-msg. POSIX sh; single definition of the repo-canonical
+# identity policy (mirrors gate-env.sh's single-definition rule).
+#
+# IDENTITY POLICY: repo-configured identity only.
+#   The repo's \`user.name\`/\`user.email\` is the canonical commit identity.
+#   Agent attribution lives in the receipt/ledger, never in git metadata —
+#   no "(Agent)" name variants (none exist in repo history: every commit is
+#   the plain repo identity). \`git config --get\` uses git's normal scoping
+#   (repo-local wins over global); no --global policy reads and NEVER any
+#   git config write — persistent config changes remain a user-only action.
+#
+# gate-env.sh strips only the GIT_DIR family and harness session vars, so
+# GIT_AUTHOR_*/EMAIL/GIT_CONFIG_* overrides that leaked past the tool guard
+# are still visible in the hook env — this file is the last-line check, at
+# the object boundary the guard cannot see.
+#
+# Verdict matrix:
+#   fabrication pattern in the resolved identity -> FAIL (canonical or not)
+#   canonical configured + resolved matches      -> pass
+#   canonical configured + mismatch              -> FAIL (names env sources)
+#   canonical absent (any scope)                 -> WARN (never fail: CI and
+#                                                   identity-less contributors
+#                                                   must not break)
+#   Co-authored-by trailer                       -> ALLOWED_TRAILERS consent
+#                                                   outranks the placeholder
+#                                                   heuristic (trailers ONLY —
+#                                                   commit identity fabrication
+#                                                   is never consentable); else
+#                                                   email must match the
+#                                                   canonical identity;
+#                                                   fabrication FAIL; no
+#                                                   canonical WARN
+
+# Fabricated/placeholder identities are always agent fabrications
+# (loop-lore incident: 26 commits landed as \`gate <gate@example.com>\`).
+identity_is_fabrication() {
+  printf '%s' "$1" | grep -iqE \\
+    '@(example|test)\\.(com|org|net|io)$|@invalid$|@localhost$|@users\\.noreply\\.|^(test|dev|agent|noreply|foo|bar|user|gate)@'
+}
+
+# Names of identity-override variables currently set in the environment, one
+# per line (empty output = clean). git honours every one of these at commit
+# time; gate-env.sh deliberately does not strip them, so they are detectable.
+identity_overrides() {
+  env | grep -E \\
+    '^(GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL|GIT_AUTHOR_DATE|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL|GIT_COMMITTER_DATE|EMAIL|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_[0-9]+|GIT_CONFIG_VALUE_[0-9]+|GIT_CONFIG_PARAMETERS|GIT_CONFIG_GLOBAL|GIT_CONFIG_SYSTEM)=' |
+    cut -d= -f1
+}
+
+# Offenders that DIRECTLY rewrite author/committer — what the mismatch
+# diagnostic names first. Config-path redirection suspects
+# (GIT_CONFIG_GLOBAL/GIT_CONFIG_PARAMETERS) are reported separately: they
+# change the resolved identity only via a redirected config source.
+identity_ident_overrides() {
+  identity_overrides | grep -vE '^GIT_CONFIG_(GLOBAL|PARAMETERS)$'
+}
+
+# Split a \`Name <email> ts tz\` ident line (git var GIT_AUTHOR_IDENT shape).
+identity_ident_email() {
+  printf '%s' "$1" | sed -n 's/.*<\\([^>]*\\)>.*/\\1/p'
+}
+identity_ident_name() {
+  printf '%s' "$1" | sed -n 's/^\\([^<]*\\)<.*/\\1/p' | sed 's/[[:space:]]*$//'
+}
+
+# Whether a trailer line carries any ALLOWED_TRAILERS fragment (comma-
+# separated substrings, case-insensitive) — the user's consent mechanism for
+# intentionally attributed accounts.
+identity_trailer_allowlisted() {
+  _line=$1
+  _allow=$2
+  [ -n "$_allow" ] || return 1
+  _old_ifs=$IFS
+  IFS=','
+  for _frag in $_allow; do
+    _frag=$(printf '%s' "$_frag" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -n "$_frag" ] || continue
+    if printf '%s' "$_line" | grep -qiF -- "$_frag"; then
+      IFS=$_old_ifs
+      return 0
+    fi
+  done
+  IFS=$_old_ifs
+  return 1
+}
+
+# pre-commit verdict: resolved author+committer identity vs repo config.
+# Returns 1 (FAIL) on fabrication or mismatch; WARNs to stderr when the repo
+# has no configured canonical; diagnostics on stderr only.
+identity_check_commit() {
+  can_email=$(git config --get user.email 2>/dev/null)
+  can_name=$(git config --get user.name 2>/dev/null)
+  a_ident=$(git var GIT_AUTHOR_IDENT 2>/dev/null)
+  c_ident=$(git var GIT_COMMITTER_IDENT 2>/dev/null)
+  a_email=$(identity_ident_email "$a_ident")
+  c_email=$(identity_ident_email "$c_ident")
+  a_name=$(identity_ident_name "$a_ident")
+  c_name=$(identity_ident_name "$c_ident")
+  leaks=$(identity_ident_overrides || true)
+  paths=$(identity_overrides | grep -E '^GIT_CONFIG_(GLOBAL|PARAMETERS)$' || true)
+
+  for email in "$a_email" "$c_email"; do
+    [ -n "$email" ] || continue
+    if identity_is_fabrication "$email"; then
+      printf 'pre-commit: REFUSED: resolved commit identity <%s> is a placeholder — agent fabrications are always rejects, configured canonical or not\\n' "$email" >&2
+      if [ -n "$leaks" ]; then
+        printf 'pre-commit: leaking env (%s)\\n' "$(printf '%s' "$leaks" | tr '\\n' ' ')" >&2
+      fi
+      return 1
+    fi
+  done
+
+  if [ -z "$can_email" ]; then
+    printf 'pre-commit: WARN: repo has no configured user.email — cannot verify the commit identity against a canonical (never guessed, never invented; configure user.email to enable the check)\\n' >&2
+    return 0
+  fi
+
+  mismatch=""
+  [ "$a_email" != "$can_email" ] && mismatch="$mismatch author-email:<\${a_email:-unset}>"
+  [ "$c_email" != "$can_email" ] && mismatch="$mismatch committer-email:<\${c_email:-unset}>"
+  if [ -n "$can_name" ]; then
+    [ "$a_name" != "$can_name" ] && mismatch="$mismatch author-name:<\${a_name:-unset}>"
+    [ "$c_name" != "$can_name" ] && mismatch="$mismatch committer-name:<\${c_name:-unset}>"
+  fi
+  [ -n "$mismatch" ] || return 0
+
+  printf 'pre-commit: REFUSED: resolved identity does not match the repo-canonical config:%s\\n' "$mismatch" >&2
+  if [ -n "$leaks" ]; then
+    printf 'pre-commit: leaking env (%s) — an identity override survived into the hook env\\n' \\
+      "$(printf '%s' "$leaks" | tr '\\n' ' ')" >&2
+  elif [ -n "$paths" ]; then
+    printf 'pre-commit: config-path overrides (%s) set — a redirected config source can change the resolved identity\\n' \\
+      "$(printf '%s' "$paths" | tr '\\n' ' ')" >&2
+  else
+    printf 'pre-commit: no override visible in the hook env — stale config, or a \`git -c\`/GIT_CONFIG_* leak the hook cannot see\\n' >&2
+  fi
+  printf 'pre-commit: fix: clear the override, then \`git commit --amend --reset-author --no-edit\` (user-run; agents ask). The repo-local identity is canonical — never write git config from agent flows.\\n' >&2
+  return 1
+}
+
+# commit-msg verdict for one Co-authored-by trailer line. ALLOWED_TRAILERS
+# consent is checked FIRST and keeps the line (the user's explicit voice in
+# .credentials.env — vendor \`noreply@\` addresses and GitHub squash
+# \`users.noreply\` co-authors are legitimate there, so fabrication-first
+# would make the consent file useless). PRECEDENCE TRADE: consent applies
+# to the trailer allowlist ONLY — the commit identity itself is never
+# consentable, and identity_check_commit keeps its fabrication check
+# unconditional. Returns 1 (FAIL) on fabrication or non-consented mismatch
+# with the canonical identity; WARNs (returns 0) when the repo has no
+# canonical to check against.
+identity_check_trailer() {
+  _line=$1
+  _allow=$2
+  _email=$(printf '%s' "$_line" | sed -n 's/.*<\\([^>]*\\)>.*/\\1/p')
+  [ -n "$_email" ] || _email=$_line
+  if identity_trailer_allowlisted "$_line" "$_allow"; then
+    printf 'commit-msg: kept consented trailer (ALLOWED_TRAILERS): %s\\n' "$_email" >&2
+    return 0
+  fi
+  if identity_is_fabrication "$_email"; then
+    printf 'commit-msg: REFUSED: Co-authored-by <%s> is a placeholder identity\\n' "$_email" >&2
+    return 1
+  fi
+  _can_email=$(git config --get user.email 2>/dev/null)
+  if [ -z "$_can_email" ]; then
+    printf 'commit-msg: WARN: no configured user.email — cannot verify Co-authored-by <%s> against the repo identity\\n' "$_email" >&2
+    return 0
+  fi
+  if [ "$_email" != "$_can_email" ]; then
+    printf 'commit-msg: REFUSED: Co-authored-by <%s> does not match the repo-canonical identity <%s> — attribution needs the user (ask); consented accounts go in ALLOWED_TRAILERS\\n' "$_email" "$_can_email" >&2
+    return 1
+  fi
+  return 0
+}
+`;
+
+export const GATE_ENV_SH = `#!/bin/sh
+# Gate environment for the pre-commit hook — sourced, not executed.
+#
+# Two unrelated families are removed, for two unrelated reasons:
+#
+#  1. GIT_* — git exports these into a hook. The test suite spawns fixture git
+#     repos under /tmp; inheriting GIT_DIR/GIT_INDEX_FILE makes those fixtures
+#     operate on THIS repo instead of themselves. Named explicitly because a
+#     blanket "strip every GIT_ var" is a behavior change nobody asked for.
+#  2. Agent-harness session vars (OMP_/PI_/ENGRAM_/MNEMO_*) — the hook runs
+#     inside a live agent session, so a gate (or a tool it spawns) that honours a
+#     session var takes a path a human shell never takes. The verdict would then
+#     be the session's verdict, not the one CI produces. Harness vars are
+#     prefixes, not fixed names, so they are stripped by scanning the live
+#     environment: a NEW OMP_/PI_ var is covered without editing a list here.
+#
+# POSIX sh only — the hook is #!/bin/sh (no arrays, [[ ]] or process
+# substitution). Sourced from .githooks/pre-commit; this file is the single
+# definition of the stripped set.
+
+GATE_ENV="env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_COMMON_DIR -u GIT_QUARANTINE_PATH"
+
+# One -u per currently-exported harness var, so a NEW OMP_/PI_ var is covered
+# without anyone editing a list. The grep requires NAME= with an identifier
+# tail: a multi-line value spills continuation lines into \`env\` output, and a
+# continuation line carrying spaces would otherwise split into a stray word
+# that env would read as the command. Names are cut before the first \`=\` so
+# values never reach the word split.
+GATE_ENV="$GATE_ENV $(env | grep -E '^(OMP_|PI_|ENGRAM_|MNEMO_)[A-Za-z0-9_]*=' | cut -d= -f1 | sed 's/^/-u /' | tr '\\n' ' ' || true)"
+`;

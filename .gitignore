@@ -128,6 +128,8 @@ tree/
 !.githooks/pre-commit
 !.githooks/commit-msg
 !.githooks/commit-msg.test.ts
+!.githooks/identity-gate.sh
+!.githooks/gate-env.sh
 
 # oxlint custom-rule plugin ships with the repo (override the global .*/ ignore)
 !.oxlint/

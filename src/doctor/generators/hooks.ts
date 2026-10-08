@@ -5,14 +5,19 @@
 /**
  * Git hooks generator.
  *
- * Emits three executable scripts under .githooks/ plus an .install.sh
- * helper. Mirrors loop-lore's hook suite but reads AGENT_GPG_EMAIL from
+ * Emits the hook scripts under .githooks/ plus an .install.sh helper.
+ * Mirrors loop-lore's hook suite but reads AGENT_GPG_EMAIL from
  * .credentials.env at runtime so generated hooks are project-agnostic.
  *
- *   - pre-commit            — format + lint + SPDX + check-report freshness
+ *   - pre-commit            — Step 0 identity gate + format + lint + SPDX + freshness
  *   - pre-push              — block agent pushes on protected branches; tag validation
  *   - prepare-commit-msg    — enforce Conventional Commits via commit-check
+ *   - identity-gate.sh      — canonical commit-identity policy (sourced, not run)
+ *   - gate-env.sh           — single definition of the stripped gate env (sourced)
  *   - .install.sh           — git config core.hooksPath + chmod +x
+ *
+ * The identity gate pair is imported from ./identity-gate.ts (the single
+ * canonical definition) so the generated copies cannot drift from the source.
  *
  * String.raw with backslash-escaped dollar braces preserves bash variable
  * syntax like \${AGENT_GPG_EMAIL:-} or \${VAR#PREFIX} without TypeScript
@@ -20,6 +25,7 @@
  */
 
 import type { GeneratedFile, GeneratorContext } from "../types.ts";
+import { GATE_ENV_SH, IDENTITY_GATE_SH } from "./identity-gate.ts";
 
 const PRE_COMMIT = String.raw`#!/bin/sh
 # Pre-commit hook — staged files only (fast).
@@ -34,6 +40,9 @@ const PRE_COMMIT = String.raw`#!/bin/sh
 set -u
 
 failures=0
+# Resolved before the cd below: core.hooksPath may be relative to the cwd git
+# hands the hook, and $0 is the only handle on the hook's own location.
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd) || exit 1
 REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null) || exit 1
 cd "\$REPO_TOP" || exit 1
 
@@ -44,6 +53,19 @@ cyan() { printf '\033[36m%s\033[0m\n' "$*"; }
 
 echo ""
 echo "=== pre-commit ==="
+echo ""
+
+# -- Step 0: commit-identity gate (commit-wide; runs even with no staged files) --
+# Policy and verdict matrix live in identity-gate.sh (repo-canonical identity only).
+# shellcheck source=identity-gate.sh
+. "$HOOK_DIR/identity-gate.sh" || exit 1
+echo "--- Step 0: commit-identity gate ---"
+if identity_check_commit; then
+  green "PASS: identity"
+else
+  red "FAIL: identity"
+  exit 1
+fi
 echo ""
 
 STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.tsx?$' || true)
@@ -281,6 +303,8 @@ export function generateHooks(_ctx: GeneratorContext): GeneratedFile[] {
     { path: ".githooks/pre-commit", content: PRE_COMMIT, executable: true },
     { path: ".githooks/pre-push", content: PRE_PUSH, executable: true },
     { path: ".githooks/prepare-commit-msg", content: PREPARE_COMMIT_MSG, executable: true },
+    { path: ".githooks/identity-gate.sh", content: IDENTITY_GATE_SH, executable: true },
+    { path: ".githooks/gate-env.sh", content: GATE_ENV_SH, executable: true },
     { path: ".githooks/.install.sh", content: INSTALL_SH, executable: true },
   ];
 }

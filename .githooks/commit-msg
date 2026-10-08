@@ -29,6 +29,11 @@ MSG_FILE=${1:-""}
 [ -n "$MSG_FILE" ] || exit 0
 [ -f "$MSG_FILE" ] || exit 0
 
+# Identity policy + helpers shared with pre-commit (single definition).
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd) || exit 1
+# shellcheck source=.githooks/identity-gate.sh
+. "$HOOK_DIR/identity-gate.sh" || exit 1
+
 # ── Reject hallucinated message shapes (mirrors src/utils/commit-message.ts)
 #    before any trailer processing — the author must fix and re-commit. ──
 if grep -qF '\n' "$MSG_FILE" || grep -qF '\t' "$MSG_FILE"; then
@@ -70,6 +75,15 @@ fi
 TRAILERS=$(grep -iE '^co-authored-by:' "$MSG_FILE" || true)
 [ -n "$TRAILERS" ] || exit 0
 
+# ── Attribution under an overridden identity is forged: run the pre-commit
+#    identity verdict on the RESOLVED identity (not env-var presence — a
+#    GIT_CONFIG_GLOBAL pointed at the machine's real config is legitimate).
+#    Any fabrication/mismatch FAILs here with the source named above. ──
+if ! identity_check_commit; then
+  printf 'giwt commit-msg: REFUSED: Co-authored-by trailer(s) under a non-canonical commit identity — attribution written under an overridden identity is forged\n' >&2
+  exit 1
+fi
+
 TRAILER_LIST=$(mktemp)
 PATTERNS=$(mktemp)
 trap 'rm -f "$TRAILER_LIST" "$PATTERNS"' EXIT
@@ -100,14 +114,32 @@ while IFS= read -r line; do
   fi
 done <"$TRAILER_LIST"
 
-[ "$STRIPPED" -gt 0 ] || exit 0
+# ── Identity gate on the KEPT trailers: each email must match the
+#    repo-canonical identity (or carry ALLOWED_TRAILERS consent);
+#    placeholders are refused even without a configured canonical. ──
+# With zero denylist hits every trailer is kept verbatim (an empty PATTERNS
+# file would make `grep -f` match nothing).
+if [ "$STRIPPED" -gt 0 ]; then
+  KEPT=$(grep -viF -f "$PATTERNS" "$TRAILER_LIST")
+else
+  KEPT=$(cat "$TRAILER_LIST")
+fi
+IDENT_STATUS=0
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  identity_check_trailer "$line" "$ALLOW" || IDENT_STATUS=1
+done <<IDENTITY_KEPT
+$KEPT
+IDENTITY_KEPT
 
-printf '%s\n' "$TRAILERS" | grep -viF -f "$PATTERNS" | while IFS= read -r kept; do
-  printf 'giwt commit-msg: kept allow-listed trailer: %s\n' "$kept" >&2
-done
-grep -viF -f "$PATTERNS" "$MSG_FILE" >"$MSG_FILE.giwt-trailer-clean" 2>/dev/null || true
-mv "$MSG_FILE.giwt-trailer-clean" "$MSG_FILE"
+if [ "$STRIPPED" -gt 0 ]; then
+  printf '%s\n' "$TRAILERS" | grep -viF -f "$PATTERNS" | while IFS= read -r kept; do
+    printf 'giwt commit-msg: kept allow-listed trailer: %s\n' "$kept" >&2
+  done
+  grep -viF -f "$PATTERNS" "$MSG_FILE" >"$MSG_FILE.giwt-trailer-clean" 2>/dev/null || true
+  mv "$MSG_FILE.giwt-trailer-clean" "$MSG_FILE"
 
-printf 'giwt commit-msg: stripped %s LLM Co-Authored-By trailer(s):\n' "$STRIPPED" >&2
-sed 's/^/  /' "$PATTERNS" >&2
-exit 0
+  printf 'giwt commit-msg: stripped %s LLM Co-Authored-By trailer(s):\n' "$STRIPPED" >&2
+  sed 's/^/  /' "$PATTERNS" >&2
+fi
+exit $IDENT_STATUS
