@@ -760,6 +760,38 @@ describe("parseTicketFile", () => {
     }
   });
 
+  test("strips bracket/quote/backtick adornments from a JSON-array-style Tags line", () => {
+    const root = makeRoot();
+    try {
+      const path = join(root, ".plan/tickets", "TASK-ADORNED.md");
+      writeFileSync(
+        path,
+        "# TASK-ADORNED: Adorned\n\n**Status:** open\n**Tags:** [check, \"inference\", `worktree`]\n",
+      );
+      const tf = parseTicketFile(path);
+      // Un-normalized these yield ghost `[check` / `inference]` /
+      // backticked matrix rows (BUG-tag-parser-keeps-bracket-quote-...).
+      expect(tf?.tags).toEqual(["check", "inference", "worktree"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("drops adornment-only and empty Tags tokens", () => {
+    const root = makeRoot();
+    try {
+      const path = join(root, ".plan/tickets", "TASK-EMPTY-TOKS.md");
+      writeFileSync(
+        path,
+        "# TASK-EMPTY-TOKS: Empty tokens\n\n**Status:** open\n**Tags:** a, [], ``, , [ b ]\n",
+      );
+      const tf = parseTicketFile(path);
+      expect(tf?.tags).toEqual(["a", "b"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("absent **Tags:** yields an empty array", () => {
     const root = makeRoot();
     try {
