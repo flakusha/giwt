@@ -43,6 +43,8 @@ export const USAGE: Record<string, string> = {
   "gpg-unlock": "",
   "gripe":
     "[--at <branch>] <message...>\n  --at <branch>   branch/agent the gripe targets (--at=<branch> also accepted)",
+  "history":
+    "audit [<branch>] [--onto <ref>] [--json|--toml|--emoji] | skips [--vs <ref>] [--json|--toml|--emoji]\n  audit          classify the shape of <onto>..<branch> and flag suspicious commits\n  <branch>       branch to audit (default: current branch)\n  --onto <ref>   base ref (default: branches.root)\n  skips          list rebase-skipped commits from the durable ledger, in replay order\n  --vs <ref>     verify every skip against <ref> (default: the recorded onto ref):\n                 a skip is justified only if its duplicate twin (same stable\n                 patch-id) is verifiable there; a drop whose twin cannot be found\n                 is flagged as probable real-work loss and exits 1\n  --json         machine-readable records (--toml/--emoji also supported)\n  Shape honors [audit] linearity = auto|require-linear|allow-merges (auto judges by\n  whether the target history contains merges); audit exits 1 when suspicious\n  commits are found, so it can gate a rebase",
   "issues":
     "[--all|-a] [--state <open|closed|all>|-s <v>] [--format <f>|-f <f>]\n  --all, -a                show all issues (default: first 50, with a truncation notice)\n  --state, -s <v>          filter by state: open|closed|all (default: open; --state=<v> also accepted)\n  --format, -f <f>         git-issue ls format",
   "ledger":

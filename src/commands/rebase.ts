@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { type CommitInfo, walkRange } from "../history/patch-ids";
+import { recordRebaseSkips, skipsPath } from "../history/skips";
 import { type RebaseResult, rebaseWithPlanReconciliation } from "../plan/reconcile-conflicts";
 import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, raw } from "../utils/output";
+import { activeRun } from "../utils/runlog";
 import { scopedSignFlags } from "./scoped-reconcile";
 
 /** One-line summary of strict-superset auto-resolutions, if any occurred. */
@@ -19,22 +22,41 @@ function reportAutoResolved(result: RebaseResult): void {
   );
 }
 
+const REBASE_USAGE = "  Usage: giwt rebase <branch> [onto] [--autostash] [--skip-note <text>]";
+
+/** Flags: --autostash anywhere; --skip-note <text> (operator reason for
+ *  skips this run); unknown flags and bare --skip-note refuse with the
+ *  usage line, exactly like every other rebase input error. */
+function parseRebaseFlags(
+  args: string[],
+): { autostash: boolean; skipNote: string | undefined; positionals: string[]; } {
+  let autostash = false;
+  let skipNote: string | undefined;
+  const positionals: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "--autostash") autostash = true;
+    else if (arg === "--skip-note" || arg.startsWith("--skip-note=")) {
+      skipNote = arg === "--skip-note" ? args[++i] : arg.slice("--skip-note=".length);
+      if (skipNote === undefined || skipNote === "") {
+        log("error", "--skip-note requires a reason");
+        raw(REBASE_USAGE);
+        process.exit(1);
+      }
+    } else if (arg.startsWith("--")) {
+      log("error", `unknown flag '${arg}'`);
+      raw(REBASE_USAGE);
+      process.exit(1);
+    } else positionals.push(arg);
+  }
+  return { autostash, skipNote, positionals };
+}
+
 export async function rebase(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  // Flag parsing: --autostash anywhere; unknown flags refused.
-  const flags: string[] = [];
-  const positionals: string[] = [];
-  for (const arg of args) {
-    if (arg === "--autostash") flags.push(arg);
-    else if (arg.startsWith("--")) {
-      log("error", `unknown flag '${arg}'`);
-      raw("  Usage: giwt rebase <branch> [onto] [--autostash]");
-      process.exit(1);
-    } else positionals.push(arg);
-  }
-  const autostash = flags.includes("--autostash");
+  const { autostash, skipNote, positionals } = parseRebaseFlags(args);
 
   const [branch, onto] = positionals;
   const target = onto || config.settings.branches.root;
@@ -125,6 +147,12 @@ export async function rebase(
     source: "rebase",
   });
 
+  // Skip-ledger inputs, captured BEFORE any git mutation: the pre-rebase
+  // head (recovery pointer) and the replay-order range inventory. The
+  // post-rebase diff against this walk is what identifies skips.
+  const preHead = gitSync(wtPath, "rev-parse", "HEAD").trim();
+  const pre = walkRange({ root: wtPath, range: `${target}..HEAD`, noMerges: true });
+
   const result = rebaseWithPlanReconciliation(
     wtPath,
     target,
@@ -144,5 +172,49 @@ export async function rebase(
     process.exit(1);
   }
 
+  recordSkipLedger({ config, branch, target, wtPath, preHead, pre, skipNote });
+
   log("success", `Rebased '${branch}' onto '${target}'`);
+}
+
+/**
+ * Diff the finished replay against the pre-rebase walk and append one
+ * durable ledger record per skipped commit. The DETECTED reason is
+ * always recorded; --skip-note adds the operator's justification.
+ * Appends are announced (never silent) — a skip without a trail is the
+ * bug this ledger exists to fix — and mirrored into the run's events.
+ */
+function recordSkipLedger(
+  opts: {
+    config: WorktreeConfig;
+    branch: string;
+    target: string;
+    wtPath: string;
+    preHead: string;
+    pre: CommitInfo[];
+    skipNote: string | undefined;
+  },
+): void {
+  const post = walkRange({
+    root: opts.wtPath,
+    range: `${opts.target}..HEAD`,
+    noMerges: true,
+  });
+  const records = recordRebaseSkips({
+    config: opts.config,
+    branch: opts.branch,
+    target: opts.target,
+    preHead: opts.preHead,
+    pre: opts.pre,
+    post,
+    ...(opts.skipNote !== undefined ? { note: opts.skipNote } : {}),
+  });
+  if (records.length === 0) return;
+  const summary = records.map((r) => `${r.sha.slice(0, 7)} (${r.reason.detected})`).join(", ");
+  log("warn", `skipped ${records.length} commit(s) — ledger: ${summary}`);
+  activeRun()?.event(
+    "skips",
+    "warn",
+    `${records.length} skip(s) recorded to ${skipsPath(opts.config)}`,
+  );
 }

@@ -26,6 +26,7 @@ import { finalize } from "./commands/finalize";
 import { gi } from "./commands/gi";
 import { gitPassthrough } from "./commands/git";
 import { gripe } from "./commands/gripe";
+import { history } from "./commands/history";
 import { issues } from "./commands/issues";
 import { ledger } from "./commands/ledger";
 import { listWorktrees } from "./commands/list";
@@ -141,6 +142,11 @@ export const commands: Record<string, CommandHandler> = {
   "gripe": {
     description: "Vent at another agent on the shared ledger",
     run: gripe,
+  },
+  "history": {
+    description:
+      "Pre-rebase history tooling: `audit` classifies shape and flags suspicious commits, `skips` reads back the rebase skip ledger",
+    run: history,
   },
   "issues": {
     description: "List issues",

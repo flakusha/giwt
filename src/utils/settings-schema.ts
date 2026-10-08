@@ -28,6 +28,7 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     scratchpad_orphan_warn: "scratchpadOrphanWarn",
     scratchpad_oldest_warn_days: "scratchpadOldestWarnDays",
   },
+  audit: { linearity: "linearity", patch_ids: "patchIds", max_findings: "maxFindings" },
   runlog: { max_runs: "maxRuns" },
   output: { format: "format", stream_tail: "streamTail", color: "color" },
   scratch: {
@@ -64,6 +65,7 @@ export const EXPECTED: Record<
     scratchpadOrphanWarn: "number",
     scratchpadOldestWarnDays: "number",
   },
+  audit: { linearity: "string", patchIds: "boolean", maxFindings: "number" },
   runlog: { maxRuns: "number" },
   output: { format: "string", streamTail: "number", color: "string" },
   scratch: {
