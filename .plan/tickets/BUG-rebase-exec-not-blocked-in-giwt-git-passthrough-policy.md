@@ -3,7 +3,7 @@
 
 # BUG: rebase --exec not blocked in giwt git passthrough policy
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** security, policy
@@ -20,6 +20,7 @@ The omp harness guard does catch this shape, so this is a defence-in-depth gap r
 
 **Acceptance Criteria:**
 
-- [ ] `rebasePredicate` (or equivalent) blocks `--exec`/`-x` when the payload contains identity-override patterns (GIT_AUTHOR_*, GIT_COMMITTER_*, user.name=, user.email=, --author=)
-- [ ] Benign `--exec` payloads (e.g. `make test`) still pass
-- [ ] Tests cover both shapes
+- [x] `rebasePredicate` (or equivalent) blocks `--exec`/`-x` when the payload contains identity-override patterns (GIT_AUTHOR_*, GIT_COMMITTER_*, user.name=, user.email=, --author=)
+- [x] Benign `--exec` payloads (e.g. `make test`) still pass
+- [x] Tests cover both shapes
+**Resolved:** 2026-10-08T10:14:18.389Z Fixed by 7259930: rebasePredicate refuses --exec/-x payloads matching identity-override patterns (GIT_AUTHOR_/GIT_COMMITTER_/user.name=/user.email=/--author=); benign payloads pass; classifier tests added.

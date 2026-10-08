@@ -607,6 +607,12 @@
       "source": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md"
     }
   ],
+  "src/utils/config-writes.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
   "src/utils/config.ts": [
     {
       "kind": "ticket",

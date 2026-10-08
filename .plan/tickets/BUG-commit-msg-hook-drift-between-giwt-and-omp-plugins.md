@@ -3,7 +3,7 @@
 
 # BUG: commit-msg hook drift between giwt and omp-plugins
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** drift, hooks
@@ -24,6 +24,7 @@ The drift test suite (generators.test.ts) only covers identity-gate.sh and gate-
 
 **Acceptance Criteria:**
 
-- [ ] Reconcile the two copies (same prefix, same temp suffix, same header claim)
-- [ ] Extend the drift tests to cover commit-msg byte-identity (or document intentional divergence)
-- [ ] Both repos' commit-msg hooks are byte-identical after reconciliation
+- [x] Reconcile the two copies (same prefix, same temp suffix, same header claim)
+- [x] Extend the drift tests to cover commit-msg byte-identity (or document intentional divergence)
+- [x] Both repos' commit-msg hooks are byte-identical after reconciliation
+**Resolved:** 2026-10-08T10:14:13.400Z Fixed by 5ea9321 (giwt, canonicalized on omp-plugins copy) + f9a5501 (omp-plugins drift pin). Hooks byte-identical (sha1 69855ecc…); drift now test-pinned.

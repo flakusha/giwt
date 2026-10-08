@@ -22,12 +22,12 @@ Total tickets: **125** — untagged: **46** — unbound to epic: **112**
 | coauthors | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | commit-wt | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | concurrency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| config | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| config | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | data-loss | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | diff-base | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | discovery | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| drift | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| drift | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | dx | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -39,7 +39,7 @@ Total tickets: **125** — untagged: **46** — unbound to epic: **112**
 | githooks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gpg | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
-| hooks | 4 | 3 | 0 | 0 | 0 | 0 | 1 |
+| hooks | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | index | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | isolation | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | ledger | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -58,7 +58,7 @@ Total tickets: **125** — untagged: **46** — unbound to epic: **112**
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | plan | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| policy | 3 | 1 | 0 | 0 | 0 | 0 | 2 |
+| policy | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | rebase | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -72,7 +72,7 @@ Total tickets: **125** — untagged: **46** — unbound to epic: **112**
 | safety | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | schema-v2 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | scratchpad | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| security | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| security | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | shared-module | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | squash | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | staging | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -100,7 +100,7 @@ Total tickets: **125** — untagged: **46** — unbound to epic: **112**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 112 | 109 | 0 | 0 | 0 | 0 | 3 |
+| (unbound) | 112 | 112 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

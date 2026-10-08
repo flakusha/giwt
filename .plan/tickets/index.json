@@ -80,7 +80,7 @@
       "hooks"
     ],
     "source": ".plan/tickets/BUG-commit-msg-hook-drift-between-giwt-and-omp-plugins.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-COMMIT-WT-HARDCODES-NO-VERIFY-BYPASSING-THE-CONSUMING-REPO-P": {
     "hash": "a258bb4",
@@ -322,7 +322,7 @@
       "config"
     ],
     "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
     "hash": "7c1a34d",
@@ -470,7 +470,7 @@
       "policy"
     ],
     "source": ".plan/tickets/BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE": {
     "hash": "23751b8",
