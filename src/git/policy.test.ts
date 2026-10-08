@@ -245,6 +245,7 @@ describe("classifyGitInvocation — rebase --exec payload identity guard", () =>
         const args of [
           ["rebase", "--exec", payload, "main"],
           ["rebase", "-x", payload, "main"],
+          ["rebase", `-x${payload}`, "main"],
           ["rebase", `--exec=${payload}`, "main"],
           ["rebase", `-x=${payload}`, "main"],
           ["rebase", "main", "--exec", payload],
@@ -262,6 +263,7 @@ describe("classifyGitInvocation — rebase --exec payload identity guard", () =>
     expect(verdict(["rebase", "--exec", "make test", "main"]).verdict).toBe("pass");
     expect(verdict(["rebase", "-x", "bun test src/git", "main"]).verdict).toBe("pass");
     expect(verdict(["rebase", "--exec=make test", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "-xmake test", "main"]).verdict).toBe("pass");
     expect(verdict(["rebase", "main"]).verdict).toBe("pass");
     expect(verdict(["rebase", "--onto", "main", "feat"]).verdict).toBe("pass");
   });

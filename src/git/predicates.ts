@@ -141,6 +141,8 @@ function rebasePredicate(args: readonly string[]): string | null {
       ? arg.slice("--exec=".length)
       : arg.startsWith("-x=")
       ? arg.slice("-x=".length)
+      : arg.startsWith("-x") && arg.length > 2
+      ? arg.slice(2)
       : null;
     const payload = attached ?? (arg === "--exec" || arg === "-x" ? args[i + 1] : null);
     if (typeof payload === "string" && EXEC_IDENTITY_PATTERNS.some((re) => re.test(payload))) {
