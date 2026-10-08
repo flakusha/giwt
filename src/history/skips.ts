@@ -203,7 +203,8 @@ export function verifySkips(
     if (!exists) {
       return { record, justified: false, problem: `commit ${record.sha} is gone — unverifiable` };
     }
-    const diff = historyGit({ root: opts.root, args: ["diff-tree", "--root", "-p", "-r", record.sha] }).out;
+    const diff =
+      historyGit({ root: opts.root, args: ["diff-tree", "--root", "-p", "-r", record.sha] }).out;
     if (diff.trim() === "") return { record, justified: true };
     return {
       record,
