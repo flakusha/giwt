@@ -46,6 +46,9 @@
  *   allow = []               # extra subcommands treated as recoverable mutations
  *   deny = []                # extra subcommands refused outright (wins)
  *   classify = "builtin"     # reserved for the future 0-shot classifier seam
+ *   config_writes = "allow"  # allow|refuse — giwt's own lifecycle git-config
+ *                              writes (GPG signing, hooksPath, pull.ff);
+ *                              env GIWT_FORBID_CONFIG_WRITES=1 overrides
  *   [commands]
  *   check = "bun run check"    # finalize gate; --diff-base appended unless
  *                              # commands.diff_base = false
@@ -85,11 +88,8 @@ import { DEFAULT_TMP_OPTIONS } from "./tmpscan";
 /** Linearity policy for `giwt history audit` ([audit] linearity). */
 export type AuditLinearity = "auto" | "require-linear" | "allow-merges";
 
-const LINEARITY_MODES: Record<AuditLinearity, true> = {
-  "auto": true,
-  "require-linear": true,
-  "allow-merges": true,
-};
+/** Policy for giwt's own lifecycle git-config writes ([git] config_writes). */
+export type ConfigWritesMode = "allow" | "refuse";
 
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
@@ -117,7 +117,14 @@ export interface GiwtSettings {
   };
   tmp: { root: string; prefixes: string[]; maxAgeHours: number; };
   status: { aliases: Record<string, string>; };
-  git: { rtk: string; safe: string[]; allow: string[]; deny: string[]; classify: string; };
+  git: {
+    rtk: string;
+    safe: string[];
+    allow: string[];
+    deny: string[];
+    classify: string;
+    configWrites: ConfigWritesMode;
+  };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -149,10 +156,10 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     maxAgeHours: DEFAULT_TMP_OPTIONS.maxAgeHours,
   },
   status: { aliases: {} },
-  git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin" },
+  git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin", configWrites: "allow" },
 };
 
-import { checkType, EXPECTED, SCHEMA, type TomlValue } from "./settings-schema";
+import { checkEnumSettings, checkType, EXPECTED, SCHEMA, type TomlValue } from "./settings-schema";
 
 /**
  * Merge one parsed TOML document into `base`. Mutates nothing; unknown
@@ -249,13 +256,6 @@ export function loadSettings(repoRoot: string, paths: SettingsPaths = {}): GiwtS
   if (globalDoc) settings = mergeLayer(settings, globalDoc, globalPath);
   const localDoc = parseFile(localPath);
   if (localDoc) settings = mergeLayer(settings, localDoc, localPath);
-  // Enum gate: a wrong-typed linearity value must not reach the audit —
-  // checkType only sees "string", so the closed set is enforced here.
-  const linearity = settings.audit.linearity as string;
-  if (!(linearity in LINEARITY_MODES)) {
-    throw new Error(
-      `[audit] linearity: unknown value "${linearity}" (want auto | require-linear | allow-merges)`,
-    );
-  }
+  checkEnumSettings(settings);
   return settings;
 }

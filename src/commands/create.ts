@@ -9,6 +9,7 @@ import {
   linkWorktreeCredentials,
   type WorktreeConfig,
 } from "../utils/config";
+import { gitConfigSet } from "../utils/config-writes";
 import { reportMissingBranch } from "../utils/errors";
 import { gitSync, gitSyncQuiet, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
@@ -111,7 +112,11 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
   // Configure hooks
   const hooksDir = resolve(config.repoRoot, ".githooks");
   if (existsSync(hooksDir)) {
-    gitSync(wtPath, "config", "core.hooksPath", hooksDir);
+    gitConfigSet({
+      root: wtPath,
+      entries: [{ key: "core.hooksPath", value: hooksDir }],
+      reason: "hooksPath install (giwt create)",
+    });
     log("success", "hooks configured");
   }
 

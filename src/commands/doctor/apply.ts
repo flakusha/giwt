@@ -27,7 +27,8 @@ import { generatePackageJson } from "../../doctor/generators/package-json.ts";
 import { generatePrettier } from "../../doctor/generators/prettier.ts";
 import { generateRenovate } from "../../doctor/generators/renovate.ts";
 import type { DoctorOptions, GeneratedFile, ProjectReport } from "../../doctor/types.ts";
-import { gitSync, gitSyncQuiet } from "../../utils/git.ts";
+import { gitConfigSet } from "../../utils/config-writes.ts";
+import { gitSyncQuiet } from "../../utils/git.ts";
 import { log, raw } from "../../utils/output.ts";
 
 export function collectFiles(
@@ -139,10 +140,15 @@ export function applyGitConfig(
   // Linear history: pull.ff=only + branch.<current>.rebase=true
   if (!report.git.hasLinearHistoryConfig) {
     try {
-      gitSync(root, "config", "pull.ff", "only");
       const cur = gitSyncQuiet(root, "branch", "--show-current");
-      if (cur) gitSync(root, "config", `branch.${cur}.rebase`, "true");
-      log("info", "git config: pull.ff=only + branch.<current>.rebase=true");
+      gitConfigSet({
+        root,
+        entries: [
+          { key: "pull.ff", value: "only" },
+          ...(cur ? [{ key: `branch.${cur}.rebase`, value: "true" }] : []),
+        ],
+        reason: "linear history policy (doctor apply)",
+      });
     } catch (e) {
       log("warn", `git config failed: ${(e as Error).message}`);
     }
@@ -152,8 +158,11 @@ export function applyGitConfig(
   const hooksPath = join(root, ".githooks");
   if (existsSync(hooksPath)) {
     try {
-      gitSync(root, "config", "core.hooksPath", ".githooks");
-      log("info", "git config: core.hooksPath = .githooks");
+      gitConfigSet({
+        root,
+        entries: [{ key: "core.hooksPath", value: ".githooks" }],
+        reason: "hooksPath install (doctor apply)",
+      });
     } catch (e) {
       log("warn", `git config core.hooksPath failed: ${(e as Error).message}`);
     }

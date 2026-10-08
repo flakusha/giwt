@@ -4,7 +4,7 @@
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { branchToPath } from "../utils/config";
-import { gitSync } from "../utils/git";
+import { gitConfigSet } from "../utils/config-writes";
 import { assertGpgUnlocked } from "../utils/gpg";
 import { log, raw } from "../utils/output";
 
@@ -47,15 +47,25 @@ export async function execute(
 
   log("info", "Configuring GPG signing for worktree...");
 
-  gitSync(wtPath, "config", "commit.gpgsign", "true");
-  gitSync(wtPath, "config", "user.signingkey", config.agentGpgKeyId);
+  gitConfigSet({
+    root: wtPath,
+    entries: [
+      { key: "commit.gpgsign", value: "true" },
+      { key: "user.signingkey", value: config.agentGpgKeyId },
+    ],
+    reason: "gpg signing setup (giwt sign)",
+  });
 
   log("success", `GPG signing enabled (key: ${config.agentGpgKeyId.slice(0, 8)}...)`);
 
   // Configure hooks
   const hooksDir = resolve(config.repoRoot, ".githooks");
   if (existsSync(hooksDir)) {
-    gitSync(wtPath, "config", "core.hooksPath", hooksDir);
+    gitConfigSet({
+      root: wtPath,
+      entries: [{ key: "core.hooksPath", value: hooksDir }],
+      reason: "hooksPath install (giwt sign)",
+    });
     log("success", "hooks configured");
   }
 }

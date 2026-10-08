@@ -414,7 +414,7 @@ describe("doctor() setup mode", () => {
     } finally {
       first.restore();
     }
-    expect(first.text()).toContain("git config: pull.ff=only");
+    expect(first.text()).toContain("git config: pull.ff = only");
 
     const second = capture();
     try {
@@ -422,7 +422,7 @@ describe("doctor() setup mode", () => {
     } finally {
       second.restore();
     }
-    expect(second.text()).not.toContain("git config: pull.ff=only");
+    expect(second.text()).not.toContain("git config: pull.ff = only");
     expect(second.text()).toContain("git config: core.hooksPath = .githooks");
     expect(gitConfigRead(root, "pull.ff")).toBe("only");
   });
