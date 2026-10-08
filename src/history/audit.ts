@@ -16,9 +16,14 @@
  */
 
 import { type AuditLinearity } from "../utils/settings";
+import { renameInsensitiveDuplicates } from "./detectors/fingerprint";
 import { type CommitInfo, historyGit, targetPatchIds, walkRange } from "./patch-ids";
 
-export type FindingReason = "duplicate-patch-id" | "empty-commit" | "merge-in-range";
+export type FindingReason =
+  | "duplicate-patch-id"
+  | "duplicate-rename-insensitive"
+  | "empty-commit"
+  | "merge-in-range";
 
 export interface AuditFinding {
   reason: FindingReason;
@@ -128,12 +133,14 @@ const mergesInRange: Detector = ({ commits, effective }) =>
 /** Static registry — the seam later audit detectors append to. */
 export const DETECTORS: Record<FindingReason, Detector> = {
   "duplicate-patch-id": duplicatePatchIds,
+  "duplicate-rename-insensitive": renameInsensitiveDuplicates,
   "empty-commit": emptyCommits,
   "merge-in-range": mergesInRange,
 };
 
 const REASON_ORDER: Record<FindingReason, true> = {
   "duplicate-patch-id": true,
+  "duplicate-rename-insensitive": true,
   "empty-commit": true,
   "merge-in-range": true,
 };

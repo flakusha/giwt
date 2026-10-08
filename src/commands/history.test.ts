@@ -568,3 +568,262 @@ describe("history skips (command)", () => {
     expect(out).toContain("Usage: giwt history audit");
   });
 });
+
+describe("history audit rename-insensitive fingerprint detector", () => {
+  test("flags a replayed commit whose rename-normalized fingerprint matches target", async () => {
+    const { root, config } = makeRepo();
+    // Target: A adds file.txt with content "hello"
+    writeFileSync(join(root, "file.txt"), "hello\n");
+    git(root, ["add", "file.txt"]);
+    git(root, ["commit", "-qm", "add file.txt"]);
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-q", "target"]);
+    // Feature: B adds other.txt with same content (different path, same blob)
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    writeFileSync(join(root, "other.txt"), "hello\n");
+    git(root, ["add", "other.txt"]);
+    git(root, ["commit", "-qm", "add other.txt"]);
+    git(root, ["checkout", "-q", "main"]);
+
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], config);
+      const out = cap.collect();
+      expect(out).toContain("duplicate-rename-insensitive");
+      expect(out).toContain("add other.txt");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--json includes duplicate-rename-insensitive findings", async () => {
+    const { root, config } = makeRepo();
+    writeFileSync(join(root, "file.txt"), "hello\n");
+    git(root, ["add", "file.txt"]);
+    git(root, ["commit", "-qm", "add file.txt"]);
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-q", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    writeFileSync(join(root, "other.txt"), "hello\n");
+    git(root, ["add", "other.txt"]);
+    git(root, ["commit", "-qm", "add other.txt"]);
+    git(root, ["checkout", "-q", "main"]);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["audit", "feature", "--json"], config);
+      const report = JSON.parse(outSpy.mock.calls.map((a) => String(a[0])).join("")) as {
+        findings: Record<string, Array<{ sha: string; twins?: string[]; }>>;
+        exit: number;
+      };
+      expect(report.findings["duplicate-rename-insensitive"]).toHaveLength(1);
+      expect(report.findings["duplicate-rename-insensitive"]![0]!.twins).toHaveLength(1);
+      expect(report.exit).toBe(1);
+    } finally {
+      outSpy.mockRestore();
+    }
+  });
+
+  test("does not flag when patch-ids differ and fingerprints differ", async () => {
+    const { root, config } = makeRepo();
+    writeFileSync(join(root, "file.txt"), "hello\n");
+    git(root, ["add", "file.txt"]);
+    git(root, ["commit", "-qm", "add file.txt"]);
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-q", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    writeFileSync(join(root, "other.txt"), "world\n");
+    git(root, ["add", "other.txt"]);
+    git(root, ["commit", "-qm", "add other.txt"]);
+    git(root, ["checkout", "-q", "main"]);
+
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], config);
+      const out = cap.collect();
+      expect(out).not.toContain("duplicate-rename-insensitive");
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+});
+
+describe("history resurrected (command)", () => {
+  test("exits 1 on number-collision fixture", async () => {
+    const { root, config } = makeRepo();
+    mkdirSync(join(root, "migrations"), { recursive: true });
+    writeFileSync(
+      join(root, "migrations", "040_messages_idempotency_unique.ts"),
+      "export const x = 1;\n",
+    );
+    writeFileSync(join(root, "migrations", "040_other_name.ts"), "export const y = 2;\n");
+    git(root, ["add", "migrations"]);
+    git(root, ["commit", "-qm", "add migrations"]);
+
+    const cap = capture();
+    try {
+      await history(["resurrected", "migrations"], config);
+      const out = cap.collect();
+      expect(out).toContain("number-collision");
+      expect(out).toContain("040_messages_idempotency_unique.ts");
+      expect(out).toContain("040_other_name.ts");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("exits 0 on a clean directory", async () => {
+    const { root, config } = makeRepo();
+    mkdirSync(join(root, "clean"), { recursive: true });
+    writeFileSync(join(root, "clean", "001_first.ts"), "export const a = 1;\n");
+    writeFileSync(join(root, "clean", "002_second.ts"), "export const b = 2;\n");
+    git(root, ["add", "clean"]);
+    git(root, ["commit", "-qm", "add clean"]);
+
+    const cap = capture();
+    try {
+      await history(["resurrected", "clean"], config);
+      const out = cap.collect();
+      expect(out).toContain("No resurrected files found");
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("refuses when no directory is given", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history(["resurrected"], config));
+    expect(out).toContain("resurrected requires at least one directory");
+  });
+
+  test("--json outputs findings array", async () => {
+    const { root, config } = makeRepo();
+    mkdirSync(join(root, "migrations"), { recursive: true });
+    writeFileSync(join(root, "migrations", "040_a.ts"), "export const x = 1;\n");
+    writeFileSync(join(root, "migrations", "040_b.ts"), "export const y = 2;\n");
+    git(root, ["add", "migrations"]);
+    git(root, ["commit", "-qm", "add migrations"]);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["resurrected", "migrations", "--json"], config);
+      const payload = outSpy.mock.calls.map((a) => String(a[0])).join("");
+      const findings = JSON.parse(payload) as Array<
+        { detector: string; reason: string; paths: string[]; }
+      >;
+      expect(findings.length).toBeGreaterThan(0);
+      expect(findings[0]!.detector).toBe("resurrected");
+      expect(findings[0]!.reason).toBe("number-collision");
+    } finally {
+      outSpy.mockRestore();
+    }
+  });
+});
+
+describe("history weave (command)", () => {
+  test("flags a triplicated-line file, exits 1", async () => {
+    const { root, config } = makeRepo();
+    const triplicated = [
+      "function build() {",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  return callback;",
+      "}",
+    ].join("\n");
+    writeFileSync(join(root, "ui.ts"), triplicated);
+
+    const cap = capture();
+    try {
+      await history(["weave", "ui.ts"], config);
+      const out = cap.collect();
+      expect(out).toContain("repeated-lines");
+      expect(out).toContain("ui.ts");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("exits 0 on a normal file", async () => {
+    const { root, config } = makeRepo();
+    const normal = [
+      "function build() {",
+      "  const callback = (e) => e.target;",
+      "  return callback;",
+      "}",
+    ].join("\n");
+    writeFileSync(join(root, "clean.ts"), normal);
+
+    const cap = capture();
+    try {
+      await history(["weave", "clean.ts"], config);
+      const out = cap.collect();
+      expect(out).toContain("No weave damage found");
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("refuses when no file is given", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history(["weave"], config));
+    expect(out).toContain("weave requires at least one file");
+  });
+
+  test("--json outputs findings array", async () => {
+    const { root, config } = makeRepo();
+    const triplicated = [
+      "function build() {",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  return callback;",
+      "}",
+    ].join("\n");
+    writeFileSync(join(root, "ui.ts"), triplicated);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["weave", "ui.ts", "--json"], config);
+      const payload = outSpy.mock.calls.map((a) => String(a[0])).join("");
+      const findings = JSON.parse(payload) as Array<
+        { detector: string; reason: string; paths: string[]; }
+      >;
+      expect(findings.length).toBeGreaterThan(0);
+      expect(findings[0]!.detector).toBe("weave");
+      expect(findings[0]!.reason).toBe("repeated-lines");
+    } finally {
+      outSpy.mockRestore();
+    }
+  });
+
+  test("--baseline flag is accepted", async () => {
+    const { root, config } = makeRepo();
+    const normal = [
+      "function build() {",
+      "  const callback = (e) => e.target;",
+      "  return callback;",
+      "}",
+    ].join("\n");
+    writeFileSync(join(root, "clean.ts"), normal);
+    git(root, ["add", "clean.ts"]);
+    git(root, ["commit", "-qm", "add clean.ts"]);
+
+    const cap = capture();
+    try {
+      await history(["weave", "clean.ts", "--baseline", "HEAD"], config);
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+});

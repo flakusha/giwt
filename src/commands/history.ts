@@ -4,12 +4,15 @@
 /**
  * `giwt history` — pre-rebase history tooling.
  *
- *   audit [<branch>] [--onto <ref>]  shape + suspicious-commit inventory
- *   skips [--vs <ref>]              rebase skip ledger readback (+verify)
+ *   audit [<branch>] [--onto <ref>]           shape + suspicious-commit inventory
+ *   skips [--vs <ref>]                        rebase skip ledger readback (+verify)
+ *   resurrected <dir>…                        scan for resurrected files (number collisions + content twins)
+ *   weave <file>… [--baseline <ref>]         scan for weave damage (repeated lines, orphaned blocks, brace anomalies)
  *
  * Gate semantics: audit exits 1 when suspicious commits are found;
  * skips --vs exits 1 when any dropped commit's justification cannot be
- * verified. Both use process.exitCode (never process.exit) so piped
+ * verified; resurrected and weave exit 1 when findings exist.
+ * All use process.exitCode (never process.exit) so piped
  * --json output is never truncated.
  */
 
@@ -30,9 +33,11 @@ import type { WorktreeConfig } from "../utils/config";
 import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit";
 import { gitSyncQuiet } from "../utils/git";
 import { log, raw } from "../utils/output";
+import { runResurrected, runWeave } from "./history-detectors";
 
 const REASON_LABELS: Record<FindingReason, string> = {
   "duplicate-patch-id": "patch-id already in target history",
+  "duplicate-rename-insensitive": "rename-insensitive fingerprint match in target",
   "empty-commit": "no diff against parent",
   "merge-in-range": "merge commit in a linear-only range",
 };
@@ -46,6 +51,8 @@ const DETECTED_LABELS: Record<string, string> = {
 const USAGE_LINES = [
   "  Usage: giwt history audit [<branch>] [--onto <ref>] [--json|--toml|--emoji]",
   "         giwt history skips [--vs <ref>] [--json|--toml|--emoji]",
+  "         giwt history resurrected <dir>… [--json|--toml|--emoji]",
+  "         giwt history weave <file>… [--baseline <ref-or-file>] [--json|--toml|--emoji]",
 ];
 
 function usageError(message: string): never {
@@ -220,11 +227,15 @@ export async function history(
 ): Promise<void> {
   const { format, rest } = parseOutFlags(args);
   const subcommand = rest[0];
-  if (subcommand === "audit" || subcommand === "skips") {
+  if (
+    subcommand === "audit" || subcommand === "skips" || subcommand === "resurrected"
+    || subcommand === "weave"
+  ) {
     rest.shift();
-    return subcommand === "audit"
-      ? runAudit(rest, config, format)
-      : runSkips(rest, config, format);
+    if (subcommand === "audit") return runAudit(rest, config, format);
+    if (subcommand === "skips") return runSkips(rest, config, format);
+    if (subcommand === "resurrected") return runResurrected(rest, config, format);
+    return runWeave(rest, config, format);
   }
   if (subcommand !== undefined) usageError(`unknown subcommand '${subcommand}'`);
   usageError("a subcommand is required");

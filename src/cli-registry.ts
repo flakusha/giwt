@@ -145,7 +145,7 @@ export const commands: Record<string, CommandHandler> = {
   },
   "history": {
     description:
-      "Pre-rebase history tooling: `audit` classifies shape and flags suspicious commits, `skips` reads back the rebase skip ledger",
+      "Pre-rebase history tooling: `audit` classifies shape and flags suspicious commits (incl. rename-insensitive duplicates), `skips` reads back the rebase skip ledger, `resurrected` scans for resurrected files, `weave` scans for weave damage",
     run: history,
   },
   "issues": {
