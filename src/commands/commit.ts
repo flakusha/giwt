@@ -5,6 +5,8 @@
  * Commit command — GPG-signed commit on current branch
  */
 
+import { existsSync } from "fs";
+import { resolve } from "path";
 import { assertAuthorMatchesCommitter } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
 import {
@@ -24,6 +26,19 @@ export async function commit(
 ): Promise<void> {
   const onProtected = args.includes("--on-protected");
   const noVerify = args.includes("--no-verify");
+
+  // Block --no-verify when the repo has an identity gate installed.
+  // The gate is the last-line check for commit-identity fabrication;
+  // bypassing it with --no-verify would let a fabricated identity through.
+  if (noVerify && existsSync(resolve(config.repoRoot, ".githooks", "identity-gate.sh"))) {
+    log(
+      "error",
+      "--no-verify blocked: this repo has a commit-identity gate (.githooks/identity-gate.sh)",
+    );
+    raw("  The identity gate is the last-line check for commit-identity fabrication.");
+    raw("  Commits must run through it — remove the gate first if you truly need to bypass.");
+    process.exit(1);
+  }
   const { rest, message: messageInput } = await extractMessageInput(
     args.filter((a) =>
       a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"
@@ -108,7 +123,7 @@ export async function commit(
 
   log("info", `Creating GPG-signed commit on '${currentBranch}'...`);
   raw(`  Author:    ${authorName} <${authorEmail}>`);
-  raw(`  Committer: ${config.agentGpgName} <${config.agentGpgEmail}>`);
+  raw(`  Committer: ${authorName} <${authorEmail}> (from repo config)`);
   raw(`  GPG Key:   ${config.agentGpgKeyId.slice(0, 8)}...`);
   raw(`  Message:   ${message.split("\n")[0]}`);
 
@@ -134,11 +149,7 @@ export async function commit(
     {
       stdout: "pipe",
       stderr: "pipe",
-      env: {
-        ...isolatedGitEnv(),
-        GIT_COMMITTER_NAME: config.agentGpgName,
-        GIT_COMMITTER_EMAIL: config.agentGpgEmail,
-      },
+      env: isolatedGitEnv(),
     },
   );
 

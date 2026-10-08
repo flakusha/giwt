@@ -22,6 +22,17 @@ export async function commitWt(
 ): Promise<void> {
   const onProtected = args.includes("--on-protected");
   const noVerify = args.includes("--no-verify");
+
+  // Block --no-verify when the repo has an identity gate installed.
+  if (noVerify && existsSync(resolve(config.repoRoot, ".githooks", "identity-gate.sh"))) {
+    log(
+      "error",
+      "--no-verify blocked: this repo has a commit-identity gate (.githooks/identity-gate.sh)",
+    );
+    raw("  The identity gate is the last-line check for commit-identity fabrication.");
+    raw("  Commits must run through it — remove the gate first if you truly need to bypass.");
+    process.exit(1);
+  }
   const { rest, message: messageInput } = await extractMessageInput(
     args.filter((a) =>
       a !== "--on-protected" && a !== "--no-verify" && a !== "--allow-author-override"
@@ -137,7 +148,7 @@ export async function commitWt(
 
   log("info", `Creating GPG-signed commit in '${branch}'...`);
   raw(`  Author:    ${authorName} <${authorEmail}>`);
-  raw(`  Committer: ${credentials.name} <${credentials.email}>`);
+  raw(`  Committer: ${authorName} <${authorEmail}> (from repo config)`);
   raw(`  GPG Key:   ${credentials.keyId.slice(0, 8)}...`);
   raw(`  Message:   ${message.split("\n")[0]}`);
 
@@ -163,11 +174,7 @@ export async function commitWt(
   const result = Bun.spawnSync(commitArgs, {
     stdout: "pipe",
     stderr: "pipe",
-    env: {
-      ...isolatedGitEnv(),
-      GIT_COMMITTER_NAME: credentials.name,
-      GIT_COMMITTER_EMAIL: credentials.email,
-    },
+    env: isolatedGitEnv(),
   });
 
   if (result.exitCode !== 0) {

@@ -284,6 +284,85 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     }
   });
 
+  test("does not set GIT_COMMITTER_NAME/EMAIL env (committer resolves from repo config)", async () => {
+    const chunks: string[] = [];
+    const push = (c: unknown): boolean => {
+      chunks.push(String(c));
+      return true;
+    };
+    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const real = Bun.spawnSync;
+    const capturedEnvs: Record<string, string>[] = [];
+    const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
+    Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
+      if (cmd[0] === "gpg") return ok();
+      if (cmd[0] === "git" && cmd.includes("commit") && cmd.includes("-S")) {
+        const env = (opts as { env?: Record<string, string>; })?.env ?? {};
+        capturedEnvs.push(env);
+        return ok();
+      }
+      if (cmd[0] === "git" && cmd.includes("--show-signature")) {
+        return {
+          exitCode: 0,
+          stdout: Buffer.from("commit deadbeef\nGood signature\n"),
+          stderr: Buffer.from(""),
+        };
+      }
+      if (cmd[0] === "git" && cmd.includes("verify-commit")) return ok();
+      return real(cmd as never, opts as never);
+    }) as unknown as typeof Bun.spawnSync;
+    try {
+      await commit(["--on-protected", "fix(x): direct"], config);
+      expect(capturedEnvs.length).toBe(1);
+      expect(capturedEnvs[0]?.["GIT_COMMITTER_NAME"]).toBeUndefined();
+      expect(capturedEnvs[0]?.["GIT_COMMITTER_EMAIL"]).toBeUndefined();
+    } finally {
+      Bun.spawnSync = real;
+      o.mockRestore();
+      e.mockRestore();
+    }
+  });
+
+  test("committer log line reflects the resolved repo-config identity", async () => {
+    const chunks: string[] = [];
+    const push = (c: unknown): boolean => {
+      chunks.push(String(c));
+      return true;
+    };
+    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const real = Bun.spawnSync;
+    const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
+    Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
+      if (cmd[0] === "gpg") return ok();
+      if (cmd[0] === "git" && cmd.includes("commit") && cmd.includes("-S")) return ok();
+      if (cmd[0] === "git" && cmd.includes("verify-commit")) return ok();
+      return real(cmd as never, opts as never);
+    }) as unknown as typeof Bun.spawnSync;
+    try {
+      await commit(["--on-protected", "fix(x): direct"], config);
+      const out = chunks.join("");
+      expect(out).toContain("Committer: giwt test <test@giwt.local> (from repo config)");
+      expect(out).not.toContain("Committer: t <");
+    } finally {
+      Bun.spawnSync = real;
+      o.mockRestore();
+      e.mockRestore();
+    }
+  });
+
+  test("blocks --no-verify when identity gate is present", async () => {
+    const gateDir = join(root, ".githooks");
+    mkdirSync(gateDir, { recursive: true });
+    writeFileSync(join(gateDir, "identity-gate.sh"), "#!/bin/sh\n# fake gate\n");
+    const out = await expectExit1(() =>
+      commit(["--on-protected", "--no-verify", "fix(x): direct"], credConfig())
+    );
+    expect(out).toContain("--no-verify blocked");
+    expect(out).toContain("identity-gate.sh");
+  });
+
   test("creates a signed commit on the protected branch with --on-protected", async () => {
     const chunks: string[] = [];
     const push = (c: unknown): boolean => {
