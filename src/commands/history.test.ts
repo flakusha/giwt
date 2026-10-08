@@ -207,6 +207,12 @@ describe("history audit (command)", () => {
     expect(out).toContain("--onto requires a ref");
   });
 
+  test("a second positional refuses as unexpected", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history(["audit", "feature", "extra"], config));
+    expect(out).toContain("unexpected argument 'extra'");
+  });
+
   test("audits the current branch when no positional is given; detached HEAD refuses", async () => {
     const { root, config } = makeRepo();
     git(root, ["branch", "target"]);
@@ -358,6 +364,18 @@ describe("history skips (command)", () => {
       expect(process.exitCode).toBe(0);
     } finally {
       cap.restore();
+    }
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      process.exitCode = 0;
+      await history(["skips", "--emoji"], config);
+      const lines = outSpy.mock.calls.map((a) => String(a[0])).join("");
+      expect(lines).toContain("first empty");
+      expect(lines).toContain("second empty");
+    } finally {
+      outSpy.mockRestore();
     }
   });
 
