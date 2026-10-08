@@ -35,7 +35,7 @@ Total tickets: **122** — untagged: **46** — unbound to epic: **109**
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| git | 16 | 14 | 0 | 0 | 0 | 0 | 2 |
+| git | 16 | 16 | 0 | 0 | 0 | 0 | 0 |
 | githooks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gpg | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
@@ -51,7 +51,7 @@ Total tickets: **122** — untagged: **46** — unbound to epic: **109**
 | memory | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | merge | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | migration | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| migrations | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| migrations | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | naming | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | observability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | output | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -60,7 +60,7 @@ Total tickets: **122** — untagged: **46** — unbound to epic: **109**
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | policy | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| rebase | 9 | 7 | 0 | 0 | 0 | 0 | 2 |
+| rebase | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reconcile-conflicts | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | reliability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -85,7 +85,7 @@ Total tickets: **122** — untagged: **46** — unbound to epic: **109**
 | timeout | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | validate | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| weave | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| weave | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | worktree | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | (untagged) | 46 | 46 | 0 | 0 | 0 | 0 | 0 |
@@ -99,7 +99,7 @@ Total tickets: **122** — untagged: **46** — unbound to epic: **109**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 109 | 106 | 0 | 0 | 0 | 0 | 3 |
+| (unbound) | 109 | 109 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

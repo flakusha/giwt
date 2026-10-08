@@ -3,7 +3,7 @@
 
 # FEAT: weave damage scan: duplicated and orphaned blocks are structurally silent
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** rebase, weave
@@ -44,6 +44,7 @@ Acceptance:
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-08T08:48:04.161Z Merged feat/audit-detectors (83bb11d) + wiring (2c8d0a0). Standalone gate: giwt history weave file... [--baseline ref-or-file]

@@ -405,7 +405,7 @@
       "rebase"
     ],
     "source": ".plan/tickets/BUG-patch-id-duplicate-detection-is-defeated-by-a-rename-between.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-REBASE-DEFAULT-TARGET-IS-THE-ROOT-BRANCH-WHICH-IS-ALSO-PROTE": {
     "hash": "87eaed2",
@@ -780,7 +780,7 @@
       "migrations"
     ],
     "source": ".plan/tickets/FEAT-detect-resurrected-files-identical-content-living-under-two-.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-DOCS-LIST-SHOW-SEARCH-TOML-AND-EMOJI-OUTPUT-PARITY": {
     "hash": "7323f1b",
@@ -1270,7 +1270,7 @@
       "weave"
     ],
     "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-ZERO-SHOT-COMMAND-CLASSIFIER-SEAM-PREPARE-ONLY": {
     "hash": "bcdd0eb",

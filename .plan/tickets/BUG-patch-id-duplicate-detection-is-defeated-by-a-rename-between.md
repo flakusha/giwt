@@ -3,7 +3,7 @@
 
 # BUG: patch-id duplicate detection is defeated by a rename between two identical commits
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** critical
 **Effort:** Medium
 **Tags:** git, rebase
@@ -39,6 +39,7 @@ Acceptance:
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-08T08:47:47.548Z Merged feat/audit-detectors (83bb11d) + wiring (2c8d0a0). Fingerprint detector flags rename-insensitive duplicates in history audit as duplicate-rename-insensitive.

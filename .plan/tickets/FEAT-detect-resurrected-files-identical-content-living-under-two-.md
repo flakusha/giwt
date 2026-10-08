@@ -3,7 +3,7 @@
 
 # FEAT: detect resurrected files: identical content living under two paths after a rename
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** git, migrations
@@ -42,6 +42,7 @@ Acceptance:
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-08T08:47:55.619Z Merged feat/audit-detectors (83bb11d) + wiring (2c8d0a0). Standalone gate: giwt history resurrected dir...
