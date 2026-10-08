@@ -395,4 +395,29 @@ describe("findAppliedDuplicates", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("tolerant match returns null when kind counts differ", () => {
+    const root = makeRepo();
+    try {
+      write(root, "base.txt", "base\n");
+      commitAll(root, "base");
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(root, "migrations/040_x.ts", MIGRATION_040);
+      commitAll(root, "A: add 040");
+      git(root, ["checkout", "-qb", "topic"]);
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(root, "migrations/045_x.ts", "// Migration: 045_x\nCREATE UNIQUE INDEX uq2 ON m(k);\n");
+      write(root, "migrations/046_x.ts", "// Migration: 046_x\nCREATE UNIQUE INDEX uq3 ON m(k);\n");
+      commitAll(root, "A: add 045 and 046");
+
+      const matches = findAppliedDuplicates({
+        repoRoot: root,
+        candidate: "topic",
+        target: "master",
+      });
+      expect(matches).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
