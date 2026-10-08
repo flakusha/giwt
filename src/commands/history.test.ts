@@ -157,9 +157,88 @@ describe("history audit (command)", () => {
       expect(out).toContain("duplicate-patch-id (1)");
       expect(out).toContain("empty-commit (1)");
       expect(out).toContain("shared change again");
+      expect(out).toContain("twin");
       expect(process.exitCode).toBe(1);
     } finally {
       cap.restore();
+    }
+  });
+
+  test("human output prints the explicit truncation notice when capped", async () => {
+    const { root, config } = makeRepo();
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    for (let i = 1; i <= 3; i++) git(root, ["commit", "-q", "--allow-empty", "-m", `empty ${i}`]);
+    git(root, ["checkout", "-q", "main"]);
+    const capped = {
+      ...config,
+      settings: { ...config.settings, audit: { ...DEFAULT_SETTINGS.audit, maxFindings: 2 } },
+    };
+
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], capped);
+      expect(cap.collect()).toContain("1 more findings not shown (raise [audit] max_findings)");
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--onto=<ref> equals-form is accepted", async () => {
+    const { root, config } = makeRepo();
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    commit(root, "feat.txt", "fresh work");
+    git(root, ["checkout", "-q", "main"]);
+
+    const cap = capture();
+    try {
+      await history(["audit", "feature", "--onto=target"], config);
+      expect(cap.collect()).toContain("History audit: feature vs target");
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--onto without a value refuses", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history(["audit", "feature", "--onto"], config));
+    expect(out).toContain("--onto requires a ref");
+  });
+
+  test("audits the current branch when no positional is given; detached HEAD refuses", async () => {
+    const { root, config } = makeRepo();
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    commit(root, "feat.txt", "fresh work");
+
+    const cap = capture();
+    try {
+      await history(["audit"], config);
+      expect(cap.collect()).toContain("History audit: feature vs target");
+    } finally {
+      cap.restore();
+    }
+
+    git(root, ["checkout", "-q", "--detach", "main"]);
+    const out = await runExpectExit1(() => history(["audit"], config));
+    expect(out).toContain("no branch given and HEAD is detached");
+    git(root, ["checkout", "-q", "feature"]);
+  });
+
+  test("--emoji renders one line per report via the mapper", async () => {
+    const { root, config } = makeRepo();
+    makeSuspicious(root);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["audit", "feature", "--emoji"], config);
+      const line = outSpy.mock.calls.map((a) => String(a[0])).join("").trim();
+      expect(line).toContain("⚠️ target..feature: 2 finding(s)");
+    } finally {
+      outSpy.mockRestore();
     }
   });
 
@@ -383,5 +462,91 @@ describe("history skips (command)", () => {
     } finally {
       cap.restore();
     }
+  });
+
+  test("--vs=<ref> equals-form works; --json/--emoji comparison records carry the verdict", async () => {
+    const { root, config } = makeRepo();
+    // A real empty commit (justified) + a planted non-duplicate (flagged).
+    git(root, ["branch", "target"]);
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    git(root, ["commit", "-q", "--allow-empty", "-m", "empty marker"]);
+    const emptySha = git(root, ["rev-list", "-n", "1", "HEAD"]).trim();
+    commit(root, "feature.txt", "feature work");
+    const realSha = git(root, ["rev-list", "-n", "1", "HEAD"]).trim();
+    const pid = Bun.spawnSync(
+      ["git", "-C", root, "show", realSha, "--format=", "-p"],
+      { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
+    );
+    const pidOut = Bun.spawnSync(
+      ["git", "-C", root, "patch-id", "--stable"],
+      {
+        stdin: new TextEncoder().encode(pid.stdout.toString()),
+        stdout: "pipe",
+        stderr: "pipe",
+        env: isolatedGitEnv(),
+      },
+    );
+    const patchId = pidOut.stdout.toString().trim().split(/\s+/)[0]!;
+    git(root, ["checkout", "-q", "main"]);
+    plantLedger(config, [
+      plantedRecord({
+        sha: emptySha,
+        patchId: null,
+        subject: "empty marker",
+        reason: { detected: "empty" },
+      }),
+      plantedRecord({
+        sha: realSha,
+        patchId,
+        subject: "feature work",
+        reason: { detected: "duplicate" },
+      }),
+    ]);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["skips", "--vs=main", "--json"], config);
+      const verdicts = JSON.parse(outSpy.mock.calls.map((a) => String(a[0])).join("")) as Array<
+        { subject: string; justified: boolean; twin?: string; problem?: string; }
+      >;
+      expect(verdicts).toHaveLength(2);
+      expect(verdicts[0]!.subject).toBe("empty marker");
+      expect(verdicts[0]!.justified).toBe(true);
+      expect(verdicts[1]!.subject).toBe("feature work");
+      expect(verdicts[1]!.justified).toBe(false);
+      expect(verdicts[1]!.problem).toContain("probable real-work loss");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      outSpy.mockRestore();
+    }
+
+    const outSpy2 = spyOn(process.stdout, "write");
+    outSpy2.mockImplementation(() => true);
+    try {
+      process.exitCode = 0;
+      await history(["skips", "--vs=main", "--emoji"], config);
+      const lines = outSpy2.mock.calls.map((a) => String(a[0])).join("");
+      expect(lines).toContain("✅");
+      expect(lines).toContain("🚨");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      outSpy2.mockRestore();
+    }
+  });
+
+  test("skips unknown flag and --vs without a value refuse with the usage lines", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history(["skips", "--vs"], config));
+    expect(out).toContain("--vs requires a ref");
+    const out2 = await runExpectExit1(() => history(["skips", "--bogus"], config));
+    expect(out2).toContain("unknown flag '--bogus'");
+  });
+
+  test("no subcommand refuses with the usage lines", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() => history([], config));
+    expect(out).toContain("a subcommand is required");
+    expect(out).toContain("Usage: giwt history audit");
   });
 });

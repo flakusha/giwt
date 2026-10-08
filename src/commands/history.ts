@@ -126,7 +126,7 @@ async function runAudit(rest: string[], config: WorktreeConfig, format: OutForma
         const r = rec as AuditReport;
         const count = r.findingsTotal
           ?? Object.values(r.findings).reduce((sum, list) => sum + list.length, 0);
-        return `${r.shape.verdict === "linear" ? "✅" : "⚠️"} ${r.range}: ${count} finding(s)`;
+        return `${count > 0 ? "⚠️" : "✅"} ${r.range}: ${count} finding(s)`;
       },
     }));
   } else {

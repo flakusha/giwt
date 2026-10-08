@@ -217,4 +217,23 @@ describe("verifySkips comparison mode", () => {
     expect(verdicts[0]!.justified).toBe(false);
     expect(verdicts[0]!.problem).toContain("gone");
   });
+
+  test("an empty-classified skip whose object is NOT empty is flagged", () => {
+    const { root } = makeRepo();
+    git(root, ["checkout", "-qb", "feature", "main"]);
+    commit(root, "feature.txt", "real work");
+    const sha = git(root, ["rev-list", "-n", "1", "HEAD"]).trim();
+    git(root, ["checkout", "-q", "main"]);
+
+    const verdicts = verifySkips({
+      root,
+      // Misclassified on purpose: the object exists and diffs non-empty.
+      records: [
+        record({ sha, patchId: null, subject: "real work", reason: { detected: "empty" } }),
+      ],
+      vs: "main",
+    });
+    expect(verdicts[0]!.justified).toBe(false);
+    expect(verdicts[0]!.problem).toContain("is not empty");
+  });
 });
