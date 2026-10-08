@@ -230,6 +230,51 @@ describe("classifyGitInvocation — destructive and gpg blocks", () => {
   });
 });
 
+describe("classifyGitInvocation — rebase --exec payload identity guard", () => {
+  const PAYLOADS = [
+    "export GIT_AUTHOR_NAME=Evil; git commit --amend --no-edit",
+    "export git_committer_email=evil@x; git commit --amend --no-edit",
+    "git -c user.name=Evil commit --amend --no-edit",
+    "git -c user.email=evil@x commit --amend --no-edit",
+    "git commit --amend --no-edit --author=Evil <e@evil>",
+  ];
+
+  test("identity-override payloads are refused in every --exec/-x shape", () => {
+    for (const payload of PAYLOADS) {
+      for (
+        const args of [
+          ["rebase", "--exec", payload, "main"],
+          ["rebase", "-x", payload, "main"],
+          ["rebase", `-x${payload}`, "main"],
+          ["rebase", `--exec=${payload}`, "main"],
+          ["rebase", `-x=${payload}`, "main"],
+          ["rebase", "main", "--exec", payload],
+          ["rebase", "--exec", `'${payload}'`, "main"],
+        ]
+      ) {
+        const v = verdict(args);
+        expect(v.verdict, args.join(" ")).toBe("block");
+        expect(v.reason).toContain("--exec");
+      }
+    }
+  });
+
+  test("benign and absent payloads still pass", () => {
+    expect(verdict(["rebase", "--exec", "make test", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "-x", "bun test src/git", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "--exec=make test", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "-xmake test", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "main"]).verdict).toBe("pass");
+    expect(verdict(["rebase", "--onto", "main", "feat"]).verdict).toBe("pass");
+  });
+
+  test("existing rebase refusals still hold", () => {
+    expect(verdict(["rebase", "--abort"]).verdict).toBe("block");
+    expect(verdict(["rebase", "-i", "main"]).verdict).toBe("block");
+    expect(verdict(["rebase", "--interactive", "main"]).verdict).toBe("block");
+  });
+});
+
 describe("classifyGitInvocation — err-closed unknowns", () => {
   test("unknown subcommand blocks with hint", () => {
     const v = verdict(["frobnicate"]);
