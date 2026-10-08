@@ -195,13 +195,15 @@ export function verifySkips(
     }
     // Empty skip: justification is the emptiness itself, re-checked
     // against the original object (reachable via the recorded preHead).
-    const exists = historyGit(opts.root, ["cat-file", "-e", `${record.sha}^{commit}`], {
+    const exists = historyGit({
+      root: opts.root,
+      args: ["cat-file", "-e", `${record.sha}^{commit}`],
       okCodes: [128],
     }).code === 0;
     if (!exists) {
       return { record, justified: false, problem: `commit ${record.sha} is gone — unverifiable` };
     }
-    const diff = historyGit(opts.root, ["diff-tree", "--root", "-p", "-r", record.sha]).out;
+    const diff = historyGit({ root: opts.root, args: ["diff-tree", "--root", "-p", "-r", record.sha] }).out;
     if (diff.trim() === "") return { record, justified: true };
     return {
       record,

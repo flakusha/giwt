@@ -139,19 +139,23 @@ const REASON_ORDER: Record<FindingReason, true> = {
 };
 
 export function verifyRef(root: string, ref: string): void {
-  historyGit(root, ["rev-parse", "--verify", `${ref}^{commit}`], { okCodes: [] });
+  historyGit({ root, args: ["rev-parse", "--verify", `${ref}^{commit}`], okCodes: [] });
 }
 
 /** All merge bases of the two refs (criss-cross ⇒ more than one). */
-function mergeBases(root: string, onto: string, branch: string): string[] {
+function mergeBases({ root, onto, branch }: {
+  root: string;
+  onto: string;
+  branch: string;
+}): string[] {
   // Exit 1 with empty output = no common ancestor (unrelated histories).
-  return historyGit(root, ["merge-base", "--all", onto, branch], { okCodes: [1] })
+  return historyGit({ root, args: ["merge-base", "--all", onto, branch], okCodes: [1] })
     .out.split("\n").map((l) => l.trim()).filter(Boolean);
 }
 
 /** True when the target's own history contains merge commits. */
 function targetHasMerges(root: string, onto: string): boolean {
-  return historyGit(root, ["rev-list", "--merges", "-n", "1", onto]).out.trim() !== "";
+  return historyGit({ root, args: ["rev-list", "--merges", "-n", "1", onto] }).out.trim() !== "";
 }
 
 /**
@@ -174,7 +178,7 @@ export function auditHistory(
   verifyRef(root, onto);
 
   const commits = walkRange({ root, range: `${onto}..${branch}` });
-  const bases = mergeBases(root, onto, branch);
+  const bases = mergeBases({ root, onto, branch });
   const merges = commits.filter((c) => c.parents.length > 1);
   const octopus = merges.filter((c) => c.parents.length > 2).length;
   const effective = opts.linearity === "auto"

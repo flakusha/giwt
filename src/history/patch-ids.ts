@@ -31,20 +31,28 @@ export interface CommitInfo {
 }
 
 /** Run git in `root`; throws with stderr when the exit is unexpected. */
-export function historyGit(
-  root: string,
-  args: string[],
-  opts: { input?: string; okCodes?: number[]; } = {},
-): { out: string; code: number; err: string; } {
+export function historyGit({
+  root,
+  args,
+  input,
+  okCodes,
+}: {
+  root: string;
+  args: string[];
+  /** Stdin payload (batch plumbing); omitted = "ignore". */
+  input?: string;
+  /** Non-zero exits that are legitimate results, not failures. */
+  okCodes?: number[];
+}): { out: string; code: number; err: string; } {
   const result = Bun.spawnSync(["git", "-C", root, ...args], {
     stdout: "pipe",
     stderr: "pipe",
-    stdin: opts.input === undefined ? "ignore" : new TextEncoder().encode(opts.input),
+    stdin: input === undefined ? "ignore" : new TextEncoder().encode(input),
     env: isolatedGitEnv(),
   });
   const out = result.stdout.toString();
   const err = result.stderr.toString();
-  if (result.exitCode !== 0 && !(opts.okCodes ?? []).includes(result.exitCode)) {
+  if (result.exitCode !== 0 && !(okCodes ?? []).includes(result.exitCode)) {
     throw new Error(`git ${args.join(" ")} failed: ${err.trim() || out.trim()}`);
   }
   return { out, code: result.exitCode, err };
@@ -63,10 +71,12 @@ function parsePatchIds(out: string): Map<string, string> {
 /** Stable patch-ids for a set of commits, one `diff-tree` batch. */
 export function batchPatchIds(root: string, shas: string[]): Map<string, string> {
   if (shas.length === 0) return new Map();
-  const patch = historyGit(root, ["diff-tree", "--stdin", "-p", "--root", "-r"], {
+  const patch = historyGit({
+    root,
+    args: ["diff-tree", "--stdin", "-p", "--root", "-r"],
     input: `${shas.join("\n")}\n`,
   });
-  return parsePatchIds(historyGit(root, ["patch-id", "--stable"], { input: patch.out }).out);
+  return parsePatchIds(historyGit({ root, args: ["patch-id", "--stable"], input: patch.out }).out);
 }
 
 /**
@@ -79,14 +89,17 @@ export function walkRange(
   opts: { root: string; range: string; noMerges?: boolean; withPatchIds?: boolean; },
 ): CommitInfo[] {
   const { root, range } = opts;
-  const log = historyGit(root, [
-    "log",
-    "--topo-order",
-    "--reverse",
-    ...(opts.noMerges ? ["--no-merges"] : []),
-    "--format=%H%x1f%P%x1f%s",
-    range,
-  ]).out;
+  const log = historyGit({
+    root,
+    args: [
+      "log",
+      "--topo-order",
+      "--reverse",
+      ...(opts.noMerges ? ["--no-merges"] : []),
+      "--format=%H%x1f%P%x1f%s",
+      range,
+    ],
+  }).out;
   const commits: CommitInfo[] = [];
   for (const line of log.split("\n")) {
     if (line === "") continue;
@@ -114,8 +127,10 @@ export function walkRange(
  * (non-merge commits only; merges carry no patch of their own).
  */
 export function targetPatchIds(root: string, ref: string): Map<string, string[]> {
-  const shas = historyGit(root, ["rev-list", "--no-merges", "--topo-order", "--reverse", ref])
-    .out.split("\n").map((l) => l.trim()).filter(Boolean);
+  const shas = historyGit({
+    root,
+    args: ["rev-list", "--no-merges", "--topo-order", "--reverse", ref],
+  }).out.split("\n").map((l) => l.trim()).filter(Boolean);
   const byPid = new Map<string, string[]>();
   for (const [sha, pid] of batchPatchIds(root, shas)) {
     const twins = byPid.get(pid);
