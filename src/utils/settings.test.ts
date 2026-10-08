@@ -303,4 +303,58 @@ describe("loadSettings", () => {
       fx.cleanup();
     }
   });
+
+  test("[audit] keys parse and default to auto/true/200", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        fx.localPath,
+        `[audit]\nlinearity = "allow-merges"\npatch_ids = false\nmax_findings = 50\n`,
+      );
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.audit).toEqual({ linearity: "allow-merges", patchIds: false, maxFindings: 50 });
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[audit] unknown key warns and is ignored", () => {
+    const fx = makeFixture();
+    try {
+      const errSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+      writeFileSync(fx.localPath, `[audit]\nstrictness = "max"\n`);
+      try {
+        const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+        expect(s.audit).toEqual(DEFAULT_SETTINGS.audit);
+        const warned = errSpy.mock.calls.map((args) => String(args[0])).join("");
+        expect(warned).toContain("unknown key audit.strictness");
+      } finally {
+        errSpy.mockRestore();
+      }
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[audit] wrong type throws naming file and key", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[audit]\npatch_ids = "yes"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/audit.patch_ids must be boolean/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[audit] linearity outside the enum hard-errors naming the value", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[audit]\nlinearity = "sometimes"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/linearity: unknown value "sometimes"/);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });

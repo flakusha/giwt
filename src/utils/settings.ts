@@ -55,6 +55,10 @@
  *                              # (1 = serial; agents run concurrent check trees)
  *   timeout_ms = 120000       # per-check subprocess budget; over it the
  *                             # child is killed and the check reports an error
+ *   [audit]                  # `giwt history audit` pre-rebase history audit
+ *   linearity = "auto"      # auto | require-linear | allow-merges
+ *   patch_ids = true         # batch `git patch-id --stable` duplicate detection
+ *   max_findings = 200       # findings cap; truncation carries an explicit notice
  *   [runlog]
  *   max_runs = 200
  *   [output]
@@ -78,6 +82,15 @@ import { log } from "./output";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "./scratch";
 import { DEFAULT_TMP_OPTIONS } from "./tmpscan";
 
+/** Linearity policy for `giwt history audit` ([audit] linearity). */
+export type AuditLinearity = "auto" | "require-linear" | "allow-merges";
+
+const LINEARITY_MODES: Record<AuditLinearity, true> = {
+  "auto": true,
+  "require-linear": true,
+  "allow-merges": true,
+};
+
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
   paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
@@ -92,6 +105,7 @@ export interface GiwtSettings {
     scratchpadOrphanWarn: number;
     scratchpadOldestWarnDays: number;
   };
+  audit: { linearity: AuditLinearity; patchIds: boolean; maxFindings: number; };
   runlog: { maxRuns: number; };
   output: { format: string; streamTail: number; color: string; };
   scratch: {
@@ -125,6 +139,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     scratchpadOrphanWarn: DEFAULT_SCRATCHPAD_THRESHOLDS.orphanWarn,
     scratchpadOldestWarnDays: DEFAULT_SCRATCHPAD_THRESHOLDS.oldestWarnDays,
   },
+  audit: { linearity: "auto", patchIds: true, maxFindings: 200 },
   runlog: { maxRuns: 200 },
   output: { format: "simple", streamTail: 25, color: "auto" },
   scratch: { ...DEFAULT_SCRATCH_CONFIG, root: ".tmp" },
@@ -234,5 +249,13 @@ export function loadSettings(repoRoot: string, paths: SettingsPaths = {}): GiwtS
   if (globalDoc) settings = mergeLayer(settings, globalDoc, globalPath);
   const localDoc = parseFile(localPath);
   if (localDoc) settings = mergeLayer(settings, localDoc, localPath);
+  // Enum gate: a wrong-typed linearity value must not reach the audit —
+  // checkType only sees "string", so the closed set is enforced here.
+  const linearity = settings.audit.linearity as string;
+  if (!(linearity in LINEARITY_MODES)) {
+    throw new Error(
+      `[audit] linearity: unknown value "${linearity}" (want auto | require-linear | allow-merges)`,
+    );
+  }
   return settings;
 }
