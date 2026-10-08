@@ -66,6 +66,22 @@
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
     "status": "done"
   },
+  "BUG-COMMIT-MSG-HOOK-DRIFT-BETWEEN-GIWT-AND-OMP-PLUGINS": {
+    "hash": "7fbf257",
+    "git_issue": "7fbf257",
+    "extid": "BUG-COMMIT-MSG-HOOK-DRIFT-BETWEEN-GIWT-AND-OMP-PLUGINS",
+    "type": "BUG",
+    "title": "commit-msg hook drift between giwt and omp-plugins",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "drift",
+      "hooks"
+    ],
+    "source": ".plan/tickets/BUG-commit-msg-hook-drift-between-giwt-and-omp-plugins.md",
+    "status": "Not Started"
+  },
   "BUG-COMMIT-WT-HARDCODES-NO-VERIFY-BYPASSING-THE-CONSUMING-REPO-P": {
     "hash": "a258bb4",
     "git_issue": "a258bb4",
@@ -292,6 +308,22 @@
     "status": "done",
     "git_issue": "854662b"
   },
+  "BUG-GIWT-LIFECYCLE-CONFIG-WRITES-INVISIBLE-TO-OMP-GUARD": {
+    "hash": "8cb1cfe",
+    "git_issue": "8cb1cfe",
+    "extid": "BUG-GIWT-LIFECYCLE-CONFIG-WRITES-INVISIBLE-TO-OMP-GUARD",
+    "type": "BUG",
+    "title": "giwt lifecycle config writes invisible to omp guard",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "policy",
+      "config"
+    ],
+    "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md",
+    "status": "Not Started"
+  },
   "BUG-GIWT-NEW-DEFAULT-BASE-DEV-DOES-NOT-EXIST-IN-THIS-CLONE": {
     "hash": "7c1a34d",
     "git_issue": "7c1a34d",
@@ -423,6 +455,22 @@
     ],
     "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md",
     "status": "done"
+  },
+  "BUG-REBASE-EXEC-NOT-BLOCKED-IN-GIWT-GIT-PASSTHROUGH-POLICY": {
+    "hash": "38c2c25",
+    "git_issue": "38c2c25",
+    "extid": "BUG-REBASE-EXEC-NOT-BLOCKED-IN-GIWT-GIT-PASSTHROUGH-POLICY",
+    "type": "BUG",
+    "title": "rebase --exec not blocked in giwt git passthrough policy",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "security",
+      "policy"
+    ],
+    "source": ".plan/tickets/BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy.md",
+    "status": "Not Started"
   },
   "BUG-REBASE-GUARD-CHECKS-ONLY-THE-SOURCE-BRANCH-NOT-THE-TARGET-RE": {
     "hash": "23751b8",

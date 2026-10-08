@@ -89,10 +89,22 @@
       "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
     }
   ],
+  "src/commands/create.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
   "src/commands/doctor.ts": [
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
+    }
+  ],
+  "src/commands/doctor/apply.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
     }
   ],
   "src/commands/finalize.test.ts": [
@@ -223,6 +235,12 @@
       "source": ".plan/tickets/FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac.md"
     }
   ],
+  "src/commands/new-branch.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
   "src/commands/plan.ts": [
     {
       "kind": "ticket",
@@ -295,6 +313,12 @@
       "source": ".plan/tickets/TASK-show-state-resolve-plan-tickets-filename-slugs.md"
     }
   ],
+  "src/commands/sign.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
   "src/commands/ticket.test.ts": [
     {
       "kind": "ticket",
@@ -357,6 +381,12 @@
       "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md"
     }
   ],
+  "src/doctor/generators/hooks.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
   "src/finalize-signal-safety.test.ts": [
     {
       "kind": "ticket",
@@ -383,6 +413,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy.md"
     }
   ],
   "src/index.ts": [
@@ -581,6 +615,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-findworktree-only-checks-tree-dir.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
     }
   ],
   "src/utils/errors.test.ts": [
