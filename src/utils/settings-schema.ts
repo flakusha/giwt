@@ -40,7 +40,14 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   },
   tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
   status: { aliases: "aliases" },
-  git: { rtk: "rtk", safe: "safe", allow: "allow", deny: "deny", classify: "classify" },
+  git: {
+    rtk: "rtk",
+    safe: "safe",
+    allow: "allow",
+    deny: "deny",
+    classify: "classify",
+    config_writes: "configWrites",
+  },
 };
 
 export const EXPECTED: Record<
@@ -77,10 +84,38 @@ export const EXPECTED: Record<
   },
   tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
   status: { aliases: "map" },
-  git: { rtk: "string", safe: "string[]", allow: "string[]", deny: "string[]", classify: "string" },
+  git: {
+    rtk: "string",
+    safe: "string[]",
+    allow: "string[]",
+    deny: "string[]",
+    classify: "string",
+    configWrites: "string",
+  },
 };
 
 export type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };
+
+const LINEARITY_MODES = ["auto", "require-linear", "allow-merges"];
+const CONFIG_WRITES_MODES = ["allow", "refuse"];
+
+/**
+ * Closed-set gates for string enum settings — checkType only sees "string",
+ * so the allowed values are enforced after the full merge. A wrong-typed
+ * enum value must not reach its consumer (audit detectors, config funnel).
+ */
+export function checkEnumSettings(settings: GiwtSettings): void {
+  const linearity = settings.audit.linearity as string;
+  if (!LINEARITY_MODES.includes(linearity)) {
+    throw new Error(
+      `[audit] linearity: unknown value "${linearity}" (want auto | require-linear | allow-merges)`,
+    );
+  }
+  const configWrites = settings.git.configWrites as string;
+  if (!CONFIG_WRITES_MODES.includes(configWrites)) {
+    throw new Error(`[git] config_writes: unknown value "${configWrites}" (want allow | refuse)`);
+  }
+}
 
 export function checkType(
   section: keyof GiwtSettings,

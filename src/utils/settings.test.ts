@@ -357,4 +357,43 @@ describe("loadSettings", () => {
       fx.cleanup();
     }
   });
+
+  test("[git] config_writes parses and defaults to allow", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      expect(defaults.git.configWrites).toBe("allow");
+
+      writeFileSync(fx.localPath, `[git]\nconfig_writes = "refuse"\n`);
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.git.configWrites).toBe("refuse");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[git] config_writes wrong type throws naming file and key", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[git]\nconfig_writes = 3\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/config_writes must be string/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[git] config_writes outside the enum hard-errors naming the value", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[git]\nconfig_writes = "sometimes"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/config_writes: unknown value "sometimes"/);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });

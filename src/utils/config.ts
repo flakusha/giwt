@@ -7,6 +7,7 @@
 
 import { existsSync, symlinkSync } from "fs";
 import { dirname, resolve } from "path";
+import { gitConfigSet } from "./config-writes";
 import { findRepoRoot, getWorktreeRoot, gitSync, gitSyncQuiet } from "./git";
 import { log } from "./output";
 import { type GiwtSettings, loadSettings } from "./settings";
@@ -130,8 +131,14 @@ export function configureGpgSigningSilently(
     { stdout: "pipe", stderr: "pipe" },
   );
   if (secretCheck.exitCode !== 0) return;
-  gitSync(wtPath, "config", "commit.gpgsign", "true");
-  gitSync(wtPath, "config", "user.signingkey", agentGpgKeyId);
+  gitConfigSet({
+    root: wtPath,
+    entries: [
+      { key: "commit.gpgsign", value: "true" },
+      { key: "user.signingkey", value: agentGpgKeyId },
+    ],
+    reason: "gpg signing setup (worktree create)",
+  });
   log("success", `GPG signing enabled (key: ${agentGpgKeyId.slice(0, 8)}...)`);
 }
 

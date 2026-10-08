@@ -85,7 +85,11 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 
 - **Bun ≥ 1.2, ESM** (`"type": "module"`); only runtime deps are `@optique/core` + `@optique/run` (^1.2.6); devDeps: `typescript`, `@types/bun`, `dprint`, `oxlint`, `markdownlint-cli2` (+ system `shfmt`/`shellcheck` for `lint:sh`). Lockfile: `bun.lock` — use `bun add`, never npm/yarn.
 - No tsconfig emit, no build step for dev (`bun` runs TS directly); `build:bin` produces a standalone binary for distribution.
-- Env overrides: `REPO_ROOT`, `TREE_DIR`, `GIWT_LOG`, `GIWT_OUTPUT` (log format: simple|pretty|json|jsonl|toml; invalid → warn once, falls back to simple), `NO_COLOR` (via `src/utils/colors.ts`).
+- Env overrides: `REPO_ROOT`, `TREE_DIR`, `GIWT_LOG`, `GIWT_OUTPUT` (log format: simple|pretty|json|jsonl|toml; invalid → warn once, falls back to simple), `NO_COLOR` (via `src/utils/colors.ts`), `GIWT_FORBID_CONFIG_WRITES=1` (forces refusal of giwt's own lifecycle git-config writes; wins over `[git] config_writes`).
+
+## Lifecycle config writes
+
+Every runtime `git config` WRITE giwt performs goes through the funnel in `src/utils/config-writes.ts` (`gitConfigSet({ root, entries, reason })`): it logs each write with key/value/reason, records a `git-config` event in the active run record, and refuses (exit 1, remedy naming both switches) when `[git] config_writes = "refuse"` or env `GIWT_FORBID_CONFIG_WRITES=1` is set (env wins). Covered sites: GPG signing setup (`commit.gpgsign`/`user.signingkey` in utils/config.ts + commands/sign.ts), hooksPath installs (create/new-branch/sign/doctor apply), and pull.ff/branch.*.rebase (doctor apply). Exemption: the generated `.install.sh` (src/doctor/generators/hooks.ts) keeps its raw `git config core.hooksPath` line — bootstrap scripts are user-run setup, sanctioned by the governing policy, not agent actions.
 
 ## Testing & QA
 

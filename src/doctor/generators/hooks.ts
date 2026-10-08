@@ -281,6 +281,11 @@ exit 0
 const INSTALL_SH = String.raw`#!/bin/sh
 # Install .githooks/ as the project's git hooksPath.
 # Idempotent — safe to re-run.
+#
+# EXEMPT from giwt's lifecycle config-writes funnel (utils/config-writes.ts):
+# this is a user-run bootstrap script, sanctioned by the governing policy —
+# not an agent action, so [git] config_writes / GIWT_FORBID_CONFIG_WRITES
+# do not apply to it.
 
 set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
