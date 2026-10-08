@@ -134,6 +134,18 @@ describe("scanWeaveDamage — negatives", () => {
     expect(scanWeaveDamage({ path: "src/tables.ts", text })).toEqual([]);
   });
 
+  it("truncates the occurrence list with +N more beyond 30 lines", () => {
+    const line = "  handler: (msg: ChatMessage) => handleIncoming(msg),";
+    const text = Array<string>(35).fill(line).join("\n");
+    const findings = scanWeaveDamage({ path: "src/many.ts", text });
+    const repeated = findings.filter((f) => f.reason === "repeated-lines");
+    expect(repeated).toHaveLength(1);
+    const count = repeated[0]?.evidence.find((e) => e.kind === "count");
+    if (count?.kind !== "count") throw new Error("expected count evidence");
+    expect(count.detail).toContain("35 occurrences");
+    expect(count.detail).toContain("+5 more");
+  });
+
   it("exempts a legit entry-point invocation at end of file", () => {
     const text = [
       "import { run } from \"./run\";",

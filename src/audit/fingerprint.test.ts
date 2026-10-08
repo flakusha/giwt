@@ -330,4 +330,69 @@ describe("findAppliedDuplicates", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("tolerant match covers M and D entries across kinds", () => {
+    const root = makeRepo();
+    try {
+      write(root, "base.txt", "base\n");
+      commitAll(root, "base");
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(root, "migrations/040_x.ts", MIGRATION_040);
+      commitAll(root, "A: add 040");
+      write(root, "migrations/040_x.ts", MIGRATION_040 + "ALTER TABLE m ADD c INT;\n");
+      commitAll(root, "M: extend 040");
+      git(root, ["checkout", "-qb", "topic"]);
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      git(root, ["rm", "-q", "migrations/040_x.ts"]);
+      commitAll(root, "D: remove 040");
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(
+        root,
+        "migrations/045_x.ts",
+        "// Migration: 045_x\nCREATE UNIQUE INDEX uq_messages_idempotency_enforced ON messages(idempotency_key);\n",
+      );
+      commitAll(root, "A: add 045 with drifted docblock");
+
+      const matches = findAppliedDuplicates({
+        repoRoot: root,
+        candidate: "topic",
+        target: "master",
+      });
+      expect(matches).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("tolerant match returns null when a blob is unreadable", () => {
+    const root = makeRepo();
+    try {
+      write(root, "base.txt", "base\n");
+      commitAll(root, "base");
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(root, "migrations/040_x.ts", MIGRATION_040);
+      commitAll(root, "A: add 040");
+      git(root, ["checkout", "-qb", "topic"]);
+      mkdirSync(join(root, "migrations"), { recursive: true });
+      write(
+        root,
+        "migrations/045_x.ts",
+        "// Migration: 045_x\nCREATE UNIQUE INDEX uq_messages_idempotency_enforced ON messages(idempotency_key);\n",
+      );
+      commitAll(root, "A: add 045 with drifted docblock");
+
+      const blobSha = git(root, ["hash-object", "migrations/045_x.ts"]).trim();
+      const objPath = join(root, ".git/objects", blobSha.slice(0, 2), blobSha.slice(2));
+      rmSync(objPath);
+
+      const matches = findAppliedDuplicates({
+        repoRoot: root,
+        candidate: "topic",
+        target: "master",
+      });
+      expect(matches).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
