@@ -1247,6 +1247,29 @@ describe("finalize rebase strategy", () => {
     expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feature work");
   });
 
+  // BUG-finalize-leaves-dev-worktree-stale-after-merging: the ref moved out
+  // from under a dirty-but-on-branch dev checkout, leaving its index describing
+  // the PRE-merge tree — staged as deletions of the files just landed. A routine
+  // commit on the dev checkout would have destroyed them.
+  test("realigns a stranded dev index so a routine commit cannot delete merged code", async () => {
+    featureWorktree();
+    writeFileSync(join(root, "seed.txt"), "local edit\n");
+
+    const run = await driveFinalize(["feature/x"]);
+
+    expect(run.exitCode).toBeNull();
+    expect(run.output).toContain("main moved to");
+    // The safety property, asserted directly rather than via output text:
+    // nothing the merge landed is sitting in the index as a staged deletion.
+    const staged = git(["diff", "--cached", "--name-status", "HEAD"]).trim();
+    expect(staged).not.toContain("feature.txt");
+    expect(staged).not.toMatch(/^D\s/m);
+    expect(staged).not.toMatch(/^A\s/m);
+    // The operator's uncommitted work survives the realign untouched.
+    expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local edit\n");
+    expect(git(["stash", "list"]).trim()).toBe("");
+  });
+
   test("merges in staging even when the dev checkout cannot be touched", async () => {
     featureWorktree();
     writeFileSync(join(root, "seed.txt"), "local edit\n");

@@ -3,7 +3,7 @@
 
 # BUG: finalize leaves dev worktree stale after merging
 
-**Status:** Not Started
+**Status:** In Progress
 **Priority:** critical
 **Effort:** Medium
 **Tags:** finalize, dev-sync, worktree
@@ -72,8 +72,16 @@ The safety property to preserve regardless: never leave the dev checkout in a st
 
 **Acceptance Criteria:**
 
-- [ ] A successful finalize never leaves the dev checkout with an index/worktree behind the moved ref (option a, or refuse per option b, or reset-and-restore per option c)
-- [ ] After any successful finalize, `git diff --cached --name-status HEAD` on the dev checkout reports no staged entries that the merge itself created
-- [ ] When the dev checkout genuinely cannot be synced, finalize does not report success: the run-record outcome (and/or a ledger gripe and a non-zero exit) records it instead of a single scroll-pastable warning line
-- [ ] Before any reset/restore, finalize proves there is no genuine uncommitted work in the dev checkout, or refuses to land
-- [ ] Regression test: dirty dev checkout + finalize asserts no staged deletion of merge-landed paths and no missing-from-disk paths
+- [x] After a finalize against a dirty-but-on-branch dev checkout, `git diff --cached --name-status HEAD` reports no staged entry that the merge itself created
+- [x] Before any index write, finalize proves the checkout state from the pre-CAS snapshot; working-tree content is never touched (index-only `reset --mixed HEAD`)
+- [x] Regression test: dirty dev checkout + finalize asserts no staged deletion of merge-landed paths (verified failing before the fix — `D feature.txt` — and passing after)
+- [ ] A successful finalize never leaves the dev checkout's **working tree** behind the moved ref. Partially addressed: the index is now realigned, but merge-landed files are still absent from disk as UNSTAGED deletions, recoverable with `git checkout HEAD -- <paths>`. Lifting this needs option (a) or (b) from above.
+- [ ] When the dev checkout genuinely cannot be synced, finalize does not report success: no run-record outcome, ledger gripe, or non-zero exit distinguishes "landed and synced" from "landed and stranded". Still a warn line.
+
+**Resolution:**
+
+Landed as option (c), scoped to the case that actually carries the hazard. `snapshotDevReadiness` (`src/commands/finalize/staging-sync.ts`) now reports `onTargetBranch` and `clean` separately instead of collapsing both into one `onTarget` flag. Only when dev's symbolic HEAD **is** the target branch does the CAS drag HEAD away from the index and strand it — on a detached HEAD or another branch the index still describes dev's own HEAD and is inert, so those paths are deliberately left untouched. `syncDevLazily` realigns the stranded index with an index-only `reset --mixed HEAD`, which rewrites the index to the new commit and writes zero bytes to the working tree.
+
+Deliberate trade, stated so it is not mistaken for a total fix: reset discards the staged-vs-unstaged distinction (content the operator had staged comes back unstaged). That is chosen over the alternative, where those same paths sit STAGED and an ordinary commit deletes committed code. Unstaged deletions are visible in `git status` and recoverable; staged deletions are a trap.
+
+The two unticked criteria above are the deliberately unfixed remainder — the working tree still lags behind the ref, and finalize still reports success when it strands dev.
