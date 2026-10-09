@@ -761,6 +761,22 @@
     "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md",
     "status": "done"
   },
+  "BUG-TICKET-CREATE-AND-SYNC-FIX-IMPORT-EMIT-LINT-DEFECTIVE-DUPLIC": {
+    "hash": "800aa4e",
+    "git_issue": "800aa4e",
+    "extid": "BUG-TICKET-CREATE-AND-SYNC-FIX-IMPORT-EMIT-LINT-DEFECTIVE-DUPLIC",
+    "type": "BUG",
+    "title": "ticket create and sync --fix --import emit lint-defective/duplicated ticket markdown",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "tickets",
+      "generator"
+    ],
+    "source": ".plan/tickets/BUG-ticket-create-and-sync-fix-import-emit-lint-defective-duplic.md",
+    "status": "Not Started"
+  },
   "BUG-TICKET-ID-INPUTS-ACCEPT-HASH-EXTID-SLUG-EVERYWHERE": {
     "hash": "40464b1",
     "git_issue": "40464b1",
