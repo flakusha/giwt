@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { resolve } from "path";
+import { detectNestedTicketDoc, sanitizeTicketBody } from "../../tickets/ticket-md";
 import type { WorktreeConfig } from "../../utils/config";
 import { getWorktreeRoot, gitSync } from "../../utils/git";
 import { log, raw } from "../../utils/output";
@@ -70,6 +71,7 @@ export function renderTicketFile(
   flags: TicketFlags,
   body: string,
 ): string {
+  const cleanBody = sanitizeTicketBody(body);
   let content =
     `<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->\n\n# ${type}: ${title}\n\n`;
   content += `**Status:** Not Started\n`;
@@ -84,7 +86,7 @@ export function renderTicketFile(
   if (flags.upstream) {
     content += `**Upstream:** ${flags.upstream}\n`;
   }
-  content += `\n**Summary:**\n\n${body || "No description provided."}\n\n`;
+  content += `\n**Summary:**\n\n${cleanBody || "No description provided."}\n\n`;
   // A field present in the user body suppresses its placeholder — no
   // duplicated (empty) sections. Detection mirrors the format gate's marker
   // regex exactly, so "present" means what `plan validate` would count.
@@ -98,7 +100,10 @@ export function renderTicketFile(
     content += `- [ ] Tests passing\n`;
     content += `- [ ] Documentation updated\n`;
   }
-  return content;
+  // Exactly one trailing newline — MD012/MD047-clean output straight from
+  // the generator (the embedded body's own blank tail was stripped by
+  // sanitizeTicketBody above).
+  return content.replace(/\n+$/, "\n");
 }
 
 /** Format-gate marker presence: does `raw` carry `**<section>:**` (case-insensitive)? */
@@ -144,6 +149,18 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
     );
   }
 
+  // A body that is itself a complete ticket document (own SPDX header,
+  // `# TYPE:` title, `**Status:**` block) would land verbatim under the
+  // template header — one .md nesting two ticket documents. Refuse before
+  // anything is written or created.
+  const nestedMarkers = detectNestedTicketDoc(body);
+  if (nestedMarkers.length > 0) {
+    refuse(
+      `body looks like a complete ticket document — contains ${nestedMarkers.join(", ")}`,
+      "pass the description prose only; the template supplies the SPDX header, title, and Status block",
+    );
+  }
+
   const ticketName = kebab(title);
   const ticketFile = `${config.settings.paths.tickets}/${type}-${ticketName}.md`;
   const extid = `${type}-${ticketName}`;
@@ -160,48 +177,92 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
 
   const exists = await Bun.file(ticketPath).exists();
   if (exists) {
-    log("warn", `ticket file already exists: ${ticketFile}`);
-  } else {
-    log("info", `creating ticket file: ${ticketFile}`);
-    await Bun.write(ticketPath, renderTicketFile(type, title, flags, body));
-    log("success", `created ticket file: ${ticketFile}`);
+    // Duplicate create must refuse: warn-and-continue forked the registry
+    // (a second `git issue create` for an extid that already has a file
+    // and often an issue). Refusal is distinct from other failures.
+    refuse(
+      `duplicate ticket: ${ticketFile} already exists for ${extid} — refusing to create a second ticket`,
+      `edit ${ticketFile} in place, or delete it first if this is genuinely new work`,
+    );
   }
+  log("info", `creating ticket file: ${ticketFile}`);
+  await Bun.write(ticketPath, renderTicketFile(type, title, flags, body));
+  log("success", `created ticket file: ${ticketFile}`);
 
-  log("info", `creating git issue: ${extid}`);
-  const issueOutput = gitSync(
-    config.repoRoot,
-    "issue",
-    "create",
-    fullTitle,
-    "-m",
-    body || "No description",
-  );
-
-  const hashMatch = issueOutput.match(/[0-9a-f]{7,40}/);
-  const hash = hashMatch?.[0];
-
-  if (hash) {
-    gitSync(config.repoRoot, "issue", "comment", hash, "-m", `Plan spec: ${ticketFile}`);
-    // Single edit invocation: `git issue edit -l` replaces the whole label set,
-    // so per-label edits would leave only the last label applied.
-    if (flags.labels.length > 0) {
-      gitSync(
-        config.repoRoot,
-        "issue",
-        "edit",
-        hash,
-        ...flags.labels.flatMap((label) => ["-l", label]),
-      );
-    }
-    if (flags.priority) {
-      gitSync(config.repoRoot, "issue", "edit", hash, "-p", flags.priority);
-    }
-    log("success", `created git issue: ${hash}`);
-  } else {
-    log("warn", "could not extract issue hash");
-  }
+  const hash = createGitIssue(config, extid, fullTitle, body, ticketFile, flags);
 
   log("info", `ticket ${extid} created`);
   raw(`  File:  ${ticketFile}`);
   if (hash) raw(`  Issue: ${hash}`);
+}
+
+/**
+ * Create the registry side of a ticket: `git issue create`, then the
+ * label/priority edits and the plan-spec comment. Exits 1 when the create
+ * call fails, naming the half-completed state (the .md is already on disk,
+ * the issue is missing) so a nonzero exit always carries a diagnostic.
+ *
+ * @returns the issue hash, or "" when the create output was unparsable
+ */
+function createGitIssue(
+  config: WorktreeConfig,
+  extid: string,
+  fullTitle: string,
+  body: string,
+  ticketFile: string,
+  flags: TicketFlags,
+): string {
+  log("info", `creating git issue: ${extid}`);
+  let issueOutput: string;
+  try {
+    issueOutput = gitSync(
+      config.repoRoot,
+      "issue",
+      "create",
+      fullTitle,
+      "-m",
+      body || "No description",
+    );
+  } catch (e) {
+    // gitSync throws git's stderr text; surface it against the file that
+    // was already written instead of dying silently (the historical exit-1
+    // after write had no diagnostic).
+    const msg = (e instanceof Error ? e.message : String(e)).split("\n")[0];
+    refuse(
+      `ticket file ${ticketFile} written, but git issue create failed: ${msg}`,
+      "resolve the git-issue error above, then rerun — the .md is already on disk",
+    );
+  }
+
+  const hash = issueOutput.match(/[0-9a-f]{7,40}/)?.[0] ?? "";
+  if (!hash) {
+    log("warn", "could not extract issue hash");
+    return "";
+  }
+
+  gitSync(config.repoRoot, "issue", "comment", hash, "-m", `Plan spec: ${ticketFile}`);
+  // Single edit invocation: `git issue edit -l` replaces the whole label set,
+  // so per-label edits would leave only the last label applied.
+  if (flags.labels.length > 0) {
+    gitSync(
+      config.repoRoot,
+      "issue",
+      "edit",
+      hash,
+      ...flags.labels.flatMap((label) => ["-l", label]),
+    );
+  }
+  if (flags.priority) {
+    gitSync(config.repoRoot, "issue", "edit", hash, "-p", flags.priority);
+  }
+  log("success", `created git issue: ${hash}`);
+  return hash;
+}
+
+/** Exit 1 with a distinct error + remedy line (the run-record exit hook
+ *  finalizes the record; never returns). */
+function refuse(reason: string, remedy: string): never {
+  log("error", reason);
+  raw(`  Remedy: ${remedy}`);
+  process.exit(1);
 }

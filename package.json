@@ -40,6 +40,7 @@
     "dprint": "^0.57.4",
     "jscpd": "^4.0.5",
     "knip": "^6.36.0",
+    "markdownlint": "0.41.1",
     "markdownlint-cli2": "^0.23.2",
     "oxlint": "^1.82.0",
     "typescript": "^7.0.2"

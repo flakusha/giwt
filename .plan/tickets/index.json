@@ -488,6 +488,22 @@
     "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md",
     "status": "done"
   },
+  "BUG-REBASE-EXEC-IDENTITY-GUARD-BYPASSED-BY-IX-SHORT-FLAG-CLUSTER": {
+    "hash": "088fd3b",
+    "git_issue": "088fd3b",
+    "extid": "BUG-REBASE-EXEC-IDENTITY-GUARD-BYPASSED-BY-IX-SHORT-FLAG-CLUSTER",
+    "type": "BUG",
+    "title": "rebase --exec identity guard bypassed by -ix short-flag cluster and regex gaps",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "security",
+      "policy"
+    ],
+    "source": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md",
+    "status": "Not Started"
+  },
   "BUG-REBASE-EXEC-NOT-BLOCKED-IN-GIWT-GIT-PASSTHROUGH-POLICY": {
     "hash": "38c2c25",
     "git_issue": "38c2c25",
@@ -775,7 +791,7 @@
       "generator"
     ],
     "source": ".plan/tickets/BUG-ticket-create-and-sync-fix-import-emit-lint-defective-duplic.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-TICKET-ID-INPUTS-ACCEPT-HASH-EXTID-SLUG-EVERYWHERE": {
     "hash": "40464b1",

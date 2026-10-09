@@ -15,6 +15,7 @@
  */
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { lint } from "markdownlint/promise";
 import {
   chmodSync,
   existsSync,
@@ -316,6 +317,24 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("issue lifecycle drift with real registry"
     // Idempotent: the imported ticket now owns its issue.
     const again = runCaptured(() => runSync(root, { fix: true }));
     expect(again.out).toContain("Nothing to fix");
+  });
+
+  test("import-back .md passes the markdownlint gate unchanged", async () => {
+    const root = makeRepo();
+    createIssue(root, "TASK-lint-back: registry only work");
+    writeIndex(root, {});
+
+    const { exit } = runCaptured(() => runSync(root, { fix: true, importBack: true }));
+    expect(exit).toBe(0);
+
+    const mdPath = join(root, ".plan/tickets/TASK-LINT-BACK.md");
+    const md = readFileSync(mdPath, "utf8");
+    // Generator contract: exactly one trailing newline.
+    expect(md.endsWith("\n")).toBe(true);
+    expect(md.endsWith("\n\n")).toBe(false);
+    // And the file lints clean under the repo gate's rule set (MD013 off).
+    const results = await lint({ files: [mdPath], config: { MD013: false } });
+    expect(results[mdPath] ?? []).toEqual([]);
   });
 
   test("unparsed foreign issue is report-only even with --import-back", () => {

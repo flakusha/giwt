@@ -222,6 +222,10 @@
   "src/commands/git.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
     },
     {
@@ -417,6 +421,12 @@
       "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
     }
   ],
+  "src/git/predicate-helpers.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md"
+    }
+  ],
   "src/git/predicates.ts": [
     {
       "kind": "ticket",
@@ -425,6 +435,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-exec-identity-patterns-author-equals-form-only-misses-space-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md"
     },
     {
       "kind": "ticket",

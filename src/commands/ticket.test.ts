@@ -26,6 +26,7 @@
  */
 
 import { describe, expect, it, spyOn, test } from "bun:test";
+import { lint } from "markdownlint/promise";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveStatus } from "../plan/status-vocab";
@@ -253,6 +254,68 @@ describe("renderTicketFile — Upstream header line", () => {
   });
 });
 
+describe("renderTicketFile — emitted markdown passes the markdownlint gate", () => {
+  const FLAGS: TicketFlags = {
+    labels: [],
+    priority: "medium",
+    epic: "EPIC-7",
+    tags: [],
+    effort: "S",
+    upstream: "",
+  };
+
+  /** Lint a generated template exactly as the repo gate does (MD013 off). */
+  async function lintContent(content: string, name: string): Promise<unknown[]> {
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-ticket-lint-"));
+    try {
+      const file = join(dir, name);
+      writeFileSync(file, content);
+      const results = await lint({ files: [file], config: { MD013: false } });
+      return results[file] ?? [];
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it("regenerates the historical defect shapes lint-clean (MD031/MD032/MD033/MD040/MD012)", async () => {
+    // The shapes that shipped broken in
+    // BUG-ticket-create-and-sync-fix-import-emit-lint-defective-duplic:
+    // bare <path> tokens, an untagged fence glued to a paragraph, a list
+    // hard against its lead-in, and a double trailing blank.
+    const defectBody = [
+      "When the target equals the repo root, <path> resolves to the main worktree and removal is attempted via <repoRoot>:",
+      "```",
+      "const pathMatched = await registrationFor(config.repoRoot, target);",
+      "```",
+      "Then:",
+      "- the main registration matches",
+      "- removal is attempted anyway",
+      "",
+      "",
+    ].join("\n");
+
+    const content = renderTicketFile("BUG", "lint probe", FLAGS, defectBody);
+
+    // Sanitized shape: tokens inlined, fence tagged, separators present,
+    // exactly one trailing newline.
+    expect(content).toContain("`<path>`");
+    expect(content).toContain("`<repoRoot>`");
+    expect(content).toContain("\n\n```text\nconst pathMatched");
+    expect(content).toContain("\n\nThen:\n\n- the main registration matches");
+    expect(content.endsWith("\n")).toBe(true);
+    expect(content.endsWith("\n\n")).toBe(false);
+
+    expect(await lintContent(content, "BUG-lint-probe.md")).toEqual([]);
+  });
+
+  it("the default (empty-body) template lints clean with a single trailing newline", async () => {
+    const content = renderTicketFile("TASK", "plain", FLAGS, "");
+    expect(content.endsWith("\n")).toBe(true);
+    expect(content.endsWith("\n\n")).toBe(false);
+    expect(await lintContent(content, "TASK-plain.md")).toEqual([]);
+  });
+});
+
 describe("parseTicketArgs — flags anywhere in the tail", () => {
   it("consumes flags that follow the title (the dropped --epic repro)", () => {
     const { flags, body } = parseTicketArgs(["--epic", "plan-tooling", "-F", "-"]);
@@ -450,7 +513,7 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket issue metadata (real gi
     return line?.split(" ")[0] ?? null;
   }
 
-  it("applies flags to the .md and the git issue, and warns on a repeated title", async () => {
+  it("applies flags to the .md and the git issue, and refuses a repeated title", async () => {
     const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-meta-"));
     const repo = join(base, "proj");
     const prevCwd = process.cwd();
@@ -497,27 +560,196 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket issue metadata (real gi
       expect(show).toContain("Priority: high");
       expect(show).toContain("Plan spec: .plan/tickets/TASK-metadata-probe.md");
 
-      // Second run on the same title: plan file is preserved, issue count grows.
+      // Second run on the same title: the duplicate create REFUSES — exit 1
+      // with a distinct message, the .md is untouched, and NO second issue is
+      // created for the extid (the old warn-and-continue forked the registry).
       const cap2 = capture();
+      const exits: number[] = [];
+      const origExit = process.exit;
+      process.exit = ((code?: number): never => {
+        exits.push(code ?? 0);
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never;
+      let refusalError: string | null = null;
       try {
         await ticket(["TASK", "metadata probe", "second body"], config);
+      } catch (e) {
+        refusalError = e instanceof Error ? e.message : String(e);
       } finally {
+        process.exit = origExit;
         cap2.restore();
       }
+      expect(exits).toEqual([1]);
+      expect(refusalError).toBe("__exit:1");
       expect(cap2.text()).toContain(
-        "ticket file already exists: .plan/tickets/TASK-metadata-probe.md",
+        "duplicate ticket: .plan/tickets/TASK-metadata-probe.md already exists for TASK-metadata-probe",
       );
+      expect(cap2.text()).toContain("refusing to create a second ticket");
       const mdAfter = readFileSync(
         join(repo, ".plan", "tickets", "TASK-metadata-probe.md"),
         "utf8",
       );
       expect(mdAfter).toBe(md);
       expect(mdAfter).not.toContain("second body");
+      // Exactly one issue for the extid — the refusal created nothing.
       const matches = git(repo, "issue", "ls", "--all", "--format", "oneline")
         .split("\n")
         .filter((l) => l.includes("TASK-metadata-probe"));
-      expect(matches.length).toBe(2);
+      expect(matches.length).toBe(1);
     } finally {
+      process.chdir(prevCwd);
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a body that is itself a complete ticket document — nothing written, nothing created", async () => {
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-nested-"));
+    const repo = join(base, "proj");
+    const prevCwd = process.cwd();
+    try {
+      initRepoWithCommit(repo);
+      mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
+      process.chdir(repo);
+      const config = await loadConfig();
+
+      // The exact shape the historical runs passed: the body already IS a
+      // ticket (own SPDX header, `#` title, Status block) — embedding it
+      // verbatim nested one document inside another.
+      const nested = [
+        "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->",
+        "<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->",
+        "",
+        "# BUG: remove path auto-detection",
+        "",
+        "**Status:** In Progress",
+        "",
+        "Full ticket content.",
+      ].join("\n");
+
+      const cap = capture();
+      const exits: number[] = [];
+      const origExit = process.exit;
+      process.exit = ((code?: number): never => {
+        exits.push(code ?? 0);
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never;
+      let refusalError: string | null = null;
+      try {
+        await ticket(["BUG", "remove path auto-detection", nested], config);
+      } catch (e) {
+        refusalError = e instanceof Error ? e.message : String(e);
+      } finally {
+        process.exit = origExit;
+        cap.restore();
+      }
+
+      expect(exits).toEqual([1]);
+      expect(refusalError).toBe("__exit:1");
+      // The error names the offending markers.
+      expect(cap.text()).toContain("body looks like a complete ticket document");
+      expect(cap.text()).toContain("SPDX");
+      expect(cap.text()).toContain("title heading");
+      expect(cap.text()).toContain("**Status:**");
+      // Refusal happens BEFORE any write or registry call.
+      expect(
+        existsSync(join(repo, ".plan", "tickets", "BUG-remove-path-auto-detection.md")),
+      ).toBe(false);
+      expect(git(repo, "issue", "ls", "--all", "--format", "oneline").trim()).toBe("");
+    } finally {
+      process.chdir(prevCwd);
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  it("exits 1 naming the written file when the git issue create step fails", async () => {
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-createfail-"));
+    const repo = join(base, "proj");
+    const prevCwd = process.cwd();
+    const real = Bun.spawnSync;
+    try {
+      initRepoWithCommit(repo);
+      mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
+      process.chdir(repo);
+      const config = await loadConfig();
+
+      // Simulate the historical failure: the registry create subprocess
+      // exits nonzero (the run records 20261009T0300* shipped exit 1 after
+      // the .md was already written, with no diagnostic).
+      Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
+        if (Array.isArray(cmd) && cmd.includes("issue") && cmd.includes("create")) {
+          return {
+            exitCode: 1,
+            stdout: Buffer.from(""),
+            stderr: Buffer.from("fatal: simulated registry failure\n"),
+          } as never;
+        }
+        return real(cmd as never, opts as never);
+      }) as unknown as typeof Bun.spawnSync;
+
+      const cap = capture();
+      const exits: number[] = [];
+      const origExit = process.exit;
+      process.exit = ((code?: number): never => {
+        exits.push(code ?? 0);
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never;
+      let refusalError: string | null = null;
+      try {
+        await ticket(["TASK", "create failure probe", "body"], config);
+      } catch (e) {
+        refusalError = e instanceof Error ? e.message : String(e);
+      } finally {
+        process.exit = origExit;
+        cap.restore();
+      }
+
+      expect(exits).toEqual([1]);
+      expect(refusalError).toBe("__exit:1");
+      expect(cap.text()).toContain(
+        "ticket file .plan/tickets/TASK-create-failure-probe.md written, but git issue create failed: fatal: simulated registry failure",
+      );
+      // The half-completed state is real: the .md is on disk.
+      expect(existsSync(join(repo, ".plan", "tickets", "TASK-create-failure-probe.md"))).toBe(true);
+    } finally {
+      Bun.spawnSync = real;
+      process.chdir(prevCwd);
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  it("warns and still finishes when the create output has no issue hash", async () => {
+    const base = mkdtempSync(join(scratchRoot(), "giwt-ticket-nohash-"));
+    const repo = join(base, "proj");
+    const prevCwd = process.cwd();
+    const real = Bun.spawnSync;
+    try {
+      initRepoWithCommit(repo);
+      mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
+      process.chdir(repo);
+      const config = await loadConfig();
+
+      Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
+        if (Array.isArray(cmd) && cmd.includes("issue") && cmd.includes("create")) {
+          return {
+            exitCode: 0,
+            stdout: Buffer.from("created something unparsable\n"),
+            stderr: Buffer.from(""),
+          } as never;
+        }
+        return real(cmd as never, opts as never);
+      }) as unknown as typeof Bun.spawnSync;
+
+      const cap = capture();
+      try {
+        await ticket(["TASK", "no hash probe", "body"], config);
+      } finally {
+        cap.restore();
+      }
+
+      expect(cap.text()).toContain("could not extract issue hash");
+      expect(cap.text()).toContain("ticket TASK-no-hash-probe created");
+    } finally {
+      Bun.spawnSync = real;
       process.chdir(prevCwd);
       rmSync(base, { recursive: true, force: true });
     }

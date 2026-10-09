@@ -17,6 +17,7 @@ import { appendIssueRef } from "./sync-md";
 import { normalizeStatus } from "./sync-normalize";
 import { vocabStatusTarget } from "./sync-parse";
 import type { IndexEntry, SyncReport, TicketFile } from "./sync-ticket-types";
+import { sanitizeTicketBody } from "./ticket-md";
 
 /** Import: create registry issues for plan files that have none. Unlike
  * the placeholder fix (which deliberately never mass-creates for
@@ -130,19 +131,17 @@ export function importBackIssues(
         );
         continue;
       }
+      // Import-back is a ticket generator too: its .md must pass the repo
+      // markdownlint gate unchanged, so the embedded lines flow through the
+      // shared sanitizer and the file ends with exactly one newline.
+      const body = sanitizeTicketBody(
+        `Imported from git issue ${fi.hash}.\n\ngit issue: ${fi.hash}`,
+      );
       writeFileSync(
         target,
-        [
-          `# ${type}: ${bareTitle}`,
-          "",
-          `**Status:** ${vocabStatusTarget("open")}`,
-          "**Priority:** medium",
-          "",
-          `Imported from git issue ${fi.hash}.`,
-          "",
-          `git issue: ${fi.hash}`,
-          "",
-        ].join("\n"),
+        `# ${type}: ${bareTitle}\n\n**Status:** ${
+          vocabStatusTarget("open")
+        }\n**Priority:** medium\n\n${body}\n`,
       );
       fixed[fi.extid] = {
         hash: fi.hash,

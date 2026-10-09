@@ -3,7 +3,7 @@
 
 # BUG: ticket create and sync --fix --import emit lint-defective/duplicated ticket markdown
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** tickets, generator
