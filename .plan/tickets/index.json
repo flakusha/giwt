@@ -352,6 +352,22 @@
     "source": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo.md",
     "status": "done"
   },
+  "BUG-GIWT-REMOVE-CANNOT-TARGET-A-WORKTREE-BY-PATH-ONLY-BY-BRANCH": {
+    "hash": "3e4df1d",
+    "git_issue": "3e4df1d",
+    "extid": "BUG-GIWT-REMOVE-CANNOT-TARGET-A-WORKTREE-BY-PATH-ONLY-BY-BRANCH",
+    "type": "BUG",
+    "title": "giwt remove cannot target a worktree by path — only by branch",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "cli",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch.md",
+    "status": "Not Started"
+  },
   "BUG-GIWT-TICKET-DROPS-FLAGS-THAT-FOLLOW-THE-POSITIONAL-BODY": {
     "hash": "a9a0711",
     "git_issue": "a9a0711",

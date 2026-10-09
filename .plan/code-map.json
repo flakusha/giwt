@@ -298,6 +298,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
     }
   ],
