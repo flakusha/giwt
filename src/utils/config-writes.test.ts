@@ -8,10 +8,11 @@
  */
 
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { configureGpgSigningSilently } from "./config";
 import { CONFIG_WRITES_ENV, gitConfigSet, resolveConfigWritesMode } from "./config-writes";
+import { beginRun, finishActiveRun } from "./runlog";
 import { scratchRoot } from "./scratch-tmp";
 import { DEFAULT_SETTINGS } from "./settings";
 
@@ -166,6 +167,39 @@ describe("gitConfigSet", () => {
     });
     expect(gitRun(["config", "--get", "a.k1"], root)).toBe("v1");
     expect(gitRun(["config", "--get", "a.k2"], root)).toBe("v2");
+  });
+
+  it("allow mode records a git-config event in the active run record", () => {
+    delete process.env[CONFIG_WRITES_ENV];
+    root = makeRepo();
+    const treeDir = join(root, "tree");
+    mkdirSync(treeDir, { recursive: true });
+    const recorder = beginRun(
+      {
+        repoRoot: root,
+        worktreeRoot: root,
+        treeDir,
+        settings: structuredClone(DEFAULT_SETTINGS),
+      },
+      "test-cmd",
+      [],
+      null,
+      "cfgwrites",
+    );
+    if (!recorder) throw new Error("run-record fixture could not be created");
+    try {
+      gitConfigSet({
+        root,
+        entries: [{ key: "gate.probe", value: "ok" }],
+        reason: "test lifecycle",
+      });
+      const events = readFileSync(join(recorder.dir, "events.jsonl"), "utf8");
+      expect(events).toContain("\"git-config\"");
+      expect(events).toContain("test lifecycle");
+      expect(events).toContain("gate.probe=ok");
+    } finally {
+      finishActiveRun(0);
+    }
   });
 });
 
