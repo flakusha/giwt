@@ -58,7 +58,7 @@ Total tickets: **128** — untagged: **46** — unbound to epic: **115**
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | plan | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | plan-validate | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| policy | 4 | 3 | 0 | 0 | 0 | 0 | 1 |
+| policy | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | rebase | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -72,7 +72,7 @@ Total tickets: **128** — untagged: **46** — unbound to epic: **115**
 | safety | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | schema-v2 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | scratchpad | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| security | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| security | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | shared-module | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | squash | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | staging | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -100,7 +100,7 @@ Total tickets: **128** — untagged: **46** — unbound to epic: **115**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 115 | 114 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 115 | 115 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

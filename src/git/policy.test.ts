@@ -237,6 +237,8 @@ describe("classifyGitInvocation — rebase --exec payload identity guard", () =>
     "git -c user.name=Evil commit --amend --no-edit",
     "git -c user.email=evil@x commit --amend --no-edit",
     "git commit --amend --no-edit --author=Evil <e@evil>",
+    "git commit --amend --author \"Evil <e@evil>\" --no-edit",
+    "git -c commit.gpgsign=false commit --amend",
   ];
 
   test("identity-override payloads are refused in every --exec/-x shape", () => {

@@ -145,7 +145,7 @@
       "policy"
     ],
     "source": ".plan/tickets/BUG-exec-identity-patterns-author-equals-form-only-misses-space-.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "04cb67a"
   },
   "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE": {

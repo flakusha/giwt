@@ -127,7 +127,9 @@ const EXEC_IDENTITY_PATTERNS: readonly RegExp[] = [
   /GIT_COMMITTER_/i,
   /user\.name=/i,
   /user\.email=/i,
-  /--author=/i,
+  /--author[=\s]/i,
+  /commit\.gpgsign\s*=\s*false/i,
+  /--no-gpg-sign/i,
 ];
 
 /** `git rebase` — block aborts, interactive editor mode, and identity-override --exec payloads. */
