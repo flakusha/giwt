@@ -3,7 +3,7 @@
 
 # BUG: finalize leaves dev worktree stale after merging
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** critical
 **Effort:** Medium
 **Tags:** finalize, dev-sync, worktree
@@ -73,15 +73,13 @@ The safety property to preserve regardless: never leave the dev checkout in a st
 **Acceptance Criteria:**
 
 - [x] After a finalize against a dirty-but-on-branch dev checkout, `git diff --cached --name-status HEAD` reports no staged entry that the merge itself created
-- [x] Before any index write, finalize proves the checkout state from the pre-CAS snapshot; working-tree content is never touched (index-only `reset --mixed HEAD`)
+- [x] Before any index write, finalize proves the checkout state from the pre-CAS snapshot; paths carrying genuine user work are never touched (per-path classification against the pre-move HEAD, replacing the interim `reset --mixed HEAD` trade)
 - [x] Regression test: dirty dev checkout + finalize asserts no staged deletion of merge-landed paths (verified failing before the fix — `D feature.txt` — and passing after)
-- [ ] A successful finalize never leaves the dev checkout's **working tree** behind the moved ref. Partially addressed: the index is now realigned, but merge-landed files are still absent from disk as UNSTAGED deletions, recoverable with `git checkout HEAD -- <paths>`. Lifting this needs option (a) or (b) from above.
-- [ ] When the dev checkout genuinely cannot be synced, finalize does not report success: no run-record outcome, ledger gripe, or non-zero exit distinguishes "landed and synced" from "landed and stranded". Still a warn line.
+- [x] A successful finalize never leaves the dev checkout's **working tree** behind the moved ref: merge residue is restored per path from the moved ref (`checkout HEAD -- <paths>` for added/modified, `git rm -f` for deleted), so merge-landed files are back on disk and merge-deleted files are gone
+- [x] When the dev checkout genuinely cannot be synced, finalize does not report success: run-record outcome gate `dev-sync` + non-zero exit (exit hook gripes); teardown is skipped so the worktree + branch survive and a post-cleanup re-run finishes teardown
 
 **Resolution:**
 
-Landed as option (c), scoped to the case that actually carries the hazard. `snapshotDevReadiness` (`src/commands/finalize/staging-sync.ts`) now reports `onTargetBranch` and `clean` separately instead of collapsing both into one `onTarget` flag. Only when dev's symbolic HEAD **is** the target branch does the CAS drag HEAD away from the index and strand it — on a detached HEAD or another branch the index still describes dev's own HEAD and is inert, so those paths are deliberately left untouched. `syncDevLazily` realigns the stranded index with an index-only `reset --mixed HEAD`, which rewrites the index to the new commit and writes zero bytes to the working tree.
+Full fix (supersedes the interim `reset --mixed HEAD` realign, which discarded the staged/unstaged distinction and still reported success). `snapshotDevReadiness` (`finalize/staging-sync.ts`) samples the complete pre-CAS state: HEAD branch, resolved HEAD sha, the dirty-path set (`status --porcelain -z -uall --no-renames`, giwt lock scratch exempt) and a usable-worktree flag. After the CAS, `syncDevLazily` re-verifies the checkout still sits on the target, keeps the verified-lossless `checkout -f` fast path for a clean pre-move state (falling back to the targeted restore when it fails), and otherwise hands to `restoreMovedDevCheckout` (`finalize/dev-restore.ts`): every post-move dirty path is classified as merge residue — in the pre→post merge delta AND byte-identical to the pre-move HEAD — or as genuine uncommitted work (anything else, including mid-merge edits to delta paths). Residue is restored from the moved ref per path; genuine work is never touched and makes finalize refuse loudly. Detached/other-branch checkouts and a missing working tree stay informational, and step 5.5 still only runs when the dev checkout actually synced.
 
-Deliberate trade, stated so it is not mistaken for a total fix: reset discards the staged-vs-unstaged distinction (content the operator had staged comes back unstaged). That is chosen over the alternative, where those same paths sit STAGED and an ordinary commit deletes committed code. Unstaged deletions are visible in `git status` and recoverable; staged deletions are a trap.
-
-The two unticked criteria above are the deliberately unfixed remainder — the working tree still lags behind the ref, and finalize still reports success when it strands dev.
+Why the residue classification is sound: a path that was clean at the pre-move HEAD and only appears dirty because HEAD moved away from it has index and worktree bytes that are exactly the pre-move HEAD's bytes — restoring them from the moved ref loses nothing. Paths dirty before the move are genuine by construction; delta paths whose worktree no longer matches the pre-move HEAD were edited mid-merge and are reclassified as genuine. `git rm -f` is required post-CAS (against the moved HEAD every merge-deleted path reads as a staged add, which plain `git rm` refuses) — the classification proof is what makes forcing it safe.

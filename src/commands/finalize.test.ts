@@ -1236,9 +1236,12 @@ describe("finalize rebase strategy", () => {
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBeNull();
-    expect(run.output).toContain("not fast-forwarded to main (dirty working tree)");
-    expect(run.output).toContain("main moved to");
+    // The merge lands, but the un-syncable dev checkout turns the run into
+    // a loud refusal — never a scroll-pastable warning with exit 0
+    // (BUG-finalize-leaves-dev-worktree-stale-after-merging).
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("dev checkout NOT synced to main");
+    expect(run.output).toContain("seed.txt");
     // The user's dirt is untouched — never stashed, never reset.
     expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local edit\n");
     expect(readFileSync(join(root, "untracked.txt"), "utf8")).toBe("scratch\n");
@@ -1257,14 +1260,20 @@ describe("finalize rebase strategy", () => {
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBeNull();
+    // The merge landed, but dev carries genuine uncommitted work: finalize
+    // refuses (exit 1) instead of reporting success over an unsyncable
+    // checkout.
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("dev checkout NOT synced to main");
     expect(run.output).toContain("main moved to");
     // The safety property, asserted directly rather than via output text:
-    // nothing the merge landed is sitting in the index as a staged deletion.
+    // nothing the merge landed is sitting in the index as a staged deletion,
+    // and the merge-landed path is restored to disk.
     const staged = git(["diff", "--cached", "--name-status", "HEAD"]).trim();
     expect(staged).not.toContain("feature.txt");
     expect(staged).not.toMatch(/^D\s/m);
     expect(staged).not.toMatch(/^A\s/m);
+    expect(readFileSync(join(root, "feature.txt"), "utf8")).toBe("feature\n");
     // The operator's uncommitted work survives the realign untouched.
     expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local edit\n");
     expect(git(["stash", "list"]).trim()).toBe("");
@@ -1279,7 +1288,10 @@ describe("finalize rebase strategy", () => {
 
     const run = await driveFinalize(["feature/x"]);
 
-    expect(run.exitCode).toBeNull();
+    // The merge lands regardless of dev's state; the un-syncable checkout
+    // makes finalize refuse instead of reporting success.
+    expect(run.exitCode).toBe(1);
+    expect(run.output).toContain("dev checkout NOT synced to main");
     expect(run.output).toContain("main moved to");
     expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feature work");
   });
@@ -1505,10 +1517,11 @@ describe("finalize squash strategy", () => {
 
     // The old flow stashed, squash-merged in dev, then reset dev on stash-pop
     // conflict. Staging never touches dev: the dirt survives verbatim and the
-    // squash commit lands on the target ref regardless.
-    expect(run.exitCode).toBeNull();
+    // squash commit lands on the target ref — but the un-syncable dev
+    // checkout turns the run into a loud refusal, not a silent success.
+    expect(run.exitCode).toBe(1);
     expect(run.output).toContain("Squash merged: feat: X");
-    expect(run.output).toContain("not fast-forwarded to main (dirty working tree)");
+    expect(run.output).toContain("dev checkout NOT synced to main");
     expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("local scribble\n");
     expect(git(["stash", "list"]).trim()).toBe("");
     expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feat: X");
@@ -1525,8 +1538,11 @@ describe("finalize squash strategy", () => {
 
       const run = await driveGpgFinalize(["feature/x", "--merge-strategy", "squash"]);
 
-      expect(run.exitCode).toBeNull();
+      // The squash lands; the locked index makes dev un-syncable, so
+      // finalize refuses loudly instead of reporting success.
+      expect(run.exitCode).toBe(1);
       expect(run.output).toContain("Squash merged: feat: X");
+      expect(run.output).toContain("dev checkout NOT synced to main");
       expect(git(["log", "-1", "--format=%s", "main"]).trim()).toBe("feat: X");
     },
   );
@@ -1802,6 +1818,56 @@ describe("merge-phase lock narrowing (FEAT-narrow-finalize-lock-to-merge-steps)"
       process.exitCode = typeof savedCode === "number" ? savedCode : 0;
       process.removeAllListeners("exit");
       for (const listener of savedExit) process.on("exit", listener as () => void);
+    }
+  });
+});
+
+describe("dev checkout sync safety (BUG-finalize-leaves-dev-worktree-stale-after-merging)", () => {
+  test("dirty dev checkout: residue restored, user work preserved, finalize refuses", async () => {
+    const wtPath = featureWorktree("feature/stale-dev");
+    // Genuine uncommitted work in the dev (root) checkout: an unstaged edit
+    // the merge must never touch.
+    writeFileSync(join(root, "seed.txt"), "user edit\n");
+    const recorder = beginRun(
+      config,
+      "finalize",
+      ["feature/stale-dev"],
+      null,
+      "feature/stale-dev",
+    );
+    if (!recorder) throw new Error("run-record fixture could not be created");
+
+    try {
+      const run = await driveFinalize(["feature/stale-dev"]);
+
+      // (d) the refusal is loud: non-zero exit + a recorded outcome, not a
+      // scroll-pastable warning with exit 0.
+      expect(run.exitCode).toBe(1);
+      expect(run.output).toContain("dev checkout NOT synced to main");
+      expect(run.output).toContain("seed.txt");
+      const meta = JSON.parse(readFileSync(join(recorder.dir, "meta.json"), "utf8")) as {
+        outcome: { failedGates: string[]; };
+      };
+      expect(meta.outcome.failedGates).toEqual(["dev-sync"]);
+
+      // (a) no staged entries against the moved HEAD — in particular no
+      // staged deletion of the merge-landed path
+      expect(git(["diff", "--cached", "--name-status", "HEAD"])).toBe("");
+
+      // (b) the merge-landed path is present on disk with merged content
+      expect(readFileSync(join(root, "feature.txt"), "utf8")).toBe("feature\n");
+
+      // (c) the genuine user modification is preserved untouched
+      expect(readFileSync(join(root, "seed.txt"), "utf8")).toBe("user edit\n");
+      expect(git(["status", "--porcelain"])).toBe(" M seed.txt\n");
+
+      // Teardown was skipped: worktree and branch survive for a re-run, and
+      // the lock was released on the refusal path.
+      expect(existsSync(wtPath)).toBe(true);
+      expect(gitExitCode(["rev-parse", "--verify", "refs/heads/feature/stale-dev"])).toBe(0);
+      expect(existsSync(join(root, ".worktree-finalize.lock"))).toBe(false);
+    } finally {
+      recorder.finish(1);
     }
   });
 });

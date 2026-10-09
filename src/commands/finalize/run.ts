@@ -16,6 +16,7 @@ import { reconcilePlanPostMerge } from "../scoped-reconcile";
 import { closeScopedIssues, readScopedMeta } from "../scoped-worktree";
 import { resolveDiffBase, runTests } from "./checks";
 import { ensureWorktreeClean } from "./clean-state";
+import { refuseUnsyncedDev } from "./dev-restore";
 import { runCheckGateStep } from "./gates";
 import { executeStagingMerge } from "./staging";
 import { teardownFinalizedWorktree } from "./teardown";
@@ -223,6 +224,13 @@ export async function runFinalize(
       ?? gitSyncQuiet(config.repoRoot, "rev-parse", `refs/heads/${targetBranch}`);
     activeRun()?.outcome({ mergeCommit });
 
+    // Genuine uncommitted work blocks the lossless fast-forward: the merge
+    // has landed and residue was restored, but finalize must not report
+    // success — refuse; a post-cleanup re-run finishes teardown.
+    if (staged?.devSync.blocked) {
+      refuseUnsyncedDev({ config, targetBranch, reason: staged.devSync.reason, wtPath, branch });
+    }
+
     // Step 5.5: universal post-merge plan reconciliation. runSync --fix maps
     // the closed issues' Done state into the merged .md files and index, the
     // generated plan artifacts are regenerated, and the result lands as a
@@ -232,7 +240,7 @@ export async function runFinalize(
     // onto the new target — a dirty/detached dev would commit on the wrong
     // base.
     if (!alreadyMerged) {
-      if (staged?.devSynced) {
+      if (staged?.devSync.synced) {
         log("info", "Step 5.5: post-merge plan reconciliation...");
         reconcilePlanPostMerge(config, args);
       } else {

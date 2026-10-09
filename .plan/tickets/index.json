@@ -258,7 +258,7 @@
       "worktree"
     ],
     "source": ".plan/tickets/BUG-finalize-leaves-dev-worktree-stale-after-merging.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED": {
     "hash": "8f38844",

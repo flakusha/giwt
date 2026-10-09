@@ -24,7 +24,7 @@ Total tickets: **131** — untagged: **46** — unbound to epic: **118**
 | concurrency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | config | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | data-loss | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| dev-sync | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| dev-sync | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | diff-base | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | discovery | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -32,7 +32,7 @@ Total tickets: **131** — untagged: **46** — unbound to epic: **118**
 | dx | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| finalize | 19 | 18 | 0 | 0 | 0 | 0 | 1 |
+| finalize | 19 | 19 | 0 | 0 | 0 | 0 | 0 |
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -89,7 +89,7 @@ Total tickets: **131** — untagged: **46** — unbound to epic: **118**
 | validate | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | weave | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| worktree | 11 | 10 | 0 | 0 | 0 | 0 | 1 |
+| worktree | 11 | 11 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | (untagged) | 46 | 46 | 0 | 0 | 0 | 0 | 0 |
 
@@ -102,7 +102,7 @@ Total tickets: **131** — untagged: **46** — unbound to epic: **118**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 118 | 117 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 118 | 118 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

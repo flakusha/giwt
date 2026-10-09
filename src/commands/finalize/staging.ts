@@ -23,15 +23,15 @@ import { assertAgentGpgUnlocked } from "../../utils/gpg";
 import { log, raw } from "../../utils/output";
 import { scopedSignFlags } from "../scoped-reconcile";
 import { directMergeInStaging, squashInStaging } from "./staging-strategy";
-import { snapshotDevReadiness, syncDevLazily } from "./staging-sync";
+import { type DevSyncResult, snapshotDevReadiness, syncDevLazily } from "./staging-sync";
 import { pruneStagingWorktrees, removeStaging, spawnGit, stagingDirFor } from "./staging-tree";
 import { publishActiveStagingTeardown } from "./state";
 
 export interface StagingMergeResult {
   /** Post-merge SHA of refs/heads/<targetBranch> (the CAS-moved ref). */
   targetSha: string;
-  /** True when the dev checkout was clean, on-target, and fast-forwarded. */
-  devSynced: boolean;
+  /** Lazy dev-sync outcome after the CAS (see staging-sync.ts). */
+  devSync: DevSyncResult;
 }
 
 /**
@@ -158,8 +158,8 @@ export function executeStagingMerge(
   }
   log("success", `${targetBranch} moved to ${finalSha.slice(0, 8)}`);
 
-  const devSynced = syncDevLazily(config, targetBranch, readiness);
+  const devSync = syncDevLazily(config, targetBranch, readiness);
   removeStaging(config, stagingDir);
   publishActiveStagingTeardown(null);
-  return { targetSha: finalSha, devSynced };
+  return { targetSha: finalSha, devSync };
 }

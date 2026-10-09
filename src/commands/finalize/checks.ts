@@ -97,6 +97,11 @@ function printTail(text: string, lines: number): void {
 // failure gripe so the ledger line names the actual gates.
 export let LAST_FAILED_GATES: string[] = [];
 
+/** Name the gates a refusal failed, so the exit hook's ledger gripe carries them. */
+export function setLastFailedGates(gates: string[]): void {
+  LAST_FAILED_GATES = gates;
+}
+
 /**
  * Bounded on-console failure report for the check gate. Reads the
  * runner's check-report JSON when it exists and lists failing gate
