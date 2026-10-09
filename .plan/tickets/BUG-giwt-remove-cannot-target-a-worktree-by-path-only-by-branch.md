@@ -3,7 +3,7 @@
 
 # BUG: giwt remove cannot target a worktree by path — only by branch
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Tags:** cli, worktree

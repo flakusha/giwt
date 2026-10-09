@@ -277,7 +277,7 @@ describe("remove: stale registry reconciliation", () => {
     } finally {
       cap.restore();
     }
-    expect(cap.lines()).toContain("pruned stale registration for branch 'gone-remove'");
+    expect(cap.lines()).toContain("pruned stale registration for 'gone-remove'");
     expect(findRegistration(await getWorktrees(root), wtPath)).toBeUndefined();
   });
 

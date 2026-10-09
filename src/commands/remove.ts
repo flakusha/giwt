@@ -7,6 +7,8 @@ import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { hasWorktreeDir, pruneStaleRegistrations, registrationFor } from "./worktree-registry";
 
+const USAGE = "  Usage: giwt remove <branch|path> [--branch-only] [--force]";
+
 export async function execute(args: string[], config: WorktreeConfig): Promise<void> {
   // Flag parsing: --branch-only / --force anywhere; unknown flags refused.
   const flags: string[] = [];
@@ -15,27 +17,39 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
     if (arg === "--branch-only" || arg === "--force") flags.push(arg);
     else if (arg.startsWith("--")) {
       log("error", `unknown flag '${arg}'`);
-      raw("  Usage: giwt remove <branch> [--branch-only] [--force]");
+      raw(USAGE);
       process.exit(1);
     } else positionals.push(arg);
   }
   const branchOnly = flags.includes("--branch-only");
   const force = flags.includes("--force");
 
-  const branch = positionals[0];
-  if (!branch) {
+  const target = positionals[0];
+  if (!target) {
     log("error", "branch name required");
-    raw("  Usage: giwt remove <branch> [--branch-only] [--force]");
+    raw(USAGE);
     process.exit(1);
   }
 
   if (branchOnly) {
-    removeBranchOnly(branch, force, config);
+    removeBranchOnly(target, force, config);
     return;
   }
 
-  const dirName = branchToPath(branch);
-  const wtPath = resolve(config.treeDir, dirName);
+  // Path auto-detection (ticket BUG-giwt-remove-cannot-target-a-worktree-by-path):
+  // a positional that matches a registered worktree path is used verbatim —
+  // no lossy branchToPath inversion. Anything else is treated as a branch.
+  let branch: string | null = target;
+  let wtPath = resolve(config.treeDir, branchToPath(target));
+  const pathMatched = await registrationFor(config.repoRoot, target);
+  if (pathMatched) {
+    wtPath = resolve(pathMatched.path);
+    branch = pathMatched.branch.replace(/^refs\/heads\//, "") || null;
+    log(
+      "info",
+      `resolved path target: ${wtPath}${branch ? ` (branch '${branch}')` : " (detached)"}`,
+    );
+  }
 
   if (!hasWorktreeDir(wtPath)) {
     const registration = await registrationFor(config.repoRoot, wtPath);
@@ -45,12 +59,12 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
       // FIX-stale-worktree-registry).
       log("info", `pruning stale worktree registration: ${wtPath} (directory missing)`);
       pruneStaleRegistrations(config.repoRoot);
-      log("success", `pruned stale registration for branch '${branch}'`);
+      log("success", `pruned stale registration for '${target}'`);
       return;
     }
     log(
       "error",
-      `no worktree found for branch '${branch}' — create it first: giwt create ${branch}`
+      `no worktree found for '${target}' — create it first: giwt create ${target}`
         + " (or delete the branch alone: giwt remove <branch> --branch-only)",
     );
     process.exit(1);
@@ -88,14 +102,16 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
 
   // Post-removal branch cleanup: a fully merged branch is dead weight once
   // its worktree is gone (the common leftover after `giwt remove`).
-  if (branchMerged(branch, config)) {
-    gitRun(config.repoRoot, "branch", "-d", branch);
-    log("success", `deleted merged branch '${branch}'`);
-  } else {
-    log(
-      "info",
-      `branch '${branch}' kept (unmerged) — delete it with: giwt remove ${branch} --branch-only`,
-    );
+  if (branch) {
+    if (branchMerged(branch, config)) {
+      gitRun(config.repoRoot, "branch", "-d", branch);
+      log("success", `deleted merged branch '${branch}'`);
+    } else {
+      log(
+        "info",
+        `branch '${branch}' kept (unmerged) — delete it with: giwt remove ${branch} --branch-only`,
+      );
+    }
   }
 
   log("success", "Removed");

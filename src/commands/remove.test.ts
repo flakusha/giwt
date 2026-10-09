@@ -112,7 +112,7 @@ describe("remove: error paths", () => {
     expect(threw).toBe(true);
     expect(exit.calls).toEqual([1]);
     expect(cap.lines()).toContain("branch name required");
-    expect(cap.lines()).toContain("Usage: giwt remove <branch>");
+    expect(cap.lines()).toContain("Usage: giwt remove <branch|path>");
   });
 
   test("refuses a worktree with modified tracked files", async () => {
@@ -368,5 +368,90 @@ describe("remove --branch-only", () => {
     expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
     expect(branchExists("diverged-keep")).toBe(true);
     expect(cap.lines()).toContain("branch 'diverged-keep' kept (unmerged)");
+  });
+});
+
+describe("remove by worktree path", () => {
+  function branchExists(branch: string): boolean {
+    const p = Bun.spawnSync(["git", "-C", root, "rev-parse", "--verify", `refs/heads/${branch}`], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    return p.exitCode === 0;
+  }
+
+  beforeEach(() => {
+    config = {
+      ...config,
+      settings: { ...config.settings, branches: { ...config.settings.branches, root: "main" } },
+    };
+  });
+
+  test("removes a worktree addressed by its path, deriving the branch from the registry", async () => {
+    // Slash branch: path inversion (branchToPath) would lose the '/', so the
+    // positional can only resolve through the worktree registry.
+    const wtPath = addWorktree("feat/slash-branch");
+    const cap = captureOutput();
+    try {
+      await execute([wtPath], config);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.lines()).toContain(`resolved path target: ${wtPath} (branch 'feat/slash-branch')`);
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
+    // Branch was cut at main → merged → post-removal cleanup deletes it.
+    expect(branchExists("feat/slash-branch")).toBe(false);
+    expect(cap.lines()).toContain("deleted merged branch 'feat/slash-branch'");
+  });
+
+  test("refuses a path-targeted worktree with uncommitted changes", async () => {
+    const wtPath = addWorktree("path-dirty");
+    writeFileSync(resolve(wtPath, "seed.txt"), "modified\n");
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute([wtPath], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("worktree has uncommitted changes");
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(true);
+  });
+
+  test("keeps an unmerged branch when removed by path", async () => {
+    const wtPath = addWorktree("path-diverged");
+    writeFileSync(resolve(wtPath, "wip.txt"), "wip\n");
+    git(["add", "wip.txt"], wtPath);
+    git(["commit", "-qm", "wip"], wtPath);
+    const cap = captureOutput();
+    try {
+      await execute([wtPath], config);
+    } finally {
+      cap.restore();
+    }
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
+    expect(branchExists("path-diverged")).toBe(true);
+    expect(cap.lines()).toContain("branch 'path-diverged' kept (unmerged)");
+  });
+
+  test("removes a detached worktree by path without branch cleanup", async () => {
+    const wtPath = resolve(treeDir, "detached-wt");
+    git(["worktree", "add", "-q", "--detach", wtPath, "main"]);
+    const cap = captureOutput();
+    try {
+      await execute([wtPath], config);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.lines()).toContain(`resolved path target: ${wtPath} (detached)`);
+    expect(existsSync(resolve(wtPath, ".git"))).toBe(false);
+    expect(cap.lines()).toContain("Removed");
+    expect(cap.lines()).not.toContain("kept (unmerged)");
   });
 });

@@ -18,7 +18,7 @@ Total tickets: **126** — untagged: **46** — unbound to epic: **113**
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | classifier | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | cleanup | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| cli | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| cli | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | coauthors | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | commit-wt | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | concurrency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -87,7 +87,7 @@ Total tickets: **126** — untagged: **46** — unbound to epic: **113**
 | validate | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | weave | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| worktree | 9 | 8 | 0 | 0 | 0 | 0 | 1 |
+| worktree | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | (untagged) | 46 | 46 | 0 | 0 | 0 | 0 | 0 |
 
@@ -100,7 +100,7 @@ Total tickets: **126** — untagged: **46** — unbound to epic: **113**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 113 | 112 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 113 | 113 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

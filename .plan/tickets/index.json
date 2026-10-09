@@ -366,7 +366,7 @@
       "worktree"
     ],
     "source": ".plan/tickets/BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-GIWT-TICKET-DROPS-FLAGS-THAT-FOLLOW-THE-POSITIONAL-BODY": {
     "hash": "a9a0711",
