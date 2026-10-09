@@ -243,6 +243,23 @@
     "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md",
     "status": "done"
   },
+  "BUG-FINALIZE-LEAVES-DEV-WORKTREE-STALE-AFTER-MERGING": {
+    "hash": "b6a5175",
+    "git_issue": "b6a5175",
+    "extid": "BUG-FINALIZE-LEAVES-DEV-WORKTREE-STALE-AFTER-MERGING",
+    "type": "BUG",
+    "title": "finalize leaves dev worktree stale after merging",
+    "label": "bug",
+    "priority": "critical",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "dev-sync",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-finalize-leaves-dev-worktree-stale-after-merging.md",
+    "status": "Not Started"
+  },
   "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED": {
     "hash": "8f38844",
     "git_issue": "8f38844",

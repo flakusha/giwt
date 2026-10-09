@@ -205,6 +205,12 @@
       "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
     }
   ],
+  "src/commands/finalize/staging-sync.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-leaves-dev-worktree-stale-after-merging.md"
+    }
+  ],
   "src/commands/finalize/teardown.ts": [
     {
       "kind": "ticket",
