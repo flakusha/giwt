@@ -16,9 +16,9 @@ import { reconcilePlanPostMerge } from "../scoped-reconcile";
 import { closeScopedIssues, readScopedMeta } from "../scoped-worktree";
 import { resolveDiffBase, runTests } from "./checks";
 import { ensureWorktreeClean } from "./clean-state";
-import { refuseUnsyncedDev } from "./dev-restore";
 import { runCheckGateStep } from "./gates";
 import { executeStagingMerge } from "./staging";
+import { refuseUnsyncedDev } from "./staging-sync";
 import { teardownFinalizedWorktree } from "./teardown";
 
 export async function runFinalize(

@@ -21,9 +21,7 @@
 
 import type { WorktreeConfig } from "../../utils/config";
 import { log, raw } from "../../utils/output";
-import { activeRun } from "../../utils/runlog";
 import { LOCK_FILENAME } from "../abort/helpers";
-import { setLastFailedGates } from "./checks";
 import { spawnGit } from "./staging-tree";
 
 /** Delta actions the residue restore knows how to repair. */
@@ -44,6 +42,12 @@ export interface DevReadiness {
   headSha: string;
   /** False when the checkout has no usable working tree (e.g. bare). */
   worktree: boolean;
+  /**
+   * True when the pre-move status read succeeded. False means the snapshot
+   * could not sample dirty paths — the safety proof is unavailable and the
+   * sync must fail closed, never treat the gap as benign.
+   */
+  statusRead: boolean;
   /** Pre-move dirty paths, giwt's own lock scratch excluded. */
   dirtyPaths: Set<string>;
 }
@@ -228,33 +232,4 @@ function restoreResidue(
     }
   }
   return ok;
-}
-
-/** Refusal message + run-record outcome for a dev checkout that carries
- *  genuine uncommitted work and cannot be synced to the moved ref. The
- *  caller still skips teardown and exits non-zero. */
-export function refuseUnsyncedDev({
-  config,
-  targetBranch,
-  reason,
-  wtPath,
-  branch,
-}: {
-  config: WorktreeConfig;
-  targetBranch: string;
-  reason: string;
-  wtPath: string;
-  branch: string;
-}): void {
-  // Outcome before exit: process.exit bypasses the dispatch catch, the exit
-  // hook only backfills end/exitCode, never outcome data.
-  setLastFailedGates(["dev-sync"]);
-  activeRun()?.outcome({ failedGates: ["dev-sync"] });
-  log("error", `dev checkout NOT synced to ${targetBranch} — ${reason}`);
-  raw("  Dev's uncommitted files are preserved untouched; merge residue was restored.");
-  raw(`  Teardown skipped: worktree ${wtPath} and branch '${branch}' are kept.`);
-  raw(
-    `  Then: commit or stash the changes in ${config.repoRoot}, then re-run 'giwt finalize ${branch}' to finish teardown`,
-  );
-  process.exit(1);
 }

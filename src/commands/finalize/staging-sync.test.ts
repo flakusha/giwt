@@ -18,7 +18,7 @@
  * under test (residue classification, targeted restore, refusal).
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { WorktreeConfig } from "../../utils/config";
@@ -27,6 +27,7 @@ import { scratchRoot } from "../../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../../utils/settings";
 import { LOCK_FILENAME } from "../abort/helpers";
 import { snapshotDevReadiness, syncDevLazily } from "./staging-sync";
+import { spawnGit as realSpawnGit } from "./staging-tree";
 
 let root: string;
 let config: WorktreeConfig;
@@ -272,5 +273,71 @@ describe("dev checkout lazy sync (unprovable and mid-merge states)", () => {
     const result = syncDevLazily(config, "dev", { ...readiness, onTarget: false });
     expect(result.blocked).toBe(true);
     expect(result.reason).toBe("failed to restore merge residue in the dev checkout");
+  });
+
+  it("refuses when the post-restore verification status is unreadable", () => {
+    const readiness = snapshotDevReadiness(config, "dev");
+    moveDevRef();
+    // Fault injection for the race where the post-move status read works
+    // but the post-restore re-check fails (e.g. the index is corrupted
+    // mid-merge): the residue restored fine, yet success may not be
+    // claimed over an unverifiable checkout.
+    // Capture the real spawnGit BEFORE mock.module: bun rebinds live
+    // imports, so the wrapper must close over the pre-mock value.
+    const originalSpawnGit = realSpawnGit;
+    let statusReads = 0;
+    mock.module("./staging-tree", () => ({
+      spawnGit: (args: string[], cwd: string) => {
+        if (args[0] === "status") {
+          statusReads++;
+          if (statusReads >= 2) {
+            return { exitCode: 128, stdout: "", stderr: "fault: status unavailable" };
+          }
+        }
+        return originalSpawnGit(args, cwd);
+      },
+    }));
+    try {
+      const result = syncDevLazily(config, "dev", { ...readiness, onTarget: false });
+      expect(statusReads).toBe(2);
+      expect(result.blocked).toBe(true);
+      expect(result.reason).toBe("dev checkout still dirty after residue restore");
+    } finally {
+      mock.restore();
+    }
+  });
+});
+
+describe("dev checkout lazy sync (snapshot-time status failure)", () => {
+  afterAll(() => {
+    mock.restore();
+  });
+
+  it("fails closed when status is unreadable on an on-target dev", () => {
+    // The reviewer's repro: a corrupt index makes `git status` exit 128
+    // while symbolic-ref/rev-parse still succeed — a real checkout with an
+    // unreadable state must refuse, never ride the informational path.
+    writeFileSync(join(root, ".git", "index"), "garbage");
+    const readiness = snapshotDevReadiness(config, "dev");
+    expect(readiness.worktree).toBe(true);
+    expect(readiness.statusRead).toBe(false);
+    expect(readiness.onTarget).toBe(false);
+    moveDevRef();
+    const result = syncDevLazily(config, "dev", readiness);
+    expect(result).toEqual({ synced: false, blocked: true, reason: "dev status unavailable" });
+  });
+
+  it("stays informational when status is unreadable but dev is not on the target", () => {
+    // Plumbing-only branch switch (no index write, so the corruption sticks):
+    // off-target checkouts keep the informational handling even when status
+    // itself is failing — the ref move cannot desync a checkout that is
+    // elsewhere.
+    git(["symbolic-ref", "HEAD", "refs/heads/other"]);
+    writeFileSync(join(root, ".git", "index"), "garbage");
+    const readiness = snapshotDevReadiness(config, "dev");
+    expect(readiness.onTarget).toBe(false);
+    moveDevRef();
+    const result = syncDevLazily(config, "dev", readiness);
+    expect(result).toEqual({ synced: false, blocked: false, reason: "on 'other'" });
   });
 });
