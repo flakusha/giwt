@@ -10,6 +10,7 @@
 
 import { configPredicate } from "./config-predicate";
 import { hasForceShort, interactiveFlag, type PredicateCtx } from "./predicate-helpers";
+import { rebasePredicate } from "./rebase-predicate";
 
 export type { PredicateCtx };
 
@@ -118,39 +119,6 @@ function commitPredicate(args: readonly string[]): string | null {
 /** `git merge` — block aborts (discards conflict resolutions). */
 function mergePredicate(args: readonly string[]): string | null {
   if (args.includes("--abort")) return "merge --abort discards conflict resolutions";
-  return null;
-}
-
-/** Identity-override patterns refused inside a `rebase --exec` payload. */
-const EXEC_IDENTITY_PATTERNS: readonly RegExp[] = [
-  /GIT_AUTHOR_/i,
-  /GIT_COMMITTER_/i,
-  /user\.name=/i,
-  /user\.email=/i,
-  /--author[=\s]/i,
-  /commit\.gpgsign\s*=\s*false/i,
-  /--no-gpg-sign/i,
-];
-
-/** `git rebase` — block aborts, interactive editor mode, and identity-override --exec payloads. */
-function rebasePredicate(args: readonly string[]): string | null {
-  if (args.includes("--abort")) return "rebase --abort discards conflict resolutions";
-  if (args.includes("-i") || args.includes("--interactive")) {
-    return "interactive rebase opens an editor";
-  }
-  for (const [i, arg] of args.entries()) {
-    const attached = arg.startsWith("--exec=")
-      ? arg.slice("--exec=".length)
-      : arg.startsWith("-x=")
-      ? arg.slice("-x=".length)
-      : arg.startsWith("-x") && arg.length > 2
-      ? arg.slice(2)
-      : null;
-    const payload = attached ?? (arg === "--exec" || arg === "-x" ? args[i + 1] : null);
-    if (typeof payload === "string" && EXEC_IDENTITY_PATTERNS.some((re) => re.test(payload))) {
-      return "rebase --exec payload overrides the pinned repo identity";
-    }
-  }
   return null;
 }
 

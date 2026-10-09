@@ -502,7 +502,7 @@
       "policy"
     ],
     "source": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "BUG-REBASE-EXEC-NOT-BLOCKED-IN-GIWT-GIT-PASSTHROUGH-POLICY": {
     "hash": "38c2c25",

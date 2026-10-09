@@ -275,6 +275,63 @@ describe("classifyGitInvocation — rebase --exec payload identity guard", () =>
     expect(verdict(["rebase", "-i", "main"]).verdict).toBe("block");
     expect(verdict(["rebase", "--interactive", "main"]).verdict).toBe("block");
   });
+
+  test("combined short-flag clusters reach the identity scan", () => {
+    const clusterPayloads = [
+      "git -c user.name=Evil commit --amend --no-edit",
+      "git commit --amend --no-edit --reset-author",
+    ];
+    for (const payload of clusterPayloads) {
+      for (
+        const args of [
+          ["rebase", "-ix", payload, "main"],
+          ["rebase", `-ix'${payload}'`, "main"],
+          ["rebase", `-xi${payload}`, "main"],
+          ["rebase", "-ix", payload],
+        ]
+      ) {
+        const v = verdict(args);
+        expect(v.verdict, args.join(" ")).toBe("block");
+        expect(v.reason, args.join(" ")).toMatch(/--exec|interactive/);
+      }
+    }
+    // A cluster containing `i` before `x` is interactive regardless of payload.
+    expect(verdict(["rebase", "-ix", "make", "test"]).reason).toContain("interactive");
+    // `i` inside `-x`'s attached payload is NOT an interactive flag.
+    expect(verdict(["rebase", "-xgit", "status"]).verdict).toBe("pass");
+  });
+
+  test("regex-gap identity payloads are refused", () => {
+    const gapPayloads = [
+      "git -c commit.gpgsign=0 commit --amend --no-edit",
+      "git -c commit.gpgsign=no commit --amend --no-edit",
+      "git -c commit.gpgsign=off commit --amend --no-edit",
+      "git commit --amend --no-edit --reset-author",
+      "git config user.name Evil",
+      "git config user.email evil@x",
+      "git -c user.name Evil commit --amend --no-edit",
+      "git -c 'user.name=Evil' commit --amend --no-edit",
+      "git commit --amend --author \"Evil <e@evil>\"",
+    ];
+    for (const payload of gapPayloads) {
+      const v = verdict(["rebase", "-x", payload, "main"]);
+      expect(v.verdict, payload).toBe("block");
+      expect(v.reason).toContain("--exec");
+    }
+  });
+
+  test("benign payloads keep passing after the guard widening", () => {
+    for (const payload of ["make test", "echo hi", "git log --pretty=%an"]) {
+      for (const args of [["rebase", "-x", payload, "main"]]) {
+        expect(verdict(args).verdict, payload).toBe("pass");
+      }
+    }
+    // `--reset-author-date` shifts timestamps only — stays allowed.
+    expect(
+      verdict(["rebase", "-x", "git commit --amend --no-edit --reset-author-date", "main"])
+        .verdict,
+    ).toBe("pass");
+  });
 });
 
 describe("classifyGitInvocation — err-closed unknowns", () => {
