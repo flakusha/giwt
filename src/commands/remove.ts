@@ -51,6 +51,11 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
     );
   }
 
+  if (resolve(wtPath) === resolve(config.repoRoot)) {
+    log("error", "cannot remove the main worktree — target a branch inside tree/ instead");
+    process.exit(1);
+  }
+
   if (!hasWorktreeDir(wtPath)) {
     const registration = await registrationFor(config.repoRoot, wtPath);
     if (registration) {

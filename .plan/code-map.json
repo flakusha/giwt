@@ -302,6 +302,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-remove-path-auto-detection-matches-main-worktree-registratio.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
     }
   ],
@@ -417,6 +421,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-exec-identity-patterns-author-equals-form-only-misses-space-.md"
     },
     {
       "kind": "ticket",

@@ -11,7 +11,7 @@ import { scratchRoot } from "../utils/scratch-tmp";
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { setLogLevel, setOutputFormat } from "../utils/output";
 import { DEFAULT_SETTINGS } from "../utils/settings";
@@ -422,6 +422,54 @@ describe("remove by worktree path", () => {
     expect(exit.calls).toEqual([1]);
     expect(cap.lines()).toContain("worktree has uncommitted changes");
     expect(existsSync(resolve(wtPath, ".git"))).toBe(true);
+  });
+
+  test("refuses to remove the main worktree when the repo root is the path target", async () => {
+    // Resource contract: owns the unique mkdtemp fixture `root` (beforeEach,
+    // rmSync in afterEach); output/exit mocks restored in finally.
+    // Deliberately dirty: the main-worktree guard must fire before the
+    // dirty check, so this must not report "uncommitted changes".
+    writeFileSync(resolve(root, "seed.txt"), "dirty\n");
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute([root], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("cannot remove the main worktree");
+    expect(cap.lines()).toContain("target a branch inside tree/");
+    expect(cap.lines()).not.toContain("worktree has uncommitted changes");
+    // No removal was attempted (would log "Removing worktree: ...").
+    expect(cap.lines()).not.toContain("Removing worktree");
+    expect(existsSync(root)).toBe(true);
+  });
+
+  test("refuses a relative path that resolves to the repo root", async () => {
+    // Resource contract: owns the unique mkdtemp fixture `root` (beforeEach,
+    // rmSync in afterEach); process.cwd() is read-only; mocks restored in finally.
+    const relTarget = relative(process.cwd(), root) || ".";
+    const exit = mockExit();
+    const cap = captureOutput();
+    let threw = false;
+    try {
+      await execute([relTarget], config);
+    } catch (error) {
+      threw = String(error).includes("__exit:1");
+    } finally {
+      cap.restore();
+      exit.restore();
+    }
+    expect(threw).toBe(true);
+    expect(exit.calls).toEqual([1]);
+    expect(cap.lines()).toContain("cannot remove the main worktree");
+    expect(existsSync(root)).toBe(true);
   });
 
   test("keeps an unmerged branch when removed by path", async () => {

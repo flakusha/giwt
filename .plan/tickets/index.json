@@ -132,6 +132,22 @@
     "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
     "status": "done"
   },
+  "BUG-EXEC-IDENTITY-PATTERNS-AUTHOR-EQUALS-FORM-ONLY-MISSES-SPACE-": {
+    "hash": "04cb67a",
+    "extid": "BUG-EXEC-IDENTITY-PATTERNS-AUTHOR-EQUALS-FORM-ONLY-MISSES-SPACE-",
+    "type": "BUG",
+    "title": "EXEC_IDENTITY_PATTERNS --author equals-form only misses space-form and gpgsign bypass",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "security",
+      "policy"
+    ],
+    "source": ".plan/tickets/BUG-exec-identity-patterns-author-equals-form-only-misses-space-.md",
+    "status": "Not Started",
+    "git_issue": "04cb67a"
+  },
   "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE": {
     "hash": "42334ee",
     "extid": "BUG-FINALIZE-ALREADYMERGED-CHECK-IS-INCOMPLETE",
@@ -571,6 +587,22 @@
     ],
     "source": ".plan/tickets/BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load.md",
     "status": "done"
+  },
+  "BUG-REMOVE-PATH-AUTO-DETECTION-MATCHES-MAIN-WORKTREE-REGISTRATIO": {
+    "hash": "ef0e231",
+    "extid": "BUG-REMOVE-PATH-AUTO-DETECTION-MATCHES-MAIN-WORKTREE-REGISTRATIO",
+    "type": "BUG",
+    "title": "remove path auto-detection matches main worktree registration",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "cli",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-remove-path-auto-detection-matches-main-worktree-registratio.md",
+    "status": "done",
+    "git_issue": "ef0e231"
   },
   "BUG-RESOLVEDIFFBASE-RETURNS-MERGE-BASE-INSTEAD-OF-THE-REQUESTED-": {
     "hash": "e120fa8",
