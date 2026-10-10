@@ -269,17 +269,23 @@ describe("scoped worktree creation", () => {
 
     // Plan state is consistent (master index empty but no contradictions
     // runSync can fix without a registry) — reconcile must not throw and
-    // must report the no-commit path.
-    const logs: string[] = [];
-    const spy = spyOn(process.stdout, "write").mockImplementation(
-      ((c: unknown) => (logs.push(String(c)), true)) as never,
-    );
-    try {
-      reconcilePlanPostMerge(cfg, []);
-    } finally {
-      spy.mockRestore();
-    }
-    expect(logs.join("")).toContain("no commit");
+    // must report the no-commit path. The FIRST run bootstraps the committed
+    // index.json.stamp (new derived artifact); the SECOND run is the
+    // idempotent no-commit path the invariant is about.
+    const captureReconcile = (): string[] => {
+      const logs: string[] = [];
+      const spy = spyOn(process.stdout, "write").mockImplementation(
+        ((c: unknown) => (logs.push(String(c)), true)) as never,
+      );
+      try {
+        reconcilePlanPostMerge(cfg, []);
+      } finally {
+        spy.mockRestore();
+      }
+      return logs;
+    };
+    expect(captureReconcile().join("")).toContain("plan reconciliation committed");
+    expect(captureReconcile().join("")).toContain("no commit");
   });
 
   test("corrupt scope marker reads as null", async () => {

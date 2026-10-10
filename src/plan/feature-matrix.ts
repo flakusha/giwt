@@ -14,6 +14,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { assertIndexUnedited } from "../tickets/index-stamp";
 import { type IndexEntry, normalizeStatus } from "../tickets/sync-ticket";
 
 export interface MatrixStatuses {
@@ -197,8 +198,11 @@ export function generateMatrixMarkdown(
   return lines.join("\n");
 }
 
-/** Read + parse the ticket index; errors name the path (repo convention). */
+/** Read + parse the ticket index; errors name the path (repo convention).
+ * A hand-edited index (stamp mismatch) is rejected with the remedy message
+ * — the matrix is a projection of frontmatter, never of manual index data. */
 export function readTicketIndex(indexPath: string): Record<string, IndexEntry> {
+  assertIndexUnedited(indexPath);
   let text: string;
   try {
     text = readFileSync(indexPath, "utf8");

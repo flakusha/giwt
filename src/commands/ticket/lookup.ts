@@ -3,6 +3,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "path";
+import { assertIndexUnedited } from "../../tickets/index-stamp";
 import type { IndexEntry } from "../../tickets/sync-ticket";
 import { extidForHash, resolveExtid } from "../resolver";
 
@@ -19,10 +20,12 @@ export function readTicketIndex(
   // Missing index degrades to an empty one: worktrees no longer carry a
   // per-branch index.json (it is regenerated post-merge on the target
   // branch), so lookups proceed on .md-only data. Corrupt index stays an
-  // error.
+  // error; a hand-edited index is rejected (frontmatter is source of
+  // truth — FEAT-reject-manual-edits-to-plan-tickets-index).
   if (!existsSync(indexPath)) {
     return {};
   }
+  assertIndexUnedited(indexPath);
   try {
     return JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntry>;
   } catch (error) {

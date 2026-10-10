@@ -12,6 +12,7 @@
 import { renameSync, writeFileSync } from "node:fs";
 import { log, raw } from "../utils/output";
 import { isLinkedWorktree } from "../utils/worktree-probe";
+import { writeIndexStamp } from "./index-stamp";
 
 /**
  * Write the sorted index atomically at the main checkout, or skip with an
@@ -30,5 +31,7 @@ export function persistIndexCanonical(repoRoot: string, indexPath: string, sorte
   const tmpPath = `${indexPath}.tmp-${process.pid}`;
   writeFileSync(tmpPath, JSON.stringify(sorted, null, 2) + "\n");
   renameSync(tmpPath, indexPath);
+  // Fingerprint the fresh bytes so read/use paths can reject manual edits.
+  writeIndexStamp(indexPath);
   raw(`Wrote ${indexPath}`);
 }

@@ -199,6 +199,56 @@ describe("mergeIndexRecords", () => {
   });
 });
 
+/** Regression (index-stamp): a replayed commit that applies CLEANLY (no
+ *  generated conflict → no re-stamp in resolveGenerated) still changes
+ *  index.json bytes after the conflict-resolution stamp. The end-of-rebase
+ *  regeneration must refresh the fingerprint, not misread the replay as a
+ *  manual edit (used to throw "frontmatter is source of truth" mid-rebase). */
+test("clean-apply replayed index change does not trip the authenticity stamp", () => {
+  const root = mkdtempSync(join(scratchRoot(), "giwt-plan-reconcile-clean-"));
+  const cleanup = (): void => rmSync(root, { recursive: true, force: true });
+  try {
+    git(root, "init", "-q", "-b", "main");
+    git(root, "config", "user.email", "giwt-test@example.com");
+    git(root, "config", "user.name", "giwt test");
+    git(root, "config", "commit.gpgsign", "false");
+    writeJson(root, ".plan/tickets/index.json", { "TASK-A": { status: "open" } });
+    writeFileSync(join(root, "README.md"), "fixture\n");
+    git(root, "add", "-f", "-A");
+    git(root, "commit", "-qm", "base");
+
+    git(root, "checkout", "-qb", "feature");
+    // Conflicts with main's edit (same lines) → resolution + stamp.
+    writeJson(root, ".plan/tickets/index.json", {
+      "TASK-A": { status: "done", tags: ["x"] },
+    });
+    git(root, "add", "-f", ".plan/tickets/index.json");
+    git(root, "commit", "-qm", "feature one");
+    // Appends at EOF → applies CLEANLY during replay → bytes change post-stamp.
+    writeJson(root, ".plan/tickets/index.json", {
+      "TASK-A": { status: "done", tags: ["x"] },
+      "TASK-B": { status: "open" },
+    });
+    git(root, "add", "-f", ".plan/tickets/index.json");
+    git(root, "commit", "-qm", "feature two");
+
+    git(root, "checkout", "-q", "main");
+    writeJson(root, ".plan/tickets/index.json", { "TASK-A": { status: "closed" } });
+    git(root, "add", "-f", ".plan/tickets/index.json");
+    git(root, "commit", "-qm", "main one");
+
+    git(root, "checkout", "-q", "feature");
+    const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+    expect(result.exitCode).toBe(0);
+    expect(git(root, "status", "--porcelain")).toBe("");
+    const finalIndex = JSON.parse(git(root, "show", "HEAD:.plan/tickets/index.json"));
+    expect(finalIndex["TASK-B"]).toEqual({ status: "open" });
+    expect(finalIndex["TASK-A"]?.status).toBe("closed");
+  } finally {
+    cleanup();
+  }
+});
+
 test("resolves generated conflicts across successive rebase commits", () => {
   const fixtureValue = fixture();
   const { root } = fixtureValue;

@@ -14,6 +14,7 @@
 
 import { existsSync } from "node:fs";
 import { normalize } from "node:path";
+import { writeIndexStamp } from "../../tickets/index-stamp";
 import { log, raw } from "../../utils/output";
 import { buildMap, writeMap } from "../code-map";
 import { genMatrix } from "../feature-matrix";
@@ -37,6 +38,13 @@ function readStage(root: string, path: string, stage: number) {
 function regenerate(root: string, planDir: string, ticketsPath: string): void {
   const indexPath = fromRoot(root, `${ticketsPath}/index.json`);
   if (existsSync(indexPath)) {
+    // The rebase owns these bytes: a replayed commit may have applied
+    // CLEANLY (no generated conflict → no re-stamp in resolveGenerated)
+    // while changing index.json — refresh the fingerprint so the
+    // readTicketIndex authenticity guard below does not misread the
+    // replay as a manual edit. Reproduced: clean-apply replay + stamp →
+    // genMatrix threw "manually edited" mid-rebase.
+    writeIndexStamp(indexPath);
     genMatrix(indexPath, fromRoot(root, `${planDir}/feature-matrix.md`));
   }
   const epicsDir = fromRoot(root, `${planDir}/epics`);
@@ -83,6 +91,9 @@ export function resolveGenerated(
       readStage(root, indexPath, 3),
     );
     atomicWrite(fromRoot(root, indexPath), `${JSON.stringify(merged.value, null, 2)}\n`);
+    // giwt-owned write: refresh the authenticity stamp so the merged index
+    // is not flagged as a manual edit by read/use paths.
+    writeIndexStamp(fromRoot(root, indexPath));
     if (merged.conflicts.length > 0) {
       log(
         "warn",
