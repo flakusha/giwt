@@ -146,6 +146,7 @@ export type {
 } from "./plan/validate";
 
 // Plan metadata projection + reporting (ported from loop-lore scripts/plan)
+export { splitEpicCandidates } from "./plan/epic-candidates";
 export { canonicalIndexOrder, projectIndex } from "./plan/index-projection";
 export type { IndexEntryLike } from "./plan/index-projection";
 export {
@@ -158,6 +159,10 @@ export {
 export type { FieldLine, FilePlan, PlanRewrite } from "./plan/metadata-fields";
 export { normalizePlanMetadata } from "./plan/metadata-normalize";
 export type { NormalizePlanOptions, NormalizePlanResult } from "./plan/metadata-normalize";
+export { declaredTags, orphanBindings, orphanTags, type PlanIndex } from "./plan/orphan-detect";
+export { aggregate, byEpic, byTag, danglingRelated } from "./plan/report-queries";
+export type { Aggregate } from "./plan/report-queries";
+export { checkOrphans } from "./plan/validate/orphan-gate";
 
 // History & weave audit detectors (src/audit/) — pure libraries returning
 // structured findings; a later workstream wires them into the `giwt history

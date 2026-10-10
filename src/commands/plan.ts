@@ -20,6 +20,7 @@ import { runCodeMap } from "./plan/code-map";
 import { runGenDocs } from "./plan/gen-docs";
 import { runMatrix } from "./plan/matrix";
 import { runMetadata } from "./plan/metadata";
+import { runReport } from "./plan/report";
 import { runStatus } from "./plan/status";
 import { runValidateCmd } from "./plan/validate";
 
@@ -54,6 +55,11 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     name: "metadata",
     description: "Unify .plan header-field dialects + project onto ticket index",
     flags: "--dry-run, --json",
+  },
+  {
+    name: "report",
+    description: "Read-only ticket-index reporting (tags/epics/orphans/aggregate)",
+    flags: "[aggregate|tags <tag>|epic <id>|orphans], --json",
   },
   {
     name: "status",
@@ -118,6 +124,9 @@ export async function plan(
       break;
     case "metadata":
       await runMetadata(rest, config);
+      break;
+    case "report":
+      await runReport(rest, config);
       break;
     case "status":
       await runStatus(rest, config);
