@@ -19,6 +19,7 @@ import { runCheckLinks } from "./plan/check-links";
 import { runCodeMap } from "./plan/code-map";
 import { runGenDocs } from "./plan/gen-docs";
 import { runMatrix } from "./plan/matrix";
+import { runMetadata } from "./plan/metadata";
 import { runStatus } from "./plan/status";
 import { runValidateCmd } from "./plan/validate";
 
@@ -48,6 +49,11 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     name: "validate",
     description: "Comprehensive .plan/ validation",
     flags: "--gates <csv>, --skip-gates <csv>, --fix, --json",
+  },
+  {
+    name: "metadata",
+    description: "Unify .plan header-field dialects + project onto ticket index",
+    flags: "--dry-run, --json",
   },
   {
     name: "status",
@@ -109,6 +115,9 @@ export async function plan(
       break;
     case "validate":
       await runValidateCmd(rest, config);
+      break;
+    case "metadata":
+      await runMetadata(rest, config);
       break;
     case "status":
       await runStatus(rest, config);

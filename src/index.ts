@@ -145,6 +145,20 @@ export type {
   ValidateResult,
 } from "./plan/validate";
 
+// Plan metadata projection + reporting (ported from loop-lore scripts/plan)
+export { canonicalIndexOrder, projectIndex } from "./plan/index-projection";
+export type { IndexEntryLike } from "./plan/index-projection";
+export {
+  applyRewrites,
+  fieldLines,
+  normalizeEpicRef,
+  planFile,
+  relatedRefs,
+} from "./plan/metadata-fields";
+export type { FieldLine, FilePlan, PlanRewrite } from "./plan/metadata-fields";
+export { normalizePlanMetadata } from "./plan/metadata-normalize";
+export type { NormalizePlanOptions, NormalizePlanResult } from "./plan/metadata-normalize";
+
 // History & weave audit detectors (src/audit/) — pure libraries returning
 // structured findings; a later workstream wires them into the `giwt history
 // audit` umbrella and standalone gates.
