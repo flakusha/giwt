@@ -31,6 +31,7 @@ import {
 } from "./fixes";
 import { checkEpicFormat, checkLinkage, checkTicketFormat } from "./format-gates";
 import { runMatrixGate } from "./matrix-gate";
+import { checkOrphans } from "./orphan-gate";
 import {
   ALL_GATES,
   type ConcreteGate,
@@ -134,13 +135,18 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
         break;
       }
       case "tickets": {
-        const findings = checkTicketIndex(
+        const syncFindings = checkTicketIndex(
           opts.worktreeRoot,
           opts.ticketsDir,
           opts.runSync,
           opts.diffBase,
         );
-        let pass = findings.length === 0;
+        // Advisory orphan-tag/orphan-binding findings ride the tickets gate
+        // at warn level: reported, never counted against pass (see the
+        // advisory-first policy note in orphan-gate.ts).
+        const advisory = checkOrphans({ ticketsDir: opts.ticketsDir, epicsDir: opts.epicsDir });
+        const findings = [...syncFindings, ...advisory];
+        let pass = syncFindings.length === 0;
         let fixMsgs: string[] = [];
         if (opts.fix && !pass) {
           // Don't re-check — runSync is expensive (calls git issue CLI).

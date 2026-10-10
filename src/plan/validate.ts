@@ -19,6 +19,11 @@
  *   matrix     — feature-matrix.md freshness (projected from index.json)
  *   all        — run every gate (default)
  *
+ * The tickets gate additionally reports orphan tags / orphan epic bindings
+ * (index rows referencing nothing the .plan frontmatter declares) as
+ * ADVISORY warn-level findings: they never fail the gate (advisory-first —
+ * a blocking default would red-gate every existing repo). See
+ * validate/orphan-gate.ts.
  * Each gate returns a GateResult with pass/fail + findings.
  * Pure logic — no process.exit / console.log. Caller handles reporting.
  */
