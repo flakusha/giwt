@@ -21,10 +21,14 @@ export const STATUS_LINE_RE =
  * Parse a ticket .md file into a TicketFile.
  *
  * Metadata fields (**Status:**, **Priority:**, **Epic:**, **Tags:**, **Upstream:**) are
- * matched against the header region (first 30 lines) only — whole-file
- * matching captured body prose into the epic field. The git-issue
- * reference is still matched against the whole file: applyFixes appends
- * it at the end of the file, beyond the header region.
+ * matched LINE-ANCHORED (optional list/quote prefix, bold field name with the
+ * colon inside or outside the bold) over the header region (first 30 lines),
+ * FIRST match wins — so body prose that re-spells a field (a Context
+ * paragraph echoing `**Tags:** …` mid-sentence or as a later standalone
+ * line) can never pollute index fields, while a metadata block that drifted
+ * toward the end of the header region still parses. The git-issue reference
+ * is matched against the whole file: applyFixes appends it at the end of
+ * the file, beyond the header region.
  */
 export function parseTicketFile(filePath: string, source?: string): TicketFile | null {
   try {
@@ -58,12 +62,15 @@ export function parseTicketText(
     ).trim()
       ?? filename.replace(/\.md$/, "");
 
-    // Extract metadata fields (header region only — body prose mentioning
-    // **Epic:**/**Tags:** must not pollute the index fields)
-    const priorityMatch = header.match(/\*\*Priority:\*\*\s*(.+)/i);
-    const epicMatch = header.match(/\*\*Epic:\*\*\s*(.+)/i);
-    const tagsMatch = header.match(/\*\*Tags:\*\*\s*(.+)/);
-    const upstreamMatch = header.match(/\*\*Upstream:\*\*\s*(.+)/i);
+    // Extract metadata fields — LINE-ANCHORED, first match wins, over the
+    // 30-line header region (see fieldLine). Prose that merely re-spells a
+    // field mid-sentence or as a later paragraph line can never beat the
+    // real block directly under the title, while a block that drifted
+    // toward the end of the header region still parses.
+    const priority = fieldLine(lines, "Priority");
+    const upstream = fieldLine(lines, "Upstream");
+    const epic = parseEpicField(header);
+    const tags = parseTagsField(header);
 
     // Extract type from heading
     const typeMatch = titleMatch?.match(
@@ -96,10 +103,10 @@ export function parseTicketText(
       status,
       statusValues,
       type,
-      priority: priorityMatch?.[1]?.trim() ?? "medium",
-      epic: epicMatch?.[1]?.trim() ?? "",
-      tags: tagsMatch?.[1]?.split(",").map(normalizeTagToken).filter(Boolean) ?? [],
-      upstream: upstreamMatch?.[1]?.trim() ?? "",
+      priority: priority?.trim() ?? "medium",
+      epic,
+      tags,
+      upstream: upstream?.trim() ?? "",
       hash: gitIssueMatch?.[1] ?? null,
       gitIssue: gitIssueMatch?.[1] ?? null,
       source: source ?? filePath,
@@ -107,6 +114,47 @@ export function parseTicketText(
   } catch {
     return null;
   }
+}
+
+/**
+ * One line-anchored metadata field line: optional list/quote prefix, bold
+ * field name with the colon inside or outside the bold (list items and
+ * quote prefixes accepted, mirroring STATUS_LINE_RE). Returns the first
+ * matching line's value, or undefined — scanning is TOP-DOWN so the real
+ * metadata block (directly under the title) always wins over later body
+ * prose that merely re-spells a field, and a block that drifted past the
+ * caller's old header slice still parses when the caller feeds whole-file
+ * lines.
+ */
+function fieldLine(lines: string[], name: string): string | undefined {
+  const re = new RegExp(
+    `^\\s*(?:[-*>]\\s*)?\\*\\*\\s*${name}\\s*:?\\s*\\*\\*\\s*:?\\s*(.+?)\\s*(?:\\*\\*)?\\s*$`,
+    "i",
+  );
+  for (const line of lines) {
+    const m = re.exec(line);
+    if (m) return m[1];
+  }
+  return undefined;
+}
+
+/**
+ * Tags from one header region blob — the single field parser every consumer
+ * (parseTicketText, plan metadata projection, plan report) shares: the FIRST
+ * line-anchored `**Tags:**` match (see {@link fieldLine}), comma-split, each
+ * token adornment-stripped via normalizeTagToken.
+ */
+export function parseTagsField(header: string): string[] {
+  const tags = fieldLine(header.split("\n"), "Tags");
+  return tags?.split(",").map(normalizeTagToken).filter(Boolean) ?? [];
+}
+
+/**
+ * Epic from one header region blob — the single shared parser: the FIRST
+ * line-anchored `**Epic:**` match (see {@link fieldLine}), trimmed.
+ */
+export function parseEpicField(header: string): string {
+  return fieldLine(header.split("\n"), "Epic")?.trim() ?? "";
 }
 
 /**
