@@ -1154,6 +1154,39 @@
     "source": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
     "status": "done"
   },
+  "FEAT-PLAN-METADATA-SUBCOMMAND-PROMOTE-FRONTMATTER-WINS-PROJECTION": {
+    "hash": "1231504",
+    "git_issue": "1231504",
+    "extid": "FEAT-PLAN-METADATA-SUBCOMMAND-PROMOTE-FRONTMATTER-WINS-PROJECTION",
+    "type": "FEAT",
+    "title": "plan metadata subcommand - promote frontmatter-wins projection from loop-lore",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "tickets",
+      "sync"
+    ],
+    "source": ".plan/tickets/FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection.md",
+    "status": "Not Started"
+  },
+  "FEAT-PLAN-REPORT-SUBCOMMAND-PROMOTE-LOOP-LORE-REPORT-PLAN-METADAT": {
+    "hash": "b431d70",
+    "git_issue": "b431d70",
+    "extid": "FEAT-PLAN-REPORT-SUBCOMMAND-PROMOTE-LOOP-LORE-REPORT-PLAN-METADAT",
+    "type": "FEAT",
+    "title": "plan report subcommand - promote loop-lore report-plan-metadata into src/plan",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "reporting"
+    ],
+    "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md",
+    "status": "Not Started"
+  },
   "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {
     "hash": "5c8332a",
     "git_issue": "5c8332a",
@@ -1179,6 +1212,23 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-plan-status-subcommand.md",
     "status": "done"
+  },
+  "FEAT-PLAN-VALIDATE-TICKETS-GATE-REUSES-ORPHAN-TAG-AND-ORPHAN-BIND": {
+    "hash": "e3194ff",
+    "git_issue": "e3194ff",
+    "extid": "FEAT-PLAN-VALIDATE-TICKETS-GATE-REUSES-ORPHAN-TAG-AND-ORPHAN-BIND",
+    "type": "FEAT",
+    "title": "plan validate tickets gate reuses orphan-tag and orphan-binding detection",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "tickets",
+      "plan-validate"
+    ],
+    "source": ".plan/tickets/FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind.md",
+    "status": "Not Started"
   },
   "FEAT-PUBLIC-API-EXPORTS-FOR-PLAN-MODULES": {
     "hash": "fbaa6f7",
@@ -1252,6 +1302,23 @@
     ],
     "source": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
     "status": "done"
+  },
+  "FEAT-REJECT-MANUAL-EDITS-TO-PLAN-TICKETS-INDEX-JSON-WITH-A-FRONTM": {
+    "hash": "44e34ba",
+    "git_issue": "44e34ba",
+    "extid": "FEAT-REJECT-MANUAL-EDITS-TO-PLAN-TICKETS-INDEX-JSON-WITH-A-FRONTM",
+    "type": "FEAT",
+    "title": "reject manual edits to plan tickets index.json with a frontmatter-is-source-of-truth error",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "tickets",
+      "sync",
+      "plan"
+    ],
+    "source": ".plan/tickets/FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm.md",
+    "status": "Not Started"
   },
   "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
     "hash": "5c8a4b5",
@@ -1327,6 +1394,23 @@
     ],
     "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
     "status": "done"
+  },
+  "FEAT-SYNC-RE-READS-TAGS-EPIC-RELATED-FOR-ENTRIES-ALREADY-IN-THE-I": {
+    "hash": "10d664b",
+    "git_issue": "10d664b",
+    "extid": "FEAT-SYNC-RE-READS-TAGS-EPIC-RELATED-FOR-ENTRIES-ALREADY-IN-THE-I",
+    "type": "FEAT",
+    "title": "sync re-reads tags epic related for entries already in the index on every sync",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "tickets",
+      "sync",
+      "plan"
+    ],
+    "source": ".plan/tickets/FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i.md",
+    "status": "Not Started"
   },
   "FEAT-TICKET-CLOSE-WRITES-MD-STATUS-PLUS-ISSUE-STATE": {
     "hash": "6fc1947",
@@ -1675,6 +1759,23 @@
     ],
     "source": ".plan/tickets/FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas.md",
     "status": "done"
+  },
+  "FIX-SYNC-PARSE-FIRST-BOLD-COLON-MATCH-MIS-PARSES-WHEN-BODY-PROSE": {
+    "hash": "7bc95f9",
+    "git_issue": "7bc95f9",
+    "extid": "FIX-SYNC-PARSE-FIRST-BOLD-COLON-MATCH-MIS-PARSES-WHEN-BODY-PROSE",
+    "type": "FIX",
+    "title": "sync-parse first-bold-colon match mis-parses when body prose re-spells a field or metadata drifts past line 30",
+    "label": "fix",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "tickets",
+      "parser",
+      "sync"
+    ],
+    "source": ".plan/tickets/FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose.md",
+    "status": "Not Started"
   },
   "FIX-WIRE-PLANDIR-SETTING-INTO-PLAN-COMMAND": {
     "hash": "a13c536",

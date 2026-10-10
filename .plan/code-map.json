@@ -457,6 +457,12 @@
       "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
     }
   ],
+  "src/plan": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md"
+    }
+  ],
   "src/plan/feature-matrix.test.ts": [
     {
       "kind": "ticket",
@@ -495,6 +501,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
+    }
+  ],
+  "src/plan/status-vocab": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md"
     }
   ],
   "src/plan/status-vocab.ts": [
@@ -561,6 +573,12 @@
       "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
     }
   ],
+  "src/tickets/sync-index-write.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i.md"
+    }
+  ],
   "src/tickets/sync-index.ts": [
     {
       "kind": "ticket",
@@ -593,6 +611,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose.md"
     }
   ],
   "src/tickets/sync-reconcile.ts": [
