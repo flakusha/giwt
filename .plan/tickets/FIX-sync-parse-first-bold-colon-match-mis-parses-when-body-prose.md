@@ -3,7 +3,7 @@
 
 # FIX: sync-parse first-bold-colon match mis-parses when body prose re-spells a field or metadata drifts past line 30
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** tickets, parser, sync

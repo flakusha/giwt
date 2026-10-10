@@ -3,7 +3,7 @@
 
 # FEAT: plan report subcommand - promote loop-lore report-plan-metadata into src/plan
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Large
 **Tags:** plan, reporting

@@ -1169,7 +1169,7 @@
       "sync"
     ],
     "source": ".plan/tickets/FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-REPORT-SUBCOMMAND-PROMOTE-LOOP-LORE-REPORT-PLAN-METADAT": {
     "hash": "b431d70",
@@ -1185,7 +1185,7 @@
       "reporting"
     ],
     "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-STATUS-PER-TICKET-STATUS-PLUS-CHECKBOX-ROLLUP": {
     "hash": "5c8332a",
@@ -1228,7 +1228,7 @@
       "plan-validate"
     ],
     "source": ".plan/tickets/FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PUBLIC-API-EXPORTS-FOR-PLAN-MODULES": {
     "hash": "fbaa6f7",
@@ -1318,7 +1318,7 @@
       "plan"
     ],
     "source": ".plan/tickets/FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
     "hash": "5c8a4b5",
@@ -1410,7 +1410,7 @@
       "plan"
     ],
     "source": ".plan/tickets/FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-TICKET-CLOSE-WRITES-MD-STATUS-PLUS-ISSUE-STATE": {
     "hash": "6fc1947",
@@ -1775,7 +1775,7 @@
       "sync"
     ],
     "source": ".plan/tickets/FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FIX-WIRE-PLANDIR-SETTING-INTO-PLAN-COMMAND": {
     "hash": "a13c536",
@@ -1942,7 +1942,7 @@
     "title": "plan validate: scope ticket-format/link gates to the diff base",
     "label": "task",
     "priority": "high",
-    "epic": "**Tags:** plan,validate,finalize,parallel-sessions",
+    "epic": "",
     "tags": [
       "plan",
       "validate",

@@ -3,7 +3,7 @@
 
 # FEAT: reject manual edits to plan tickets index.json with a frontmatter-is-source-of-truth error
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** tickets, sync, plan

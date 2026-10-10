@@ -3,7 +3,7 @@
 
 # FEAT: plan validate tickets gate reuses orphan-tag and orphan-binding detection
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** plan, tickets, plan-validate

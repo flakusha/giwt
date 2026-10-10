@@ -3,7 +3,7 @@
 
 # FEAT: sync re-reads tags epic related for entries already in the index on every sync
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** tickets, sync, plan

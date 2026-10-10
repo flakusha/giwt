@@ -3,7 +3,7 @@
 
 # FEAT: plan metadata subcommand - promote frontmatter-wins projection from loop-lore
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** plan, tickets, sync
