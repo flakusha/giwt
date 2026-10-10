@@ -1234,3 +1234,105 @@ describe.skipIf(!GIT_ISSUE_AVAILABLE)("runSync with a real git issue registry", 
     }
   });
 });
+
+describe("runSync re-reads frontmatter for existing index entries", () => {
+  test("edited Tags/Epic on an indexed ticket land in the index on --fix", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      const iA = createIssue(root, "TASK-FMEDIT: frontmatter drift");
+      writeTicket(root, "TASK-FMEDIT.md", "frontmatter drift", {
+        epic: "EPIC-BEFORE",
+        tags: "before-tag",
+        issue: iA,
+      });
+      writeIndex(root, {
+        "TASK-FMEDIT": indexEntry({
+          extid: "TASK-FMEDIT",
+          title: "frontmatter drift",
+          hash: iA,
+          epic: "EPIC-BEFORE",
+          tags: ["before-tag"],
+          source: ".plan/tickets/TASK-FMEDIT.md",
+        }),
+      });
+      expect(readIndex(root)["TASK-FMEDIT"]?.epic).toBe("EPIC-BEFORE");
+      expect(readIndex(root)["TASK-FMEDIT"]?.tags).toEqual(["before-tag"]);
+
+      // Edit the frontmatter of the ALREADY-INDEXED ticket.
+      writeTicket(root, "TASK-FMEDIT.md", "frontmatter drift", {
+        epic: "EPIC-AFTER",
+        tags: "after-tag-a, after-tag-b",
+        issue: iA,
+      });
+
+      const run = runCaptured(() => runSync(root, { fix: true }));
+      expect(run.exit).toBe(0);
+      expect(run.out).toContain("TASK-FMEDIT: epic updated from frontmatter");
+      expect(run.out).toContain("TASK-FMEDIT: tags updated from frontmatter");
+      expect(readIndex(root)["TASK-FMEDIT"]?.epic).toBe("EPIC-AFTER");
+      expect(readIndex(root)["TASK-FMEDIT"]?.tags).toEqual(["after-tag-a", "after-tag-b"]);
+
+      // Idempotent: a second sync is a no-op (no spurious fix lines).
+      const again = runCaptured(() => runSync(root, { fix: true }));
+      expect(again.out).not.toContain("updated from frontmatter");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("drift alone (no other category) still triggers the fix branch", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      writeTicket(root, "TASK-DRIFTONLY.md", "drift only", { tags: "solo" });
+      writeIndex(root, {
+        "TASK-DRIFTONLY": indexEntry({
+          extid: "TASK-DRIFTONLY",
+          title: "drift only",
+          epic: "",
+          tags: [],
+          source: ".plan/tickets/TASK-DRIFTONLY.md",
+        }),
+      });
+      const run = runCaptured(() => runSync(root, { fix: true }));
+      expect(run.exit).toBe(0);
+      expect(run.out).toContain("TASK-DRIFTONLY: tags updated from frontmatter");
+      expect(readIndex(root)["TASK-DRIFTONLY"]?.tags).toEqual(["solo"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("linked worktree: drift fix is computed but the write is deferred, exit 0", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      gitOut(root, "worktree", "add", "-b", "feature/wt-drift", join(dir, "wt"), "HEAD");
+      const wt = join(dir, "wt");
+      // Written AFTER `worktree add`, untracked: a committed index.json would
+      // be checked out into the worktree (target branch stays canonical).
+      writeTicket(wt, "TASK-WTDRIFT.md", "worktree drift", { tags: "wt-after" });
+      writeIndex(wt, {
+        "TASK-WTDRIFT": indexEntry({
+          extid: "TASK-WTDRIFT",
+          title: "worktree drift",
+          epic: "",
+          tags: [],
+          source: ".plan/tickets/TASK-WTDRIFT.md",
+        }),
+      });
+      const preBytes = indexBytes(wt);
+
+      const run = runCaptured(() => runSync(wt, { fix: true }));
+      expect(run.exit).toBe(0);
+      expect(run.out).toContain("TASK-WTDRIFT: tags updated from frontmatter");
+      expect(run.out).toContain("index write deferred");
+      // The fixture index (stale tags) is left byte-identical — the write is
+      // deferred to post-merge regeneration on the target branch.
+      expect(indexBytes(wt)).toBe(preBytes);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

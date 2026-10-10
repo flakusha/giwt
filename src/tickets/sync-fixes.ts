@@ -13,6 +13,7 @@ import {
   fixMissingHashes,
   fixPhantomSources,
   fixPlaceholderHashes,
+  refreshFrontmatterFields,
   relinkClosedDuplicates,
 } from "./sync-fix-index";
 import {
@@ -68,6 +69,7 @@ export function applyFixes(
   fixPlaceholderHashes(fixed, report, fileByExtid, gitIssues);
   fixPhantomSources(fixed, report, ctx);
   addOrphanFiles(fixed, report, fileByExtid, gitIssues, ctx.ticketsPrefix);
+  refreshFrontmatterFields(fixed, report, fileByExtid, ctx.scope);
   fixMissingGitIssueLinks(fixed, report);
   relinkClosedDuplicates(fixed, report, gitIssues);
 

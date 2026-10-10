@@ -217,6 +217,38 @@ export function addOrphanFiles(
   }
 }
 
+/**
+ * Frontmatter is the source of truth: every sync re-reads Epic and Tags
+ * from each ticket .md and updates the existing index entry (FEAT-sync-
+ * re-reads-tags-epic-related). Previously only adopted orphans carried
+ * frontmatter values; entries already in the index kept stale values
+ * forever. `Related` is not a giwt field (no IndexEntry/TicketFile member),
+ * so Tags + Epic are the reconcileable set.
+ */
+export function refreshFrontmatterFields(
+  fixed: Record<string, IndexEntry>,
+  report: SyncReport,
+  fileByExtid: Map<string, TicketFile>,
+  scope?: Set<string>,
+): void {
+  for (const [extid, entry] of Object.entries(fixed)) {
+    if (scope && !scope.has(extid)) continue;
+    const tf = fileByExtid.get(extid);
+    if (!tf) continue;
+
+    if (entry.epic !== tf.epic) {
+      fixed[extid] = { ...entry, epic: tf.epic };
+      report.fixesApplied.push(
+        `${extid}: epic updated from frontmatter (${entry.epic || "∅"} → ${tf.epic || "∅"})`,
+      );
+    }
+    if (JSON.stringify(entry.tags) !== JSON.stringify(tf.tags)) {
+      fixed[extid] = { ...(fixed[extid] ?? entry), tags: [...tf.tags] };
+      report.fixesApplied.push(`${extid}: tags updated from frontmatter`);
+    }
+  }
+}
+
 export function fixMissingGitIssueLinks(
   fixed: Record<string, IndexEntry>,
   report: SyncReport,

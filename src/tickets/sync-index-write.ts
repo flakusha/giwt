@@ -21,7 +21,7 @@ export function persistIndexCanonical(repoRoot: string, indexPath: string, sorte
   if (isLinkedWorktree(repoRoot)) {
     log(
       "info",
-      "index not written in worktree — regenerated post-merge on the target branch",
+      "index write deferred — linked worktree; regenerated post-merge on the target branch",
     );
     return;
   }
