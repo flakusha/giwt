@@ -164,7 +164,8 @@ function branchMerged(branch: string, config: WorktreeConfig): boolean {
 /** `giwt remove <branch> --branch-only` — delete a branch without a
  * worktree (the worktree was already removed by some earlier step).
  * Unmerged branches are refused unless --force; the tip SHA is always
- * reported so the commit stays recoverable from the reflog. */
+ * reported with an fsck-based recovery command (the branch reflog is
+ * deleted along with the ref). */
 function removeBranchOnly(branch: string, force: boolean, config: WorktreeConfig): void {
   const wtPath = resolve(config.treeDir, branchToPath(branch));
   if (hasWorktreeDir(wtPath)) {
@@ -226,5 +227,8 @@ function removeBranchOnly(branch: string, force: boolean, config: WorktreeConfig
     }
     gitRun(config.repoRoot, "branch", "-D", branch);
   }
-  log("success", `deleted branch '${branch}' (tip ${sha} recoverable from reflog)`);
+  log(
+    "success",
+    `deleted branch '${branch}' (tip ${sha}); recover with: git fsck --lost-found && git branch ${branch} ${sha}`,
+  );
 }

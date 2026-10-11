@@ -1619,9 +1619,11 @@ describe("finalize teardown lifecycle regressions", () => {
     expect(run.exitCode).toBeNull();
     expect(run.output).toContain("patch-equivalent to main (cherry-picked?)");
     // Different SHAs mean the safe delete refuses; the forced fallback must
-    // disclose the discarded tip for reflog recovery.
+    // disclose the discarded tip with the fsck-based recovery command.
     expect(run.output).toContain("branch -d refused:");
-    expect(run.output).toMatch(/tip [0-9a-f]{40} recoverable from reflog/);
+    expect(run.output).toMatch(
+      /tip [0-9a-f]{40}; recover with: git fsck --lost-found && git branch /,
+    );
     expect(run.output).toContain("Branch deleted (forced)");
     expect(existsSync(wtPath)).toBe(false);
     expect(gitExitCode(["rev-parse", "--verify", "feature/pick"])).not.toBe(0);

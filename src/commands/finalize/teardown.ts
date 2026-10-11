@@ -77,7 +77,7 @@ export function teardownFinalizedWorktree(
     log("warn", `branch -d refused: ${deleteResult.stderr.toString().trim()}`);
     log(
       "warn",
-      `Force-deleting '${branch}' — unmerged commits discarded; tip ${tip} recoverable from reflog`,
+      `Force-deleting '${branch}' — unmerged commits discarded; tip ${tip}; recover with: git fsck --lost-found && git branch ${branch} ${tip}`,
     );
     const forceResult = Bun.spawnSync(
       ["git", "-C", config.repoRoot, "branch", "-D", branch],

@@ -190,7 +190,9 @@ describe("remove --branch-only", () => {
     }
     expect(branchExists("merged-gone")).toBe(false);
     expect(cap.lines()).toContain(
-      `deleted branch 'merged-gone' (tip ${branchSha("main")} recoverable from reflog)`,
+      `deleted branch 'merged-gone' (tip ${
+        branchSha("main")
+      }); recover with: git fsck --lost-found && git branch merged-gone ${branchSha("main")}`,
     );
   });
 
@@ -256,8 +258,52 @@ describe("remove --branch-only", () => {
     }
     expect(branchExists("forced-gone")).toBe(false);
     expect(cap.lines()).toContain(
-      `deleted branch 'forced-gone' (tip ${sha} recoverable from reflog)`,
+      `deleted branch 'forced-gone' (tip ${sha}); recover with: git fsck --lost-found && git branch forced-gone ${sha}`,
     );
+  });
+
+  test("--force prints a remedy that actually restores the discarded tip", async () => {
+    git(["checkout", "-qb", "fsck-gone"]);
+    writeFileSync(join(root, "wip3.txt"), "wip3\n");
+    git(["add", "wip3.txt"]);
+    git(["commit", "-qm", "wip3"]);
+    git(["checkout", "main"]);
+    const sha = branchSha("fsck-gone");
+
+    const cap = captureOutput();
+    try {
+      await execute(["fsck-gone", "--branch-only", "--force"], config);
+    } finally {
+      cap.restore();
+    }
+    expect(branchExists("fsck-gone")).toBe(false);
+    expect(cap.lines()).toContain(
+      `deleted branch 'fsck-gone' (tip ${sha}); recover with: git fsck --lost-found && git branch fsck-gone ${sha}`,
+    );
+
+    // Prove the advertised remedy works: deleting the ref removed its reflog,
+    // so fsck is the way to surface the tip, and `git branch <n> <sha>` must
+    // restore the branch to exactly that commit.
+    const env = { ...process.env } as Record<string, string>;
+    for (const key of Object.keys(env)) {
+      if (key.startsWith("GIT_")) delete env[key];
+    }
+    const reflog = Bun.spawnSync(["git", "-C", root, "reflog", "show", "fsck-gone"], {
+      stdout: "pipe",
+      stderr: "pipe",
+      env,
+    });
+    expect(reflog.exitCode).not.toBe(0);
+    const fsck = Bun.spawnSync(["git", "-C", root, "fsck", "--lost-found"], {
+      stdout: "pipe",
+      stderr: "pipe",
+      env,
+    });
+    const fsckOut = `${fsck.stdout.toString()}\n${fsck.stderr.toString()}`;
+    expect(fsckOut).toContain(sha);
+    git(["branch", "fsck-restored", sha]);
+    expect(git(["rev-parse", "refs/heads/fsck-restored"]).trim()).toBe(sha);
+    git(["branch", "-D", "fsck-restored"]);
   });
 
   test("refuses when the worktree still exists, directing to plain remove", async () => {
