@@ -84,7 +84,15 @@ export function teardownFinalizedWorktree(
       { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" },
     );
     if (forceResult.exitCode !== 0) {
-      log("error", `Failed to delete branch '${branch}': ${forceResult.stderr.toString().trim()}`);
+      const stderr = forceResult.stderr.toString().trim();
+      log("error", `Failed to delete branch '${branch}': ${stderr}`);
+      raw(`  Delete manually: git branch ${branch} ${tip}`);
+      appendGripe(
+        config.treeDir,
+        branch,
+        `finalize ${branch}: failed to delete branch: ${stderr}`,
+      );
+      activeRun()?.outcome({ failedGates: ["teardown"] });
       process.exit(1);
     }
     log("success", "Branch deleted (forced)");

@@ -1592,7 +1592,7 @@ describe("finalize teardown lifecycle regressions", () => {
     expect(gitExitCode(["rev-parse", "--verify", "feature/x"])).toBe(0);
   });
 
-  test("treats a cherry-picked branch as already merged and force-deletes with a reflog warning", async () => {
+  test("treats a cherry-picked branch as already merged and force-deletes with an fsck recovery hint", async () => {
     const wtPath = featureWorktree("feature/pick");
     const sha = git(["rev-parse", "HEAD"], wtPath).trim();
     // Land the same patch on main under a DIFFERENT SHA: pin ancient

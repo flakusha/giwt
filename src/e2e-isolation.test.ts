@@ -26,8 +26,10 @@
  *   2. `giwt list` output and the announced run-record dir prove the resolved
  *      repoRoot equals the fixture, never the parent giwt repo.
  *   3. Canary files (content + mtime) placed BEFORE the run in the giwt repo
- *      root (.tmp-e2e-iso-canary), the redirected $HOME/.config/giwt, and the
- *      /tmp/giwt scratch root are byte- and mtime-identical afterwards.
+ *      root (.tmp-e2e-iso-canary-<unique>), the redirected $HOME/.config/giwt,
+ *      and the /tmp/giwt scratch root (e2e-iso-canary-<unique>) are byte- and
+ *      mtime-identical afterwards. The unique suffix (containment basename)
+ *      prevents races between concurrent test invocations.
  *   4. The containment parent's directory listing (names + mtimes) is
  *      unchanged — everything giwt wrote landed INSIDE the fixture. This is
  *      the honest boundary of the test: writes to arbitrary paths elsewhere
@@ -124,8 +126,12 @@ describe("e2e: giwt manages a throwaway repo without touching anything above it"
     expect(ignored.exitCode).toBe(0);
 
     // ---- Sentinels (before the run) ---------------------------------------
-    const repoCanary = join(GIWT_REPO, ".tmp-e2e-iso-canary");
-    const tmpCanary = join(scratchRoot(), "e2e-iso-canary");
+    // Unique per run (containment basename): concurrent test invocations
+    // must never collide on these two shared locations. Both canaries stay
+    // OUTSIDE the containment dir — that's the point.
+    const canaryTag = basename(containment);
+    const repoCanary = join(GIWT_REPO, `.tmp-e2e-iso-canary-${canaryTag}`);
+    const tmpCanary = join(scratchRoot(), `e2e-iso-canary-${canaryTag}`);
     writeFileSync(repoCanary, "do-not-touch\n");
     writeFileSync(tmpCanary, "do-not-touch\n");
     const repoCanaryBefore = canaryState(repoCanary);
