@@ -118,6 +118,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md"
     }
   ],
@@ -223,6 +227,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md"
     }
   ],
   "src/commands/git.ts": [
@@ -255,6 +263,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    }
+  ],
+  "src/commands/plan/code-map.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
     }
   ],
   "src/commands/rebase.test.ts": [
@@ -297,6 +311,12 @@
       "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md"
     }
   ],
+  "src/commands/remove.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md"
+    }
+  ],
   "src/commands/remove.ts": [
     {
       "kind": "ticket",
@@ -312,11 +332,21 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-remove-path-auto-detection-matches-main-worktree-registratio.md"
     },
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md"
+    }
+  ],
+  "src/commands/scoped-reconcile.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
     }
   ],
   "src/commands/scoped-worktree.ts": [
@@ -335,6 +365,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md"
+    }
+  ],
+  "src/commands/sync.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
     }
   ],
   "src/commands/ticket.test.ts": [
@@ -463,6 +499,12 @@
       "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md"
     }
   ],
+  "src/plan/code-map.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
+    }
+  ],
   "src/plan/feature-matrix.test.ts": [
     {
       "kind": "ticket",
@@ -528,6 +570,10 @@
     }
   ],
   "src/plan/validate.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"

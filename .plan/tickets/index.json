@@ -275,6 +275,23 @@
     "source": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
     "status": "done"
   },
+  "BUG-FINALIZE-STEP-5-5-REBUILDS-CODE-MAP-FROM-2-SOURCES-STRIPPING": {
+    "hash": "641a891",
+    "git_issue": "641a891",
+    "extid": "BUG-FINALIZE-STEP-5-5-REBUILDS-CODE-MAP-FROM-2-SOURCES-STRIPPING",
+    "type": "BUG",
+    "title": "finalize Step 5.5 rebuilds code-map from 2 sources, stripping docs/spec and docs/frontend entries",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "plan",
+      "code-map"
+    ],
+    "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md",
+    "status": "done"
+  },
   "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES": {
     "hash": "7aaa984",
     "extid": "BUG-FINALIZE-STEP1-DOESNT-CHECK-UNTRACKED-FILES",
@@ -619,6 +636,22 @@
       "tests"
     ],
     "source": ".plan/tickets/BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load.md",
+    "status": "done"
+  },
+  "BUG-REMOVE-BRANCH-ONLY-FORCE-DELETES-THE-REFLOG-IT-ADVERTISES-AS": {
+    "hash": "aa2cdd5",
+    "git_issue": "aa2cdd5",
+    "extid": "BUG-REMOVE-BRANCH-ONLY-FORCE-DELETES-THE-REFLOG-IT-ADVERTISES-AS",
+    "type": "BUG",
+    "title": "remove --branch-only --force deletes the reflog it advertises as the recovery path",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "remove",
+      "worktree"
+    ],
+    "source": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md",
     "status": "done"
   },
   "BUG-REMOVE-PATH-AUTO-DETECTION-MATCHES-MAIN-WORKTREE-REGISTRATIO": {
