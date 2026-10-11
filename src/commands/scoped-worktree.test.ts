@@ -17,11 +17,13 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { buildMap, type CodeMap, verifyFresh } from "../plan/code-map";
 import { type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { execute as createWorktree } from "./create";
+import { mapSourcesFor } from "./plan/code-map";
 import { extidForHash, extractExtid, resolveExtid } from "./resolver";
 import { reconcilePlanPostMerge, scopedSignFlags } from "./scoped-reconcile";
 import {
@@ -460,6 +462,59 @@ describe("scoped worktree creation", () => {
     // Generated artifacts were regenerated as part of the same pass.
     expect(readFileSync(join(cfg.repoRoot, ".plan", "feature-matrix.md"), "utf8"))
       .not.toContain("STALE");
+  });
+
+  test("Step 5.5 code-map rebuild retains docs/spec entries (BUG-finalize-step-5-5)", () => {
+    const cfg = makeRepo("reconcile-spec-map");
+    // Spec doc referencing a src path: the shared 4-source build maps it
+    // under kind "spec"; the old inline 2-source list (tickets+epics only)
+    // dropped it on every finalize.
+    mkdirSync(join(cfg.repoRoot, "docs", "spec"), { recursive: true });
+    writeFileSync(
+      join(cfg.repoRoot, "docs", "spec", "demo-spec.md"),
+      "# Demo spec\n\nThe reverse index lives in `src/plan/code-map.ts`.\n",
+    );
+    writeFileSync(join(cfg.repoRoot, ".plan", "code-map.json"), "{}\n");
+    git(cfg.repoRoot, "add", "-A");
+    git(cfg.repoRoot, "commit", "-q", "-m", "seed spec doc and empty map");
+
+    const mapPath = join(cfg.repoRoot, ".plan", "code-map.json");
+    const readMapJson = (): CodeMap => JSON.parse(readFileSync(mapPath, "utf8")) as CodeMap;
+    const runReconcile = (): string[] => {
+      const logs: string[] = [];
+      const spy = spyOn(process.stdout, "write").mockImplementation(
+        ((c: unknown) => (logs.push(String(c)), true)) as never,
+      );
+      try {
+        reconcilePlanPostMerge(cfg, []);
+      } finally {
+        spy.mockRestore();
+      }
+      return logs;
+    };
+
+    runReconcile();
+    // The rebuilt map keeps the spec entry and matches a fresh 4-source
+    // build — the exact comparison `plan code-map --check` (freshness gate)
+    // performs.
+    expect(readMapJson()["src/plan/code-map.ts"]).toContainEqual({
+      kind: "spec",
+      source: "docs/spec/demo-spec.md",
+    });
+    expect(
+      verifyFresh(mapPath, buildMap(cfg.repoRoot, mapSourcesFor(cfg.settings.paths.planDir))),
+    ).toBe(true);
+
+    // Idempotence: a second run regenerates the same bytes — no staged
+    // change, no reconciliation commit, spec entry still present.
+    const headBefore = git(cfg.repoRoot, "rev-parse", "HEAD").trim();
+    const second = runReconcile();
+    expect(second.join("")).toContain("no commit");
+    expect(git(cfg.repoRoot, "rev-parse", "HEAD").trim()).toBe(headBefore);
+    expect(readMapJson()["src/plan/code-map.ts"]).toContainEqual({
+      kind: "spec",
+      source: "docs/spec/demo-spec.md",
+    });
   });
 });
 

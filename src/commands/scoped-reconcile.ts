@@ -16,6 +16,7 @@ import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
+import { mapSourcesFor } from "./plan/code-map";
 
 /** -c overrides for the Step 5.5 in-place commit — mirrors finalize's
  * gpgMergeFlags so the reconciliation commit is signed exactly when an
@@ -47,13 +48,7 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
   }
   const mapPath = join(planDir, "code-map.json");
   if (existsSync(mapPath)) {
-    writeMap(
-      mapPath,
-      buildMap(config.repoRoot, [
-        { dir: `${config.settings.paths.planDir}/tickets`, kind: "ticket" },
-        { dir: `${config.settings.paths.planDir}/epics`, kind: "epic" },
-      ]),
-    );
+    writeMap(mapPath, buildMap(config.repoRoot, mapSourcesFor(config.settings.paths.planDir)));
   }
   // Stage first: runSync --fix writes to the working tree, so `--cached`
   // only sees the change after the add. A clean stage afterwards means the
