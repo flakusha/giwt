@@ -25,8 +25,9 @@
  *     `--batch --pinentry-mode loopback --passphrase <pw>` (headless; needs
  *     GIT_GPG_PASSPHRASE or ~/.gpg-passphrase). Both leave the passphrase
  *     in the agent cache — verified: a cancel-mode sign succeeds right after.
- *   - Every silent use of the cached passphrase re-arms default-cache-ttl
- *     (capped by max-cache-ttl), so "prolong" is the probe sign itself.
+ *   - The cancel-mode probe does NOT re-arm the TTL. Only a real sign that
+ *     consumes the cached passphrase re-arms default-cache-ttl (capped by
+ *     max-cache-ttl), so the warm path performs a real sign to prolong.
  *
  * Usage:
  *   giwt gpg-unlock
@@ -212,7 +213,8 @@ export function runGpgUnlock(): void {
   raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s)`);
 
   if (probeCachedPassphrase(keyId).warm) {
-    raw("Cache is warm (verified by silent sign); re-running re-arms the TTL window.");
+    runSign(keyId, { mode: "default" });
+    raw("Cache is warm; TTL re-armed via real sign.");
     process.exit(0);
   }
 

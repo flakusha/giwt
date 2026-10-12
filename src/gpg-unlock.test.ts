@@ -294,7 +294,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
     test("re-running on a warm cache re-arms and exits 0", () => {
       const r = runCli();
       expect(r.code).toBe(0);
-      expect(r.out).toContain("Cache is warm (verified by silent sign)");
+      expect(r.out).toContain("Cache is warm; TTL re-armed via real sign.");
     });
 
     test("TTY path with a failing pinentry exits 1", () => {
