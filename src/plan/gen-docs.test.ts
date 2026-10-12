@@ -87,7 +87,8 @@ describe("parseEpic", () => {
       expect(epic!.type).toBe("Feature");
       expect(epic!.tags).toEqual(["auth", "security"]);
       expect(epic!.overview).toBe("Implement authentication flow with JWT.");
-      expect(epic!.taskCount).toBe(2);
+      expect(epic!.taskTotal).toBe(2);
+      expect(epic!.taskDone).toBe(0);
     } finally {
       fx.cleanup();
     }
@@ -116,13 +117,14 @@ describe("parseEpic", () => {
       expect(epic!.effort).toBe("Unknown");
       expect(epic!.type).toBe("Unknown");
       expect(epic!.tags).toEqual([]);
-      expect(epic!.taskCount).toBe(0);
+      expect(epic!.taskTotal).toBe(0);
+      expect(epic!.taskDone).toBe(0);
     } finally {
       fx.cleanup();
     }
   });
 
-  test("counts unchecked tasks only", () => {
+  test("counts all checkboxes done/total", () => {
     const fx = makeFixture();
     try {
       const path = join(fx.epicsDir, "epic-tasks.md");
@@ -131,7 +133,24 @@ describe("parseEpic", () => {
         "# EPIC: Tasks\n\n## Linked Tasks\n\n- [ ] TASK-one\n- [x] TASK-two\n- [ ] TASK-three\n",
       );
       const epic = parseEpic(path);
-      expect(epic!.taskCount).toBe(2);
+      expect(epic!.taskDone).toBe(1);
+      expect(epic!.taskTotal).toBe(3);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("counts ## Related tickets entries", () => {
+    const fx = makeFixture();
+    try {
+      const path = join(fx.epicsDir, "epic-related.md");
+      writeFileSync(
+        path,
+        "# EPIC: Related\n\n## Overview\n\nSome overview.\n\n## Linked Tasks\n\n- [x] TASK-1\n- [ ] TASK-2\n- [ ] TASK-3\n\n## Details\n\nMore.\n",
+      );
+      const epic = parseEpic(path);
+      expect(epic!.taskDone).toBe(1);
+      expect(epic!.taskTotal).toBe(3);
     } finally {
       fx.cleanup();
     }
@@ -309,6 +328,32 @@ describe("generateIndex", () => {
     const md = generateIndex([], "/nonexistent");
     expect(md).toContain("**Total:** 0 epics");
     expect(md).toContain("## Epics");
+  });
+
+  test("displays done/total in tasks column", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.epicsDir, "epic-tasks.md"), "# EPIC: T\n\n- [x] a\n- [ ] b\n");
+      const epics = collectEpics(fx.epicsDir);
+      const md = generateIndex(epics, fx.backlogPath);
+      expect(md).toContain("| 1/2 |");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("displays 0 when no tasks", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.epicsDir, "epic-empty.md"), "# EPIC: Empty\n\nNo tasks.\n");
+      const epics = collectEpics(fx.epicsDir);
+      const md = generateIndex(epics, fx.backlogPath);
+      // The tasks cell should show 0, not 0/0
+      expect(md).not.toContain("/0");
+      expect(md).toContain("| 0 |");
+    } finally {
+      fx.cleanup();
+    }
   });
 });
 

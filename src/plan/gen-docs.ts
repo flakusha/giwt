@@ -23,7 +23,8 @@ export interface Epic {
   type: string;
   tags: string[];
   overview: string;
-  taskCount: number;
+  taskDone: number;
+  taskTotal: number;
 }
 
 /** Parse an epic markdown file into structured data. */
@@ -46,8 +47,15 @@ export function parseEpic(filePath: string): Epic | null {
   const overviewMatch = raw.match(/## Overview\s*\n\s*\n([\s\S]*?)(?=\n##)/);
   const overview = overviewMatch?.[1]?.trim().split("\n")[0] ?? "";
 
-  // Count tasks (unchecked checkboxes)
-  const taskMatches = raw.match(/- \[ \]/g) ?? [];
+  // Count all checkboxes (both checked and unchecked)
+  const allCheckboxes = raw.match(/- \[[ x]\]/g) ?? [];
+  const checkedCheckboxes = raw.match(/- \[x\]/g) ?? [];
+
+  // Count entries under ## Related tickets section
+  const relatedMatch = raw.match(/## Related tickets\s*\n([\s\S]*?)(?=\n## |\s*$)/);
+  const relatedSection = relatedMatch?.[1] ?? "";
+  const relatedItems = relatedSection.match(/^[-*]\s+(?!\[)[^\n]+/gm) ?? [];
+  const relatedChecked = relatedSection.match(/^- \[x\]\s+.+$/gm) ?? [];
 
   return {
     file: filename,
@@ -58,7 +66,8 @@ export function parseEpic(filePath: string): Epic | null {
     type: typeMatch?.[1]?.trim() ?? "Unknown",
     tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
     overview,
-    taskCount: taskMatches.length,
+    taskDone: checkedCheckboxes.length + relatedChecked.length,
+    taskTotal: allCheckboxes.length + relatedItems.length,
   };
 }
 
@@ -108,8 +117,9 @@ export function generateIndex(epics: Epic[], backlogPath: string): string {
   md += "| Status | Title | Priority | Effort | Tasks | File |\n";
   md += "| ------ | ----- | -------- | ------ | ----- | ---- |\n";
   for (const e of epics) {
-    md +=
-      `| ${e.status} | ${e.title} | ${e.priority} | ${e.effort} | ${e.taskCount} | [${e.file}](/.plan/epics/${e.file}) |\n`;
+    md += `| ${e.status} | ${e.title} | ${e.priority} | ${e.effort} | ${
+      e.taskTotal === 0 ? 0 : `${e.taskDone}/${e.taskTotal}`
+    } | [${e.file}](/.plan/epics/${e.file}) |\n`;
   }
 
   md += "\n---\n\n";
