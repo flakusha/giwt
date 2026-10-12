@@ -51,7 +51,7 @@ function formatStatus(status: string): string {
 
 function printHelp(): void {
   raw("Usage: giwt report [--profile] [--since <iso>] [--json|--toml|--emoji]");
-  raw("  --profile       gate failure profile across every worktree's report");
+  raw("  --profile       gate failure profile over every worktree's per-run reports");
   raw("  --since <iso>   only profile reports generated at/after this ISO timestamp");
   raw("  --json          machine-readable profile (--toml/--emoji also supported)");
 }
@@ -118,6 +118,62 @@ async function collectReports(
   return { rows, treeMissing: false };
 }
 
+/** The per-run report files the runner leaves in a checkout's scratchpad. */
+const ARCHIVE_RE = /^check-report.*\.json$/;
+
+/**
+ * Every per-run report under one checkout's scratchpad, in filename order.
+ *
+ * Profiling only the configured report path would profile ONE run per
+ * worktree — the point of `--since` is the runs before it. The rolling
+ * aliases (`check-report.json`, `check-report.latest.json`) repeat the latest
+ * run; the caller dedupes by (worktree, runId), and copies of one run differ
+ * in nothing but their filename, so the order only has to be stable.
+ * A file that is not a check report is skipped, never fatal.
+ */
+async function readArchive(name: string, scratchDir: string): Promise<ProfileInput[]> {
+  if (!existsSync(scratchDir)) return [];
+  const names = (await readdir(scratchDir)).filter((f) => ARCHIVE_RE.test(f)).sort();
+  const out: ProfileInput[] = [];
+  for (const file of names) {
+    try {
+      out.push({ name, report: parseReport(await readFile(resolve(scratchDir, file), "utf-8")) });
+    } catch {
+      continue; // not ours, or a half-written file: skip, never abort
+    }
+  }
+  return out;
+}
+
+/**
+ * Profile inputs: each checkout's own report first (it may live outside the
+ * scratchpad via [paths].checkReport), then every per-run report under it.
+ * One (worktree, runId) pair is kept — the newest copy wins.
+ */
+async function collectProfileInputs(
+  config: WorktreeConfig,
+  rows: WalkRow[],
+): Promise<ProfileInput[]> {
+  const byRun = new Map<string, ProfileInput>();
+  const keep = (input: ProfileInput): void => {
+    const key = `${input.name}::${input.report.runId}`;
+    if (!byRun.has(key)) byRun.set(key, input);
+  };
+  for (const row of rows) {
+    if (row.kind === "ok") keep({ name: row.name, report: row.report });
+  }
+  const scratchOf = (dir: string): string => resolve(dir, config.settings.scratch.root);
+  for (const input of await readArchive("(main)", scratchOf(config.repoRoot))) keep(input);
+  if (!existsSync(config.treeDir)) return [...byRun.values()];
+  for (const wt of await readdir(config.treeDir, { withFileTypes: true })) {
+    if (!wt.isDirectory()) continue;
+    for (const input of await readArchive(wt.name, scratchOf(resolve(config.treeDir, wt.name)))) {
+      keep(input);
+    }
+  }
+  return [...byRun.values()];
+}
+
 function printRow(row: WalkRow): void {
   const label = `  ${colorize(row.name, "cyan")}`;
   if (row.kind === "missing") {
@@ -159,10 +215,10 @@ export async function report(
   const { rows, treeMissing } = await collectReports(config);
 
   if (opts.profile) {
-    const inputs: ProfileInput[] = rows
-      .filter((r): r is Extract<WalkRow, { kind: "ok"; }> => r.kind === "ok")
-      .map((r) => ({ name: r.name, report: r.report }));
-    printProfile(profileGates(inputs, opts.since || null), opts.format);
+    printProfile(
+      profileGates(await collectProfileInputs(config, rows), opts.since || null),
+      opts.format,
+    );
     return;
   }
 

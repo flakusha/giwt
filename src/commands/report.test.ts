@@ -260,6 +260,15 @@ function writeWorktreeReport(name: string, json: string): void {
   writeFileSync(join(dir, DEFAULT_SETTINGS.paths.checkReport), json);
 }
 
+/** Write a per-run archive file into one worktree's scratchpad (the files the
+ *  runner leaves behind: `.tmp/check-report-<runId>.json` and the rolling
+ *  `.tmp/check-report.json` / `.tmp/check-report.latest.json` aliases). */
+function writeArchive(name: string, file: string, json: string): void {
+  const dir = name === "(main)" ? root : resolve(treeDir, name);
+  mkdirSync(join(dir, ".tmp"), { recursive: true });
+  writeFileSync(join(dir, ".tmp", file), json);
+}
+
 async function runReport(args: string[]): Promise<string> {
   const cap = captureOutput();
   try {
@@ -483,6 +492,95 @@ describe("report --profile", () => {
     const out = await runReport(["--json"]);
     expect(out).toContain("output flags apply to --profile only");
     expect(out).toContain("(main) PASSED");
+  });
+
+  test("profiles every per-run report in the scratchpad, not just the latest", async () => {
+    writeWorktreeReport(
+      "(main)",
+      v2ReportJson([{ command: "bun run lint", passed: false }], { runId: "run-new" }),
+    );
+    writeArchive(
+      "(main)",
+      "check-report-111-old.json",
+      v2ReportJson([{ command: "bun run older", passed: false }], {
+        generatedAt: "2026-10-09T09:00:00.000Z",
+        runId: "run-old",
+      }),
+    );
+    writeWorktreeReport(
+      "wt-a",
+      v2ReportJson([{ command: "bun run lint", passed: false }], { runId: "run-wt" }),
+    );
+
+    const out = await runReport(["--profile"]);
+
+    expect(out).toContain("3 report(s)");
+    expect(out).toContain("2 run(s) bun run lint — fail 2");
+    expect(out).toContain("1 run(s) bun run older — fail 1");
+  });
+
+  test("the rolling aliases of one run count as a single run", async () => {
+    const latest = v2ReportJson([{ command: "bun run lint", passed: false }], { runId: "run-1" });
+    writeWorktreeReport("(main)", latest);
+    writeArchive("(main)", "check-report.latest.json", latest);
+    writeArchive("(main)", "check-report-1-abc.json", latest);
+
+    const out = await runReport(["--profile"]);
+
+    expect(out).toContain("1 report(s)");
+    expect(out).toContain("1 run(s) bun run lint — fail 1");
+  });
+
+  test("skips a broken archive file and a stray file in tree/", async () => {
+    writeWorktreeReport("(main)", v2ReportJson([{ command: "bun run lint", passed: false }]));
+    writeArchive("(main)", "check-report-broken.json", "{not json");
+    writeArchive(
+      "(main)",
+      "unrelated.json",
+      v2ReportJson([{ command: "not a gate", passed: false }]),
+    );
+    writeFileSync(resolve(treeDir, "stray-file"), "not a worktree");
+
+    const out = await runReport(["--profile"]);
+
+    expect(out).toContain("1 report(s)");
+    expect(out).toContain("1 run(s) bun run lint — fail 1");
+  });
+
+  test("a bad --since and an unknown flag exit 1 with usage", async () => {
+    const original = process.exit;
+    const codes: number[] = [];
+    /** Capture output across the throw: runReport only returns on success. */
+    const attempt = async (args: string[]): Promise<string> => {
+      const cap = captureOutput();
+      let lines = "";
+      try {
+        await report(args, config);
+        lines = cap.lines();
+      } catch (err) {
+        expect((err as Error).message).toBe("__exit:1");
+        lines = cap.lines();
+      } finally {
+        cap.restore();
+        process.exit = original;
+      }
+      return lines;
+    };
+    process.exit = ((code?: number) => {
+      codes.push(code ?? 0);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    const badSince = await attempt(["--since", "not-a-date"]);
+    expect(codes).toEqual([1]);
+    expect(badSince).toContain("--since needs an ISO timestamp");
+
+    process.exit = ((code?: number) => {
+      codes.push(code ?? 0);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    const unknown = await attempt(["--frobnicate"]);
+    expect(codes).toEqual([1, 1]);
+    expect(unknown).toContain("unknown flag '--frobnicate'");
   });
 
   test("--help prints usage", async () => {
