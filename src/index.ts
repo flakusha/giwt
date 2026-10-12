@@ -189,3 +189,13 @@ export type {
 } from "./audit/types";
 export { scanWeaveDamage } from "./audit/weave";
 export type { WeaveScanOptions } from "./audit/weave";
+
+// File-size check (re-exported from scripts/ for public API consumers)
+export {
+  countContentLines,
+  exceedsSizeAllow,
+  findOverBudget,
+  formatSizeReport,
+  sizeAllowFor,
+} from "./utils/check-file-size";
+export type { SizeFinding } from "./utils/check-file-size";
