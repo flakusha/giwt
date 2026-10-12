@@ -19,6 +19,14 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
     }
   ],
   "src/cli.ts": [
@@ -263,6 +271,16 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
+    }
+  ],
+  "src/commands/plan/check-links.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md"
     }
   ],
   "src/commands/plan/code-map.ts": [
@@ -487,7 +505,31 @@
       "source": ".plan/tickets/BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy.md"
     }
   ],
+  "src/gpg-unlock": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md"
+    }
+  ],
+  "src/gpg-unlock.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md"
+    }
+  ],
   "src/index.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-expose-file-size-check-via-public-api.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md"
@@ -497,6 +539,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md"
+    }
+  ],
+  "src/plan/check-links.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md"
     }
   ],
   "src/plan/code-map.ts": [
@@ -566,6 +614,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/TASK-giwt-plan-validate-status-vocab-gate.md"
     }
   ],
@@ -601,6 +653,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/plan/validate/content-gates.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md"
     }
   ],
   "src/resolve-diff-base.test.ts": [
@@ -653,6 +711,12 @@
       "source": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md"
     }
   ],
+  "src/tickets/sync-normalize.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
+    }
+  ],
   "src/tickets/sync-parse.ts": [
     {
       "kind": "ticket",
@@ -693,6 +757,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md"
+    }
+  ],
+  "src/utils/check-file-size.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-expose-file-size-check-via-public-api.md"
     }
   ],
   "src/utils/check-slots.ts": [
