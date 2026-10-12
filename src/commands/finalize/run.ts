@@ -251,6 +251,9 @@ export async function runFinalize(
       }
     }
 
-    teardownFinalizedWorktree(branch, wtPath, config, alreadyMerged, targetBranch);
+    // `--dry-run` scopes to the Step 6a scratchpad prune only (see USAGE):
+    // the merge, the worktree removal and the branch delete still run.
+    const dryRun = args.includes("--dry-run");
+    teardownFinalizedWorktree({ branch, wtPath, config, alreadyMerged, targetBranch, dryRun });
   });
 }

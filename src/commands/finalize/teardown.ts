@@ -7,6 +7,17 @@ import { isolatedGitEnv } from "../../utils/git";
 import { appendGripe } from "../../utils/ledger";
 import { log, raw } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
+import { pruneWorktreeScratch } from "./scratch-prune";
+
+export interface TeardownOptions {
+  branch: string;
+  wtPath: string;
+  config: WorktreeConfig;
+  alreadyMerged: boolean;
+  targetBranch: string;
+  /** Report the scratchpad prune plan instead of applying it. */
+  dryRun?: boolean;
+}
 
 /**
  * Finalize teardown: remove the worktree (Step 6) and delete its branch
@@ -21,13 +32,19 @@ import { activeRun } from "../../utils/runlog";
  * the teardown is handled gracefully: the stale registration is pruned and
  * the branch deletion still proceeds.
  */
-export function teardownFinalizedWorktree(
-  branch: string,
-  wtPath: string,
-  config: WorktreeConfig,
-  alreadyMerged: boolean,
-  targetBranch: string,
-): void {
+export function teardownFinalizedWorktree({
+  branch,
+  wtPath,
+  config,
+  alreadyMerged,
+  targetBranch,
+  dryRun = false,
+}: TeardownOptions): void {
+  // Step 6a: prune the scratchpad the worktree accumulated before it goes.
+  if (existsSync(wtPath)) {
+    pruneWorktreeScratch({ wtPath, config, dryRun });
+  }
+
   // Step 6: Remove worktree
   log("info", "Step 6: Removing worktree...");
   if (!existsSync(wtPath)) {

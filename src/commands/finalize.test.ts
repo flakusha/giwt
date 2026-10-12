@@ -1672,7 +1672,13 @@ describe("finalize teardown lifecycle regressions", () => {
     );
     let error: Error | null = null;
     try {
-      teardownFinalizedWorktree("feature/stuck", wtPath, config, false, "main");
+      teardownFinalizedWorktree({
+        branch: "feature/stuck",
+        wtPath,
+        config,
+        alreadyMerged: false,
+        targetBranch: "main",
+      });
     } catch (err) {
       error = err as Error;
     } finally {
