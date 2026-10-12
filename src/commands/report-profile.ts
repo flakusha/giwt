@@ -4,8 +4,8 @@
 /**
  * `giwt report --profile` — which gate is actually costing time, answered from
  * the reports the runner already writes. Generalizes loop-lore's throwaway
- * `.tmp/mine-gates.ts`: same aggregation, but over every worktree's report
- * instead of one directory's per-run files, and wired into the CLI.
+ * `.tmp/mine-gates.ts`: same aggregation, but over every worktree's whole
+ * run history instead of that directory's latest file, and wired into the CLI.
  *
  * Ranking is by DISTINCT runs that saw the gate fail or time out (one worktree
  * reporting the same gate twice is one run, not two), so a repo with many
