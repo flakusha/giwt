@@ -46,13 +46,15 @@ interface PruneOptions {
   dryRun: boolean;
 }
 
-/** Delete one candidate: directories (cov-*) recursively, files plain. */
+/** Delete one candidate: directories (cov-*) recursively, files plain.
+ *  `force` so a file another process removed between scan and delete reads as
+ *  "already gone" instead of a prune failure. */
 function removeCandidate(path: string): void {
   if (lstatSync(path).isDirectory()) {
-    rmSync(path, { recursive: true });
+    rmSync(path, { recursive: true, force: true });
     return;
   }
-  rmSync(path);
+  rmSync(path, { force: true });
 }
 
 function reportUnclassified(
@@ -91,6 +93,13 @@ export function pruneWorktreeScratch({ wtPath, config, dryRun }: PruneOptions): 
   if (!existsSync(root)) {
     log("info", `Step 6a: no scratchpad at ${root} — nothing to prune`);
     return empty;
+  }
+  // The walker skips symlinks INSIDE the root, but a symlinked ROOT itself is
+  // followed: its candidates are another checkout's files, and deleting them
+  // would delete outside this worktree. Refuse before the scan, not after.
+  if (lstatSync(root).isSymbolicLink()) {
+    log("warn", `Step 6a: scratch root ${root} is a symlink — refusing to prune through it`);
+    return { ...empty, existed: true };
   }
 
   const scan = scanScratch(root, scratch);
