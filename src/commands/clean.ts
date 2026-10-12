@@ -41,8 +41,9 @@ interface DeleteFailure {
 }
 
 /** 1024-based human bytes, one decimal below 100 of a unit ("0 B",
- *  "112 B", "1.1 MB", "112 KB", "1.3 GB"). */
-function humanBytes(n: number): string {
+ *  "112 B", "1.1 MB", "112 KB", "1.3 GB"). Shared with finalize's scratchpad
+ *  prune so both report freed bytes identically. */
+export function humanBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   const units = ["KB", "MB", "GB", "TB"];
   let value = n;

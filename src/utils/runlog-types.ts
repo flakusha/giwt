@@ -36,6 +36,8 @@ export interface RunOutcome {
   clean?: string | undefined;
   /** One-line tmp summary (temp-root bytes freed by `giwt tmp`). */
   tmp?: string | undefined;
+  /** One-line scratchpad summary (bytes freed by finalize's Step 6a prune). */
+  scratch?: string | undefined;
 }
 
 export interface RunMeta {
