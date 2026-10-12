@@ -30,15 +30,16 @@ because giwt does not export them. The inline copy is already broken:
   imports `existsSync, readFileSync` from `node:fs` and a default `path` from
   `node:path` — `join` is never imported, so any configured passphrase source
   throws a live `ReferenceError`.
-- `warmCacheViaPinentry` calls `require("bun")` from inside an ESM `.mjs`
-  module, and its `gpg --batch --yes --detach-sign` flags cannot ever prompt —
-  unlike giwt's real implementation, which signs in `default` pinentry mode
-  with a 180s budget. The copy silently never warms the cache; it just returns
-  `ok: false` and the caller falls through to the cold-cache refusal.
+- `warmCacheViaPinentry` passes `gpg --batch --yes --detach-sign`, which can
+  never prompt — unlike giwt's real implementation, which signs in `default`
+  pinentry mode with a 180s budget. The copy silently never warms the cache; it
+  just returns `ok: false` and the caller falls through to the cold-cache
+  refusal. (Its `require("bun")` call is NOT a defect — Bun polyfills `require`
+  in ESM, so `typeof require === "function"` holds in `.mjs`.)
 - The whole module is imported by deep path (`../../../node_modules/giwt/src/gpg-unlock`),
   bypassing the `exports` map; nothing from `gpg-unlock` is on the public API.
 
-Exporting the helper deletes the copy instead of fixing three bugs in it, and
+Exporting the helper deletes the copy instead of fixing two bugs in it, and
 keeps the "warm, then verify" invariant in one place.
 
 **Acceptance Criteria:**
