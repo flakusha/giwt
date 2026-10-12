@@ -11,8 +11,12 @@
  *   check-links   Validate internal markdown links + TASK refs
  *   validate      Comprehensive .plan/ validation (--gates <list>)
  *   status         Show .plan/ health summary (--tickets: per-ticket status)
+ *   normalize-statuses  Normalize .plan status values onto closed vocabularies (--check)
+ *   sync-docs     Mirror .plan/ markdown into docs/plan-gen/ for the site
+ *   epic-owner-pick  Collapse multi-epic **Epic:** values (--apply, --dry-run)
  */
 
+import { runEpicOwnerPick } from "../plan/epic-owner-pick";
 import { type WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
 import { runCheckLinks } from "./plan/check-links";
@@ -20,8 +24,10 @@ import { runCodeMap } from "./plan/code-map";
 import { runGenDocs } from "./plan/gen-docs";
 import { runMatrix } from "./plan/matrix";
 import { runMetadata } from "./plan/metadata";
+import { runNormalizeStatuses } from "./plan/normalize-statuses";
 import { runReport } from "./plan/report";
 import { runStatus } from "./plan/status";
+import { runSyncDocs } from "./plan/sync-docs";
 import { runValidateCmd } from "./plan/validate";
 
 export { mapSourcesFor } from "./plan/code-map";
@@ -65,6 +71,21 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     name: "status",
     description: "Show .plan/ health summary",
     flags: "--tickets, --json, --toml, --emoji",
+  },
+  {
+    name: "normalize-statuses",
+    description: "Normalize .plan status values onto closed vocabularies",
+    flags: "--check",
+  },
+  {
+    name: "sync-docs",
+    description: "Mirror .plan/ markdown into docs/plan-gen/ for the site",
+    flags: "",
+  },
+  {
+    name: "epic-owner-pick",
+    description: "Collapse multi-epic **Epic:** values to first existing owner",
+    flags: "--apply, --dry-run",
   },
 ];
 
@@ -130,6 +151,15 @@ export async function plan(
       break;
     case "status":
       await runStatus(rest, config);
+      break;
+    case "normalize-statuses":
+      await runNormalizeStatuses(rest, config);
+      break;
+    case "sync-docs":
+      await runSyncDocs(rest, config);
+      break;
+    case "epic-owner-pick":
+      await runEpicOwnerPick(rest, config);
       break;
   }
 }

@@ -56,7 +56,7 @@ export const USAGE: Record<string, string> = {
   "new":
     "<branch> [base] [--scope <text>] [--tickets <csv>]\n  <branch>     new branch name\n  [base]       base ref (default: root branch)\n  --scope <t>  short explanation, persisted as **Scope:** header lines\n  --tickets <csv>  ticket ids (extid/slug/.md) copied in as In Progress + first commit; finalize closes them pre-merge and reconciles the plan post-merge",
   "plan":
-    "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  metadata      unify .plan header-field dialects (**Labels:**→**Tags:**, **Epic**:→**Epic:**) and project onto the ticket index (--dry-run, --json); loop-lore's plan:metadata alias migrates here\n  report        read-only ticket-index reporting: aggregate (default) | tags <tag> | epic <id> | orphans (--json); exit 0 success, 1 usage error\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --diff-base <ref>, --json)\n  status        .plan/ health summary (--tickets: per-ticket Status + unticked acceptance counts; --json|--toml|--emoji)",
+    "<subcommand> [flags]\n  code-map      build/check/query reverse code→plan index (--check, --find <path>)\n  gen-docs      generate .plan/epics-index.md from .plan/epics/ (--check)\n  check-links   validate internal markdown links + TASK refs\n  metadata      unify .plan header-field dialects (**Labels:**→**Tags:**, **Epic**:→**Epic:**) and project onto the ticket index (--dry-run, --json)\n  report        read-only ticket-index reporting: aggregate (default) | tags <tag> | epic <id> | orphans (--json)\n  validate      comprehensive .plan/ validation (--gates <csv>, --skip-gates <csv>, --fix, --diff-base <ref>, --json)\n  status        .plan/ health summary (--tickets: per-ticket Status + unticked acceptance counts; --json|--toml|--emoji)\n  normalize-statuses  normalize .plan status values onto closed vocabularies (--check)\n  sync-docs     mirror .plan/ markdown into docs/plan-gen/ for the site\n  epic-owner-pick  collapse multi-epic **Epic:** values to first existing owner (--apply, --dry-run)",
   "prs": "",
   "rebase":
     "<branch> [onto] [--autostash]\n  <branch>       worktree branch\n  [onto]         target ref (default: root branch)\n  --autostash    stash tracked changes, rebase, then pop; on pop conflict the stash is kept and the worktree left dirty (exit 0)\n                 untracked files are never stashed and never block the rebase",
@@ -70,6 +70,9 @@ export const USAGE: Record<string, string> = {
   "show":
     "<ID> [--json|--toml|--emoji]\n  <ID>        issue id (extid, case-insensitive, or hash)\n  --json      single record {extid, hash, state, title, labels?, priority?, body?}\n  --toml      {value = record}\n  --emoji     one line: status glyph + extid/hash + title",
   "sign": "<branch>\n  <branch>   worktree branch to configure GPG signing for",
+  "spdx-check":
+    "[--staged] [files...]\n  --staged     check only staged files\n  SPDX_CHECK=1  blocking mode (exit 1 on violation)",
+  "spdx-fix": "[--staged] [files...]\n  --staged     fix only staged files",
   "state":
     "<ID> <open|closed>\n  <ID>      issue id\n  <state>   open|closed (other values become --state=<state>)",
   "status": "[branch]\n  [branch]   optional branch (default: current)",
