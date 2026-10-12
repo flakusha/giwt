@@ -26,7 +26,7 @@ import { Glob } from "bun";
 const args = process.argv.slice(2);
 const STRICT = args.includes("--strict");
 const LIMIT_ARG = args.find((a) => a.startsWith("--limit="));
-const LIMIT = LIMIT_ARG ? parseInt(LIMIT_ARG.split("=")[1], 10) : 250;
+const LIMIT = LIMIT_ARG ? parseInt(LIMIT_ARG.split("=")[1]!, 10) : 250;
 const glob = new Glob("src/**/*.ts");
 
 /** Read one file's full text (production readFile for {@link runSizeGate}). */
@@ -85,7 +85,7 @@ export function exceedsSizeAllow(text: string, limit: number): boolean {
  */
 export function sizeAllowFor(text: string, limit: number): number {
   const allowMatch = text.slice(0, HEADER_BYTES).match(SIZE_ALLOW_RE);
-  return allowMatch ? parseInt(allowMatch[1], 10) : limit;
+  return allowMatch ? parseInt(allowMatch[1]!, 10) : limit;
 }
 
 /** One over-budget file. */
