@@ -62,7 +62,8 @@ export const USAGE: Record<string, string> = {
     "<branch> [onto] [--autostash]\n  <branch>       worktree branch\n  [onto]         target ref (default: root branch)\n  --autostash    stash tracked changes, rebase, then pop; on pop conflict the stash is kept and the worktree left dirty (exit 0)\n                 untracked files are never stashed and never block the rebase",
   "remove":
     "<branch> [--branch-only] [--force]\n  <branch>        worktree branch to remove\n  --branch-only   delete the branch even when no worktree exists\n  --force         with --branch-only: delete even when unmerged (prints recovery SHA)",
-  "report": "",
+  "report":
+    "[--profile] [--since <iso>] [--json|--toml|--emoji]\n  --profile   gate failure profile across every worktree's report, by distinct failing runs\n  --since <iso>  only profile reports generated at/after this ISO timestamp\n  --json       machine-readable profile (--toml/--emoji also supported)\n  Reads both check-report schemas: the legacy `gates` map and schemaVersion 2 `checks[]`.",
   "runs":
     "[triage <run>] [diff <runA> <runB>] [stats] [--last N] [--json|--toml|--emoji]\n  triage <run>  failing blocks from a run's captured test.log (run dir path or id prefix)\n  diff <a> <b>  set-diff failure identities between two runs: new / fixed (report, never gates)\n  stats        aggregate the records: per-command runs/failed/unfinished/fail%, mean/p95/max ms, failing gates, repeated invocations (report, never gates)\n  --last <N>    show only the last N runs (--last=N also accepted)\n  --json        machine-readable records (--toml/--emoji also supported)",
   "search":
