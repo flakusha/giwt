@@ -29,7 +29,7 @@ Total tickets: **145** — untagged: **47** — unbound to epic: **133**
 | diff-base | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | discovery | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| documentation | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| documentation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | drift | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | dx | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -38,7 +38,7 @@ Total tickets: **145** — untagged: **47** — unbound to epic: **133**
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gates | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| gen-docs | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| gen-docs | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | generator | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | git | 16 | 16 | 0 | 0 | 0 | 0 | 0 |
 | githooks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -62,7 +62,7 @@ Total tickets: **145** — untagged: **47** — unbound to epic: **133**
 | output | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | parser | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| plan | 16 | 12 | 0 | 0 | 0 | 0 | 4 |
+| plan | 16 | 13 | 0 | 0 | 0 | 0 | 3 |
 | plan-validate | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | policy | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -106,7 +106,7 @@ Total tickets: **145** — untagged: **47** — unbound to epic: **133**
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 133 | 128 | 0 | 0 | 0 | 0 | 5 |
+| (unbound) | 133 | 129 | 0 | 0 | 0 | 0 | 4 |
 
 ## Ticket detail
 

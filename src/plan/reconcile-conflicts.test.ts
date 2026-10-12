@@ -464,7 +464,7 @@ test("regenerates the epic docs when a generated conflict is resolved", () => {
     // epic's parsed metadata out of the source tree, not just its filename.
     const index = readFileSync(join(root, ".plan/epics-index.md"), "utf8");
     expect(index).toContain("**Total:** 1 epics");
-    expect(index).toContain("| in-progress | Alpha | high | 3 | 1 |");
+    expect(index).toContain("| in-progress | Alpha | high | 3 | 0/1 |");
     expect(index).toContain("**Tags:** core, alpha");
     expect(git(root, "status", "--porcelain")).toBe("");
     // The regeneration is folded into the final replayed commit (single
