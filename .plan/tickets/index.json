@@ -505,6 +505,23 @@
     "source": ".plan/tickets/BUG-patch-id-duplicate-detection-is-defeated-by-a-rename-between.md",
     "status": "done"
   },
+  "BUG-PLAN-GEN-DOCS-TASKS-COLUMN-COUNTS-UNCHECKED-CHECKBOXES-NOT-R": {
+    "hash": "e811003",
+    "git_issue": "e811003",
+    "extid": "BUG-PLAN-GEN-DOCS-TASKS-COLUMN-COUNTS-UNCHECKED-CHECKBOXES-NOT-R",
+    "type": "BUG",
+    "title": "plan gen-docs Tasks column counts unchecked checkboxes, not Related tickets list entries",
+    "label": "bug",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "gen-docs",
+      "plan",
+      "documentation"
+    ],
+    "source": ".plan/tickets/BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r.md",
+    "status": "done"
+  },
   "BUG-REBASE-DEFAULT-TARGET-IS-THE-ROOT-BRANCH-WHICH-IS-ALSO-PROTE": {
     "hash": "87eaed2",
     "git_issue": "87eaed2",
