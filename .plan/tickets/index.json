@@ -1014,6 +1014,22 @@
     "source": ".plan/tickets/FEAT-doctor-unclosed-resource-leak-check.md",
     "status": "done"
   },
+  "FEAT-EXPORT-A-REUSABLE-COLD-CACHE-GPG-WARM-HELPER-SO-CONSUMERS-ST": {
+    "hash": "739f342",
+    "git_issue": "739f342",
+    "extid": "FEAT-EXPORT-A-REUSABLE-COLD-CACHE-GPG-WARM-HELPER-SO-CONSUMERS-ST",
+    "type": "FEAT",
+    "title": "export a reusable cold-cache GPG warm helper so consumers stop inlining gpg-unlock internals",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "gpg",
+      "migration"
+    ],
+    "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md",
+    "status": "Not Started"
+  },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
     "hash": "8e9078f",
     "git_issue": "8e9078f",
@@ -1187,6 +1203,22 @@
     "source": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
     "status": "done"
   },
+  "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND": {
+    "hash": "00787da",
+    "git_issue": "00787da",
+    "extid": "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND",
+    "type": "FEAT",
+    "title": "plan check-links --fix to auto-repair stale markdown links and TASK refs",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "plan",
+      "migration"
+    ],
+    "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md",
+    "status": "Not Started"
+  },
   "FEAT-PLAN-METADATA-SUBCOMMAND-PROMOTE-FRONTMATTER-WINS-PROJECTION": {
     "hash": "1231504",
     "git_issue": "1231504",
@@ -1203,6 +1235,22 @@
     ],
     "source": ".plan/tickets/FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection.md",
     "status": "done"
+  },
+  "FEAT-PLAN-NORMALIZE-STATUSES-SUBCOMMAND-TO-NORMALIZE-PLAN-STATUS-": {
+    "hash": "cd71323",
+    "git_issue": "cd71323",
+    "extid": "FEAT-PLAN-NORMALIZE-STATUSES-SUBCOMMAND-TO-NORMALIZE-PLAN-STATUS-",
+    "type": "FEAT",
+    "title": "plan normalize-statuses subcommand to normalize plan status values onto the closed vocabularies",
+    "label": "feat",
+    "priority": "critical",
+    "epic": "",
+    "tags": [
+      "plan",
+      "migration"
+    ],
+    "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md",
+    "status": "Not Started"
   },
   "FEAT-PLAN-REPORT-SUBCOMMAND-PROMOTE-LOOP-LORE-REPORT-PLAN-METADAT": {
     "hash": "b431d70",
@@ -1352,6 +1400,22 @@
     ],
     "source": ".plan/tickets/FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm.md",
     "status": "done"
+  },
+  "FEAT-REPO-WIDE-SPDX-HEADER-CHECK-COVERING-EVERY-TRACKED-FILE-AND-": {
+    "hash": "39010c7",
+    "git_issue": "39010c7",
+    "extid": "FEAT-REPO-WIDE-SPDX-HEADER-CHECK-COVERING-EVERY-TRACKED-FILE-AND-",
+    "type": "FEAT",
+    "title": "repo-wide SPDX header check covering every tracked file and both SPDX tokens",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "plan",
+      "migration"
+    ],
+    "source": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md",
+    "status": "Not Started"
   },
   "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
     "hash": "5c8a4b5",
@@ -1862,6 +1926,19 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md",
+    "status": "done"
+  },
+  "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API": {
+    "hash": "ac01204",
+    "git_issue": "ac01204",
+    "extid": "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API",
+    "type": "TASK",
+    "title": "Expose file-size check via public API",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-expose-file-size-check-via-public-api.md",
     "status": "done"
   },
   "TASK-GIWT-CLEAN-AGE-SIZE-CAPPED-TMP-PRUNING": {
