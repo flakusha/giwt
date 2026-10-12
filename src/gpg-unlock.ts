@@ -96,6 +96,7 @@ export function effectiveCacheTtl(): number {
 interface SignOpts {
   mode: string;
   passphrase?: string;
+  timeoutMs?: number;
 }
 
 interface SignResult {
@@ -111,7 +112,7 @@ interface SignResult {
  * stdin "ignore" gives gpg immediate EOF (Bun.spawnSync exposes no stdin
  * handle, so "pipe" would deadlock — gpg would wait for EOF forever).
  */
-function runSign(keyId: string, { mode, passphrase = "" }: SignOpts): SignResult {
+function runSign(keyId: string, { mode, passphrase = "", timeoutMs }: SignOpts): SignResult {
   const args = ["gpg"];
   if (passphrase) {
     args.push("--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", passphrase);
@@ -126,7 +127,7 @@ function runSign(keyId: string, { mode, passphrase = "" }: SignOpts): SignResult
     stderr: "pipe",
     // cancel/batch modes cannot prompt, so 15s is generous; the pinentry
     // path gets room for a human to type. Bun SIGTERMs the child on expiry.
-    timeout: mode === "default" ? 180_000 : 15_000,
+    timeout: timeoutMs ?? (mode === "default" ? 180_000 : 15_000),
     env: process.env,
   });
   const statusOut = proc.stdout.toString("utf8");
@@ -213,9 +214,18 @@ export function runGpgUnlock(): void {
   raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s)`);
 
   if (probeCachedPassphrase(keyId).warm) {
-    runSign(keyId, { mode: "default" });
-    raw("Cache is warm; TTL re-armed via real sign.");
-    process.exit(0);
+    const sign = runSign(keyId, { mode: "default", timeoutMs: 5_000 });
+    if (sign.exitCode === 0 && sign.sigCreated) {
+      raw("Cache is warm; TTL re-armed via real sign.");
+      process.exit(0);
+    }
+    log(
+      "error",
+      String("Warm-cache real sign failed; falling back to cold path.").replace(/\n$/, ""),
+    );
+    if (sign.stderrOut.trim()) {
+      log("error", String(`gpg stderr: ${sign.stderrOut.trim()}`).replace(/\n$/, ""));
+    }
   }
 
   const passphrase = passphraseSource();
