@@ -531,6 +531,17 @@ describe("report --profile", () => {
     expect(out).toContain("1 run(s) bun run lint — fail 1");
   });
 
+  test("--emoji renders the profile as one line naming each failing gate", async () => {
+    writeWorktreeReport(
+      "(main)",
+      v2ReportJson([{ command: "bun run lint", passed: false }], { runId: "run-emoji" }),
+    );
+
+    const out = await runReport(["--profile", "--emoji"]);
+
+    expect(out).toContain("❌ bun run lint (1 run(s))");
+  });
+
   test("skips a broken archive file and a stray file in tree/", async () => {
     writeWorktreeReport("(main)", v2ReportJson([{ command: "bun run lint", passed: false }]));
     writeArchive("(main)", "check-report-broken.json", "{not json");
