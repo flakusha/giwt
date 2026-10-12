@@ -41,6 +41,8 @@ import { runs } from "./commands/runs";
 import { search } from "./commands/search";
 import { show } from "./commands/show";
 import { execute as signCmd } from "./commands/sign";
+import { runSpdxCheck as spdxCheck } from "./commands/spdx-check";
+import { runSpdxFix as spdxFix } from "./commands/spdx-fix";
 import { state } from "./commands/state";
 import { execute as statusCmd } from "./commands/status";
 import { sync } from "./commands/sync";
@@ -207,6 +209,14 @@ export const commands: Record<string, CommandHandler> = {
   "sign": {
     description: "Configure GPG signing for existing worktree",
     run: signCmd,
+  },
+  "spdx-check": {
+    description: "Validate SPDX headers against REUSE.toml rules",
+    run: spdxCheck,
+  },
+  "spdx-fix": {
+    description: "Apply SPDX headers to files that need them",
+    run: spdxFix,
   },
   "state": {
     description: "Change issue state",
