@@ -1479,6 +1479,19 @@
     "source": ".plan/tickets/FEAT-scoped-worktree-creation-new-scope-and-tickets-flags.md",
     "status": "done"
   },
+  "FEAT-SHIP-A-CONSUMER-RUNNABLE-CONFORMANCE-SUITE-GIWT-SELFTEST-FOR": {
+    "hash": "04320d0",
+    "git_issue": "04320d0",
+    "extid": "FEAT-SHIP-A-CONSUMER-RUNNABLE-CONFORMANCE-SUITE-GIWT-SELFTEST-FOR",
+    "type": "FEAT",
+    "title": "Ship a consumer-runnable conformance suite (giwt selftest) for repos that delete their local fork",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-ship-a-consumer-runnable-conformance-suite-giwt-selftest-for.md",
+    "status": "Not Started"
+  },
   "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE": {
     "hash": "cdde664",
     "git_issue": "cdde664",
