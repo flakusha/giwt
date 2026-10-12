@@ -12,6 +12,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   utimesSync,
@@ -20,6 +21,7 @@ import {
 import { join } from "node:path";
 import type { WorktreeConfig } from "../../utils/config";
 import { setOutputFormat } from "../../utils/output";
+import { beginRun, finishActiveRun } from "../../utils/runlog";
 import { scratchRoot } from "../../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../../utils/settings";
 import { pruneWorktreeScratch } from "./scratch-prune";
@@ -197,5 +199,21 @@ describe("finalize scratchpad prune", () => {
     expect(result.root).toBe(join(wtPath, customRoot));
     expect(result.freedCount).toBe(1);
     expect(existsSync(stale)).toBe(false);
+  });
+
+  test("reports the bytes freed in the run record", () => {
+    aged("report/leftover.tmp", "x".repeat(2048), 30);
+    const recorder = beginRun(config, "finalize", ["feature"], null, "feature");
+    expect(recorder).not.toBeNull();
+    try {
+      run();
+    } finally {
+      finishActiveRun(0);
+    }
+
+    const meta = JSON.parse(readFileSync(join(recorder!.dir, "meta.json"), "utf-8")) as {
+      outcome?: { scratch?: string; };
+    };
+    expect(meta.outcome?.scratch).toBe("freed 2.0 KB across 1 scratch artifact(s)");
   });
 });
