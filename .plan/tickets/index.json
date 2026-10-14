@@ -358,6 +358,19 @@
     "status": "done",
     "git_issue": "854662b"
   },
+  "BUG-GENERATED-PLAN-FILES-STAMPED-WITH-GIWT-S-OWN-AGPL-HEADER-IN-": {
+    "hash": "3c8bb9f",
+    "git_issue": "3c8bb9f",
+    "extid": "BUG-GENERATED-PLAN-FILES-STAMPED-WITH-GIWT-S-OWN-AGPL-HEADER-IN-",
+    "type": "BUG",
+    "title": "generated .plan/ files stamped with giwt's own AGPL header in consuming repos",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md",
+    "status": "done"
+  },
   "BUG-GIWT-LIFECYCLE-CONFIG-WRITES-INVISIBLE-TO-OMP-GUARD": {
     "hash": "8cb1cfe",
     "git_issue": "8cb1cfe",

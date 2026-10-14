@@ -365,6 +365,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
     }
   ],
   "src/commands/scoped-worktree.ts": [
@@ -389,6 +393,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
     }
   ],
   "src/commands/ticket.test.ts": [
@@ -562,6 +570,10 @@
   "src/plan/feature-matrix.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
     }
   ],
@@ -573,6 +585,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/plan/matrix.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
     }
   ],
   "src/plan/reconcile-conflicts.test.ts": [
@@ -589,6 +607,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
+    }
+  ],
+  "src/plan/reconcile-conflicts/generated.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
     }
   ],
   "src/plan/reconcile-conflicts/git-io.ts": [
@@ -873,6 +897,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    }
+  ],
+  "src/utils/spdx-fix.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
     }
   ],
   "src/utils/worktree-root.test.ts": [
