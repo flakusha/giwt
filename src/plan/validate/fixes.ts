@@ -35,7 +35,7 @@ export function fixCodeMapGate(
 
 /** Regenerate epics-index.md from scratch. */
 export function fixEpicsDocGate(epicsDir: string, outPath: string, backlogPath: string): string[] {
-  const { output } = genDocs(epicsDir, outPath, backlogPath);
+  const { output } = genDocs({ epicsDir, outPath, backlogPath });
   return [`regenerated epics-index.md (${output.length} bytes)`];
 }
 

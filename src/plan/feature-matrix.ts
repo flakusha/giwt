@@ -225,17 +225,23 @@ export function matrixOutput(
 }
 
 /** Full generation: read index, render, write the markdown file. */
+export interface GenMatrixOpts {
+  indexPath: string;
+  outPath: string;
+  cooccurrence?: boolean;
+  /** Overrides the destination-derived SPDX header when given. */
+  header?: string;
+}
+
 export function genMatrix(
-  indexPath: string,
-  outPath: string,
-  opts: { cooccurrence?: boolean; header?: string; } = {},
+  { indexPath, outPath, cooccurrence, header }: GenMatrixOpts,
 ): { matrix: FeatureMatrix; output: string; } {
   // The header is a property of the destination path (the nearest
   // REUSE.toml), so every write path derives it here — a caller that
   // passed a path but forgot the header would silently emit headerless bytes.
   const result = matrixOutput(indexPath, {
-    ...opts,
-    header: opts.header ?? generatedHeader(outPath, ".md"),
+    ...(cooccurrence !== undefined ? { cooccurrence } : {}),
+    header: header ?? generatedHeader(outPath, ".md"),
   });
   writeFileSync(outPath, result.output);
   return result;

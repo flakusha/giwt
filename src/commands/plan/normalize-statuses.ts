@@ -22,6 +22,8 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveStatus, scanHeaderStatusLines } from "../../plan/status-vocab";
 import { resolveFromRoot } from "../../plan/validate";
+import { assertIndexUnedited } from "../../tickets/index-stamp";
+import { persistIndexCanonical } from "../../tickets/sync-index-write";
 import { normalizeStatus } from "../../tickets/sync-normalize";
 import type { WorktreeConfig } from "../../utils/config";
 import { raw } from "../../utils/output";
@@ -85,6 +87,7 @@ interface IndexResult {
 
 function normalizeIndex(
   check: boolean,
+  repoRoot: string,
   indexPath: string,
   aliases: Record<string, string>,
 ): IndexResult {
@@ -92,6 +95,8 @@ function normalizeIndex(
   const unresolved: Tally = new Map();
   if (!existsSync(indexPath)) return { changes, unresolved, columns: [] };
 
+  // Fail closed on a stamped-but-mismatched index before consuming it.
+  assertIndexUnedited(indexPath);
   const index = JSON.parse(readFileSync(indexPath, "utf8")) as Record<
     string,
     { status?: string; [k: string]: unknown; }
@@ -124,7 +129,8 @@ function normalizeIndex(
 
   if (dirty && !check) {
     const sorted = Object.fromEntries(Object.entries(index).sort(([a], [b]) => a.localeCompare(b)));
-    writeFileSync(indexPath, `${JSON.stringify(sorted, null, 2)}\n`);
+    // Canonical writer: atomic bytes + fresh fingerprint stamp.
+    persistIndexCanonical(repoRoot, indexPath, sorted);
   }
 
   return {
@@ -166,7 +172,7 @@ export async function runNormalizeStatuses(args: string[], config: WorktreeConfi
   );
 
   const epics = normalizeEpics(check, epicsDir, aliases);
-  const index = normalizeIndex(check, indexPath, aliases);
+  const index = normalizeIndex(check, config.repoRoot, indexPath, aliases);
 
   report("=== EPIC headers (.plan/epics/*.md) ===", epics);
   report("=== TICKET index (.plan/tickets/index.json) ===", index.changes);

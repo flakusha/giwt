@@ -983,7 +983,11 @@ describe("validate / epics-doc gate", () => {
       writeEpic(fx, "epic-auth.md");
       // Generate the index first
       const { genDocs } = require("./gen-docs");
-      genDocs(fx.epicsDir, fx.epicsIndexPath, join(fx.backlogDir, "open.md"));
+      genDocs({
+        epicsDir: fx.epicsDir,
+        outPath: fx.epicsIndexPath,
+        backlogPath: join(fx.backlogDir, "open.md"),
+      });
       const result = runValidate({
         projectRoot: fx.root,
         worktreeRoot: fx.root,

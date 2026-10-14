@@ -112,7 +112,10 @@ export async function sync(
     const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
     const matrixPath = join(planDir, "feature-matrix.md");
     if (existsSync(matrixPath)) {
-      const { matrix } = genMatrix(join(planDir, "tickets", "index.json"), matrixPath);
+      const { matrix } = genMatrix({
+        indexPath: join(planDir, "tickets", "index.json"),
+        outPath: matrixPath,
+      });
       log("info", `regenerated ${matrixPath} (${matrix.total} tickets)`);
     }
     const mapPath = join(planDir, "code-map.json");

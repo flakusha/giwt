@@ -48,14 +48,19 @@ export function parseEpic(filePath: string): Epic | null {
   const overviewMatch = raw.match(/## Overview\s*\n\s*\n([\s\S]*?)(?=\n##)/);
   const overview = overviewMatch?.[1]?.trim().split("\n")[0] ?? "";
 
-  // Count all checkboxes (both checked and unchecked)
-  const allCheckboxes = raw.match(/- \[[ x]\]/g) ?? [];
-  const checkedCheckboxes = raw.match(/- \[x\]/g) ?? [];
+  // Tasks are scoped to their sections: Linked Tasks checkboxes plus Related
+  // tickets entries. A checkbox-style related entry counts once (via
+  // relatedChecked/relatedItems, never via the linked tally), and checkbox
+  // prose elsewhere (e.g. acceptance criteria) never bleeds into the count.
+  const linkedMatch = raw.match(/## Linked Tasks\s*\n([\s\S]*?)(?=\n## |\s*$)/);
+  const linkedSection = linkedMatch?.[1] ?? "";
+  const linkedBoxes = linkedSection.match(/- \[[ x]\]/g) ?? [];
+  const linkedChecked = linkedSection.match(/- \[x\]/g) ?? [];
 
-  // Count entries under ## Related tickets section
   const relatedMatch = raw.match(/## Related tickets\s*\n([\s\S]*?)(?=\n## |\s*$)/);
   const relatedSection = relatedMatch?.[1] ?? "";
   const relatedItems = relatedSection.match(/^[-*]\s+(?!\[)[^\n]+/gm) ?? [];
+  const relatedBoxes = relatedSection.match(/- \[[ x]\]/g) ?? [];
   const relatedChecked = relatedSection.match(/^- \[x\]\s+.+$/gm) ?? [];
 
   return {
@@ -67,8 +72,8 @@ export function parseEpic(filePath: string): Epic | null {
     type: typeMatch?.[1]?.trim() ?? "Unknown",
     tags: tagsMatch?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [],
     overview,
-    taskDone: checkedCheckboxes.length + relatedChecked.length,
-    taskTotal: allCheckboxes.length + relatedItems.length,
+    taskDone: linkedChecked.length + relatedChecked.length,
+    taskTotal: linkedBoxes.length + relatedItems.length + relatedBoxes.length,
   };
 }
 
@@ -158,11 +163,16 @@ export function generateIndex(
 }
 
 /** Full generation: collect epics, generate index, write to disk. */
+export interface GenDocsOpts {
+  epicsDir: string;
+  outPath: string;
+  backlogPath: string;
+  /** Overrides the destination-derived SPDX header when given. */
+  header?: string;
+}
+
 export function genDocs(
-  epicsDir: string,
-  outPath: string,
-  backlogPath: string,
-  opts: { header?: string; } = {},
+  { epicsDir, outPath, backlogPath, header }: GenDocsOpts,
 ): {
   epics: Epic[];
   output: string;
@@ -171,7 +181,7 @@ export function genDocs(
   // Header follows the destination path (nearest REUSE.toml), derived here so
   // no write path can forget it.
   const output = generateIndex(epics, backlogPath, {
-    header: opts.header ?? generatedHeader(outPath, ".md"),
+    header: header ?? generatedHeader(outPath, ".md"),
   });
   writeFileSync(outPath, output);
   return { epics, output };

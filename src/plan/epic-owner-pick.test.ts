@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pickEpicOwner, scanEpicTitles, splitEpicCandidates } from "./epic-owner-pick";
+import { assertIndexUnedited, verifyIndexStamp, writeIndexStamp } from "../tickets/index-stamp";
+import type { WorktreeConfig } from "../utils/config";
+import { DEFAULT_SETTINGS } from "../utils/settings";
+import {
+  pickEpicOwner,
+  runEpicOwnerPick,
+  scanEpicTitles,
+  splitEpicCandidates,
+} from "./epic-owner-pick";
 
 const SLUGS = new Set([
   "epic-chat-lifecycle-moderation",
@@ -151,5 +159,124 @@ describe("scanEpicTitles", () => {
     expect(titles["Shared Title"]).toBe("epic-a-dup");
     expect(ambiguous.length).toBe(1);
     expect(ambiguous[0]).toContain("epic-b-dup");
+  });
+});
+
+// Resource contract (parallel-safe): the apply-path tests below each own a
+// mkdtemp fixture repo; stdout is spied and restored per test.
+let applyRoot = "";
+afterEach(() => {
+  if (applyRoot) rmSync(applyRoot, { recursive: true, force: true });
+  applyRoot = "";
+});
+
+describe("runEpicOwnerPick — apply path", () => {
+  const rootCases = (dir: string): WorktreeConfig => ({
+    repoRoot: dir,
+    worktreeRoot: dir,
+    treeDir: join(dir, "tree"),
+    settings: DEFAULT_SETTINGS,
+  });
+
+  function makeRepo(): string {
+    const dir = applyRoot = mkdtempSync(join(tmpdir(), "epic-owner-pick-apply-"));
+    mkdirSync(join(dir, ".plan", "epics"), { recursive: true });
+    mkdirSync(join(dir, ".plan", "tickets"), { recursive: true });
+    writeFileSync(join(dir, ".plan", "epics", "epic-alpha.md"), "# EPIC: Alpha\n");
+    const ticket = join(dir, ".plan", "tickets", "t.md");
+    writeFileSync(ticket, "# TASK: t\n\n**Epic:** epic-alpha, epic-beta\n");
+    const indexPath = join(dir, ".plan", "tickets", "index.json");
+    writeFileSync(
+      indexPath,
+      JSON.stringify(
+        { "TASK-1": { epic: "epic-alpha, epic-beta", source: ".plan/tickets/t.md" } },
+        null,
+        2,
+      ) + "\n",
+    );
+    return dir;
+  }
+
+  test("--apply collapses the epic and leaves the stamp verdict ok", async () => {
+    const dir = makeRepo();
+    const indexPath = join(dir, ".plan", "tickets", "index.json");
+    writeIndexStamp(indexPath);
+    expect(verifyIndexStamp(indexPath)).toBe("ok");
+
+    const chunks: string[] = [];
+    const spy = spyOn(process.stdout, "write").mockImplementation(
+      ((chunk: unknown) => {
+        chunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await runEpicOwnerPick(["--apply"], rootCases(dir));
+    } finally {
+      spy.mockRestore();
+    }
+
+    const index = JSON.parse(readFileSync(indexPath, "utf8")) as Record<
+      string,
+      { epic: string; }
+    >;
+    expect(index["TASK-1"]!.epic).toBe("epic-alpha");
+    expect(readFileSync(join(dir, ".plan", "tickets", "t.md"), "utf8"))
+      .toContain("**Epic:** epic-alpha\n");
+    expect(verifyIndexStamp(indexPath)).toBe("ok");
+    expect(() => assertIndexUnedited(indexPath)).not.toThrow();
+  });
+
+  test("a manually edited index is refused before any rewrite", async () => {
+    const dir = makeRepo();
+    const indexPath = join(dir, ".plan", "tickets", "index.json");
+    writeIndexStamp(indexPath);
+    writeFileSync(indexPath, "{ \"TASK-1\": {} }\n"); // out-of-band edit
+
+    let error: unknown;
+    try {
+      await runEpicOwnerPick(["--apply"], rootCases(dir));
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("manually edited");
+    expect(readFileSync(indexPath, "utf8")).toBe("{ \"TASK-1\": {} }\n");
+  });
+
+  test("a repo with tickets but no .plan/epics/ dir does not crash", async () => {
+    const dir = applyRoot = mkdtempSync(join(tmpdir(), "epic-owner-pick-noepics-"));
+    mkdirSync(join(dir, ".plan", "tickets"), { recursive: true });
+    const indexPath = join(dir, ".plan", "tickets", "index.json");
+    writeFileSync(
+      indexPath,
+      JSON.stringify(
+        { "TASK-1": { epic: "epic-alpha, epic-beta", source: ".plan/tickets/t.md" } },
+        null,
+        2,
+      ) + "\n",
+    );
+    writeIndexStamp(indexPath);
+
+    const chunks: string[] = [];
+    const spy = spyOn(process.stdout, "write").mockImplementation(
+      ((chunk: unknown) => {
+        chunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await runEpicOwnerPick(["--apply"], rootCases(dir));
+    } finally {
+      spy.mockRestore();
+    }
+
+    // No epics to resolve against: nothing crashes and the value stays put
+    // (unresolvable epic values are reported, never guessed).
+    const index = JSON.parse(readFileSync(indexPath, "utf8")) as Record<
+      string,
+      { epic: string; }
+    >;
+    expect(index["TASK-1"]!.epic).toBe("epic-alpha, epic-beta");
   });
 });

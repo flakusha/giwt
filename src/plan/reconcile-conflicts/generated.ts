@@ -14,6 +14,7 @@
 
 import { existsSync } from "node:fs";
 import { normalize } from "node:path";
+import { mapSourcesFor } from "../../commands/plan/code-map";
 import { writeIndexStamp } from "../../tickets/index-stamp";
 import { log, raw } from "../../utils/output";
 import { buildMap, writeMap } from "../code-map";
@@ -45,24 +46,19 @@ function regenerate(root: string, planDir: string, ticketsPath: string): void {
     // replay as a manual edit. Reproduced: clean-apply replay + stamp →
     // genMatrix threw "manually edited" mid-rebase.
     writeIndexStamp(indexPath);
-    genMatrix(indexPath, fromRoot(root, `${planDir}/feature-matrix.md`));
+    genMatrix({ indexPath, outPath: fromRoot(root, `${planDir}/feature-matrix.md`) });
   }
   const epicsDir = fromRoot(root, `${planDir}/epics`);
   if (existsSync(epicsDir)) {
-    genDocs(
+    genDocs({
       epicsDir,
-      fromRoot(root, `${planDir}/epics-index.md`),
-      fromRoot(root, `${planDir}/backlog/open.md`),
-    );
+      outPath: fromRoot(root, `${planDir}/epics-index.md`),
+      backlogPath: fromRoot(root, `${planDir}/backlog/open.md`),
+    });
   }
   writeMap(
     fromRoot(root, `${planDir}/code-map.json`),
-    buildMap(root, [
-      { dir: fromRoot(root, ticketsPath), kind: "ticket" },
-      { dir: fromRoot(root, `${planDir}/epics`), kind: "epic" },
-      { dir: "docs/spec", kind: "spec" },
-      { dir: "docs/frontend", kind: "frontend" },
-    ]),
+    buildMap(root, mapSourcesFor(planDir)),
   );
 }
 

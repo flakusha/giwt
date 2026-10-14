@@ -444,6 +444,8 @@ test("regenerates the epic docs when a generated conflict is resolved", () => {
       "",
       "The alpha epic body.",
       "",
+      "## Linked Tasks",
+      "",
       "- [ ] TASK-ONE work",
       "",
     ].join("\n");

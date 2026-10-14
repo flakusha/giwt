@@ -218,13 +218,13 @@ describe("matrix gate", () => {
   test("missing matrix file fails, generated file passes", () => {
     writeIndex({ A: entry({ extid: "A", tags: ["t"] }) });
     expect(validate().pass).toBe(false);
-    genMatrix(indexPath, outPath);
+    genMatrix({ indexPath, outPath });
     expect(validate().pass).toBe(true);
   });
 
   test("tampered file is stale; --fix regenerates and re-checks", () => {
     writeIndex({ A: entry({ extid: "A" }) });
-    genMatrix(indexPath, outPath);
+    genMatrix({ indexPath, outPath });
     writeFileSync(outPath, readFileSync(outPath, "utf8") + "tampered\n");
     const stale = validate();
     expect(stale.pass).toBe(false);

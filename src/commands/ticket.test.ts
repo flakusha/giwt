@@ -150,9 +150,10 @@ describe("renderTicketFile — generated template is gate-clean", () => {
   };
 
   it("emits a Status the status-vocab gate accepts as already canonical", () => {
-    const m = renderTicketFile("BUG", "some title", FLAGS, "body").match(
-      /\*\*Status:\*\* (.+)/,
-    );
+    const m = renderTicketFile({ type: "BUG", title: "some title", flags: FLAGS, body: "body" })
+      .match(
+        /\*\*Status:\*\* (.+)/,
+      );
     expect(m).not.toBeNull();
     expect(resolveStatus(m![1] ?? "", {})).toEqual({
       value: "Not Started",
@@ -161,14 +162,19 @@ describe("renderTicketFile — generated template is gate-clean", () => {
   });
 
   it("carries every metadata marker the format gate requires", () => {
-    const content = renderTicketFile("FEAT", "some title", FLAGS, "");
+    const content = renderTicketFile({ type: "FEAT", title: "some title", flags: FLAGS, body: "" });
     for (const section of TICKET_REQUIRED_SECTIONS) {
       expect(content).toMatch(new RegExp(`\\*\\*${section}:\\*\\*`, "i"));
     }
   });
 
   it("does not regress to the rejected H2-heading or emoji-decorated shapes", () => {
-    const content = renderTicketFile("TASK", "some title", FLAGS, "body");
+    const content = renderTicketFile({
+      type: "TASK",
+      title: "some title",
+      flags: FLAGS,
+      body: "body",
+    });
     expect(content).not.toMatch(/^## (Summary|Context|Acceptance Criteria)$/m);
     expect(content).not.toContain("⬜");
   });
@@ -185,7 +191,7 @@ describe("renderTicketFile — body fields suppress their placeholders", () => {
   };
 
   it("keeps both placeholders when the body carries neither field", () => {
-    const content = renderTicketFile("BUG", "t", FLAGS, "plain body");
+    const content = renderTicketFile({ type: "BUG", title: "t", flags: FLAGS, body: "plain body" });
     expect(content).toContain("(fill in before starting");
     expect(content).toContain("- [ ] Implementation complete");
     expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1);
@@ -194,7 +200,7 @@ describe("renderTicketFile — body fields suppress their placeholders", () => {
 
   it("suppresses only the Context placeholder when the body carries **Context:**", () => {
     const body = "**Context:**\n\nfilled in by the author";
-    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    const content = renderTicketFile({ type: "BUG", title: "t", flags: FLAGS, body });
     expect(content).not.toContain("(fill in before starting");
     expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1); // the body's, not a copy
     expect(content).toContain("- [ ] Implementation complete"); // Acceptance untouched
@@ -202,7 +208,7 @@ describe("renderTicketFile — body fields suppress their placeholders", () => {
 
   it("suppresses only the Acceptance placeholder when the body carries **Acceptance Criteria:**", () => {
     const body = "**Acceptance Criteria:**\n\n- [ ] custom box";
-    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    const content = renderTicketFile({ type: "BUG", title: "t", flags: FLAGS, body });
     expect(content).not.toContain("- [ ] Implementation complete");
     expect(content.match(/\*\*Acceptance Criteria:\*\*/g)?.length).toBe(1);
     expect(content).toContain("(fill in before starting"); // Context untouched
@@ -210,7 +216,7 @@ describe("renderTicketFile — body fields suppress their placeholders", () => {
 
   it("suppresses both when the body carries both fields, staying format-gate-clean", () => {
     const body = "**Context:**\n\ntext\n\n**Acceptance Criteria:**\n\n- [ ] custom box";
-    const content = renderTicketFile("BUG", "t", FLAGS, body);
+    const content = renderTicketFile({ type: "BUG", title: "t", flags: FLAGS, body });
     expect(content.match(/\*\*Context:\*\*/g)?.length).toBe(1);
     expect(content.match(/\*\*Acceptance Criteria:\*\*/g)?.length).toBe(1);
     expect(content).not.toContain("(fill in before starting");
@@ -225,7 +231,12 @@ describe("renderTicketFile — Upstream header line", () => {
   it("renders **Upstream:** after Tags when --upstream is given", () => {
     const { flags } = parseTicketArgs(["--upstream", "owner/repo#123"]);
     expect(flags.upstream).toBe("owner/repo#123");
-    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    const content = renderTicketFile({
+      type: "BUG",
+      title: "t",
+      flags: { ...flags, epic: "e" },
+      body: "body",
+    });
     expect(content).toContain("**Upstream:** owner/repo#123");
   });
 
@@ -237,17 +248,32 @@ describe("renderTicketFile — Upstream header line", () => {
   it("emits no Upstream line when the flag is absent", () => {
     const { flags } = parseTicketArgs(["body"]);
     expect(flags.upstream).toBe("");
-    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    const content = renderTicketFile({
+      type: "BUG",
+      title: "t",
+      flags: { ...flags, epic: "e" },
+      body: "body",
+    });
     expect(content).not.toMatch(/\*\*Upstream:\*\*/);
   });
 
   it("parseTicketText round-trips the field", () => {
     const { flags } = parseTicketArgs(["--upstream", "owner/repo#123"]);
-    const content = renderTicketFile("BUG", "t", { ...flags, epic: "e" }, "body");
+    const content = renderTicketFile({
+      type: "BUG",
+      title: "t",
+      flags: { ...flags, epic: "e" },
+      body: "body",
+    });
     const tf = parseTicketText(content, "BUG-t.md");
     expect(tf?.upstream).toBe("owner/repo#123");
     const absent = parseTicketText(
-      renderTicketFile("BUG", "t", { ...flags, epic: "e", upstream: "" }, "body"),
+      renderTicketFile({
+        type: "BUG",
+        title: "t",
+        flags: { ...flags, epic: "e", upstream: "" },
+        body: "body",
+      }),
       "BUG-t.md",
     );
     expect(absent?.upstream).toBe("");
@@ -294,7 +320,12 @@ describe("renderTicketFile — emitted markdown passes the markdownlint gate", (
       "",
     ].join("\n");
 
-    const content = renderTicketFile("BUG", "lint probe", FLAGS, defectBody);
+    const content = renderTicketFile({
+      type: "BUG",
+      title: "lint probe",
+      flags: FLAGS,
+      body: defectBody,
+    });
 
     // Sanitized shape: tokens inlined, fence tagged, separators present,
     // exactly one trailing newline.
@@ -309,7 +340,7 @@ describe("renderTicketFile — emitted markdown passes the markdownlint gate", (
   });
 
   it("the default (empty-body) template lints clean with a single trailing newline", async () => {
-    const content = renderTicketFile("TASK", "plain", FLAGS, "");
+    const content = renderTicketFile({ type: "TASK", title: "plain", flags: FLAGS, body: "" });
     expect(content.endsWith("\n")).toBe(true);
     expect(content.endsWith("\n\n")).toBe(false);
     expect(await lintContent(content, "TASK-plain.md")).toEqual([]);

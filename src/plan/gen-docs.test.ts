@@ -156,6 +156,59 @@ describe("parseEpic", () => {
     }
   });
 
+  test("related tickets with checkbox entries count once", () => {
+    const fx = makeFixture();
+    try {
+      const path = join(fx.epicsDir, "epic-rel-check.md");
+      writeFileSync(
+        path,
+        "# EPIC: RelCheck\n\n## Linked Tasks\n\n- [ ] a\n\n## Related tickets\n\n- [x] TICKET-one\n- TICKET-two\n",
+      );
+      const epic = parseEpic(path);
+      // One linked task + two related entries (one checked): done 1 (not the
+      // old double-counted 2), total 3 — each item counted exactly once.
+      expect(epic!.taskDone).toBe(1);
+      expect(epic!.taskTotal).toBe(3);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("related-only epic counts related entries", () => {
+    const fx = makeFixture();
+    try {
+      const path = join(fx.epicsDir, "epic-rel-only.md");
+      writeFileSync(
+        path,
+        "# EPIC: RelOnly\n\n## Related tickets\n\n- [x] TICKET-a\n- TICKET-b\n- TICKET-c\n",
+      );
+      const epic = parseEpic(path);
+      // Three task-ish items (one checked related + two more related):
+      // done 1 (not the old double-counted 2), total 3.
+      expect(epic!.taskDone).toBe(1);
+      expect(epic!.taskTotal).toBe(3);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("checkboxes outside task sections do not bleed into the count", () => {
+    const fx = makeFixture();
+    try {
+      const path = join(fx.epicsDir, "epic-bleed.md");
+      writeFileSync(
+        path,
+        "# EPIC: Bleed\n\n## Linked Tasks\n\n- [x] TASK-1\n\n## Acceptance criteria\n\n- [ ] AC-one\n- [ ] AC-two\n",
+      );
+      const epic = parseEpic(path);
+      // Acceptance criteria are prose, not tasks: done 1, total 1.
+      expect(epic!.taskDone).toBe(1);
+      expect(epic!.taskTotal).toBe(1);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("handles empty tags field", () => {
     const fx = makeFixture();
     try {
@@ -333,7 +386,10 @@ describe("generateIndex", () => {
   test("displays done/total in tasks column", () => {
     const fx = makeFixture();
     try {
-      writeFileSync(join(fx.epicsDir, "epic-tasks.md"), "# EPIC: T\n\n- [x] a\n- [ ] b\n");
+      writeFileSync(
+        join(fx.epicsDir, "epic-tasks.md"),
+        "# EPIC: T\n\n## Linked Tasks\n\n- [x] a\n- [ ] b\n",
+      );
       const epics = collectEpics(fx.epicsDir);
       const md = generateIndex(epics, fx.backlogPath);
       expect(md).toContain("| 1/2 |");
@@ -364,7 +420,11 @@ describe("genDocs", () => {
     const fx = makeFixture();
     try {
       writeFileSync(join(fx.epicsDir, "epic-auth.md"), EPIC_CONTENT);
-      const { epics, output } = genDocs(fx.epicsDir, fx.outPath, fx.backlogPath);
+      const { epics, output } = genDocs({
+        epicsDir: fx.epicsDir,
+        outPath: fx.outPath,
+        backlogPath: fx.backlogPath,
+      });
       expect(epics).toHaveLength(1);
       expect(existsSync(fx.outPath)).toBe(true);
       expect(output).toContain("# Epics Index");
@@ -376,7 +436,11 @@ describe("genDocs", () => {
   test("writes empty index when no epics", () => {
     const fx = makeFixture();
     try {
-      const { epics, output } = genDocs(fx.epicsDir, fx.outPath, fx.backlogPath);
+      const { epics, output } = genDocs({
+        epicsDir: fx.epicsDir,
+        outPath: fx.outPath,
+        backlogPath: fx.backlogPath,
+      });
       expect(epics).toHaveLength(0);
       expect(existsSync(fx.outPath)).toBe(true);
       expect(output).toContain("**Total:** 0 epics");

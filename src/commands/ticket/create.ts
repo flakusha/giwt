@@ -134,7 +134,7 @@ export async function ticket(args: string[], config: WorktreeConfig): Promise<vo
   log("info", `creating ticket file: ${ticketFile}`);
   await Bun.write(
     ticketPath,
-    renderTicketFile(type, title, flags, body, { header: generatedHeader(ticketPath, ".md") }),
+    renderTicketFile({ type, title, flags, body, header: generatedHeader(ticketPath, ".md") }),
   );
   log("success", `created ticket file: ${ticketFile}`);
 

@@ -79,6 +79,6 @@ export async function runMatrix(args: string[], config: WorktreeConfig): Promise
     return;
   }
 
-  const { matrix } = genMatrix(indexPath, outPath, { cooccurrence });
+  const { matrix } = genMatrix({ indexPath, outPath, cooccurrence });
   log("success", `wrote ${outPath} (${matrix.total} tickets)`);
 }

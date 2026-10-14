@@ -19,19 +19,24 @@ function hasSection(raw: string, section: string): boolean {
  * BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re defect.
  * ticket.test.ts pins this template against both gates' constants.
  */
+export interface RenderTicketFileOpts {
+  type: string;
+  title: string;
+  flags: TicketFlags;
+  body: string;
+  /** SPDX header block prepended above the ticket title (absent = none). */
+  header?: string;
+}
+
 export function renderTicketFile(
-  type: string,
-  title: string,
-  flags: TicketFlags,
-  body: string,
-  opts: { header?: string; } = {},
+  { type, title, flags, body, header }: RenderTicketFileOpts,
 ): string {
   const cleanBody = sanitizeTicketBody(body);
   // No header by default: the generator cannot know the consuming repo's
   // license, so asserting giwt's own is the defect
   // (BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-).
-  const header = opts.header ? `${opts.header.replace(/\n$/, "")}\n\n` : "";
-  let content = `${header}# ${type}: ${title}\n\n`;
+  const headerPrefix = header ? `${header.replace(/\n$/, "")}\n\n` : "";
+  let content = `${headerPrefix}# ${type}: ${title}\n\n`;
   content += `**Status:** Not Started\n`;
   content += `**Priority:** ${flags.priority || "Medium"}\n`;
   content += `**Effort:** ${flags.effort}\n`;

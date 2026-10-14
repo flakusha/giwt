@@ -10,6 +10,8 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { assertIndexUnedited } from "../tickets/index-stamp";
+import { persistIndexCanonical } from "../tickets/sync-index-write";
 import type { WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
 import { canonicalIndexOrder, type IndexEntryLike } from "./index-projection";
@@ -101,11 +103,15 @@ export async function runEpicOwnerPick(args: string[], config: WorktreeConfig): 
   const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const epicsDir = join(planDir, "epics");
   const slugs = new Set(
-    readdirSync(epicsDir).filter((f) => f.startsWith("epic-") && f.endsWith(".md")).map((f) =>
-      f.replace(/\.md$/, "")
-    ),
+    existsSync(epicsDir)
+      ? readdirSync(epicsDir).filter((f) => f.startsWith("epic-") && f.endsWith(".md")).map((f) =>
+        f.replace(/\.md$/, "")
+      )
+      : [],
   );
-  const { titles, ambiguous } = scanEpicTitles(epicsDir);
+  const { titles, ambiguous } = existsSync(epicsDir)
+    ? scanEpicTitles(epicsDir)
+    : { titles: {}, ambiguous: [] };
 
   if (ambiguous.length > 0) {
     for (const line of ambiguous) raw(`  ambiguous: ${line}`);
@@ -116,6 +122,8 @@ export async function runEpicOwnerPick(args: string[], config: WorktreeConfig): 
     log("warn", `ticket index not found: ${indexPath}`);
     return;
   }
+  // Fail closed on a stamped-but-mismatched index before consuming it.
+  assertIndexUnedited(indexPath);
   const index = JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntryLike>;
   const next: Record<string, IndexEntryLike> = { ...index };
   let mdRewritten = 0;
@@ -158,8 +166,8 @@ export async function runEpicOwnerPick(args: string[], config: WorktreeConfig): 
   }
 
   if (apply) {
-    const { writeFileSync } = await import("node:fs");
-    writeFileSync(indexPath, `${JSON.stringify(canonicalIndexOrder(next), null, 2)}\n`);
+    // Canonical writer: atomic bytes + fresh fingerprint stamp.
+    persistIndexCanonical(config.repoRoot, indexPath, canonicalIndexOrder(next));
   }
 
   raw(`dry-run: ${dryRun}`);

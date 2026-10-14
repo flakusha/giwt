@@ -44,7 +44,7 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
   runSync(config.repoRoot, { fix: true, ticketsPath: config.settings.paths.tickets });
   const matrixPath = join(planDir, "feature-matrix.md");
   if (existsSync(matrixPath)) {
-    genMatrix(join(planDir, "tickets", "index.json"), matrixPath);
+    genMatrix({ indexPath: join(planDir, "tickets", "index.json"), outPath: matrixPath });
   }
   const mapPath = join(planDir, "code-map.json");
   if (existsSync(mapPath)) {

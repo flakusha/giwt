@@ -25,7 +25,7 @@ Either (a) rename the column to something accurate like 'Open criteria' / 'Unche
 
 **Context:**
 
-Fixed in commit `f3d6e03`: changed `parseEpic()` in `src/plan/gen-docs.ts` to count entries under the `## Related tickets` section instead of unchecked `- [ ]` checkboxes. The `Tasks` column in the generated index now accurately reflects the number of related tickets per epic.
+Fixed in commit `f3d6e03`, then corrected after review: `parseEpic()` in `src/plan/gen-docs.ts` now scopes the Tasks column to the task-bearing sections only — done/total over `## Linked Tasks` checkboxes plus `## Related tickets` entries (checkbox-style related entries count once; checkbox prose elsewhere, e.g. acceptance criteria, is excluded). The first cut summed file-wide checkboxes with related entries, double-counting checked entries under `## Related tickets` (done could exceed total) and conflating acceptance criteria with tasks.
 
 **Acceptance Criteria:**
 

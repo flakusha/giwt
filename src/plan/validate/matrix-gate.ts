@@ -57,7 +57,7 @@ export function runMatrixGate(
   let fixMsgs: string[] = [];
   if (fix && !pass && existsSync(indexPath)) {
     try {
-      const { matrix } = genMatrix(indexPath, outPath);
+      const { matrix } = genMatrix({ indexPath, outPath });
       const rechecked = matrixOutput(indexPath, { header: generatedHeader(outPath, ".md") });
       const clean = existsSync(outPath) && readFileSync(outPath, "utf8") === rechecked.output;
       if (clean) {

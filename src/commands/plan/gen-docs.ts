@@ -45,6 +45,6 @@ export async function runGenDocs(
     return;
   }
 
-  const { epics } = genDocs(epicsDir, outPath, backlogPath);
+  const { epics } = genDocs({ epicsDir, outPath, backlogPath });
   log("success", `wrote ${outPath} (${epics.length} epics)`);
 }
