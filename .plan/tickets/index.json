@@ -933,6 +933,23 @@
     "source": ".plan/tickets/BUG-ticket-template-emits-empty-context-acceptance-placeholders-.md",
     "status": "done"
   },
+  "FEAT-ADVISORY-GIWT-LOCK-STATUS-COMMAND": {
+    "hash": "2a27393",
+    "git_issue": "2a27393",
+    "extid": "FEAT-ADVISORY-GIWT-LOCK-STATUS-COMMAND",
+    "type": "FEAT",
+    "title": "advisory giwt lock status command",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "cli",
+      "agents",
+      "finalize"
+    ],
+    "source": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md",
+    "status": "Not Started"
+  },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
     "git_issue": "7968809",
@@ -1111,6 +1128,23 @@
     "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md",
     "status": "done"
   },
+  "FEAT-FINALIZE-DRY-RUN-SCOPE-DECISION-TRUE-DRY-RUN-OR-RENAME": {
+    "hash": "b022985",
+    "git_issue": "b022985",
+    "extid": "FEAT-FINALIZE-DRY-RUN-SCOPE-DECISION-TRUE-DRY-RUN-OR-RENAME",
+    "type": "FEAT",
+    "title": "finalize --dry-run scope decision: true dry-run or rename",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "cli",
+      "decision"
+    ],
+    "source": ".plan/tickets/FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename.md",
+    "status": "Not Started"
+  },
   "FEAT-FINALIZE-GATES-PLAN-INTEGRATION": {
     "hash": "d0394fb",
     "git_issue": "d0394fb",
@@ -1219,6 +1253,23 @@
     "status": "done",
     "git_issue": "4a5b9ba"
   },
+  "FEAT-LEDGER-LIFECYCLE-TRUTHFULNESS-DISPATCHER-FINISH-AND-RUN-LINK": {
+    "hash": "a75a90c",
+    "git_issue": "a75a90c",
+    "extid": "FEAT-LEDGER-LIFECYCLE-TRUTHFULNESS-DISPATCHER-FINISH-AND-RUN-LINK",
+    "type": "FEAT",
+    "title": "ledger lifecycle truthfulness: dispatcher finish and run links",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "ledger",
+      "observability",
+      "agents"
+    ],
+    "source": ".plan/tickets/FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link.md",
+    "status": "Not Started"
+  },
   "FEAT-LEDGER-SCHEMA-V2-WRITER": {
     "hash": "2491db8",
     "extid": "FEAT-LEDGER-SCHEMA-V2-WRITER",
@@ -1234,6 +1285,23 @@
     "source": ".plan/tickets/FEAT-ledger-schema-v2-writer.md",
     "status": "done",
     "git_issue": "2491db8"
+  },
+  "FEAT-LOGGER-INTERNALS-RUN-CORRELATION-FIELDS-WARNONCE-RAW-HYGIENE": {
+    "hash": "5ffdc06",
+    "git_issue": "5ffdc06",
+    "extid": "FEAT-LOGGER-INTERNALS-RUN-CORRELATION-FIELDS-WARNONCE-RAW-HYGIENE",
+    "type": "FEAT",
+    "title": "logger internals: run correlation, fields, warnOnce, raw hygiene",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "output",
+      "logging",
+      "cli"
+    ],
+    "source": ".plan/tickets/FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene.md",
+    "status": "Not Started"
   },
   "FEAT-MERGE-IN-STAGING-WORKTREE-WITH-REF-MOVE": {
     "hash": "1098041",
@@ -1266,6 +1334,23 @@
     ],
     "source": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
     "status": "done"
+  },
+  "FEAT-ONE-LINE-OUTCOME-CONTRACT-FOR-DIRECT-CLI-CALLS": {
+    "hash": "a0d965c",
+    "git_issue": "a0d965c",
+    "extid": "FEAT-ONE-LINE-OUTCOME-CONTRACT-FOR-DIRECT-CLI-CALLS",
+    "type": "FEAT",
+    "title": "one-line outcome contract for direct CLI calls",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "cli",
+      "output",
+      "agents"
+    ],
+    "source": ".plan/tickets/FEAT-one-line-outcome-contract-for-direct-cli-calls.md",
+    "status": "Not Started"
   },
   "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND": {
     "hash": "00787da",
@@ -1481,6 +1566,23 @@
     "source": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md",
     "status": "Not Started"
   },
+  "FEAT-REUSE-TOML-PRECEDENCE-OVERRIDE-SEMANTICS-DECISION": {
+    "hash": "09ed866",
+    "git_issue": "09ed866",
+    "extid": "FEAT-REUSE-TOML-PRECEDENCE-OVERRIDE-SEMANTICS-DECISION",
+    "type": "FEAT",
+    "title": "REUSE.toml precedence override semantics decision",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "spdx",
+      "licensing",
+      "decision"
+    ],
+    "source": ".plan/tickets/FEAT-reuse-toml-precedence-override-semantics-decision.md",
+    "status": "Not Started"
+  },
   "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
     "hash": "5c8a4b5",
     "git_issue": "5c8a4b5",
@@ -1512,6 +1614,23 @@
     ],
     "source": ".plan/tickets/FEAT-runs-failure-triage-extract-fail-blocks-and-diff-two-runs.md",
     "status": "done"
+  },
+  "FEAT-RUNS-JSON-DIET-DEFAULT-PROJECTION-AND-QUERY-FILTERS": {
+    "hash": "2357bd9",
+    "git_issue": "2357bd9",
+    "extid": "FEAT-RUNS-JSON-DIET-DEFAULT-PROJECTION-AND-QUERY-FILTERS",
+    "type": "FEAT",
+    "title": "runs --json diet: default projection and query filters",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "runlog",
+      "agents",
+      "cli"
+    ],
+    "source": ".plan/tickets/FEAT-runs-json-diet-default-projection-and-query-filters.md",
+    "status": "Not Started"
   },
   "FEAT-SCOPED-WORKTREE-CREATION-NEW-SCOPE-AND-TICKETS-FLAGS": {
     "hash": "60f133c",
@@ -1892,6 +2011,23 @@
     "source": ".plan/tickets/FIX-plan-validate-path-doubling-in-worktrees-and-unbounded-outpu.md",
     "status": "done"
   },
+  "FIX-REFERENCED-ARTIFACTS-MUST-OUTLIVE-THE-CONSOLE": {
+    "hash": "680afe6",
+    "git_issue": "680afe6",
+    "extid": "FIX-REFERENCED-ARTIFACTS-MUST-OUTLIVE-THE-CONSOLE",
+    "type": "FIX",
+    "title": "referenced artifacts must outlive the console",
+    "label": "fix",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "runlog",
+      "finalize",
+      "observability"
+    ],
+    "source": ".plan/tickets/FIX-referenced-artifacts-must-outlive-the-console.md",
+    "status": "Not Started"
+  },
   "FIX-RUN-RECORDS-DIE-WITH-THE-WORKTREE-AND-LACK-OUTCOME-DATA": {
     "hash": "0df14c4",
     "git_issue": "0df14c4",
@@ -1992,6 +2128,23 @@
     "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md",
     "status": "done"
   },
+  "TASK-COLOCATION-SWEEP-STRANDED-TESTS-GPG-UNLOCK-SPLIT-TESTKIT": {
+    "hash": "e2ad352",
+    "git_issue": "e2ad352",
+    "extid": "TASK-COLOCATION-SWEEP-STRANDED-TESTS-GPG-UNLOCK-SPLIT-TESTKIT",
+    "type": "TASK",
+    "title": "colocation sweep: stranded tests, gpg-unlock split, testkit",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "refactor",
+      "testing",
+      "structure"
+    ],
+    "source": ".plan/tickets/TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit.md",
+    "status": "Not Started"
+  },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",
     "git_issue": "9ef7c2f",
@@ -2004,6 +2157,23 @@
     "tags": [],
     "source": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md",
     "status": "done"
+  },
+  "TASK-CONSOLIDATION-WORKTREE-BOOTSTRAP-SCANFLAGS-STALE-SIZE-ALLOW": {
+    "hash": "cfbeb15",
+    "git_issue": "cfbeb15",
+    "extid": "TASK-CONSOLIDATION-WORKTREE-BOOTSTRAP-SCANFLAGS-STALE-SIZE-ALLOW",
+    "type": "TASK",
+    "title": "consolidation: worktree bootstrap, scanFlags, stale size-allow",
+    "label": "task",
+    "priority": "low",
+    "epic": "",
+    "tags": [
+      "refactor",
+      "dedup",
+      "cli"
+    ],
+    "source": ".plan/tickets/TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow.md",
+    "status": "Not Started"
   },
   "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API": {
     "hash": "ac01204",
