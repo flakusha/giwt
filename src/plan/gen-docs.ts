@@ -13,6 +13,7 @@
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { generatedHeader } from "../utils/reuse-toml";
 
 export interface Epic {
   file: string;
@@ -103,10 +104,15 @@ export function collectEpics(epicsDir: string): Epic[] {
  * Generate epics-index.md content from parsed epics.
  * Returns the markdown string; does not write to disk.
  */
-export function generateIndex(epics: Epic[], backlogPath: string): string {
-  // ponytail: loop-lore's SPDX convention hardcoded; parameterize when giwt serves a second repo
-  let md = "<!-- SPDX-License-Identifier: Apache-2.0 -->\n";
-  md += "<!-- SPDX-FileCopyrightText: 2026 Loop Lore Contributors -->\n\n";
+export function generateIndex(
+  epics: Epic[],
+  backlogPath: string,
+  opts: { header?: string; } = {},
+): string {
+  // No header by default: the generator does not know the consuming repo's
+  // license, so asserting one is the defect
+  // (BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-).
+  let md = opts.header ? `${opts.header.replace(/\n$/, "")}\n\n` : "";
   md += "# Epics Index\n\n";
   md += "> Auto-generated from `.plan/epics/`. Do not edit manually.\n";
   md += `> Regenerate with \`giwt plan gen-docs\`.\n\n`;
@@ -152,12 +158,21 @@ export function generateIndex(epics: Epic[], backlogPath: string): string {
 }
 
 /** Full generation: collect epics, generate index, write to disk. */
-export function genDocs(epicsDir: string, outPath: string, backlogPath: string): {
+export function genDocs(
+  epicsDir: string,
+  outPath: string,
+  backlogPath: string,
+  opts: { header?: string; } = {},
+): {
   epics: Epic[];
   output: string;
 } {
   const epics = collectEpics(epicsDir);
-  const output = generateIndex(epics, backlogPath);
+  // Header follows the destination path (nearest REUSE.toml), derived here so
+  // no write path can forget it.
+  const output = generateIndex(epics, backlogPath, {
+    header: opts.header ?? generatedHeader(outPath, ".md"),
+  });
   writeFileSync(outPath, output);
   return { epics, output };
 }

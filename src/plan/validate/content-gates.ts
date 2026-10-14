@@ -10,6 +10,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { generatedHeader } from "../../utils/reuse-toml";
 import { reconcile as reconcileBacklog } from "../backlog-sync";
 import { runLinkCheck } from "../check-links";
 import { buildMap, collectMdFiles, verifyFresh } from "../code-map";
@@ -199,7 +200,9 @@ export function checkEpicsDoc(epicsDir: string, outPath: string, backlogPath: st
     return findings;
   }
   const epics = collectEpics(epicsDir);
-  const fresh = generateIndex(epics, backlogPath);
+  // Same header derivation as genDocs — byte equality would otherwise report
+  // every repo stale.
+  const fresh = generateIndex(epics, backlogPath, { header: generatedHeader(outPath, ".md") });
   const existing = readFileSync(outPath, "utf8");
   if (fresh !== existing) {
     findings.push({

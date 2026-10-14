@@ -2,7 +2,17 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { describe, expect, test } from "bun:test";
-import { checkHeader, parseLicenses, parseReuseToml } from "./reuse-toml";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  buildHeader,
+  checkHeader,
+  commentStyleFor,
+  generatedHeader,
+  parseLicenses,
+  parseReuseToml,
+} from "./reuse-toml";
 
 describe("parseReuseToml", () => {
   test("parses [[annotations]] blocks", () => {
@@ -56,6 +66,30 @@ copyright = "2026 giwt Contributors"
     expect(rules[0]!.matchers[1]!.test("docs/readme.md")).toBe(true);
     expect(rules[0]!.matchers[1]!.test("docs/sub/readme.md")).toBe(false);
   });
+
+  test("parses REUSE spec keys (path / SPDX-*)", () => {
+    const toml = `[[annotations]]
+path = ["src/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Acme Corp"
+`;
+    const rules = parseReuseToml(toml);
+    expect(rules.length).toBe(1);
+    expect(rules[0]!.paths).toEqual(["src/**"]);
+    expect(rules[0]!.license).toBe("MIT");
+    expect(rules[0]!.copyright).toBe("2026 Acme Corp");
+    expect(rules[0]!.matchers[0]!.test("src/a.ts")).toBe(true);
+  });
+
+  test("parses REUSE spec scalar path", () => {
+    const toml = `[[annotations]]
+path = "docs/**"
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Acme Corp"
+`;
+    const rules = parseReuseToml(toml);
+    expect(rules[0]!.paths).toEqual(["docs/**"]);
+  });
 });
 
 describe("parseLicenses", () => {
@@ -101,5 +135,125 @@ export const x = 1;
 `;
     const result = checkHeader(content, rule);
     expect(result.valid).toBe(false);
+  });
+});
+
+describe("commentStyleFor", () => {
+  test("hash comments for yml/yaml/toml", () => {
+    expect(commentStyleFor(".yml")).toEqual({ prefix: "#", suffix: "" });
+    expect(commentStyleFor(".yaml")).toEqual({ prefix: "#", suffix: "" });
+    expect(commentStyleFor(".toml")).toEqual({ prefix: "#", suffix: "" });
+  });
+});
+
+describe("buildHeader", () => {
+  const rule = {
+    paths: ["src/**"],
+    license: "MIT",
+    copyright: "2026 Acme Corp",
+    matchers: [/^src\/.*$/],
+    precedence: "aggregate",
+  };
+
+  test("markdown uses HTML comment", () => {
+    expect(buildHeader(rule, ".md")).toBe(
+      "<!-- SPDX-License-Identifier: MIT-->\n<!-- SPDX-FileCopyrightText: 2026 Acme Corp-->\n",
+    );
+  });
+
+  test("yaml uses hash comment", () => {
+    expect(buildHeader(rule, ".yaml")).toBe(
+      "# SPDX-License-Identifier: MIT\n# SPDX-FileCopyrightText: 2026 Acme Corp\n",
+    );
+  });
+});
+
+describe("generatedHeader", () => {
+  function withFixture(toml: string, run: (dir: string) => void): void {
+    const dir = mkdtempSync(join(tmpdir(), "reuse-gen-"));
+    try {
+      writeFileSync(join(dir, "REUSE.toml"), toml);
+      run(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  test("returns the consumer's header for a matching path", () => {
+    withFixture(
+      `[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Acme Corp"
+`,
+      (dir) => {
+        expect(generatedHeader(join(dir, "plans", "matrix.md"), ".md")).toBe(
+          "<!-- SPDX-License-Identifier: MIT-->\n<!-- SPDX-FileCopyrightText: 2026 Acme Corp-->\n",
+        );
+      },
+    );
+  });
+
+  test("returns empty for a non-matching path", () => {
+    withFixture(
+      `[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Acme Corp"
+`,
+      (dir) => {
+        expect(generatedHeader(join(dir, "other", "x.md"), ".md")).toBe("");
+      },
+    );
+  });
+
+  test("returns empty when no REUSE.toml exists", () => {
+    const dir = mkdtempSync(join(tmpdir(), "reuse-none-"));
+    try {
+      expect(generatedHeader(join(dir, "plans", "x.md"), ".md")).toBe("");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns empty when the rule lacks copyright", () => {
+    withFixture(
+      `[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "MIT"
+`,
+      (dir) => {
+        expect(generatedHeader(join(dir, "plans", "x.md"), ".md")).toBe("");
+      },
+    );
+  });
+
+  test("nearest REUSE.toml wins", () => {
+    const root = mkdtempSync(join(tmpdir(), "reuse-nested-"));
+    try {
+      writeFileSync(
+        join(root, "REUSE.toml"),
+        `[[annotations]]
+path = ["**"]
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "2026 Root Corp"
+`,
+      );
+      const sub = join(root, "plans");
+      mkdirSync(sub, { recursive: true });
+      writeFileSync(
+        join(sub, "REUSE.toml"),
+        `[[annotations]]
+path = ["**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Sub Corp"
+`,
+      );
+      expect(generatedHeader(join(sub, "matrix.md"), ".md")).toBe(
+        "<!-- SPDX-License-Identifier: MIT-->\n<!-- SPDX-FileCopyrightText: 2026 Sub Corp-->\n",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

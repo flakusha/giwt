@@ -103,11 +103,8 @@ describe("buildMatrix", () => {
 });
 
 describe("generateMatrixMarkdown", () => {
-  test("empty index renders canonical bytes", () => {
+  test("empty index renders canonical bytes with no header by default", () => {
     const expected = [
-      "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->",
-      "<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->",
-      "",
       "<!-- Do not edit manually — regenerate with `giwt plan matrix` -->",
       "",
       "# Feature matrix",

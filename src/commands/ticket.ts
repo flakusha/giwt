@@ -7,5 +7,6 @@
 export { parseTicketArgs, type TicketFlags } from "./ticket/args";
 export { closeTicketFile, closeTickets } from "./ticket/close";
 export { copyTickets } from "./ticket/copy";
-export { renderTicketFile, stripTypePrefix, ticket } from "./ticket/create";
+export { stripTypePrefix, ticket } from "./ticket/create";
+export { renderTicketFile } from "./ticket/render";
 export { hunkCount, threeWay } from "./ticket/threeway";

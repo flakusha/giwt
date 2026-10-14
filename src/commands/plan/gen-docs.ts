@@ -7,6 +7,7 @@ import { collectEpics, genDocs, generateIndex } from "../../plan/gen-docs";
 import { resolveFromRoot } from "../../plan/validate";
 import type { WorktreeConfig } from "../../utils/config";
 import { log, raw } from "../../utils/output";
+import { generatedHeader } from "../../utils/reuse-toml";
 
 export async function runGenDocs(
   args: string[],
@@ -34,7 +35,7 @@ export async function runGenDocs(
       process.exit(1);
     }
     const epics = collectEpics(epicsDir);
-    const fresh = generateIndex(epics, backlogPath);
+    const fresh = generateIndex(epics, backlogPath, { header: generatedHeader(outPath, ".md") });
     const committed = readFileSync(outPath, "utf8");
     if (fresh !== committed) {
       log("error", "epics-index.md is stale — run `giwt plan gen-docs` to regenerate");

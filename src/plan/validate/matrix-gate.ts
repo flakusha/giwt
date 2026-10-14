@@ -9,6 +9,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { generatedHeader } from "../../utils/reuse-toml";
 import { genMatrix, matrixOutput } from "../feature-matrix";
 import type { Finding } from "./types";
 
@@ -27,7 +28,10 @@ export function runMatrixGate(
     });
   } else {
     try {
-      const fresh = matrixOutput(indexPath);
+      // Header is derived from the destination path exactly as genMatrix does
+      // it — the freshness comparison is byte equality, so a mismatch here
+      // would report every repo stale.
+      const fresh = matrixOutput(indexPath, { header: generatedHeader(outPath, ".md") });
       if (!existsSync(outPath)) {
         findings.push({
           gate: "matrix",
@@ -54,7 +58,7 @@ export function runMatrixGate(
   if (fix && !pass && existsSync(indexPath)) {
     try {
       const { matrix } = genMatrix(indexPath, outPath);
-      const rechecked = matrixOutput(indexPath);
+      const rechecked = matrixOutput(indexPath, { header: generatedHeader(outPath, ".md") });
       const clean = existsSync(outPath) && readFileSync(outPath, "utf8") === rechecked.output;
       if (clean) {
         // Regeneration resolves every finding — drop them so both the

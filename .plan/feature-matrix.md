@@ -1,5 +1,5 @@
-<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later-->
+<!-- SPDX-FileCopyrightText: 2026 giwt Contributors-->
 
 <!-- Do not edit manually — regenerate with `giwt plan matrix` -->
 

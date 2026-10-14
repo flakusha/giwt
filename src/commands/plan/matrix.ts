@@ -8,6 +8,7 @@ import { resolveFromRoot } from "../../plan/validate";
 import type { WorktreeConfig } from "../../utils/config";
 import { parseOutFlags, renderRecords } from "../../utils/emit";
 import { log, raw } from "../../utils/output";
+import { generatedHeader } from "../../utils/reuse-toml";
 
 export async function runMatrix(args: string[], config: WorktreeConfig): Promise<void> {
   const isCheck = args.includes("--check");
@@ -48,7 +49,10 @@ export async function runMatrix(args: string[], config: WorktreeConfig): Promise
     }
     // matrixOutput throws on a missing/corrupt index — main() catches and
     // reports with the path named, keeping stdout clean for pipelines.
-    const fresh = matrixOutput(indexPath, { cooccurrence });
+    const fresh = matrixOutput(indexPath, {
+      cooccurrence,
+      header: generatedHeader(outPath, ".md"),
+    });
     if (readFileSync(outPath, "utf8") !== fresh.output) {
       log("error", "feature-matrix.md is stale — run `giwt plan matrix` to regenerate");
       process.exit(1);

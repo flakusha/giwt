@@ -6,31 +6,7 @@
  * extension and rewrites files in place, preserving shebangs and YAML
  * frontmatter.
  */
-import { parseLicenses, type ReuseRule } from "./reuse-toml";
-
-function commentStyleFor(ext: string): { prefix: string; suffix: string; } {
-  switch (ext) {
-    case ".html":
-    case ".md":
-    case ".mdx":
-      return { prefix: "<!--", suffix: "-->" };
-    case ".css":
-      return { prefix: "/*", suffix: "*/" };
-    default:
-      return { prefix: "//", suffix: "" };
-  }
-}
-
-function buildHeader(rule: ReuseRule, ext: string): string {
-  const license = parseLicenses(rule.license)[0];
-  const tags = [
-    `SPDX-License-Identifier: ${license}`,
-    `SPDX-FileCopyrightText: ${rule.copyright}`,
-  ];
-  if (ext === ".css") return `/* ${tags.join("\n * ")} */\n`;
-  const { prefix, suffix } = commentStyleFor(ext);
-  return tags.map((t) => `${prefix} ${t}${suffix}`).join("\n") + "\n";
-}
+import { buildHeader, type ReuseRule } from "./reuse-toml";
 
 function applyHeader(content: string, header: string): string {
   const lines = content.split("\n");

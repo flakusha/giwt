@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { assertIndexUnedited } from "../tickets/index-stamp";
 import { type IndexEntry, normalizeStatus } from "../tickets/sync-ticket";
+import { generatedHeader } from "../utils/reuse-toml";
 
 export interface MatrixStatuses {
   done: number;
@@ -161,12 +162,10 @@ function cooccurrenceTable(rows: MatrixRow[]): string[] {
  */
 export function generateMatrixMarkdown(
   m: FeatureMatrix,
-  opts: { cooccurrence?: boolean; } = {},
+  opts: { cooccurrence?: boolean; header?: string; } = {},
 ): string {
   const lines = [
-    "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->",
-    "<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->",
-    "",
+    ...(opts.header ? [opts.header.replace(/\n$/, ""), ""] : []),
     "<!-- Do not edit manually — regenerate with `giwt plan matrix` -->",
     "",
     "# Feature matrix",
@@ -219,7 +218,7 @@ export function readTicketIndex(indexPath: string): Record<string, IndexEntry> {
 /** Build + render without writing — the --check/--json path. */
 export function matrixOutput(
   indexPath: string,
-  opts: { cooccurrence?: boolean; } = {},
+  opts: { cooccurrence?: boolean; header?: string; } = {},
 ): { matrix: FeatureMatrix; output: string; } {
   const matrix = buildMatrix(readTicketIndex(indexPath));
   return { matrix, output: generateMatrixMarkdown(matrix, opts) };
@@ -229,9 +228,15 @@ export function matrixOutput(
 export function genMatrix(
   indexPath: string,
   outPath: string,
-  opts: { cooccurrence?: boolean; } = {},
+  opts: { cooccurrence?: boolean; header?: string; } = {},
 ): { matrix: FeatureMatrix; output: string; } {
-  const result = matrixOutput(indexPath, opts);
+  // The header is a property of the destination path (the nearest
+  // REUSE.toml), so every write path derives it here — a caller that
+  // passed a path but forgot the header would silently emit headerless bytes.
+  const result = matrixOutput(indexPath, {
+    ...opts,
+    header: opts.header ?? generatedHeader(outPath, ".md"),
+  });
   writeFileSync(outPath, result.output);
   return result;
 }
