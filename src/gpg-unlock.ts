@@ -219,12 +219,9 @@ export function runGpgUnlock(): void {
       raw("Cache is warm; TTL re-armed via real sign.");
       process.exit(0);
     }
-    log(
-      "error",
-      String("Warm-cache real sign failed; falling back to cold path.").replace(/\n$/, ""),
-    );
+    log("error", "Warm-cache real sign failed; falling back to cold path.");
     if (sign.stderrOut.trim()) {
-      log("error", String(`gpg stderr: ${sign.stderrOut.trim()}`).replace(/\n$/, ""));
+      log("error", `gpg stderr: ${sign.stderrOut.trim()}`);
     }
   }
 

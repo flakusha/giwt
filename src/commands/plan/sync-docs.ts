@@ -10,7 +10,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { WorktreeConfig } from "../../utils/config";
-import { log } from "../../utils/output";
+import { log, raw } from "../../utils/output";
 
 const DIR_TITLES: Record<string, string> = {
   epics: "Epics",
@@ -69,7 +69,6 @@ async function writeDirIndex(outDir: string, dir: string, mdFiles: string[]): Pr
 
 export async function runSyncDocs(args: string[], config: WorktreeConfig): Promise<void> {
   if (args.includes("--help") || args.includes("-h") || args.length > 0) {
-    const { raw } = await import("../../utils/output");
     raw("Usage: giwt plan sync-docs");
     raw("  Mirror .plan/ markdown into docs/plan-gen/ for the Vitepress site");
     process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
