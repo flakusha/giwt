@@ -58,8 +58,8 @@ export async function runSpdxCheck(args: string[], config: WorktreeConfig): Prom
   const files = explicitFiles.length > 0
     ? explicitFiles.filter(hasCheckableExtension).filter((f) => !isExcluded(f))
     : useStaged
-    ? await getStagedFiles()
-    : await getTrackedFiles();
+    ? await getStagedFiles(config.repoRoot)
+    : await getTrackedFiles(config.repoRoot);
 
   if (files.length === 0) {
     log("info", "no files to check");
@@ -71,7 +71,7 @@ export async function runSpdxCheck(args: string[], config: WorktreeConfig): Prom
     const content = await Bun.file(join(config.repoRoot, file)).text();
     const rule = rules.find((r) => r.matchers.some((m) => m.test(file)));
     if (!rule) continue;
-    const result = checkHeader(content, rule);
+    const result = checkHeader(content, rule, file.slice(file.lastIndexOf(".")));
     if (!result.valid) {
       violations.push({
         file,

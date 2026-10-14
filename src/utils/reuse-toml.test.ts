@@ -90,6 +90,31 @@ SPDX-FileCopyrightText = "2026 Acme Corp"
     const rules = parseReuseToml(toml);
     expect(rules[0]!.paths).toEqual(["docs/**"]);
   });
+
+  test("parses single-quoted TOML values (license, copyright, path)", () => {
+    const toml = `[[annotations]]
+path = 'docs/**'
+SPDX-License-Identifier = 'MIT'
+SPDX-FileCopyrightText = '2026 Acme Corp'
+`;
+    const rules = parseReuseToml(toml);
+    expect(rules[0]!.paths).toEqual(["docs/**"]);
+    expect(rules[0]!.license).toBe("MIT");
+    expect(rules[0]!.copyright).toBe("2026 Acme Corp");
+  });
+
+  test("parses a multi-line path array", () => {
+    const toml = `[[annotations]]
+path = [
+  "src/**",
+  "docs/**/*.md",
+]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Acme Corp"
+`;
+    const rules = parseReuseToml(toml);
+    expect(rules[0]!.paths).toEqual(["src/**", "docs/**/*.md"]);
+  });
 });
 
 describe("parseLicenses", () => {
@@ -134,6 +159,54 @@ export const x = 1;
 export const x = 1;
 `;
     const result = checkHeader(content, rule);
+    expect(result.valid).toBe(false);
+  });
+
+  test("slash comment parses with the default style", () => {
+    const content =
+      "// SPDX-License-Identifier: AGPL-3.0-or-later\n// SPDX-FileCopyrightText: 2026 giwt Contributors\n";
+    expect(checkHeader(content, rule, ".ts").valid).toBe(true);
+  });
+
+  test("hash comment parses for yml", () => {
+    const content =
+      "# SPDX-License-Identifier: AGPL-3.0-or-later\n# SPDX-FileCopyrightText: 2026 giwt Contributors\n";
+    const result = checkHeader(content, rule, ".yml");
+    expect(result.valid).toBe(true);
+    expect(result.license).toBe("AGPL-3.0-or-later");
+  });
+
+  test("html comment suffix is stripped from both tokens", () => {
+    const content =
+      "<!-- SPDX-License-Identifier: AGPL-3.0-or-later-->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors-->\n";
+    const result = checkHeader(content, rule, ".md");
+    expect(result.valid).toBe(true);
+    expect(result.license).toBe("AGPL-3.0-or-later");
+    expect(result.copyright).toBe("2026 giwt Contributors");
+  });
+
+  test("spaced html suffix is stripped too (epics-index.md shape)", () => {
+    const content =
+      "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- SPDX-FileCopyrightText: 2026 giwt Contributors -->\n";
+    const result = checkHeader(content, rule, ".md");
+    expect(result.valid).toBe(true);
+    expect(result.license).toBe("AGPL-3.0-or-later");
+  });
+
+  test("css block comment strips only the actual closing delimiter", () => {
+    const content =
+      "/* SPDX-License-Identifier: AGPL-3.0-or-later\n * SPDX-FileCopyrightText: 2026 giwt Contributors */\n";
+    const result = checkHeader(content, rule, ".css");
+    expect(result.valid).toBe(true);
+    expect(result.license).toBe("AGPL-3.0-or-later");
+    expect(result.copyright).toBe("2026 giwt Contributors");
+  });
+
+  test("a license id legitimately ending in dashes is not mangled", () => {
+    const content =
+      "// SPDX-License-Identifier: MIT--\n// SPDX-FileCopyrightText: 2026 giwt Contributors\n";
+    const result = checkHeader(content, rule, ".md");
+    expect(result.license).toBe("MIT--");
     expect(result.valid).toBe(false);
   });
 });

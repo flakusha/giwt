@@ -31,14 +31,17 @@ function globToRegex(glob: string): RegExp {
 }
 
 function extractString(block: string, key: string): string | null {
-  const m = block.match(new RegExp(`^${key}\\s*=\\s*"([^"]*)"`, "m"));
-  return m?.[1] ?? null;
+  // TOML basic ("…") and literal ('…') strings both appear in REUSE.toml.
+  const m = block.match(new RegExp(`^${key}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "m"));
+  if (!m) return null;
+  return m[1] ?? m[2] ?? "";
 }
 
 function extractStringArray(block: string, key: string): string[] {
-  const m = block.match(new RegExp(`^${key}\\s*=\\s*\\[([^\\]]*)\\]`, "m"));
+  // The bracket body may span lines (multi-line TOML arrays).
+  const m = block.match(new RegExp(`^${key}\\s*=\\s*\\[([\\s\\S]*?)\\]`, "m"));
   if (!m?.[1]) return [];
-  return m[1].split(",").map((s) => s.trim().replace(/^"|"$/g, "")).filter(Boolean);
+  return m[1].split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
 }
 
 /** Paths for a block: legacy `paths` array or REUSE-spec `path` (string or array). */
@@ -83,12 +86,29 @@ export interface HeaderCheck {
   expectedCopyright: string;
 }
 
-export function checkHeader(content: string, rule: ReuseRule): HeaderCheck {
+/** Parse one header line's tag value, stripping the comment style's closing
+ * delimiter (e.g. `-->` for markdown) only when the line actually ends with
+ * it — `//` and `#` headers have no suffix and parse as-is. */
+function parseTagValue(line: string, tag: string, suffix: string): string | null {
+  const value = line.split(tag)[1];
+  if (value === undefined) return null;
+  const trimmed = value.trim();
+  return suffix !== "" && trimmed.endsWith(suffix)
+    ? trimmed.slice(0, -suffix.length).trim()
+    : trimmed;
+}
+
+export function checkHeader(content: string, rule: ReuseRule, ext = ""): HeaderCheck {
   const lines = content.split("\n");
   const licenseLine = lines.find((l) => l.includes("SPDX-License-Identifier:"));
   const copyrightLine = lines.find((l) => l.includes("SPDX-FileCopyrightText:"));
-  const license = licenseLine?.split("SPDX-License-Identifier:")[1]?.trim() ?? null;
-  const copyright = copyrightLine?.split("SPDX-FileCopyrightText:")[1]?.trim() ?? null;
+  const { suffix } = commentStyleFor(ext);
+  const license = licenseLine === undefined
+    ? null
+    : parseTagValue(licenseLine, "SPDX-License-Identifier:", suffix);
+  const copyright = copyrightLine === undefined
+    ? null
+    : parseTagValue(copyrightLine, "SPDX-FileCopyrightText:", suffix);
   const expectedLicense = parseLicenses(rule.license)[0] ?? rule.license;
   const valid = license === expectedLicense && copyright?.includes(rule.copyright) === true;
   return { valid, license, copyright, expectedLicense, expectedCopyright: rule.copyright };

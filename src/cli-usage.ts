@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 // SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
  * Per-command help bodies for `giwt <cmd> --help` / `giwt help <cmd>`.

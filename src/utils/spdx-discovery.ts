@@ -5,10 +5,15 @@
  * File discovery for the SPDX header guard: extension allowlist, exclusion
  * patterns, and git-backed file listing (staged / tracked).
  */
-import { $ } from "bun";
+import { gitSync } from "./git";
 
-type GitRunner = (command: string) => Promise<string>;
-let gitRunner: GitRunner = async (command) => await $`${command}`.text();
+type GitRunner = (repoRoot: string, args: string[]) => Promise<string>;
+
+/** Real runner: args-array spawn pinned to the repo root (works from any cwd).
+ * Kept as a named value so tests can restore it by identity after setGitRunner. */
+export const defaultGitRunner: GitRunner = async (repoRoot, args) => gitSync(repoRoot, ...args);
+
+let gitRunner: GitRunner = defaultGitRunner;
 export function setGitRunner(runner: GitRunner): void {
   gitRunner = runner;
 }
@@ -54,13 +59,18 @@ export function filterCheckableFiles(files: string[]): string[] {
     .filter((f) => !isExcluded(f));
 }
 
-export async function getStagedFiles(): Promise<string[]> {
-  const result = await gitRunner("git diff --cached --name-only --diff-filter=ACM");
+export async function getStagedFiles(repoRoot: string): Promise<string[]> {
+  const result = await gitRunner(repoRoot, [
+    "diff",
+    "--cached",
+    "--name-only",
+    "--diff-filter=ACM",
+  ]);
   return filterCheckableFiles(result.split("\n"));
 }
 
 /** List every tracked file (git ls-files) with a checkable extension. */
-export async function getTrackedFiles(): Promise<string[]> {
-  const result = await gitRunner("git ls-files");
+export async function getTrackedFiles(repoRoot: string): Promise<string[]> {
+  const result = await gitRunner(repoRoot, ["ls-files"]);
   return filterCheckableFiles(result.split("\n"));
 }

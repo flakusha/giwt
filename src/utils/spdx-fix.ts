@@ -6,6 +6,7 @@
  * extension and rewrites files in place, preserving shebangs and YAML
  * frontmatter.
  */
+import { relative } from "node:path";
 import { buildHeader, type ReuseRule } from "./reuse-toml";
 
 function applyHeader(content: string, header: string): string {
@@ -46,14 +47,21 @@ function applyHeader(content: string, header: string): string {
   if (frontmatter) head += frontmatter;
   return head + header + rest;
 }
-
-/** Apply headers to a list of files, rewriting only those that change. */
-export async function fixFiles(files: string[], rules: ReuseRule[]): Promise<number> {
+/** Apply headers to a list of files, rewriting only those that change.
+ * Rule matchers are REUSE.toml-relative globs, so when `repoRoot` is given the
+ * match is made against the path relative to it (file I/O still uses the
+ * absolute path); without it, paths are matched as passed. */
+export async function fixFiles(
+  files: string[],
+  rules: ReuseRule[],
+  repoRoot?: string,
+): Promise<number> {
   let fixed = 0;
   for (const file of files) {
     const content = await Bun.file(file).text();
     const ext = file.slice(file.lastIndexOf("."));
-    const rule = rules.find((r) => r.matchers.some((m) => m.test(file)));
+    const matchPath = repoRoot === undefined ? file : relative(repoRoot, file);
+    const rule = rules.find((r) => r.matchers.some((m) => m.test(matchPath)));
     if (!rule) continue;
     const next = applyHeader(content, buildHeader(rule, ext));
     if (next !== content) {

@@ -9,9 +9,9 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
-import { log } from "../utils/output";
+import { log, raw } from "../utils/output";
 import { parseReuseToml } from "../utils/reuse-toml";
 import {
   getStagedFiles,
@@ -23,7 +23,6 @@ import { fixFiles } from "../utils/spdx-fix";
 
 export async function runSpdxFix(args: string[], config: WorktreeConfig): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
-    const { raw } = await import("../utils/output");
     raw("Usage: giwt spdx-fix [--staged] [files...]");
     raw("  Apply SPDX headers to files that need them");
     raw("  --staged  fix only staged files");
@@ -51,14 +50,17 @@ export async function runSpdxFix(args: string[], config: WorktreeConfig): Promis
   const files = explicitFiles.length > 0
     ? explicitFiles.filter(hasCheckableExtension).filter((f) => !isExcluded(f))
     : useStaged
-    ? await getStagedFiles()
-    : await getTrackedFiles();
+    ? await getStagedFiles(config.repoRoot)
+    : await getTrackedFiles(config.repoRoot);
 
   if (files.length === 0) {
     log("info", "no files to fix");
     return;
   }
 
-  const fixed = await fixFiles(files.map((f) => join(config.repoRoot, f)), rules);
+  // Explicit args may be absolute or repo-relative; I/O uses the absolute
+  // path either way (bare join would double an absolute arg).
+  const absolute = files.map((f) => (isAbsolute(f) ? f : join(config.repoRoot, f)));
+  const fixed = await fixFiles(absolute, rules, config.repoRoot);
   log("success", `fixed ${fixed} file(s)`);
 }
