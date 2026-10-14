@@ -12,7 +12,7 @@
 
 Problem: .plan/tickets/index.json can be edited by hand today, silently diverging from ticket frontmatter. Frontmatter is the source of truth; the index is a derived artifact.
 
-Requirement: loop-lore TASK-plan-index-tagging-binding-reconciliation acceptance criteria 7 (second half) and 8 - manual index edits are rejected with a clear error directing the user to edit the .md and run giwt sync.
+Requirement: loop-lore `TASK-plan-index-tagging-binding-reconciliation` acceptance criteria 7 (second half) and 8 - manual index edits are rejected with a clear error directing the user to edit the .md and run giwt sync.
 
 Scope: detect out-of-band index writes/edits and refuse them with a message like: frontmatter is source of truth - edit the .md and run giwt sync. Add unit tests covering the rejection path and the happy path via giwt sync.
 
