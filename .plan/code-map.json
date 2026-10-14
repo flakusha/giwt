@@ -11,7 +11,17 @@
       "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
     }
   ],
+  "src/cli-registry.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md"
+    }
+  ],
   "src/cli-usage.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md"
@@ -32,7 +42,15 @@
   "src/cli.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio.md"
     },
     {
       "kind": "ticket",
@@ -865,6 +883,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FIX-json-output-polluted-by-run-record-announcement.md"
+    }
+  ],
+  "src/utils/reuse-toml.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md"
     }
   ],
   "src/utils/runlog.ts": [

@@ -3,7 +3,8 @@
 
 # BUG: delete stash dance after staging merge lands
 
-**Status:** Done — landed with FEAT-merge-in-staging-worktree (staging.ts / staging-sync.ts / staging-tree.ts split)
+**Status:** Done
+Landed with FEAT-merge-in-staging-worktree (staging.ts / staging-sync.ts / staging-tree.ts split)
 **Priority:** medium
 **Effort:** Medium
 **Tags:** stash, finalize

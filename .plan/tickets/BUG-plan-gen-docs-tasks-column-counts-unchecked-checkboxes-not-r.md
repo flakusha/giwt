@@ -27,6 +27,8 @@ Either (a) rename the column to something accurate like 'Open criteria' / 'Unche
 
 Fixed in commit `f3d6e03`, then corrected after review: `parseEpic()` in `src/plan/gen-docs.ts` now scopes the Tasks column to the task-bearing sections only — done/total over `## Linked Tasks` checkboxes plus `## Related tickets` entries (checkbox-style related entries count once; checkbox prose elsewhere, e.g. acceptance criteria, is excluded). The first cut summed file-wide checkboxes with related entries, double-counting checked entries under `## Related tickets` (done could exceed total) and conflating acceptance criteria with tasks.
 
+Resolution: fix landed as `0e20d9f` (Tasks column counts Related-tickets list entries; AC checkboxes excluded).
+
 **Acceptance Criteria:**
 
 - [x] Implementation complete

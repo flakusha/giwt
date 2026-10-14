@@ -139,6 +139,8 @@ the AGPL header is consistent and is not the defect.
 
 Chose option (2): route headers through the consuming repo's REUSE.toml via `generatedHeader()`. The ticket's "existing seam" was broken — `parseReuseToml` read legacy keys (`paths`/`license`/`copyright`) instead of REUSE spec keys (`path`/`SPDX-License-Identifier`/`SPDX-FileCopyrightText`), returning 0 rules for any real REUSE.toml. Fixed the parser to accept both key sets. `generatedHeader(absPath, ext)` walks up to the nearest REUSE.toml and resolves the consumer's own header. gen-docs was also hardcoding Apache-2.0 + Loop Lore Contributors (a third-party license) — now sourced from the repo's REUSE.toml like every other generator. giwt's own REUSE.toml added so the spdx gate has rules to enforce. Option (2) over (1) because it preserves self-hosting correctness: giwt's own .plan/ files still carry the AGPL header via its own REUSE.toml.
 
+Resolution: fix landed as `4dfba88` (on master; `433a777` closes this ticket). Verified end-to-end from consuming repo loop-lore, pinned to giwt `433a777`: a newly generated ticket and a regenerated `plan matrix` both carry `Apache-2.0` / `2026 Loop Lore Contributors` from loop-lore's own REUSE.toml — no giwt AGPL stamp — and its `SPDX_CHECK=1 spdx:check` went from 59 violations to 0.
+
 **Acceptance Criteria:**
 
 - [x] Implementation complete

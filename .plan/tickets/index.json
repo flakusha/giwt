@@ -66,6 +66,23 @@
     "source": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
     "status": "done"
   },
+  "BUG-CHECKHEADER-DOES-NOT-STRIP-THE-COMMENT-SUFFIX-SO-EVERY-HTML-": {
+    "hash": "5e9ecaf",
+    "git_issue": "5e9ecaf",
+    "extid": "BUG-CHECKHEADER-DOES-NOT-STRIP-THE-COMMENT-SUFFIX-SO-EVERY-HTML-",
+    "type": "BUG",
+    "title": "checkHeader does not strip the comment suffix, so every HTML/CSS SPDX header reads as a bogus license id",
+    "label": "bug",
+    "priority": "high",
+    "epic": "spdx-compliance",
+    "tags": [
+      "spdx",
+      "reuse",
+      "parser"
+    ],
+    "source": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md",
+    "status": "done"
+  },
   "BUG-COMMIT-MSG-HOOK-DRIFT-BETWEEN-GIWT-AND-OMP-PLUGINS": {
     "hash": "7fbf257",
     "git_issue": "7fbf257",
@@ -369,6 +386,23 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md",
+    "status": "done"
+  },
+  "BUG-GETTRACKEDFILES-DEFAULT-GIT-RUNNER-THROWS-ON-EVERY-INVOCATIO": {
+    "hash": "35f9929",
+    "git_issue": "35f9929",
+    "extid": "BUG-GETTRACKEDFILES-DEFAULT-GIT-RUNNER-THROWS-ON-EVERY-INVOCATIO",
+    "type": "BUG",
+    "title": "getTrackedFiles default git runner throws on every invocation: whole-tree spdx-check never checks a file",
+    "label": "bug",
+    "priority": "critical",
+    "epic": "spdx-compliance",
+    "tags": [
+      "spdx",
+      "discovery",
+      "bug"
+    ],
+    "source": ".plan/tickets/BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio.md",
     "status": "done"
   },
   "BUG-GIWT-LIFECYCLE-CONFIG-WRITES-INVISIBLE-TO-OMP-GUARD": {
