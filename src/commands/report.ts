@@ -155,9 +155,15 @@ async function collectProfileInputs(
   rows: WalkRow[],
 ): Promise<ProfileInput[]> {
   const byRun = new Map<string, ProfileInput>();
+  // Legacy reports ({gates,timestamp}) carry no runId — key those on their
+  // own generatedAt (falling back to a seen-counter) so a worktree's whole
+  // legacy archive survives instead of collapsing to one first-seen input.
+  let legacySeen = 0;
   const keep = (input: ProfileInput): void => {
-    const key = `${input.name}::${input.report.runId}`;
-    if (!byRun.has(key)) byRun.set(key, input);
+    const key = input.report.runId
+      ? `${input.name}::${input.report.runId}`
+      : `${input.name}::${input.report.generatedAt || `#${++legacySeen}`}`;
+    byRun.set(key, input); // last write wins — files arrive oldest-first
   };
   for (const row of rows) {
     if (row.kind === "ok") keep({ name: row.name, report: row.report });

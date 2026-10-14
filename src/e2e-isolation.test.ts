@@ -134,105 +134,107 @@ describe("e2e: giwt manages a throwaway repo without touching anything above it"
     const tmpCanary = join(scratchRoot(), `e2e-iso-canary-${canaryTag}`);
     writeFileSync(repoCanary, "do-not-touch\n");
     writeFileSync(tmpCanary, "do-not-touch\n");
-    const repoCanaryBefore = canaryState(repoCanary);
-    const homeCanaryBefore = canaryState(join(home, ".config", "giwt"));
-    const tmpCanaryBefore = canaryState(tmpCanary);
-    const parentBefore = snapDir(containment);
-    const protectedNames = [basename(fixture), basename(home)];
+    try {
+      const repoCanaryBefore = canaryState(repoCanary);
+      const homeCanaryBefore = canaryState(join(home, ".config", "giwt"));
+      const tmpCanaryBefore = canaryState(tmpCanary);
+      const parentBefore = snapDir(containment);
+      const protectedNames = [basename(fixture), basename(home)];
 
-    // ---- Scrubbed child env ------------------------------------------------
-    const env: Record<string, string> = {};
-    for (const [key, value] of Object.entries(isolatedGitEnv())) {
-      if (
-        key === "REPO_ROOT" || key === "TREE_DIR" || key.startsWith("GIWT_")
-        || key === "XDG_CONFIG_HOME" || key === "XDG_CACHE_HOME" || key === "HOME"
-      ) {
-        continue;
+      // ---- Scrubbed child env ------------------------------------------------
+      const env: Record<string, string> = {};
+      for (const [key, value] of Object.entries(isolatedGitEnv())) {
+        if (
+          key === "REPO_ROOT" || key === "TREE_DIR" || key.startsWith("GIWT_")
+          || key === "XDG_CONFIG_HOME" || key === "XDG_CACHE_HOME" || key === "HOME"
+        ) {
+          continue;
+        }
+        env[key] = value;
       }
-      env[key] = value;
-    }
-    env.REPO_ROOT = fixture;
-    env.HOME = home;
-    env.XDG_CONFIG_HOME = join(home, ".config");
-    env.XDG_CACHE_HOME = join(home, ".cache");
-    const pathEntries = [
-      dirname(Bun.which("git") ?? "/usr/bin/git"),
-      dirname(Bun.which("git-issue") ?? "/usr/bin/git-issue"),
-      dirname(process.execPath),
-      "/usr/bin",
-      "/bin",
-    ];
-    env.PATH = [...new Set(pathEntries)].join(":");
+      env.REPO_ROOT = fixture;
+      env.HOME = home;
+      env.XDG_CONFIG_HOME = join(home, ".config");
+      env.XDG_CACHE_HOME = join(home, ".cache");
+      const pathEntries = [
+        dirname(Bun.which("git") ?? "/usr/bin/git"),
+        dirname(Bun.which("git-issue") ?? "/usr/bin/git-issue"),
+        dirname(process.execPath),
+        "/usr/bin",
+        "/bin",
+      ];
+      env.PATH = [...new Set(pathEntries)].join(":");
 
-    const giwt = (args: string[]): { exitCode: number; out: string; } => {
-      const p = Bun.spawnSync(
-        [process.execPath, join(GIWT_REPO, "src", "cli.ts"), ...args],
-        {
-          cwd: fixture,
-          env,
-          stdout: "pipe",
-          stderr: "pipe",
-        },
-      );
-      return {
-        exitCode: p.exitCode ?? -1,
-        out: p.stdout.toString() + p.stderr.toString(),
+      const giwt = (args: string[]): { exitCode: number; out: string; } => {
+        const p = Bun.spawnSync(
+          [process.execPath, join(GIWT_REPO, "src", "cli.ts"), ...args],
+          {
+            cwd: fixture,
+            env,
+            stdout: "pipe",
+            stderr: "pipe",
+          },
+        );
+        return {
+          exitCode: p.exitCode ?? -1,
+          out: p.stdout.toString() + p.stderr.toString(),
+        };
       };
-    };
 
-    // ---- Representative giwt command set -----------------------------------
-    const list = giwt(["list"]);
-    expect(list.exitCode).toBe(0);
-    // repoRoot resolution: the fixture path in output, never the parent repo
-    // itself (the fixture sits INSIDE the giwt repo, so the precise negative
-    // assertion targets the parent's own runlog/run-record area).
-    const parentRuns = join(GIWT_REPO, ".tmp", "giwt");
-    expect(list.out).toContain(fixture);
-    expect(list.out).not.toContain(parentRuns);
-    // The announced run-record dir lives under the fixture's repoRoot.
-    const runRecord = list.out.match(/Run record: (\S+)/)?.[1] ?? "";
-    expect(runRecord.startsWith(fixture + "/")).toBe(true);
+      // ---- Representative giwt command set -----------------------------------
+      const list = giwt(["list"]);
+      expect(list.exitCode).toBe(0);
+      // repoRoot resolution: the fixture path in output, never the parent repo
+      // itself (the fixture sits INSIDE the giwt repo, so the precise negative
+      // assertion targets the parent's own runlog/run-record area).
+      const parentRuns = join(GIWT_REPO, ".tmp", "giwt");
+      expect(list.out).toContain(fixture);
+      expect(list.out).not.toContain(parentRuns);
+      // The announced run-record dir lives under the fixture's repoRoot.
+      const runRecord = list.out.match(/Run record: (\S+)/)?.[1] ?? "";
+      expect(runRecord.startsWith(fixture + "/")).toBe(true);
 
-    const ticket = giwt(["ticket", "TASK", "e2e-isolation-probe", "--epic", "e2e"]);
-    expect(ticket.exitCode).toBe(0);
-    expect(existsSync(join(fixture, ".plan", "tickets", "TASK-e2e-isolation-probe.md")))
-      .toBe(true);
+      const ticket = giwt(["ticket", "TASK", "e2e-isolation-probe", "--epic", "e2e"]);
+      expect(ticket.exitCode).toBe(0);
+      expect(existsSync(join(fixture, ".plan", "tickets", "TASK-e2e-isolation-probe.md")))
+        .toBe(true);
 
-    // A fresh index is empty, so the first sync reports the new ticket as an
-    // orphan and exits 1 by design ("run with --fix"); reconcile first, then
-    // assert a plain sync is clean.
-    const syncFix = giwt(["sync", "--fix"]);
-    expect(syncFix.exitCode).toBe(0);
+      // A fresh index is empty, so the first sync reports the new ticket as an
+      // orphan and exits 1 by design ("run with --fix"); reconcile first, then
+      // assert a plain sync is clean.
+      const syncFix = giwt(["sync", "--fix"]);
+      expect(syncFix.exitCode).toBe(0);
 
-    const sync = giwt(["sync"]);
-    expect(sync.exitCode).toBe(0);
+      const sync = giwt(["sync"]);
+      expect(sync.exitCode).toBe(0);
 
-    const list2 = giwt(["list"]);
-    expect(list2.exitCode).toBe(0);
-    expect(list2.out).not.toContain(parentRuns);
+      const list2 = giwt(["list"]);
+      expect(list2.exitCode).toBe(0);
+      expect(list2.out).not.toContain(parentRuns);
 
-    // Index/ledger/run artifacts landed INSIDE the fixture.
-    expect(existsSync(join(fixture, ".plan", "tickets", "index.json"))).toBe(true);
-    expect(existsSync(join(fixture, "tree", ".ledger.jsonl"))).toBe(true);
-    expect(existsSync(join(fixture, ".tmp", "giwt", "runs"))).toBe(true);
+      // Index/ledger/run artifacts landed INSIDE the fixture.
+      expect(existsSync(join(fixture, ".plan", "tickets", "index.json"))).toBe(true);
+      expect(existsSync(join(fixture, "tree", ".ledger.jsonl"))).toBe(true);
+      expect(existsSync(join(fixture, ".tmp", "giwt", "runs"))).toBe(true);
 
-    // ---- Sentinels (after the run) -----------------------------------------
-    expect(canaryState(repoCanary)).toEqual(repoCanaryBefore);
-    expect(canaryState(tmpCanary)).toEqual(tmpCanaryBefore);
-    expect(canaryState(join(home, ".config", "giwt"))).toEqual(homeCanaryBefore);
-    // Parent boundary: no NEW entries may appear in the containment dir, and
-    // entries other than the fixture/home dirs (which giwt legitimately
-    // writes INSIDE of) must be untouched. Boundary note: writes to arbitrary
-    // paths elsewhere on the filesystem cannot be enumerated; these plus the
-    // canaries are the tripwires.
-    const parentAfter = snapDir(containment);
-    expect([...parentAfter.keys()].sort()).toEqual([...parentBefore.keys()].sort());
-    for (const [name, before] of parentBefore) {
-      if (protectedNames.includes(name)) continue;
-      expect(parentAfter.get(name)).toEqual(before);
+      // ---- Sentinels (after the run) -----------------------------------------
+      expect(canaryState(repoCanary)).toEqual(repoCanaryBefore);
+      expect(canaryState(tmpCanary)).toEqual(tmpCanaryBefore);
+      expect(canaryState(join(home, ".config", "giwt"))).toEqual(homeCanaryBefore);
+      // Parent boundary: no NEW entries may appear in the containment dir, and
+      // entries other than the fixture/home dirs (which giwt legitimately
+      // writes INSIDE of) must be untouched. Boundary note: writes to arbitrary
+      // paths elsewhere on the filesystem cannot be enumerated; these plus the
+      // canaries are the tripwires.
+      const parentAfter = snapDir(containment);
+      expect([...parentAfter.keys()].sort()).toEqual([...parentBefore.keys()].sort());
+      for (const [name, before] of parentBefore) {
+        if (protectedNames.includes(name)) continue;
+        expect(parentAfter.get(name)).toEqual(before);
+      }
+    } finally {
+      rmSync(repoCanary, { force: true });
+      rmSync(tmpCanary, { force: true });
     }
-
-    rmSync(repoCanary);
-    rmSync(tmpCanary);
   }, 25000);
 });

@@ -1702,6 +1702,40 @@ describe("finalize teardown lifecycle regressions", () => {
     const ledger = readLedger(config.treeDir, 10);
     expect(ledger.some((record) => record.msg.includes("failed to remove worktree"))).toBe(true);
   });
+
+  test("a branch that vanished before teardown reports it gone without a sha remedy", () => {
+    const wtPath = addWorktree("feature/vapor");
+    rmSync(wtPath, { recursive: true, force: true });
+    git(["worktree", "prune"]);
+    git(["branch", "-D", "feature/vapor"]);
+
+    const chunks: string[] = [];
+    const push = (chunk: unknown): boolean => {
+      chunks.push(String(chunk));
+      return true;
+    };
+    const outSpy = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(push as never);
+    try {
+      teardownFinalizedWorktree({
+        branch: "feature/vapor",
+        wtPath,
+        config,
+        alreadyMerged: true,
+        targetBranch: "main",
+      });
+    } finally {
+      outSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+    const output = chunks.join("");
+
+    expect(output).toContain("Branch 'feature/vapor' is already gone");
+    // No sha-less recovery command and no forced-delete path.
+    expect(output).not.toContain("recover with:");
+    expect(output).not.toContain("branch -d refused");
+    expect(output).toContain("Finalized 'feature/vapor'");
+  });
 });
 
 describe("merge-phase lock narrowing (FEAT-narrow-finalize-lock-to-merge-steps)", () => {

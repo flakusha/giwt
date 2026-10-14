@@ -79,10 +79,11 @@ export function teardownFinalizedWorktree({
 
   // Step 7: Delete branch
   log("info", "Step 7: Deleting branch...");
-  const tip = Bun.spawnSync(
+  const revParse = Bun.spawnSync(
     ["git", "-C", config.repoRoot, "rev-parse", `refs/heads/${branch}`],
     { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" },
-  ).stdout.toString().trim();
+  );
+  const tip = revParse.exitCode === 0 ? revParse.stdout.toString().trim() : "";
   const deleteResult = Bun.spawnSync(["git", "-C", config.repoRoot, "branch", "-d", branch], {
     env: isolatedGitEnv(),
     stdout: "pipe",
@@ -90,6 +91,10 @@ export function teardownFinalizedWorktree({
   });
   if (deleteResult.exitCode === 0) {
     log("success", "Branch deleted");
+  } else if (!tip) {
+    // The branch vanished under us (already deleted externally): nothing to
+    // delete and no tip to recover — do not print a sha-less remedy.
+    log("info", `Branch '${branch}' is already gone`);
   } else {
     log("warn", `branch -d refused: ${deleteResult.stderr.toString().trim()}`);
     log(

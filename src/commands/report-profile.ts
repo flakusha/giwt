@@ -12,9 +12,9 @@
  * worktrees cannot inflate a gate's rank by repetition.
  */
 
-import { type OutFormat, renderRecords } from "../utils/emit.ts";
-import { colorize, raw } from "../utils/output.ts";
-import type { NormalizedReport } from "./report-parse.ts";
+import { type OutFormat, renderRecords } from "../utils/emit";
+import { colorize, raw } from "../utils/output";
+import type { NormalizedReport } from "./report-parse";
 
 export interface ProfileInput {
   /** Worktree name, or "(main)". */

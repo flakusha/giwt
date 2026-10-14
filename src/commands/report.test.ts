@@ -20,6 +20,11 @@ let root: string;
 let treeDir: string;
 let config: WorktreeConfig;
 
+/** Restores for captures still open — afterEach sweeps them so a leaked
+ *  stdout/stderr spy can never swallow another test's (or, in a paired
+ *  multi-file run, another test file's) output in the shared bun process. */
+const liveCaps: Array<() => void> = [];
+
 function captureOutput(): { lines: () => string; restore: () => void; } {
   const chunks: string[] = [];
   const push = (chunk: unknown): boolean => {
@@ -28,11 +33,17 @@ function captureOutput(): { lines: () => string; restore: () => void; } {
   };
   const outSpy = spyOn(process.stdout, "write").mockImplementation(push as never);
   const errSpy = spyOn(process.stderr, "write").mockImplementation(push as never);
+  const restore = () => {
+    outSpy.mockRestore();
+    errSpy.mockRestore();
+  };
+  liveCaps.push(restore);
   return {
     lines: () => chunks.join(""),
     restore: () => {
-      outSpy.mockRestore();
-      errSpy.mockRestore();
+      restore();
+      const i = liveCaps.indexOf(restore);
+      if (i !== -1) liveCaps.splice(i, 1);
     },
   };
 }
@@ -66,6 +77,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Spy hygiene: restore any capture a failed test left open — a leaked
+  // stdout spy otherwise intercepts output for the rest of the shared-process
+  // run, making failures order-dependent across test files.
+  for (const restore of liveCaps.splice(0)) restore();
   rmSync(root, { recursive: true, force: true });
 });
 
@@ -529,6 +544,30 @@ describe("report --profile", () => {
 
     expect(out).toContain("1 report(s)");
     expect(out).toContain("1 run(s) bun run lint — fail 1");
+  });
+
+  test("a legacy archive without runIds keeps every run, newest duplicate wins", async () => {
+    // Legacy {gates,timestamp} reports carry no runId — before the
+    // generatedAt fallback key these all collapsed to one first-seen input.
+    const legacy = (ts: string, gate: string): string =>
+      reportJson({
+        runId: undefined as unknown as string,
+        timestamp: ts,
+        passed: false,
+        gates: { [gate]: { status: "failed" } },
+      });
+    writeArchive("(main)", "check-report-a.json", legacy("2026-01-01T00:00:00Z", "lint"));
+    writeArchive("(main)", "check-report-b.json", legacy("2026-01-02T00:00:00Z", "test"));
+    // Same generatedAt as b → same legacy key; the later file (newest copy)
+    // must win.
+    writeArchive("(main)", "check-report-c.json", legacy("2026-01-02T00:00:00Z", "gen"));
+
+    const out = await runReport(["--profile"]);
+
+    expect(out).toContain("2 report(s)");
+    expect(out).toContain("1 run(s) lint — fail 1");
+    expect(out).toContain("1 run(s) gen — fail 1");
+    expect(out).not.toContain("1 run(s) test");
   });
 
   test("--emoji renders the profile as one line naming each failing gate", async () => {
