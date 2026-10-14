@@ -74,10 +74,11 @@ export function checkFile(
     }
   }
 
-  // Bare-text TASK refs (epic/backlog tables, prose)
+  // Bare-text TASK refs (epic/backlog tables, prose); inline code is a
+  // mention, not a link — same convention as link extraction above.
   if (file.startsWith(join(projectRoot, ".plan"))) {
     const selfTitle = raw.split("\n").find((l) => l.startsWith("# ")) ?? "";
-    const refText = raw.replace(/```[\s\S]*?```/g, "");
+    const refText = stripInlineCode(raw.replace(/```[\s\S]*?```/g, ""));
     for (const { ref, line } of collectTaskRefs(refText)) {
       // Skip the file's own H1 title (self-ref)
       const titleRef = selfTitle.match(/TASK-[\w-]+/)?.[0]?.toLowerCase();

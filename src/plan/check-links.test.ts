@@ -401,6 +401,27 @@ describe("checkFile", () => {
     }
   });
 
+  test("ignores backticked TASK refs but still flags bare ones", () => {
+    const fx = makeFixture();
+    try {
+      writePath(
+        fx.root,
+        ".plan/epics/epic-test.md",
+        "# TASK-test: Epic\n\nMention `TASK-mentioned-example` in prose, bare TASK-bare-ref here.\n",
+      );
+      const result = checkFile(
+        join(fx.root, ".plan/epics/epic-test.md"),
+        fx.root,
+        ".plan/tickets",
+        new Set<string>(["task-other.md"]),
+      );
+      expect(result.orphanRefs).toHaveLength(1);
+      expect(result.orphanRefs[0]!.ref).toBe("TASK-bare-ref");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("resolves TASK refs with prefix matching", () => {
     const fx = makeFixture();
     try {
