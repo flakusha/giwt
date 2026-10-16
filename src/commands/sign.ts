@@ -6,7 +6,7 @@ import { resolve } from "path";
 import { branchToPath } from "../utils/config";
 import { gitConfigSet } from "../utils/config-writes";
 import { assertGpgUnlocked } from "../utils/gpg";
-import { log, raw } from "../utils/output";
+import { log } from "../utils/output";
 
 export async function execute(
   args: string[],
@@ -15,7 +15,7 @@ export async function execute(
   const branch = args[0];
   if (!branch) {
     log("error", "branch name required");
-    raw("  Usage: giwt sign <branch>");
+    log("error", "usage: giwt sign <branch>");
     process.exit(1);
   }
 

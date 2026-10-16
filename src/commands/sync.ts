@@ -15,7 +15,7 @@ import { resolveFromRoot } from "../plan/validate";
 import { runSync, type SyncSummary } from "../tickets/sync-index";
 import { type WorktreeConfig } from "../utils/config";
 import { parseOutFlags, renderRecords } from "../utils/emit";
-import { log, raw, setOutputFormat } from "../utils/output";
+import { log, outcomeLine, raw, setOutputFormat } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import { mapSourcesFor } from "./plan";
 
@@ -38,8 +38,9 @@ export async function sync(
     if (rest[i] !== "--diff-base") continue;
     if (i + 1 >= rest.length || rest[i + 1]!.startsWith("--")) {
       log("error", "--diff-base requires <ref>");
-      raw(
-        "  Usage: giwt sync [--fix] [--import] [--import-back] [--verbose] [--diff-base <ref>] [--json|--toml|--emoji]",
+      log(
+        "error",
+        "usage: giwt sync [--fix] [--import] [--import-back] [--verbose] [--diff-base <ref>] [--json|--toml|--emoji]",
       );
       process.exit(1);
     }
@@ -147,7 +148,25 @@ export async function sync(
   }
   if (exitCode !== 0) {
     log("error", `sync found actionable issues (exit ${exitCode})`);
+    const failed = summary as SyncSummary | null;
+    outcomeLine(
+      false,
+      failed === null
+        ? "sync refused"
+        : `${failed.tickets} tickets, ${failed.fixesApplied} fixed, ${failed.issuesRemaining} remaining`,
+    );
     process.exit(exitCode);
   }
   if (format === "human") log("success", "Ticket index synced");
+  // The one-line outcome contract: sync ends with exactly one
+  // `ok sync <summary> · run <id>` line (stderr under machine formats,
+  // after the stdout payload). Cast mirrors the machine-record path:
+  // TS sees `summary` only through the onSummary closure.
+  const done = summary as SyncSummary | null;
+  outcomeLine(
+    true,
+    done === null
+      ? "nothing to report"
+      : `${done.tickets} tickets, ${done.fixesApplied} fixed, ${done.issuesRemaining} remaining`,
+  );
 }

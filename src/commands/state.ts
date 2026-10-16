@@ -12,7 +12,7 @@ export async function state(args: string[], config: WorktreeConfig): Promise<voi
 
   if (!id || !targetState) {
     log("error", "issue ID and state required");
-    raw("  Usage: state <ID> <open|closed>");
+    log("error", "usage: state <ID> <open|closed>");
     process.exit(1);
   }
 

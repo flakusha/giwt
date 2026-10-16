@@ -81,7 +81,7 @@ export async function threeWay(args: string[], config: WorktreeConfig): Promise<
   const input = rest[0];
   if (!input) {
     log("error", "unmerged path required");
-    raw("  Usage: ticket 3way <path> [--json|--toml|--emoji]");
+    log("error", "usage: ticket 3way <path> [--json|--toml|--emoji]");
     process.exit(1);
   }
   const file = resolve(config.worktreeRoot, input);

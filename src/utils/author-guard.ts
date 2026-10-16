@@ -22,7 +22,7 @@
  */
 
 import { gitSyncQuiet } from "./git";
-import { log, raw } from "./output";
+import { log, outcomeLine, raw } from "./output";
 
 export const ALLOW_AUTHOR_OVERRIDE_FLAG = "--allow-author-override";
 export const ALLOW_AUTHOR_OVERRIDE_ENV = "GIWT_ALLOW_AUTHOR_OVERRIDE";
@@ -82,6 +82,7 @@ export function assertAuthorMatchesCommitter(params: AuthorGuardParams): void {
   raw(
     `  Or:   pass ${ALLOW_AUTHOR_OVERRIDE_FLAG} (or set ${ALLOW_AUTHOR_OVERRIDE_ENV}=1) to override explicitly`,
   );
+  outcomeLine(false, `author identity mismatch (${source} refused)`);
   process.exit(1);
 }
 

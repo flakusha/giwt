@@ -12,7 +12,7 @@ export async function edit(args: string[], config: WorktreeConfig): Promise<void
 
   if (!id) {
     log("error", "issue ID required");
-    raw("  Usage: edit <ID> [--label X] [--assignee X] [--priority X]");
+    log("error", "usage: edit <ID> [--label X] [--assignee X] [--priority X]");
     process.exit(1);
   }
 

@@ -14,7 +14,7 @@
 
 import type { WorktreeConfig } from "../utils/config.ts";
 import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit.ts";
-import { log, raw } from "../utils/output.ts";
+import { log, outcomeLine, raw, setOutputFormat } from "../utils/output.ts";
 import { activeRun } from "../utils/runlog.ts";
 import {
   DEFAULT_TMP_OPTIONS,
@@ -72,10 +72,14 @@ function parseArgs(args: string[]): TmpOptions {
       out.maxAgeHours = v;
     } else {
       log("error", `unknown flag '${a}'`);
-      raw(`  ${USAGE_LINE}`);
+      log("error", `usage: ${USAGE_LINE}`);
       process.exit(1);
     }
   }
+  // cli.ts only forces machine format for --json; --toml/--emoji must
+  // route the progress log lines (and the outcome line) to stderr
+  // themselves so stdout carries only the payload (same as sync.ts).
+  if (out.format !== "human") setOutputFormat("json");
   return out;
 }
 
@@ -198,15 +202,17 @@ export async function tmp(args: string[], config: WorktreeConfig): Promise<void>
   });
 
   if (!opts.apply) {
-    activeRun()?.outcome({
-      tmp: `dry-run: ${scan.candidates.length} candidate(s), ${humanBytes(scan.candidateBytes)}`,
-    });
+    const drySummary = `dry-run: ${scan.candidates.length} candidate(s), ${
+      humanBytes(scan.candidateBytes)
+    }`;
+    activeRun()?.outcome({ tmp: drySummary });
     if (opts.format !== "human") {
       raw(renderRecords(machinePayload(scan, false, 0, 0, []), opts.format, { emoji: tmpEmoji }));
-      return;
+    } else {
+      printPlan(scan, opts.verbose);
+      log("info", "Dry-run only — pass --apply to delete these candidates");
     }
-    printPlan(scan, opts.verbose);
-    log("info", "Dry-run only — pass --apply to delete these candidates");
+    outcomeLine(true, drySummary);
     return;
   }
 
@@ -232,5 +238,8 @@ export async function tmp(args: string[], config: WorktreeConfig): Promise<void>
       log("error", `failed to delete ${f.path}: ${f.error}`);
     }
     process.exitCode = 1;
+    outcomeLine(false, summary);
+  } else {
+    outcomeLine(true, summary);
   }
 }

@@ -103,7 +103,7 @@ export async function show(args: string[], config: WorktreeConfig): Promise<void
   const id = rest[0];
   if (!id) {
     log("error", "issue ID required");
-    raw("  Usage: show <ID> [--json|--toml|--emoji]");
+    log("error", "usage: show <ID> [--json|--toml|--emoji]");
     process.exit(1);
   }
 

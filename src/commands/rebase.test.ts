@@ -317,7 +317,7 @@ describe("rebase refusals before any git mutation", () => {
 
     const out = await runExpectExit1(() => rebase([], config));
     expect(out).toContain("branch name required");
-    expect(out).toContain("Usage: giwt rebase <branch> [onto]");
+    expect(out).toContain("usage: giwt rebase <branch> [onto]");
     // No ref moved: the guard fired before any git call.
     expect(git(["rev-parse", "feature"]).trim()).toBe(before);
     expect(git(["status", "--porcelain"], wtPath)).toBe("");

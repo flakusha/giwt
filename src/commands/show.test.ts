@@ -177,7 +177,7 @@ describe("show", () => {
     const config = makeConfig();
     const cap = await run([], config);
     expect(cap.exits).toEqual([1]);
-    expect(cap.out).toContain("Usage: show");
+    expect(cap.err).toContain("usage: show");
   });
 
   // TASK-show-state-resolve-plan-tickets-filename-slugs: the resolver must

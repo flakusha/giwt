@@ -3,7 +3,7 @@
 
 # FEAT: logger internals: run correlation, fields, warnOnce, raw hygiene
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Tags:** output, logging, cli

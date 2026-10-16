@@ -154,7 +154,7 @@ describe("issues --state", () => {
     const cap = await run(["--bogus"], config);
     expect(cap.exits).toEqual([1]);
     expect(cap.err).toContain("unknown flag '--bogus'");
-    expect(cap.out).toContain("Usage: giwt issues");
+    expect(cap.err).toContain("usage: giwt issues");
   });
 
   it("invalid --state value exits 1", async () => {
@@ -163,7 +163,7 @@ describe("issues --state", () => {
       const cap = await run(args, config);
       expect(cap.exits).toEqual([1]);
       expect(cap.err).toContain("invalid --state");
-      expect(cap.out).toContain("Usage: giwt issues");
+      expect(cap.err).toContain("usage: giwt issues");
     }
   });
 

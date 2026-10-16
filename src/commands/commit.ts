@@ -19,7 +19,7 @@ import {
 import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
-import { log, raw } from "../utils/output";
+import { log, outcomeLine, raw } from "../utils/output";
 export async function commit(
   args: string[],
   config: WorktreeConfig,
@@ -49,8 +49,11 @@ export async function commit(
   const validation = validateMessage(message);
   if (!validation.ok) {
     log("error", `commit message rejected: ${validation.reason}`);
-    raw("  Usage: giwt commit [-F <file>|--message-file <file>] \"<type>(scope): <description>\"");
-    raw("  Example: worktree commit -F - <<< \"fix(worktree): handle empty stdin\"");
+    log(
+      "error",
+      "usage: giwt commit [-F <file>|--message-file <file>] \"<type>(scope): <description>\"",
+    );
+    log("error", "example: worktree commit -F - <<< \"fix(worktree): handle empty stdin\"");
     process.exit(1);
   }
 
@@ -105,6 +108,7 @@ export async function commit(
   if (!authorName || !authorEmail) {
     log("error", "git user.name/user.email not configured");
     raw("  Run: git config user.name 'Your Name' && git config user.email 'you@example.com'");
+    outcomeLine(false, "no git identity configured");
     process.exit(1);
   }
 
@@ -122,10 +126,16 @@ export async function commit(
   assertGpgUnlocked(config.agentGpgKeyId);
 
   log("info", `Creating GPG-signed commit on '${currentBranch}'...`);
-  raw(`  Author:    ${authorName} <${authorEmail}>`);
-  raw(`  Committer: ${authorName} <${authorEmail}> (from repo config)`);
-  raw(`  GPG Key:   ${config.agentGpgKeyId.slice(0, 8)}...`);
-  raw(`  Message:   ${message.split("\n")[0]}`);
+  // Static commit context rides the debug gate: the facts land in the run
+  // record via beginRun anyway, and stdout stays payload + outcome line
+  // (FEAT-one-line-outcome-contract-for-direct-cli-calls).
+  log(
+    "debug",
+    "  Author:    " + authorName + " <" + authorEmail + ">\n"
+      + "  Committer: " + authorName + " <" + authorEmail + "> (from repo config)\n"
+      + "  GPG Key:   " + config.agentGpgKeyId.slice(0, 8) + "...\n"
+      + "  Message:   " + (message.split("\n")[0] ?? ""),
+  );
 
   const result = Bun.spawnSync(
     [
@@ -161,6 +171,7 @@ export async function commit(
         "  If the pre-commit hook is the blocker and you have already run the gate, re-run with --no-verify",
       );
     }
+    outcomeLine(false, `commit failed (exit ${result.exitCode})`);
     process.exit(1);
   }
 
@@ -171,12 +182,16 @@ export async function commit(
     { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
   );
 
+  // Success line carries short-sha + subject — identical to the ledger
+  // enrichment (ledger.ts appendCommitOutcome).
+  const commitSubject = (message.split("\n")[0] ?? "").trim();
   if (verify.exitCode === 0) {
-    log("success", `Commit created and GPG-signed: ${commitSha}`);
+    log("success", `✅ ${commitSha.slice(0, 9)} ${commitSubject}`);
   } else {
     log("warn", "Commit created but signature verification failed");
   }
   // Outcome dispatch: the generic auto-append in index.ts recorded the
   // invocation; this records what landed (short SHA + subject).
   appendCommitOutcome(config.treeDir, "commit", currentBranch, commitSha, message);
+  outcomeLine(true, `${commitSha.slice(0, 9)} ${commitSubject}`);
 }

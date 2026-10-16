@@ -173,6 +173,6 @@ describe("search", () => {
     const config = makeConfig();
     const cap = await run([], config);
     expect(cap.exits).toEqual([1]);
-    expect(cap.out).toContain("Usage: search");
+    expect(cap.err).toContain("usage: search");
   });
 });

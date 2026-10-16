@@ -49,7 +49,7 @@ import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { resolve } from "path";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
-import { log, raw, section } from "../utils/output";
+import { log, outcomeLine, raw, section } from "../utils/output";
 import {
   DEV_IN_PROGRESS_HEADS,
   FINALIZE_STASH_PREFIX,
@@ -262,12 +262,15 @@ export async function abort(
   if (dryRun) {
     raw("");
     log("warn", "DRY RUN complete — no mutations performed. Re-run without --dry-run to apply.");
+    outcomeLine(true, "dry run complete (nothing applied)");
   } else if (stashConflict) {
     raw("");
     log("error", "Abort stopped early — stash recovery needs manual resolution (see above).");
+    outcomeLine(false, "stash recovery needs manual resolution");
     process.exit(1);
   } else {
     raw("");
     log("success", "Abort complete. Verify state, then re-run finalize if needed.");
+    outcomeLine(true, "abort complete");
   }
 }

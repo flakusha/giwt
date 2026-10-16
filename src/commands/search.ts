@@ -60,7 +60,7 @@ export async function search(args: string[], config: WorktreeConfig): Promise<vo
 
   if (!pattern) {
     log("error", "search pattern required");
-    raw("  Usage: search <pattern> [--json|--toml|--emoji]");
+    log("error", "usage: search <pattern> [--json|--toml|--emoji]");
     process.exit(1);
   }
 

@@ -7,7 +7,7 @@ import { type RebaseResult, rebaseWithPlanReconciliation } from "../plan/reconci
 import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
-import { log, raw } from "../utils/output";
+import { log, outcomeLine, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import { scopedSignFlags } from "./scoped-reconcile";
 
@@ -40,12 +40,12 @@ function parseRebaseFlags(
       skipNote = arg === "--skip-note" ? args[++i] : arg.slice("--skip-note=".length);
       if (skipNote === undefined || skipNote === "") {
         log("error", "--skip-note requires a reason");
-        raw(REBASE_USAGE);
+        log("error", REBASE_USAGE);
         process.exit(1);
       }
     } else if (arg.startsWith("--")) {
       log("error", `unknown flag '${arg}'`);
-      raw(REBASE_USAGE);
+      log("error", REBASE_USAGE);
       process.exit(1);
     } else positionals.push(arg);
   }
@@ -63,7 +63,7 @@ export async function rebase(
 
   if (!branch) {
     log("error", "branch name required");
-    raw("  Usage: giwt rebase <branch> [onto]");
+    log("error", "usage: giwt rebase <branch> [onto]");
     process.exit(1);
   }
 
@@ -131,6 +131,7 @@ export async function rebase(
       raw(
         "  Or rerun with --autostash to stash and restore tracked changes around the rebase",
       );
+      outcomeLine(false, "uncommitted changes in worktree");
       process.exit(1);
     }
   }
@@ -169,12 +170,14 @@ export async function rebase(
     log("error", `rebase failed — resolve conflicts in ${wtPath}`);
     raw(`  Then: cd ${wtPath} && git rebase --continue`);
     raw(`  Or:   cd ${wtPath} && git rebase --abort`);
+    outcomeLine(false, `rebase failed (${branch} → ${target})`);
     process.exit(1);
   }
 
   recordSkipLedger({ config, branch, target, wtPath, preHead, pre, skipNote });
 
   log("success", `Rebased '${branch}' onto '${target}'`);
+  outcomeLine(true, `rebased '${branch}' onto '${target}'`);
 }
 
 /**

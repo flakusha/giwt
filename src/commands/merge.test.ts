@@ -282,7 +282,7 @@ describe("merge argument validation", () => {
     expect(run.exitCode).toBe(1);
     expect(run.error?.message).toBe("__exit__:1");
     expect(run.output).toContain("branch and source required");
-    expect(run.output).toContain("Usage: giwt merge <branch> <source>");
+    expect(run.output).toContain("usage: giwt merge <branch> <source>");
   });
 
   test("rejects a source branch that does not exist", async () => {

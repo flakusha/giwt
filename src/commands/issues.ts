@@ -15,7 +15,10 @@ export async function issues(args: string[], config: WorktreeConfig): Promise<vo
   let state: string | undefined;
 
   const usage = (): void => {
-    raw("  Usage: giwt issues [--all|-a] [--state <open|closed|all>|-s <v>] [--format <f>|-f <f>]");
+    log(
+      "error",
+      "usage: giwt issues [--all|-a] [--state <open|closed|all>|-s <v>] [--format <f>|-f <f>]",
+    );
   };
   const fail = (msg: string): never => {
     log("error", msg);

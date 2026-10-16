@@ -32,8 +32,9 @@ const COLOR_MODES: readonly ColorMode[] = ["auto", "always", "never"];
 export function setColorMode(mode: string): void {
   const normalized = mode.trim().toLowerCase();
   if (!COLOR_MODES.includes(normalized as ColorMode)) {
-    process.stderr.write(
-      `output: ignoring invalid color mode "${mode}" (expected auto|always|never)\n`,
+    warnOnce(
+      `color-mode:${mode}`,
+      `output: ignoring invalid color mode "${mode}" (expected auto|always|never)`,
     );
     return;
   }
@@ -106,6 +107,11 @@ const FORMATS: readonly string[] = ["simple", "pretty", "json", "jsonl", "toml"]
 
 type EmitLevel = "debug" | "info" | "success" | "warn" | "error";
 
+/** Optional structured fields carried by machine formats only
+ *  (FEAT-logger-internals): simple/pretty never print them, preserving the
+ *  low-context one-line contract. */
+export type LogFields = Record<string, string | number>;
+
 const GLYPHS: Record<EmitLevel, string> = {
   debug: "\u00b7",
   info: "\u2626",
@@ -159,8 +165,9 @@ export function resolveFormat(): OutputFormat {
 export function setOutputFormat(format: string): void {
   const normalized = format.trim().toLowerCase();
   if (!FORMATS.includes(normalized)) {
-    process.stderr.write(
-      `output: ignoring invalid output format "${format}" (expected simple|pretty|json|jsonl|toml)\n`,
+    warnOnce(
+      `output-format:${format}`,
+      `output: ignoring invalid output format "${format}" (expected simple|pretty|json|jsonl|toml)`,
     );
     return;
   }
@@ -182,12 +189,16 @@ export function isMachineFormat(): boolean {
 // hooks (N-API, child process, precompiled regex) rejected: per-event cost
 // is ~µs while a compiled boundary costs more than it saves; revisit only if
 // per-run event volume grows ~1000× or a format needs per-event parsing.
-function render(level: EmitLevel, message: string): string {
+function render(level: EmitLevel, message: string, fields?: LogFields): string {
   // Styles go through colorize() in every format: it no-ops when color is
   // off (NO_COLOR / non-TTY / [output].color=never), so `simple` gets
   // colored levels on a real terminal and stays byte-clean when piped.
   const paint = (s: string): string =>
     LEVEL_STYLES[level].reduce<string>((acc, style) => colorize(acc, style), s);
+  // Run correlation (FEAT-logger-internals): machine events carry the
+  // active run id so a stderr JSON line dereferences via `giwt runs
+  // <prefix>`; absent (never null) when no run is active.
+  const runId = runContext === null ? undefined : runContext.id;
   switch (activeFormat) {
     case "pretty": {
       const glyph = LEVEL_STYLES[level].reduce<string>(
@@ -198,13 +209,26 @@ function render(level: EmitLevel, message: string): string {
     }
     case "json":
     case "jsonl":
-      return JSON.stringify({ ts: new Date().toISOString(), level, msg: message });
-    case "toml":
-      return `[[log]]\nts = ${JSON.stringify(new Date().toISOString())}\nlevel = ${
+      return JSON.stringify({
+        ts: new Date().toISOString(),
+        level,
+        msg: message,
+        ...(runId !== undefined ? { run: runId } : {}),
+        ...fields,
+      });
+    case "toml": {
+      let block = `[[log]]\nts = ${JSON.stringify(new Date().toISOString())}\nlevel = ${
         JSON.stringify(level)
       }\nmsg = ${JSON.stringify(message)}`;
+      if (runId !== undefined) block += `\nrun = ${JSON.stringify(runId)}`;
+      for (const [key, value] of Object.entries(fields ?? {})) {
+        block += `\n${key} = ${JSON.stringify(value)}`;
+      }
+      return block;
+    }
     default:
       // simple: bare message; level tag only where it carries signal.
+      // Fields are deliberately NOT printed here (low-context contract).
       return level === "warn" || level === "error"
         ? paint(`${level}: ${message}`)
         : paint(message);
@@ -218,19 +242,35 @@ function emit(stream: NodeJS.WriteStream, message: string): void {
 /**
  * Unified logger. debug/info/success go to stdout (stderr under machine
  * formats), warn/error always to stderr; gated by the configured minimum
- * level (GIWT_LOG env or setLogLevel).
+ * level (GIWT_LOG env or setLogLevel). `fields` ride machine formats only
+ * (json/jsonl/toml); simple/pretty never print them.
  */
 export function log(
   level: "info" | "success" | "warn" | "error" | "debug",
   message: string,
+  fields?: LogFields,
 ): void {
   if (LEVEL_ORDER[level] < minLevel) return;
   emit(
     level === "warn" || level === "error" || isMachineFormat()
       ? process.stderr
       : process.stdout,
-    render(level, message),
+    render(level, message, fields),
   );
+}
+
+/** Warn-once registry: one log("warn") per key per process
+ *  (FEAT-logger-internals — replaces the hand-rolled "already warned"
+ *  flags). Must not be used at module-load time (log() reads minLevel,
+ *  which is still initializing then). */
+const WARNED: Record<string, true> = {};
+
+/** Warn `msg` once per process for `key`; later calls with the same key
+ *  are silent. */
+export function warnOnce(key: string, msg: string): void {
+  if (key in WARNED) return;
+  WARNED[key] = true;
+  log("warn", msg);
 }
 
 /**
@@ -239,6 +279,38 @@ export function log(
  */
 export function raw(message: string): void {
   emit(process.stdout, message);
+}
+
+// Run correlation: runlog.beginRun publishes {id, cmd} here; finish clears
+// it. Kept in output.ts (machine renderer needs it; output must not import
+// runlog — cycle). One O(1) pointer read per event.
+let runContext: { id: string; cmd: string; } | null = null;
+
+/** Publish/clear the active run for log-event correlation + outcomeLine. */
+export function setRunContext(run: { id: string; cmd: string; } | null): void {
+  runContext = run;
+}
+
+/** True when the configured minimum level includes `level` (e.g. the
+ *  finalize ledger preamble shows only under GIWT_LOG=debug). */
+export function logLevelAtLeast(level: LogLevel): boolean {
+  return minLevel <= LEVEL_ORDER[level];
+}
+
+/**
+ * One-line outcome contract: every mutating command ends its output with
+ * exactly one `ok|fail <cmd> <summary> · run <id-prefix>` line — stdout in
+ * human formats, stderr under machine formats so stdout stays clean
+ * payload. The id is the run-dir basename; `giwt runs` resolves its prefix.
+ */
+export function outcomeLine(ok: boolean, summary: string, runId?: string): void {
+  const id = runId ?? (runContext === null ? undefined : runContext.id);
+  const cmd = runContext === null ? "?" : runContext.cmd;
+  const idPart = id === undefined ? "" : ` · run ${id}`;
+  emit(
+    isMachineFormat() ? process.stderr : process.stdout,
+    `${ok ? "ok" : "fail"} ${cmd} ${summary}${idPart}`,
+  );
 }
 
 export function section(title: string): void {

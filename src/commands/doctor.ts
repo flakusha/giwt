@@ -20,7 +20,7 @@ import { detectProject } from "../doctor/detect.ts";
 import { recommend } from "../doctor/recommend.ts";
 import type { DoctorOptions, ToolId } from "../doctor/types.ts";
 import type { WorktreeConfig } from "../utils/config.ts";
-import { log, raw, section } from "../utils/output.ts";
+import { log, outcomeLine, raw, section } from "../utils/output.ts";
 import { activeRun } from "../utils/runlog.ts";
 import { applyGitConfig, collectFiles, writeAll } from "./doctor/apply.ts";
 import { runDoctorCheck } from "./doctor/check-cmd.ts";
@@ -107,6 +107,7 @@ export async function doctor(
   if (files.length === 0) {
     activeRun()?.outcome({ doctor: "nothing to do — all recommended tools configured" });
     log("success", "Nothing to do — all recommended tools already configured");
+    outcomeLine(true, "nothing to do — all recommended tools configured");
     return;
   }
 
@@ -130,6 +131,7 @@ export async function doctor(
 
   // Apply git config side-effects (linear history, hooks path)
   applyGitConfig(report, root);
+  outcomeLine(true, `wrote ${written} file(s)`);
 }
 
 function printHelp(): void {

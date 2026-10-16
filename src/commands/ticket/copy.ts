@@ -58,8 +58,14 @@ export async function copyTickets(args: string[], config: WorktreeConfig): Promi
   const { ids, to, from } = parseCopyArgs(rest);
   if (ids.length === 0 || Boolean(to) === Boolean(from)) {
     log("error", "ticket ids and exactly one of --to/--from required");
-    raw("  Usage: ticket copy <hash|name|extid|slug|slug.md>... --to <checkout-path>   (copy out)");
-    raw("         ticket copy <hash|name|extid|slug|slug.md>... --from <checkout-path> (copy in)");
+    log(
+      "error",
+      "usage: ticket copy <hash|name|extid|slug|slug.md>... --to <checkout-path>   (copy out)",
+    );
+    log(
+      "error",
+      "        ticket copy <hash|name|extid|slug|slug.md>... --from <checkout-path> (copy in)",
+    );
     process.exit(1);
   }
 

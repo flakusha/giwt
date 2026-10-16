@@ -4,7 +4,7 @@
 import { readdirSync, statSync } from "fs";
 import { join } from "path";
 import type { WorktreeConfig } from "../utils/config";
-import { log, raw } from "../utils/output";
+import { log } from "../utils/output";
 import { attach } from "./attach";
 
 export async function attachDir(args: string[], config: WorktreeConfig): Promise<void> {
@@ -13,7 +13,7 @@ export async function attachDir(args: string[], config: WorktreeConfig): Promise
 
   if (!id || !dirPath) {
     log("error", "issue ID and directory required");
-    raw("  Usage: attach-dir <ID> <DIR>");
+    log("error", "usage: attach-dir <ID> <DIR>");
     process.exit(1);
   }
 

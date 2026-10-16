@@ -15,7 +15,7 @@
 
 import type { WorktreeConfig } from "../utils/config";
 import { appendGripe, formatRecord, readLedger } from "../utils/ledger";
-import { log, raw } from "../utils/output";
+import { log, outcomeLine, raw } from "../utils/output";
 
 export async function gripe(
   args: string[],
@@ -30,7 +30,7 @@ export async function gripe(
       const value = args[++i];
       if (value === undefined || value.trim().length === 0) {
         log("error", "--at requires a branch name");
-        raw("  Usage: giwt gripe [--at <branch>] <message...>");
+        log("error", "usage: giwt gripe [--at <branch>] <message...>");
         process.exit(1);
       }
       at = value;
@@ -45,12 +45,14 @@ export async function gripe(
   const message = words.join(" ").trim();
   if (message.length === 0) {
     log("error", "gripe message required");
-    raw("  Usage: giwt gripe [--at <branch>] <message...>");
+    log("error", "usage: giwt gripe [--at <branch>] <message...>");
     process.exit(1);
   }
 
   appendGripe(config.treeDir, at, message);
   const latest = readLedger(config.treeDir, 1).at(-1);
-  log("success", "Gripe recorded — the ledger remembers");
   if (latest) raw(`  ${formatRecord(latest)}`);
+  // One clear ending line via the shared outcome contract
+  // (FEAT-one-line-outcome-contract-for-direct-cli-calls).
+  outcomeLine(true, "gripe recorded");
 }

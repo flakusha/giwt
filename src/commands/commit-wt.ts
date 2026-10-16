@@ -14,7 +14,7 @@ import { gitSyncQuiet, isolatedGitEnv, isProtected, stagedDependencyPaths } from
 import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
-import { log, raw } from "../utils/output";
+import { log, outcomeLine, raw } from "../utils/output";
 
 export async function commitWt(
   args: string[],
@@ -43,7 +43,7 @@ export async function commitWt(
 
   if (!branch) {
     log("error", "branch required");
-    raw("  Usage: giwt commit-wt <branch> [-F <file>|--message-file <file>] \"<message>\"");
+    log("error", "usage: giwt commit-wt <branch> [-F <file>|--message-file <file>] \"<message>\"");
     process.exit(1);
   }
 
@@ -99,6 +99,7 @@ export async function commitWt(
     // Exit 0 = no staged changes
     log("error", `no staged changes in worktree '${branch}'`);
     raw(`  Stage files first: cd ${wtPath} && git add <files>`);
+    outcomeLine(false, "no staged changes");
     process.exit(1);
   }
 
@@ -107,6 +108,7 @@ export async function commitWt(
   if (stagedDepPaths.length > 0) {
     log("error", `refusing to commit dependency directory: ${stagedDepPaths.join(", ")}`);
     raw("  Unstage with: git restore --staged <path>");
+    outcomeLine(false, "dependency directory staged");
     process.exit(1);
   }
 
@@ -116,6 +118,7 @@ export async function commitWt(
     raw(
       "  Next: add AGENT_GPG_KEY_ID/NAME/EMAIL to .credentials.env (walked up from the repo root), then re-run.",
     );
+    outcomeLine(false, "credentials missing");
     process.exit(1);
   }
 
@@ -126,6 +129,7 @@ export async function commitWt(
   if (!authorName || !authorEmail) {
     log("error", "worktree user.name/user.email not configured");
     raw(`  Run: giwt sign ${branch}`);
+    outcomeLine(false, "no git identity configured");
     process.exit(1);
   }
 
@@ -147,10 +151,15 @@ export async function commitWt(
   assertGpgUnlocked(credentials.keyId);
 
   log("info", `Creating GPG-signed commit in '${branch}'...`);
-  raw(`  Author:    ${authorName} <${authorEmail}>`);
-  raw(`  Committer: ${authorName} <${authorEmail}> (from repo config)`);
-  raw(`  GPG Key:   ${credentials.keyId.slice(0, 8)}...`);
-  raw(`  Message:   ${message.split("\n")[0]}`);
+  // Static commit context rides the debug gate — same as commit.ts: the
+  // facts land in the run record, stdout keeps payload + outcome line.
+  log(
+    "debug",
+    "  Author:    " + authorName + " <" + authorEmail + ">\n"
+      + "  Committer: " + authorName + " <" + authorEmail + "> (from repo config)\n"
+      + "  GPG Key:   " + credentials.keyId.slice(0, 8) + "...\n"
+      + "  Message:   " + (message.split("\n")[0] ?? ""),
+  );
 
   // Execute commit. By default the consuming repo's pre-commit hook runs
   // (git honours core.hooksPath itself); --no-verify is an explicit opt-out.
@@ -185,6 +194,7 @@ export async function commitWt(
     if (!noVerify) {
       raw("  Rejected by a commit hook? Re-run with --no-verify to skip it (explicit opt-in)");
     }
+    outcomeLine(false, `commit failed (exit ${result.exitCode})`);
     process.exit(1);
   }
 
@@ -195,17 +205,18 @@ export async function commitWt(
   );
   const output = verify.stdout.toString();
 
+  // Success line carries short-sha + subject — identical to the ledger
+  // enrichment (appendCommitOutcome); the old multi-line git-log dump
+  // moved to the run record's noise budget.
+  const commitSha = gitSyncQuiet(wtPath, "rev-parse", "HEAD") ?? "";
+  const commitSubject = (message.split("\n")[0] ?? "").trim();
   if (output.includes("Good signature")) {
-    raw(`\nCommit created:`);
-    // Extract short hash from the first line
-    const firstLine = output.split("\n")[0];
-    raw(`  ${firstLine}`);
+    log("success", `✅ ${commitSha.slice(0, 9)} ${commitSubject}`);
   } else {
-    raw(`\nCommit created but signature verification unclear`);
-    raw(output);
+    log("warn", "Commit created but signature verification unclear");
   }
   // Outcome dispatch: the generic auto-append in index.ts recorded the
   // invocation; this records what landed (short SHA + subject).
-  const commitSha = gitSyncQuiet(wtPath, "rev-parse", "HEAD");
   appendCommitOutcome(config.treeDir, "commit-wt", branch, commitSha, message);
+  outcomeLine(true, `${commitSha.slice(0, 9)} ${commitSubject}`);
 }

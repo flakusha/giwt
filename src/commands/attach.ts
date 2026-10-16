@@ -4,7 +4,7 @@
 import { basename } from "path";
 import type { WorktreeConfig } from "../utils/config";
 import { gitSync } from "../utils/git";
-import { log, raw } from "../utils/output";
+import { log } from "../utils/output";
 import { resolveExtid } from "./resolver";
 
 export async function attach(args: string[], config: WorktreeConfig): Promise<void> {
@@ -13,7 +13,7 @@ export async function attach(args: string[], config: WorktreeConfig): Promise<vo
 
   if (!id || !filePath) {
     log("error", "issue ID and file required");
-    raw("  Usage: attach <ID> <FILE>");
+    log("error", "usage: attach <ID> <FILE>");
     process.exit(1);
   }
 

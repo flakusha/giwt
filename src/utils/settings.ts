@@ -72,16 +72,15 @@
  * by `giwt finalize` in the managed repo. That is by design — the config
  * is user-owned; never point them at untrusted values.
  *
- * Wrong-typed values are a hard error naming file + key; unknown keys are
- * warned about and ignored (forward compatibility). A file that fails to
- * parse as TOML at all degrades to a warn naming the file; that layer falls
- * back to defaults so commands (including silent readers) still run.
+ * Wrong-typed values are a hard error naming file + key; unknown keys warn
+ * once and are ignored. A file that fails to parse as TOML degrades to a
+ * warn naming the file and falls back to defaults (silent readers keep running).
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { log } from "./output";
+import { log, warnOnce } from "./output";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "./scratch";
 import { DEFAULT_TMP_OPTIONS } from "./tmpscan";
 
@@ -161,10 +160,8 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
 
 import { checkEnumSettings, checkType, EXPECTED, SCHEMA, type TomlValue } from "./settings-schema";
 
-/**
- * Merge one parsed TOML document into `base`. Mutates nothing; unknown
- * keys warn (once per section+key+source), wrong types throw.
- */
+/** Merge one parsed TOML document into `base`; unknown keys warn once per
+ *  section/key/source, wrong types throw. */
 function mergeLayer(
   base: GiwtSettings,
   doc: Record<string, TomlValue>,
@@ -174,7 +171,10 @@ function mergeLayer(
   for (const sectionRaw of Object.keys(doc)) {
     const section = sectionRaw as keyof GiwtSettings;
     if (!(section in SCHEMA)) {
-      log("warn", `${source}: unknown section [${sectionRaw}] — ignored`);
+      warnOnce(
+        `${source}:[${sectionRaw}]`,
+        `${source}: unknown section [${sectionRaw}] — ignored`,
+      );
       continue;
     }
     const value = doc[sectionRaw];
@@ -187,13 +187,15 @@ function mergeLayer(
     for (const [key, v] of Object.entries(value)) {
       const camel = SCHEMA[section][key];
       if (!camel) {
-        log("warn", `${source}: unknown key ${sectionRaw}.${key} — ignored`);
+        warnOnce(
+          `${source}:${sectionRaw}.${key}`,
+          `${source}: unknown key ${sectionRaw}.${key} — ignored`,
+        );
         continue;
       }
       checkType(section, camel, key, v, source);
       // Map-typed values merge per key across layers (global < local),
-      // mirroring how scalar keys override per key. Record<string,string>
-      // is guaranteed by checkType's "map" branch above.
+      // mirroring how scalar keys override per key.
       const expect = EXPECTED[section][camel];
       const prev = mergedSection[camel];
       if (
@@ -224,9 +226,8 @@ function parseFile(path: string): Record<string, TomlValue> | null {
   try {
     return Bun.TOML.parse(raw) as Record<string, TomlValue>;
   } catch (error) {
-    // Malformed TOML must not crash every command, including silent readers
-    // (BUG-bad-config-toml-crashes-every-command-including-readers): warn
-    // naming the file, then fall back to defaults for this layer.
+    // Malformed TOML must not crash every command (incl. silent readers):
+    // warn naming the file, then fall back to defaults for this layer.
     log(
       "warn",
       `${path}: invalid TOML — ignoring this file (${(error as Error).message.split("\n")[0]})`,

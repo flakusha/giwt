@@ -3,7 +3,7 @@
 
 # FEAT: one-line outcome contract for direct CLI calls
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** cli, output, agents

@@ -392,7 +392,7 @@ describe("finalize entry validation", () => {
     const run = await driveFinalize([]);
     expect(run.exitCode).toBe(1);
     expect(run.output).toContain("branch name required");
-    expect(run.output).toContain("Usage: giwt finalize <branch>");
+    expect(run.output).toContain("usage: giwt finalize <branch>");
   });
 
   test("refuses to finalize a protected branch", async () => {

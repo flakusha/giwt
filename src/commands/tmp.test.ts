@@ -15,7 +15,7 @@
  * dependence exists between tests.
  */
 
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   chmodSync,
   existsSync,
@@ -28,6 +28,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
+import { setOutputFormat } from "../utils/output";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import {
@@ -41,6 +42,12 @@ import { tmp } from "./tmp";
 const HOUR = 3_600_000;
 
 let root = "";
+
+// tmp's handler flips the module-level output format for machine runs;
+// reset so later human-mode tests keep log() traffic on stdout.
+beforeEach(() => {
+  setOutputFormat("simple");
+});
 
 const tempRoots: string[] = [];
 afterEach(() => {

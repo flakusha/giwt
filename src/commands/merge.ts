@@ -30,7 +30,7 @@ export async function merge(
 
   if (!branch || !source) {
     log("error", "branch and source required");
-    raw("  Usage: giwt merge <branch> <source>");
+    log("error", "usage: giwt merge <branch> <source>");
     process.exit(1);
   }
 

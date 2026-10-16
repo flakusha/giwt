@@ -12,7 +12,7 @@ export async function comment(args: string[], config: WorktreeConfig): Promise<v
 
   if (!id || rest.length === 0) {
     log("error", "issue ID and message required");
-    raw("  Usage: comment <ID> -m <text>");
+    log("error", "usage: comment <ID> -m <text>");
     process.exit(1);
   }
 
