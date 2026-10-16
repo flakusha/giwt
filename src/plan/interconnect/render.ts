@@ -78,12 +78,16 @@ export function renderInterconnectMd(graph: InterconnectGraph, header: string): 
   return `${lines.join("\n").replace(/\n+$/, "")}\n`;
 }
 
-/** Build the graph from one snapshot, verify stability, render both files. */
+/** Build the graph from one snapshot, verify THAT snapshot against fresh
+ * reads, then render both files. */
 export function interconnectOutputs(opts: InterconnectOptions, mdHeader = ""): InterconnectOutputs {
-  const graph = buildInterconnect(opts);
-  // Re-snapshot and compare against a FRESH read: detects a concurrent plan
-  // writer that landed between the first read and now (TOCTOU guard).
-  verifySnapshotStable(snapshotInterconnectInputs(opts));
+  const snapshot = snapshotInterconnectInputs(opts);
+  const graph = buildInterconnect(opts, snapshot);
+  // Re-read every snapshotted file and compare against THE snapshot the
+  // graph was derived from: a concurrent plan writer landing anywhere in
+  // the snapshot→verify window is detected (TOCTOU guard; no second,
+  // self-comparing snapshot).
+  verifySnapshotStable(snapshot);
   return { graph, json: renderInterconnectJson(graph), md: renderInterconnectMd(graph, mdHeader) };
 }
 
@@ -98,8 +102,11 @@ export function firstDiffLine(expected: string, found: string): number | null {
   return null;
 }
 
-/** Atomic write: both temps land first, then two renames — a failure
- * during temp write leaves the previous artifacts untouched. */
+/** Per-file atomic write: both temps land first, then two renames — a
+ * failure during the temp writes leaves the previous artifacts untouched.
+ * Each rename is atomic (readers see old or new bytes, never partial), but
+ * the pair is NOT swapped as one unit: a failure between the two renames
+ * leaves interconnect.json regenerated and interconnect.md stale. */
 export function writeInterconnectFiles(
   planDir: string,
   outputs: { json: string; md: string; },

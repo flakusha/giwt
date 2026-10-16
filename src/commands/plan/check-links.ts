@@ -10,7 +10,7 @@
 import { runLinkCheck } from "../../plan/check-links";
 import { applyLinkFixes } from "../../plan/check-links/fix";
 import type { WorktreeConfig } from "../../utils/config";
-import { log, raw } from "../../utils/output";
+import { log, outcomeLine, raw } from "../../utils/output";
 
 const USAGE = [
   "Usage: giwt plan check-links [--fix]",
@@ -34,8 +34,8 @@ export async function runCheckLinks(
   const scanDirs = ["docs", planDir];
   const ticketsDir = config.settings.paths.tickets;
 
-  if (fix) {
-    const fixes = applyLinkFixes(config.worktreeRoot, scanDirs, ticketsDir, "src");
+  const fixes = fix ? applyLinkFixes(config.worktreeRoot, scanDirs, ticketsDir, "src") : null;
+  if (fixes !== null) {
     for (const f of fixes.fixed) {
       log(
         "info",
@@ -77,12 +77,21 @@ export async function runCheckLinks(
 
   const total = result.broken.length + result.orphanRefs.length
     + result.brokenComments.length;
+  // One-line outcome contract: --fix mutates the repo, so it ends with
+  // exactly one outcome line (repairs applied or what still stays broken).
+  // Read-only runs (no --fix) keep their plain scan report.
   if (total > 0) {
     log("error", `${total} broken link(s)/ref(s) found`);
+    if (fixes !== null) {
+      outcomeLine(false, `${total} broken link(s)/ref(s) remain after fix`);
+    }
     process.exit(1);
   }
   log(
     "success",
     `OK - ${result.fileCount} markdown file(s), ${result.srcFileCount} source file(s); all internal links and comment citations resolve`,
   );
+  if (fixes !== null) {
+    outcomeLine(true, `${fixes.fixed.length} repair(s) applied; links resolve`);
+  }
 }

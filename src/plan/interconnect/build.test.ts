@@ -9,13 +9,15 @@
  * mkdtemp fixture (parallel-safe).
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs";
 import { join } from "node:path";
 import { scratchRoot } from "../../utils/scratch-tmp";
 import {
   buildInterconnect,
   edgesTouching,
+  interconnectOutputs,
   nodeReport,
   renderInterconnectJson,
   resolveRef,
@@ -262,6 +264,39 @@ describe("interconnect snapshot (TOCTOU)", () => {
       expect(() => verifySnapshotStable(snap)).toThrow(
         /FEAT-a\.md: changed during interconnect scan/,
       );
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("interconnectOutputs verifies the snapshot it built from — a mid-flight write is detected", () => {
+    const fx = makeFixture();
+    try {
+      writeSharedFixture(fx);
+      const target = join(fx.opts.ticketsDir, "FEAT-a.md");
+      // Simulate a concurrent writer landing INSIDE interconnectOutputs:
+      // the 1st read of FEAT-a.md is the snapshot phase, the 2nd is the
+      // verify re-read — that one sees the mutation, and the guard must
+      // compare it against the bytes the graph was actually built from.
+      const realReadFileSync = fs.readFileSync;
+      let targetReads = 0;
+      const spy = spyOn(fs, "readFileSync").mockImplementation(
+        ((path: unknown, options: unknown) => {
+          if (path === target) {
+            targetReads++;
+            if (targetReads === 2) return "# FEAT-a: changed concurrently\n";
+          }
+          return realReadFileSync(path as never, options as never);
+        }) as unknown as typeof fs.readFileSync,
+      );
+      try {
+        expect(() => interconnectOutputs(fx.opts)).toThrow(
+          /FEAT-a\.md: changed during interconnect scan/,
+        );
+        expect(targetReads).toBe(2);
+      } finally {
+        spy.mockRestore();
+      }
     } finally {
       fx.cleanup();
     }

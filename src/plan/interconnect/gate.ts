@@ -68,8 +68,14 @@ export function runInterconnectGate(
       // fix notes) so the summary names the manual next step instead of
       // claiming a fix landed.
       fixMsgs = pass ? [`regenerated interconnect.json and interconnect.md in ${planDir}`] : [];
-    } catch {
-      /* leave unfixed — findings already name the failure */
+    } catch (error) {
+      // Leave unfixed — surface WHY the write failed instead of swallowing
+      // it; the stale-pair findings above stay and now name the cause too.
+      findings.push({
+        gate: "interconnect",
+        level: "error",
+        message: `--fix write failed: ${(error as Error).message}`,
+      });
     }
   }
   return { findings, pass, fixMsgs };

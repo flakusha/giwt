@@ -77,6 +77,30 @@ describe("interconnect freshness gate", () => {
     }
   });
 
+  test("a --fix write failure surfaces as an error-level finding", () => {
+    const fx = makeFixture();
+    try {
+      seedGoodPlan(fx.opts);
+      // Sabotage the temp path the --fix writer needs: an existing DIRECTORY
+      // where writeFileSync wants to land the json temp makes the write
+      // throw (EISDIR) — previously this was swallowed and the gate stayed
+      // silently unfixed.
+      const sabotage = join(fx.opts.planDir, "interconnect.json.tmp");
+      mkdirSync(sabotage);
+      const res = runInterconnectGate({ ...fx.opts, fix: true });
+      expect(res.pass).toBe(false);
+      expect(res.fixMsgs).toEqual([]);
+      const writeFailure = res.findings.find((f) => f.message.includes("--fix write failed"));
+      expect(writeFailure).toBeDefined();
+      expect(writeFailure!.level).toBe("error");
+      expect(writeFailure!.gate).toBe("interconnect");
+      // Nothing was written: the pair stays missing.
+      expect(existsSync(join(fx.opts.planDir, "interconnect.json"))).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("stale artifacts fail with the first-difference line; fix regenerates", () => {
     const fx = makeFixture();
     try {

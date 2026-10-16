@@ -111,8 +111,15 @@ function ownershipByNode(
   return byNode;
 }
 
-export function buildInterconnect(opts: InterconnectOptions): InterconnectGraph {
-  const snapshot = snapshotInterconnectInputs(opts);
+/**
+ * Derive the graph from one input snapshot. The snapshot defaults to a
+ * fresh read; callers that hold their own (interconnectOutputs) thread it
+ * in so the TOCTOU verify checks the exact bytes the graph was built from.
+ */
+export function buildInterconnect(
+  opts: InterconnectOptions,
+  snapshot: SnapshotFile[] = snapshotInterconnectInputs(opts),
+): InterconnectGraph {
   const findings: InterconnectFinding[] = [];
   const res = buildResolution(snapshot, opts.indexPath, findings);
   const ownership = ownershipByNode(snapshot, opts.codeMapPath, findings);

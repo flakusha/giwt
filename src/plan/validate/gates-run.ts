@@ -184,6 +184,11 @@ export function runGate(
       return { gate, pass, findings, ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}) };
     }
     case "interconnect": {
+      // Deliberately ignores the diff scope: this gate is a whole-plan
+      // byte-compare (fresh render vs the generated pair). Plan files are
+      // interdependent — **Related:** refs and code-map ownership cross
+      // file boundaries — so a render scoped to changed files would derive
+      // a different graph and defeat the freshness check, not narrow it.
       const interconnectOpts: InterconnectOptions = {
         projectRoot: opts.projectRoot,
         ticketsDir: opts.ticketsDir,

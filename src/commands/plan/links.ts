@@ -14,7 +14,7 @@ import {
 } from "../../plan/interconnect";
 import { resolveFromRoot } from "../../plan/validate";
 import type { WorktreeConfig } from "../../utils/config";
-import { log, raw } from "../../utils/output";
+import { log, outcomeLine, raw } from "../../utils/output";
 import { generatedHeader } from "../../utils/reuse-toml";
 
 const USAGE_LINES = [
@@ -100,13 +100,23 @@ export async function runLinks(args: string[], config: WorktreeConfig): Promise<
 
   if (parsed.write) {
     writeInterconnectFiles(opts.planDir, outputs);
+    const errors = errorFindings(outputs);
     log(
       "success",
       `wrote ${join(opts.planDir, "interconnect.json")} and interconnect.md `
         + `(${outputs.graph.nodes.length} nodes, ${outputs.graph.edges.length} edges)`,
     );
-    for (const f of errorFindings(outputs)) log("error", f.message);
-    if (errorFindings(outputs).length > 0) process.exit(1);
+    for (const f of errors) log("error", f.message);
+    // One-line outcome contract: the write mutates the repo, so it ends
+    // with exactly one outcome line (success or lingering graph errors).
+    if (errors.length > 0) {
+      outcomeLine(false, `wrote pair; ${errors.length} error finding(s) remain`);
+      process.exit(1);
+    }
+    outcomeLine(
+      true,
+      `wrote interconnect pair (${outputs.graph.nodes.length} nodes, ${outputs.graph.edges.length} edges)`,
+    );
     return;
   }
 
