@@ -7,7 +7,7 @@ import { resolve } from "path";
 import { acquireCheckSlot, checkSlotCapacity, checkSlotDir } from "../../utils/check-slots";
 import type { WorktreeConfig } from "../../utils/config";
 import { gitSyncQuiet } from "../../utils/git";
-import { log, raw } from "../../utils/output";
+import { log, outcomeLine, raw } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 import {
   DEV_IN_PROGRESS_HEADS,
@@ -35,7 +35,23 @@ export function runCheckGateStep(
     // resolveDiffBase validates the ref and returns the requested target
     // itself (BUG-resolvediffbase: the merge-base mis-scoped the diff).
     const diffBase = resolveDiffBase(wtPath, targetBranch);
-    if (runCheck(wtPath, diffBase, checkArgs, config, activeRun()?.capturePath("check.log"))) {
+    // check-report.json rides into the run dir next to check.log so the
+    // console's report pointer survives teardown (FIX-...outlive-the-console).
+    const rec = activeRun();
+    if (
+      runCheck({
+        wtPath,
+        diffBase,
+        extraCheckArgs: checkArgs,
+        config,
+        ...(rec !== null
+          ? {
+            capturePath: rec.capturePath("check.log"),
+            reportCapturePath: rec.capturePath("check-report.json"),
+          }
+          : {}),
+      })
+    ) {
       log("success", `Checks passed (diff-base=${diffBase.slice(0, 8)}…)`);
     } else {
       // LAST_FAILED_GATES names the actual gates when the check report
@@ -44,6 +60,7 @@ export function runCheckGateStep(
         failedGates: LAST_FAILED_GATES.length > 0 ? [...LAST_FAILED_GATES] : ["check"],
       });
       log("error", "Checks failed — fix before finalizing (or use --force)");
+      outcomeLine(false, "checks failed");
       process.exit(1);
     }
   } finally {

@@ -3,7 +3,7 @@
 
 # FIX: referenced artifacts must outlive the console
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** runlog, finalize, observability

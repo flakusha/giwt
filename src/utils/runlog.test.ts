@@ -411,4 +411,13 @@ describe("formatOutcome", () => {
       },
     })).toBe("sync: 0 fixed, 1 remaining (3 advisory)");
   });
+
+  test("renders the Step-6a scratch summary (fixture outcome)", () => {
+    expect(formatOutcome({ scratch: "pruned 3.2 MB (5 paths)" })).toBe(
+      "scratch: pruned 3.2 MB (5 paths)",
+    );
+    expect(
+      formatOutcome({ failedGates: ["lint"], scratch: "pruned 1.0 MB (2 paths)" }),
+    ).toBe("failed: lint; scratch: pruned 1.0 MB (2 paths)");
+  });
 });

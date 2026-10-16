@@ -87,5 +87,6 @@ export function formatOutcome(outcome: RunOutcome | undefined): string {
   if (outcome.doctor) parts.push(`doctor: ${outcome.doctor}`);
   if (outcome.clean) parts.push(`clean: ${outcome.clean}`);
   if (outcome.tmp) parts.push(`tmp: ${outcome.tmp}`);
+  if (outcome.scratch) parts.push(`scratch: ${outcome.scratch}`);
   return parts.join("; ");
 }

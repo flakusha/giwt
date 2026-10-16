@@ -3,7 +3,7 @@
 
 # FEAT: runs --json diet: default projection and query filters
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** runlog, agents, cli

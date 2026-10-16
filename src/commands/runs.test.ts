@@ -70,12 +70,23 @@ describe("runs: machine output flags", () => {
       exitCode: number;
       start: string;
       end: string;
-      events: unknown[];
+      dir: string;
+      branch: string;
+      argsSummary: string[];
+      args?: string[];
+      events?: unknown[];
+      argsTruncated?: number;
     }>;
     expect(records).toHaveLength(1);
     expect(records[0]!.cmd).toBe("test");
     expect(records[0]!.exitCode).toBe(0);
-    expect(records[0]!.events).toEqual([]);
+    // Diet projection: no event arrays, no raw argv — args are summarized.
+    expect(records[0]!.events).toBeUndefined();
+    expect(records[0]!.args).toBeUndefined();
+    expect(records[0]!.argsSummary).toEqual([]);
+    expect(records[0]!.argsTruncated).toBeUndefined();
+    expect(records[0]!.dir).toContain(join(".tmp", "giwt", "runs"));
+    expect(records[0]!.branch).toBe("main");
   });
 
   test("--toml round-trips via Bun.TOML.parse", () => {
@@ -126,6 +137,7 @@ describe("runs: machine output flags", () => {
       start: "2026-01-04T00:00:00Z",
       end: "2026-01-04T00:00:03Z",
       exitCode: 2,
+      outcome: { failedGates: ["lint"] },
     });
     const result = runCli(["--emoji"]);
     expect(result.exitCode).toBe(0);
@@ -134,6 +146,169 @@ describe("runs: machine output flags", () => {
     expect(lines.some((l) => l.startsWith("✅ ok-run"))).toBe(true);
     expect(lines.some((l) => l.startsWith("❌ bad-run"))).toBe(true);
     expect(lines.find((l) => l.startsWith("✅"))).toContain("ms");
+    // The emoji line carries the run dir (an id prefix resolveRunDir
+    // accepts) and the outcome summary, not just ✅|❌ cmd <dur>.
+    const bad = lines.find((l) => l.startsWith("❌"));
+    expect(bad).toContain(join(".tmp", "giwt", "runs", "2026-01-04T00-00-00"));
+    expect(bad).toContain("failed: lint");
+    expect(lines.find((l) => l.startsWith("✅"))).toContain(
+      join(".tmp", "giwt", "runs", "2026-01-03T00-00-00"),
+    );
+  });
+});
+
+describe("runs: --json diet and query filters", () => {
+  /** Standard meta fixture: ISO start (no Z) identifies each seeded run. */
+  function metaFixture(
+    start: string,
+    cmd: string,
+    branch: string,
+    exitCode: number,
+    extra: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      v: 1,
+      cmd,
+      args: [],
+      said: null,
+      pid: 1,
+      repoRoot: root,
+      branch,
+      start: `${start}Z`,
+      exitCode,
+      ...extra,
+    };
+  }
+
+  function seedRuns(): void {
+    seedRun("2026-01-07T00-00-00", metaFixture("2026-01-07T00:00:00", "finalize", "feat", 0));
+    seedRun("2026-01-08T00-00-00", metaFixture("2026-01-08T00:00:00", "commit-wt", "feat", 0));
+    seedRun("2026-01-09T00-00-00", metaFixture("2026-01-09T00:00:00", "finalize", "other", 1));
+    seedRun(
+      "2026-01-10T00-00-00",
+      metaFixture("2026-01-10T00:00:00", "finalize", "feat", 0, {
+        outcome: { failedGates: ["lint"] },
+      }),
+    );
+  }
+
+  test("--events re-adds the events join", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRun("2026-01-05T00-00-00", metaFixture("2026-01-05T00:00:00", "finalize", "feat", 0));
+    writeFileSync(
+      join(root, ".tmp", "giwt", "runs", "2026-01-05T00-00-00", "events.jsonl"),
+      "{\"v\":1,\"ts\":\"2026-01-05T00:00:00Z\",\"step\":\"check\",\"status\":\"ok\"}\n",
+    );
+    const lean = JSON.parse(runCli(["--json"]).stdout) as Array<Record<string, unknown>>;
+    expect("events" in lean[0]!).toBe(false);
+    const withEvents = JSON.parse(runCli(["--json", "--events"]).stdout) as Array<{
+      events: unknown[];
+    }>;
+    expect(withEvents[0]!.events).toEqual([
+      { v: 1, ts: "2026-01-05T00:00:00Z", step: "check", status: "ok" },
+    ]);
+  });
+
+  test("--full restores the pre-diet byte shape (raw args + events)", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRun(
+      "2026-01-06T00-00-00",
+      metaFixture("2026-01-06T00:00:00", "finalize", "feat", 0, {
+        args: ["--force"],
+        said: "ctx",
+      }),
+    );
+    const full = JSON.parse(runCli(["--json", "--full"]).stdout) as Array<
+      Record<string, unknown> & { events: unknown[]; args: string[]; }
+    >;
+    expect(full).toHaveLength(1);
+    expect(full[0]!.args).toEqual(["--force"]);
+    expect(full[0]!.said).toBe("ctx");
+    expect(full[0]!.v).toBe(1);
+    expect(full[0]!.pid).toBe(1);
+    expect(full[0]!.repoRoot).toBe(root);
+    expect(full[0]!.branch).toBe("feat");
+    expect(full[0]!.events).toEqual([]);
+    expect("argsSummary" in full[0]!).toBe(false);
+  });
+
+  test("argsSummary: first 3 args, 80-char cap, argsTruncated count", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRun(
+      "2026-01-11T00-00-00",
+      metaFixture("2026-01-11T00:00:00", "task", "main", 0, {
+        args: ["a".repeat(120), "b", "c", "d", "e"],
+      }),
+    );
+    const records = JSON.parse(runCli(["--json"]).stdout) as Array<{
+      argsSummary: string[];
+      argsTruncated?: number;
+    }>;
+    expect(records[0]!.argsSummary).toEqual(["a".repeat(80), "b", "c"]);
+    expect(records[0]!.argsTruncated).toBe(2);
+  });
+
+  test("--cmd filters by exact command name", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRuns();
+    const records = JSON.parse(runCli(["--json", "--cmd", "finalize"]).stdout) as Array<{
+      cmd: string;
+    }>;
+    expect(records).toHaveLength(3);
+    expect(records.every((r) => r.cmd === "finalize")).toBe(true);
+  });
+
+  test("--cmd composes with --last: the cap counts matching runs", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRuns();
+    const records = JSON.parse(
+      runCli(["--json", "--cmd", "finalize", "--last", "1"]).stdout,
+    ) as Array<{ cmd: string; start: string; }>;
+    expect(records).toHaveLength(1);
+    expect(records[0]!.start).toBe("2026-01-10T00:00:00Z");
+  });
+
+  test("--branch filters by exact branch", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRuns();
+    const records = JSON.parse(runCli(["--json", "--branch", "feat"]).stdout) as Array<{
+      branch: string;
+    }>;
+    expect(records).toHaveLength(3);
+    expect(records.every((r) => r.branch === "feat")).toBe(true);
+  });
+
+  test("--failed selects exitCode ≠ 0 or failedGates, composes with --cmd", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    seedRuns();
+    const failed = JSON.parse(runCli(["--json", "--failed"]).stdout) as Array<{
+      cmd: string;
+      start: string;
+      exitCode?: number;
+      outcome?: { failedGates?: string[]; };
+    }>;
+    expect(failed).toHaveLength(2);
+    expect(failed.map((r) => r.start).sort()).toEqual([
+      "2026-01-09T00:00:00Z",
+      "2026-01-10T00:00:00Z",
+    ]);
+    const composed = JSON.parse(
+      runCli(["--json", "--cmd", "finalize", "--failed"]).stdout,
+    ) as Array<{ start: string; }>;
+    expect(composed).toHaveLength(2);
+    const human = runCli(["--branch", "feat"]);
+    expect(human.exitCode).toBe(0);
+    // Human rendering keeps its two-lines-per-run shape (dir + outcome).
+    expect(human.stdout).toContain("exit=");
+  });
+
+  test("unknown flag refuses with the usage line on stderr", () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-runs-test-"));
+    const result = runCli(["--bogus"]);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("unknown flag '--bogus'");
+    expect(result.stderr).toContain("usage: giwt runs");
+    expect(result.stdout).not.toContain("usage:");
   });
 });
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "path";
 import type { WorktreeConfig } from "../../utils/config";
 import { gitSyncQuiet } from "../../utils/git";
@@ -38,12 +38,26 @@ export function resolveDiffBase(wtPath: string, target: string): string {
   return target;
 }
 
+/** Options for runCheck (options-object per repo convention — the
+ *  signature grew past 3 params when report capture landed). */
+export interface RunCheckOptions {
+  wtPath: string;
+  diffBase: string;
+  extraCheckArgs?: string[];
+  config?: WorktreeConfig;
+  /** Run-dir capture path for the check command's combined output. */
+  capturePath?: string;
+  /** Run-dir path the worktree's check-report.json is copied to at gate
+
+   * time (FIX-referenced-artifacts-must-outlive-the-console): success
+   * teardown removes the worktree, so the console-printed report must
+   * have an outliving copy next to check.log. */
+  reportCapturePath?: string;
+}
+
 export function runCheck(
-  wtPath: string,
-  diffBase: string,
-  extraCheckArgs: string[] = [],
-  config?: WorktreeConfig,
-  capturePath?: string,
+  { wtPath, diffBase, extraCheckArgs = [], config, capturePath, reportCapturePath }:
+    RunCheckOptions,
 ): boolean {
   // The check command is user-configurable (settings.commands.check); the
   // diff-base flag is appended the same way the historical hard-coded
@@ -65,6 +79,15 @@ export function runCheck(
       writeFileSync(capturePath, result.stdout.toString() + result.stderr.toString());
     } catch { /* best-effort */ }
   }
+  // Copy the runner's check-report.json into the run dir at gate time,
+  // pass or fail: success teardown removes the worktree and would take
+  // the report the failure path prints with it (the copy survives).
+  const reportPath = config ? resolve(wtPath, config.settings.paths.checkReport) : "";
+  if (reportCapturePath !== undefined && reportPath !== "" && existsSync(reportPath)) {
+    try {
+      copyFileSync(reportPath, reportCapturePath);
+    } catch { /* best-effort */ }
+  }
   if (result.exitCode !== 0) {
     // Surface the runner's stderr so the operator can see WHICH gate
     // failed (or why, e.g. an unknown --gates name). Without this, a
@@ -75,7 +98,7 @@ export function runCheck(
       process.stderr.write(stderr);
     }
     reportCheckFailure(
-      config ? resolve(wtPath, config.settings.paths.checkReport) : "",
+      reportPath,
       capturePath,
       result.stdout.toString(),
       config?.settings.output.streamTail ?? 25,

@@ -11,7 +11,8 @@
  *   diff <runA> <runB>             set-diff failure identities between
  *                                  two runs (report only, never gates)
  *
- * Usage: giwt runs [--last N] [--json|--toml|--emoji]
+ * Usage: giwt runs [--last N] [--cmd C] [--branch B] [--failed]
+ *                [--events] [--full] [--json|--toml|--emoji]
  *        giwt runs triage <run> [--json|--toml|--emoji]
  *        giwt runs stats [--last N] [--json|--toml|--emoji]
  *        giwt runs diff <runA> <runB> [--json|--toml|--emoji]
@@ -19,13 +20,20 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { scanFlags } from "../utils/args-scan";
 import { type WorktreeConfig } from "../utils/config";
 import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit";
 import { diffFailures, type FailBlock, parseFailBlocks } from "../utils/failtriage";
 import { colorize, log, raw } from "../utils/output";
-import { formatOutcome, listRuns, readRunEvents } from "../utils/runlog";
+import { formatOutcome, listRuns } from "../utils/runlog";
+import { type RunOutcome } from "../utils/runlog-types";
 
+import { filterRuns, parseRunQuery, projectRun } from "./runs-query";
 import { stats } from "./runs-stats";
+
+/** Usage line shared by every list-side refusal (stderr via log("error")). */
+const RUNS_USAGE =
+  "usage: giwt runs [triage|diff|stats] [--last N] [--cmd C] [--branch B] [--failed] [--events] [--full] [--json|--toml|--emoji]";
 
 /** TOML cannot represent null: drop null-valued fields from the record
  *  (said: null et al). JSON parse-back keeps every non-null field. */
@@ -213,46 +221,69 @@ export async function runs(
   if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
     log("warn", `multiple output flags given — using --${format}`);
   }
-  let last = 20;
-  for (let i = 0; i < rest.length; i++) {
-    const arg = rest[i];
-    if (arg === undefined) break;
-    if (arg === "--last") {
-      const value = parseInt(rest[++i] ?? "", 10);
-      if (Number.isFinite(value) && value > 0) last = value;
-    } else if (arg.startsWith("--last=")) {
-      const value = parseInt(arg.slice("--last=".length), 10);
-      if (Number.isFinite(value) && value > 0) last = value;
-    } else {
-      log("error", `unknown flag '${arg}'`);
-      raw("  Usage: giwt runs [--last N] [--json|--toml|--emoji]");
-      process.exit(1);
-    }
+  const RUNS_FLAGS = {
+    "--last": { value: "required" },
+    "--cmd": { value: "required" },
+    "--branch": { value: "required" },
+    "--failed": { value: "none" },
+    "--events": { value: "none" },
+    "--full": { value: "none" },
+  } as const;
+  let scan: ReturnType<typeof scanFlags>;
+  try {
+    scan = scanFlags(rest, RUNS_FLAGS);
+  } catch (error) {
+    log("error", (error as Error).message);
+    log("error", RUNS_USAGE);
+    process.exit(1);
+  }
+  if (scan.positionals.length > 0) {
+    log("error", `unknown flag '${scan.positionals[0]}'`);
+    log("error", RUNS_USAGE);
+    process.exit(1);
+  }
+  const query = parseRunQuery(scan.flags);
+  if ("problem" in query) {
+    log("error", query.problem);
+    log("error", RUNS_USAGE);
+    process.exit(1);
   }
 
-  const records = listRuns(config, last).map((record) => ({
-    ...record,
-    // Per-step durations live in each run's events.jsonl, not in meta.json,
-    // so the machine projection reads them here rather than carrying a
-    // duplicated summary inside the meta record.
-    events: readRunEvents(record.dir),
-  }));
+  // --cmd/--branch/--failed compose with --last: filter everything, then
+  // cap the matching runs (the scan is bounded by runlog.max_runs).
+  const filtering = query.cmd !== undefined || query.branch !== undefined || query.failed;
+  const scanned = listRuns(config, filtering ? Number.POSITIVE_INFINITY : query.last);
+  const matches = filtering ? filterRuns(scanned, query).slice(0, query.last) : scanned;
   if (format !== "human") {
+    const records = matches.map((record) => projectRun(record, query));
     raw(renderRecords(records.map(stripNulls), format, {
+      // One line per run: verdict, command, duration, run dir (an id
+      // prefix resolveRunDir accepts) and the outcome summary — an
+      // emoji-format consumer can find the run record and read its
+      // outcome (FIX-referenced-artifacts-must-outlive-the-console).
       emoji: (record) => {
-        const rec = record as { cmd: string; start: string; end?: string; exitCode?: number; };
+        const rec = record as {
+          cmd: string;
+          start: string;
+          end?: string;
+          exitCode?: number;
+          dir: string;
+          outcome?: RunOutcome;
+        };
         const mark = rec.exitCode === 0 ? "✅" : "❌";
         const dur = rec.end ? ` ${Date.parse(rec.end) - Date.parse(rec.start)}ms` : "";
-        return `${mark} ${rec.cmd}${dur}`;
+        const outcome = formatOutcome(rec.outcome);
+        const suffix = outcome.length > 0 ? ` · ${outcome}` : "";
+        return `${mark} ${rec.cmd}${dur} ${rec.dir}${suffix}`;
       },
     }));
     return;
   }
-  if (records.length === 0) {
+  if (matches.length === 0) {
     log("info", "No run records");
     return;
   }
-  for (const record of records) {
+  for (const record of matches) {
     const startMs = Date.parse(record.start);
     const dur = record.end ? `${Date.parse(record.end) - startMs}ms` : "abnormal";
     const exitLabel = record.exitCode === 0
