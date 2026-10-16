@@ -3,7 +3,7 @@
 
 # FEAT: Ship a consumer-runnable conformance suite (giwt selftest) for repos that delete their local fork
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 

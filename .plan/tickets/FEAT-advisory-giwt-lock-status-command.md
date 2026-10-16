@@ -3,7 +3,7 @@
 
 # FEAT: advisory giwt lock status command
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** cli, agents, finalize

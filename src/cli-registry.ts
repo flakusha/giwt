@@ -3,9 +3,8 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
- * Command registry: one entry per giwt subcommand. `src/cli.ts` builds
- * the Optique parser and dispatch from this table; keep command keys
- * aligned with their src/commands/<key>.ts modules.
+ * Command registry: one entry per giwt subcommand; `src/cli.ts` builds the
+ * Optique parser/dispatch from this table (keys match src/commands/<key>.ts).
  */
 import { abort } from "./commands/abort";
 import { agentMerge } from "./commands/agent-merge";
@@ -26,11 +25,13 @@ import { edit } from "./commands/edit";
 import { finalize } from "./commands/finalize";
 import { gi } from "./commands/gi";
 import { gitPassthrough } from "./commands/git";
+import { runGpgUnlock } from "./commands/gpg-unlock";
 import { gripe } from "./commands/gripe";
 import { history } from "./commands/history";
 import { issues } from "./commands/issues";
 import { ledger } from "./commands/ledger";
 import { listWorktrees } from "./commands/list";
+import { lock } from "./commands/lock";
 import { merge } from "./commands/merge";
 import { execute as newBranchCmd } from "./commands/new-branch";
 import { plan } from "./commands/plan";
@@ -40,6 +41,7 @@ import { execute as removeCmd } from "./commands/remove";
 import { report } from "./commands/report";
 import { runs } from "./commands/runs";
 import { search } from "./commands/search";
+import { selftest } from "./commands/selftest";
 import { show } from "./commands/show";
 import { execute as signCmd } from "./commands/sign";
 import { runSpdxCheck as spdxCheck } from "./commands/spdx-check";
@@ -50,7 +52,6 @@ import { sync } from "./commands/sync";
 import { task } from "./commands/task";
 import { ticket } from "./commands/ticket";
 import { tmp } from "./commands/tmp";
-import { runGpgUnlock } from "./gpg-unlock";
 import type { WorktreeConfig } from "./utils/config";
 
 export interface CommandHandler {
@@ -163,6 +164,10 @@ export const commands: Record<string, CommandHandler> = {
     description: "Show all worktrees with status",
     run: listWorktrees,
   },
+  "lock": {
+    description: "Advisory finalize lock + check-slot status (read-only, gates nothing)",
+    run: lock,
+  },
   "merge": {
     description: "Merge source branch into worktree branch",
     run: merge,
@@ -214,6 +219,11 @@ export const commands: Record<string, CommandHandler> = {
   "spdx-check": {
     description: "Validate SPDX headers against REUSE.toml rules",
     run: spdxCheck,
+  },
+  "selftest": {
+    description:
+      "Run giwt's shipped conformance suites against this installed copy (--filter <suite>)",
+    run: selftest,
   },
   "spdx-fix": {
     description: "Apply SPDX headers to files that need them",
