@@ -32,9 +32,9 @@
  */
 
 import { appendFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { type WorktreeConfig } from "./config";
-import { log } from "./output";
+import { log, setRunContext } from "./output";
 import {
   type RunEvent,
   type RunMeta,
@@ -135,6 +135,9 @@ export function beginRun(
   };
   writeMeta(dir, meta);
   pruneRuns(root, config.settings.runlog.maxRuns);
+  // Publish for log-event correlation (`"run": <id>` in machine formats)
+  // and outcomeLine's `· run <id>` suffix; cleared in finish().
+  setRunContext({ id: basename(dir), cmd });
   log("info", `Run record: ${dir}`);
 
   let finished = false;
@@ -167,12 +170,17 @@ export function beginRun(
       meta.outcome = { ...meta.outcome, ...partial };
       writeMeta(dir, meta);
     },
+    setLedgerSeq: (seq: number) => {
+      meta.ledgerSeq = seq;
+      writeMeta(dir, meta);
+    },
     finish: (exitCode: number) => {
       if (finished) return;
       finished = true;
       meta.end = new Date().toISOString();
       meta.exitCode = exitCode;
       writeMeta(dir, meta);
+      setRunContext(null);
       if (ACTIVE_RUN === recorder) ACTIVE_RUN_FINISHED = true;
     },
   };

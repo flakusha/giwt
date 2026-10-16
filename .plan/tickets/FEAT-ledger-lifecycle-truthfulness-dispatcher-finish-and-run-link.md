@@ -3,7 +3,7 @@
 
 # FEAT: ledger lifecycle truthfulness: dispatcher finish and run links
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** ledger, observability, agents

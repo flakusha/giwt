@@ -21,8 +21,10 @@ export const LEDGER_SCHEMA_VERSION = 2;
 /** Ledger file name inside the shared tree directory. */
 export const LEDGER_FILENAME = ".ledger.jsonl";
 
-/** Max records kept in the ledger file (oldest pruned on append). */
-export const LEDGER_MAX_RECORDS = 50;
+/** Max records kept in the ledger file (oldest pruned on append). 50
+ * scrolled out in minutes with several agents; 500 short lines still make
+ * the whole-file rewrite per append trivial. */
+export const LEDGER_MAX_RECORDS = 500;
 
 /** Max chars for one record's msg (chat-like, truncated with …). */
 export const LEDGER_MAX_MSG = 280;
@@ -66,6 +68,9 @@ export interface LedgerRecordV2 {
   state: LedgerState;
   seq: number;
   error?: LedgerError;
+  /** Run-dir basename of the matching run record (cross-link, FEAT-
+   *  ledger-lifecycle-truthfulness). Additive: older lines lack it. */
+  run?: string;
 }
 
 /** Any on-disk record version. */
@@ -105,6 +110,7 @@ export function normalizeRecord(raw: unknown): LedgerRecordView | null {
       state: rec.state as LedgerState,
       seq: rec.seq as number,
       ...(rec.error === undefined ? {} : { error: rec.error }),
+      ...(rec.run === undefined ? {} : { run: rec.run }),
     };
   }
   if (rec.v === 1 && typeof rec.pid === "number") {
@@ -158,7 +164,10 @@ export function parseLedgerTail(text: string, fromOffset: number): LedgerTail {
 }
 
 /**
- * One-line chat rendering: `[09-10 06:55] [#1234] [branch] cmd: msg`.
+ * One-line chat rendering:
+ * `[09-10 06:55] [#1234] [branch] cmd: msg <state> !<error>` — the state
+ * suffix appears only while the line is not `finished`, the `!<msg>`
+ * suffix only when a structured error rides along.
  *
  * @param record - ledger record to render
  * @returns single display line
@@ -166,7 +175,9 @@ export function parseLedgerTail(text: string, fromOffset: number): LedgerTail {
 export function formatRecord(record: LedgerRecordView): string {
   const shortTs = record.ts.slice(5, 16).replace("T", " ");
   const branch = record.branch.length > 0 ? record.branch : "-";
-  return `[${shortTs}] [#${record.pid}] [${branch}] ${record.cmd}: ${record.msg}`;
+  const state = record.state === "finished" ? "" : ` ${record.state}`;
+  const error = record.error === undefined ? "" : ` !${record.error.message}`;
+  return `[${shortTs}] [#${record.pid}] [${branch}] ${record.cmd}: ${record.msg}${state}${error}`;
 }
 
 /**

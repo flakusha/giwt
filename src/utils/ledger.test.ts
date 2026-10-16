@@ -27,12 +27,14 @@ import { hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { isolatedGitEnv } from "./git";
 import {
   appendCommitOutcome,
   appendGripe,
   appendLedger,
   defaultMessage,
   extractSayArgs,
+  finishOwnLedger,
   finishRecord,
   formatRecord,
   LEDGER_FILENAME,
@@ -308,12 +310,15 @@ describe("formatRecord", () => {
   it("renders the one-line chat shape", () => {
     expect(formatRecord(
       normalizeRecord({
-        v: 1,
+        v: 2,
         ts: "2026-09-10T06:55:01Z",
         pid: 1234,
+        agent: "host:1234",
         cmd: "new",
         branch: "my-branch",
         msg: "new my-branch",
+        state: "finished",
+        seq: 1,
       })!,
     )).toBe("[09-10 06:55] [#1234] [my-branch] new: new my-branch");
   });
@@ -321,12 +326,15 @@ describe("formatRecord", () => {
   it("renders missing branch as -", () => {
     expect(formatRecord(
       normalizeRecord({
-        v: 1,
+        v: 2,
         ts: "2026-09-10T06:55:01Z",
         pid: 7,
+        agent: "host:7",
         cmd: "status",
         branch: "",
         msg: "status",
+        state: "finished",
+        seq: 1,
       })!,
     )).toContain("[-] status: status");
   });
@@ -841,6 +849,152 @@ describe("schema v2 writer", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("ledger lifecycle truthfulness (dispatcher finish + run link)", () => {
+  it("appendLedger carries run and returns the record; normalizeRecord preserves run on read", () => {
+    const dir = makeTreeDir();
+    try {
+      const rec = appendLedger(dir, "sync", [], null, "dev", "20261016T070000-123-sync");
+      expect(rec).not.toBeNull();
+      expect(rec!.run).toBe("20261016T070000-123-sync");
+      // Round-trip: the v2 read path reconstructs field-by-field — the
+      // run key must survive, or finishRecord's write-back strips it.
+      const reread = readLedger(dir, 10)[0]!;
+      expect(reread.run).toBe("20261016T070000-123-sync");
+      finishOwnLedger(dir, "sync", 0);
+      expect(readLedger(dir, 10)[0]!.run).toBe("20261016T070000-123-sync");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("appendLedger without run omits the key", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "sync", [], null, "dev");
+      expect(readLedger(dir, 10)[0]!.run).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("finishOwnLedger exit 0 marks the line finished/ok", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "sync", [], null, "dev");
+      expect(finishOwnLedger(dir, "sync", 0)).toBe("enriched");
+      const rec = readLedger(dir, 10)[0]!;
+      expect(rec.state).toBe("finished");
+      expect(rec.msg).toBe("sync :: ok");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("finishOwnLedger non-zero marks the line postponed with error{message,code}", () => {
+    const dir = makeTreeDir();
+    try {
+      appendLedger(dir, "commit", ["-m", "x"], null, "dev");
+      expect(finishOwnLedger(dir, "commit", 1, "gpg signing failed")).toBe("enriched");
+      const rec = readLedger(dir, 10)[0]!;
+      expect(rec.state).toBe("postponed");
+      expect(rec.msg).toBe("commit x :: exit 1");
+      expect(rec.error).toEqual({ message: "gpg signing failed", code: 1 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("formatRecord appends the non-finished state and !error suffixes", () => {
+    const base = {
+      v: 2 as const,
+      ts: "2026-09-10T06:55:01Z",
+      pid: 5,
+      agent: "host:5",
+      cmd: "sync",
+      branch: "dev",
+      msg: "sync",
+      seq: 1,
+    };
+    expect(formatRecord(normalizeRecord({ ...base, state: "in-progress" })!)).toBe(
+      "[09-10 06:55] [#5] [dev] sync: sync in-progress",
+    );
+    expect(
+      formatRecord(
+        normalizeRecord({
+          ...base,
+          state: "postponed",
+          error: { message: "gate failed", code: 1 },
+        })!,
+      ),
+    ).toBe("[09-10 06:55] [#5] [dev] sync: sync postponed !gate failed");
+  });
+
+  it("a 600-record file truncates to LEDGER_MAX_RECORDS (500) after an append", () => {
+    const dir = makeTreeDir();
+    try {
+      for (let i = 0; i < 600; i++) {
+        appendLedger(dir, "cmd", [`b${i}`], null, `b${i}`);
+      }
+      const records = readLedger(dir, LEDGER_MAX_RECORDS + 100);
+      expect(records.length).toBe(500);
+      expect(records[0]!.branch).toBe("b100");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /** A throwaway git repo plus the tree dir the CLI writes its ledger to. */
+  function makeRepo(): { root: string; tree: string; } {
+    const root = mkdtempSync(join(scratchRoot(), "giwt-ledger-cli-"));
+    tempRoots.push(root);
+    const env = isolatedGitEnv();
+    Bun.spawnSync(["git", "init", "-q", root], { env });
+    Bun.spawnSync(["git", "-C", root, "config", "user.email", "giwt-test@localhost"], { env });
+    Bun.spawnSync(["git", "-C", root, "config", "user.name", "giwt test"], { env });
+    // appendLedger never creates a missing treeDir as a side effect, so the
+    // scratch tree must exist before the CLI appends its line.
+    const tree = join(root, "tree");
+    mkdirSync(tree, { recursive: true });
+    return { root, tree };
+  }
+
+  /** Run the real CLI binary against a throwaway repo, as a subprocess. */
+  function runCli(tree: string, root: string, args: string[]): number {
+    const proc = Bun.spawnSync(["bun", join(import.meta.dir, "..", "cli.ts"), ...args], {
+      cwd: root,
+      env: { ...isolatedGitEnv(), REPO_ROOT: root, TREE_DIR: tree },
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 30_000,
+    });
+    return proc.exitCode ?? 1;
+  }
+
+  // `create` with no branch calls process.exit(1) inside the handler, which
+  // kills the process before main()'s try/catch — the path the dispatcher's
+  // own finish cannot reach. Without the cli.ts exit hook this line stays
+  // in-progress forever. (Not `finalize`: its own exit hook appends a gripe
+  // line, which would make two records and hide the state under test.)
+  it("a handler that calls process.exit(1) leaves a postponed line, never in-progress", () => {
+    const { root, tree } = makeRepo();
+    expect(runCli(tree, root, ["create"])).toBe(1);
+    const records = readLedger(tree, 10);
+    expect(records).toHaveLength(1);
+    expect(records[0]!.state).toBe("postponed");
+    expect(records[0]!.msg).toContain(":: exit 1");
+  });
+
+  // Guards the risk the exit hook introduces: on the normal return path the
+  // dispatcher already closed the line, so the hook must add nothing.
+  it("a normally-finished command still gets exactly one finished line", () => {
+    const { root, tree } = makeRepo();
+    expect(runCli(tree, root, ["spdx-check"])).toBe(0);
+    const records = readLedger(tree, 10);
+    expect(records).toHaveLength(1);
+    expect(records[0]!.state).toBe("finished");
   });
 });
 

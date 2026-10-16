@@ -54,6 +54,10 @@ export interface RunMeta {
   end?: string;
   exitCode?: number;
   outcome?: RunOutcome | undefined;
+  /** Seq of this run's ledger line (cross-link from ledger record `run`;
+   *  attached by the dispatcher right after the append, so early meta
+   *  writes omit it). */
+  ledgerSeq?: number;
 }
 
 export interface RunEvent {
@@ -80,6 +84,9 @@ export interface RunRecorder {
    *  merges the given keys, so partial summaries stay visible even before
    *  finish (best-effort, never throws). */
   outcome: (partial: RunOutcome) => void;
+  /** Attach this run's ledger seq to meta.json (cross-link; the ledger
+   *  append happens after beginRun, so it cannot be in the initial meta). */
+  setLedgerSeq: (seq: number) => void;
   /** Write end + exitCode. Idempotent: later calls and the exit hook are
    *  no-ops after the first. */
   finish: (exitCode: number) => void;

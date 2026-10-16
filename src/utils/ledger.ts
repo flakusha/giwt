@@ -29,6 +29,7 @@ import {
   LEDGER_MAX_MSG,
   LEDGER_MAX_RECORDS,
   type LedgerError,
+  type LedgerRecord,
   type LedgerRecordView,
   newRecord,
   normalizeRecord,
@@ -38,7 +39,7 @@ import { withLedgerLock } from "./ledger-lock";
 // Re-exported so `./utils/ledger` import paths keep working while the
 // pure schema primitives live in ledger-core (read side in ledger-read).
 export { formatRecord, LEDGER_FILENAME, LEDGER_MAX_MSG, LEDGER_MAX_RECORDS } from "./ledger-core";
-export type { LedgerError, LedgerRecord } from "./ledger-core";
+export type { LedgerError, LedgerRecord, LedgerRecordView } from "./ledger-core";
 export { LEDGER_DUMP_DEFAULT, printRecentLedger, readLedger } from "./ledger-read";
 
 /** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record). */
@@ -111,17 +112,10 @@ export function extractSayArgs(args: readonly string[]): SayArgs {
 }
 
 /**
- * Append one record for this run. Best-effort: never throws.
- *
- * @param treeDir - shared tree directory (ledger lives inside it)
- * @param cmd - command name as invoked
- * @param args - command args (say-flags already stripped; they shape the
- *   default message only, never the branch field)
- * @param said - optional free-text context from --say
- * @param branch - resolved current branch (the dispatcher computes it once
- *   from `git branch --show-current` and shares it with the run record's
- *   meta.branch; "" when unknown). Positional args are NOT a branch source:
- *   `doctor check` would record the subcommand, `sync` nothing at all.
+ * Append one record for this run (best-effort: never throws).
+ * `branch` is the dispatcher-resolved branch, never a positional;
+ * say-flags shape the default message only. `run` is the run-dir
+ * basename cross-link. Returns the written record (with seq) or null.
  */
 export function appendLedger(
   treeDir: string,
@@ -129,14 +123,15 @@ export function appendLedger(
   args: string[],
   said: string | null,
   branch: string,
-): void {
+  run?: string,
+): LedgerRecord | null {
   try {
     // Never create the directory as a side effect: commands probing a
     // foreign repo (e.g. `abort --dry-run`) resolve treeDir inside it,
     // and mkdir would mutate the very tree dry-run promises to spare.
     // Tradeoff: where treeDir does not exist yet, the run goes unlogged
     // (best-effort ledger; e.g. the first `new` on a fresh host).
-    if (!existsSync(treeDir)) return;
+    if (!existsSync(treeDir)) return null;
     const base = defaultMessage(cmd, args);
     const msg = truncateMsg(said ? `${base} :: ${said}` : base);
     const path = resolve(treeDir, LEDGER_FILENAME);
@@ -164,13 +159,15 @@ export function appendLedger(
         msg,
         state: "in-progress",
         seq: lastSeq + 1,
+        ...(run === undefined ? {} : { run }),
       });
       lines.push(JSON.stringify(rec));
       writeFileSync(path, `${lines.slice(-LEDGER_MAX_RECORDS).join("\n")}\n`);
       return rec;
     });
-    void record;
+    return record;
   } catch { /* ledger must never fail the command */ }
+  return null;
 }
 
 /**
@@ -245,6 +242,37 @@ export function finishRecord(treeDir: string, cmd: string, outcome: LedgerOutcom
     });
   } catch { /* treat as no eligible line */ }
   return "not-found";
+}
+
+/**
+ * Dispatcher-level terminal write for THIS invocation's ledger line
+ * (FEAT-ledger-lifecycle-truthfulness): `main()` calls it after the
+ * handler returns (or throws) so no non-silent run's line is left
+ * `in-progress` forever. Exit 0 → `finished` / "ok"; any other code →
+ * `postponed` / `exit <code>` with a structured error. Command-specific
+ * enrichers (appendCommitOutcome, appendGripe) run first and leave the
+ * line terminal already — this then finds it "already-done" and writes
+ * nothing. Best-effort: never throws.
+ *
+ * @param treeDir - shared tree directory
+ * @param cmd - command name as invoked (pid+cmd scope the line)
+ * @param code - real exit code (process.exitCode included)
+ * @param message - error detail for non-zero exits (the thrown message)
+ */
+export function finishOwnLedger(
+  treeDir: string,
+  cmd: string,
+  code: number,
+  message?: string,
+): EnrichResult {
+  if (code === 0) {
+    return finishRecord(treeDir, cmd, { state: "finished", text: "ok" });
+  }
+  return finishRecord(treeDir, cmd, {
+    state: "postponed",
+    text: `exit ${code}`,
+    error: { message: message ?? `exit ${code}`, code },
+  });
 }
 
 /**
