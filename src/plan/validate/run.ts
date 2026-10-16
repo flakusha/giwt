@@ -10,32 +10,14 @@
  * Pure logic — no process.exit / console.log. Caller handles reporting.
  */
 
-import { join, relative } from "node:path";
+import { relative } from "node:path";
 import { gitSync } from "../../utils/git";
-import {
-  checkBacklog,
-  checkCodeMap,
-  checkEpicsDoc,
-  checkLinks,
-  checkNaming,
-  checkSpdx,
-  checkStatusVocab,
-  checkTicketIndex,
-} from "./content-gates";
-import {
-  fixBacklogGate,
-  fixCodeMapGate,
-  fixEpicsDocGate,
-  fixStatusVocabGate,
-  fixTicketIndexGate,
-} from "./fixes";
-import { checkEpicFormat, checkLinkage, checkTicketFormat } from "./format-gates";
-import { runMatrixGate } from "./matrix-gate";
-import { checkOrphans } from "./orphan-gate";
+import { type GateScope, runGate } from "./gates-run";
 import {
   ALL_GATES,
   type ConcreteGate,
   FIXABLE_GATES,
+  type GateName,
   type GateResult,
   type ValidateOptions,
   type ValidateResult,
@@ -66,7 +48,12 @@ function changedPlanFiles(
 }
 
 export function runValidate(opts: ValidateOptions): ValidateResult {
-  const gates = opts.gates.includes("all") ? ALL_GATES : opts.gates;
+  // "all" respects [plan] interconnect = false; --gates interconnect
+  // explicitly still runs it.
+  const all: GateName[] = opts.interconnectGate === false
+    ? ALL_GATES.filter((g) => g !== "interconnect")
+    : ALL_GATES;
+  const gates = opts.gates.includes("all") ? all : opts.gates;
   const unknown = gates.filter((g) => !ALL_GATES.includes(g));
   if (unknown.length > 0) {
     throw new Error(
@@ -74,205 +61,21 @@ export function runValidate(opts: ValidateOptions): ValidateResult {
     );
   }
   const results: GateResult[] = [];
-  const backlogPath = join(opts.planDir, "backlog", "open.md");
   // Diff-scoped per-file gates: only files changed vs opts.diffBase (plus
   // untracked) are inspected. null = no scoping (full scan).
   const planDirName = relative(opts.worktreeRoot, opts.planDir);
   const scoped = opts.diffBase === undefined
     ? null
     : changedPlanFiles(opts.worktreeRoot, planDirName, opts.diffBase);
-  const includeTicket = scoped === null
-    ? undefined
-    : (f: string) => scoped.has(`${planDirName}/tickets/${f}`);
-  const includeEpic = scoped === null
-    ? undefined
-    : (f: string) => scoped.has(`${planDirName}/epics/${f}`);
+  const scope: GateScope = scoped === null
+    ? {}
+    : {
+      includeTicket: (f: string) => scoped.has(`${planDirName}/tickets/${f}`),
+      includeEpic: (f: string) => scoped.has(`${planDirName}/epics/${f}`),
+    };
 
-  for (const gate of gates) {
-    switch (gate) {
-      case "format": {
-        const findings = [
-          ...checkTicketFormat(opts.ticketsDir, includeTicket),
-          ...checkEpicFormat(opts.epicsDir, includeEpic),
-        ];
-        results.push({
-          gate,
-          pass: findings.filter((f) => f.level === "error").length === 0,
-          findings,
-        });
-        break;
-      }
-      case "linkage": {
-        const findings = checkLinkage(opts.ticketsDir, opts.epicsDir, includeTicket, includeEpic);
-        results.push({
-          gate,
-          pass: findings.filter((f) => f.level === "error").length === 0,
-          findings,
-        });
-        break;
-      }
-      case "backlog": {
-        const findings = checkBacklog(opts.backlogDir, opts.backlogIndexFiles);
-        const hasErrors = findings.some((f) => f.level === "error");
-        let pass = !hasErrors;
-        let fixMsgs: string[] = [];
-        if (opts.fix && hasErrors) {
-          fixMsgs = fixBacklogGate(opts.backlogDir, opts.backlogIndexFiles);
-          if (fixMsgs.length > 0) {
-            // Re-check: applyFixes handles orphans/phantoms but "outside"
-            // entries (warn level) remain — so error-level findings should
-            // be gone after fix.
-            const rechecked = checkBacklog(opts.backlogDir, opts.backlogIndexFiles);
-            pass = !rechecked.some((f) => f.level === "error");
-          }
-        }
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-      case "tickets": {
-        const syncFindings = checkTicketIndex(
-          opts.worktreeRoot,
-          opts.ticketsDir,
-          opts.runSync,
-          opts.diffBase,
-        );
-        // Advisory orphan-tag/orphan-binding findings ride the tickets gate
-        // at warn level: reported, never counted against pass (see the
-        // advisory-first policy note in orphan-gate.ts).
-        const advisory = checkOrphans({ ticketsDir: opts.ticketsDir, epicsDir: opts.epicsDir });
-        const findings = [...syncFindings, ...advisory];
-        let pass = syncFindings.length === 0;
-        let fixMsgs: string[] = [];
-        if (opts.fix && !pass) {
-          // Don't re-check — runSync is expensive (calls git issue CLI).
-          // Trust the fix; user can re-run validate to confirm.
-          fixMsgs = fixTicketIndexGate(
-            opts.worktreeRoot,
-            opts.ticketsDir,
-            opts.runSync,
-            opts.diffBase,
-          );
-          if (fixMsgs.length > 0) pass = true;
-        }
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-      case "code-map": {
-        const findings = checkCodeMap(opts.projectRoot, opts.codeMapPath, opts.mapSources);
-        let pass = findings.length === 0;
-        let fixMsgs: string[] = [];
-        if (opts.fix && !pass) {
-          fixMsgs = fixCodeMapGate(opts.projectRoot, opts.codeMapPath, opts.mapSources);
-          if (fixMsgs.length > 0) {
-            const rechecked = checkCodeMap(opts.projectRoot, opts.codeMapPath, opts.mapSources);
-            pass = rechecked.length === 0;
-          }
-        }
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-      case "links": {
-        const findings = checkLinks(
-          opts.projectRoot,
-          opts.linkScanDirs,
-          opts.ticketsDir,
-          opts.srcDir,
-        );
-        results.push({
-          gate,
-          pass: findings.length === 0,
-          findings,
-        });
-        break;
-      }
-      case "spdx": {
-        const findings = checkSpdx(opts.planDir);
-        results.push({
-          gate,
-          pass: findings.length === 0,
-          findings,
-        });
-        break;
-      }
-      case "naming": {
-        const findings = checkNaming(opts.ticketsDir);
-        results.push({
-          gate,
-          pass: findings.length === 0,
-          findings,
-        });
-        break;
-      }
-      case "epics-doc": {
-        const findings = checkEpicsDoc(opts.epicsDir, opts.epicsIndexPath, backlogPath);
-        let pass = findings.length === 0;
-        let fixMsgs: string[] = [];
-        if (opts.fix && !pass) {
-          fixMsgs = fixEpicsDocGate(opts.epicsDir, opts.epicsIndexPath, backlogPath);
-          if (fixMsgs.length > 0) {
-            const rechecked = checkEpicsDoc(opts.epicsDir, opts.epicsIndexPath, backlogPath);
-            pass = rechecked.length === 0;
-          }
-        }
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-      case "matrix": {
-        const { findings, pass, fixMsgs } = runMatrixGate(opts.planDir, opts.fix === true);
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-      case "status-vocab": {
-        const statusAliases = opts.statusAliases ?? {};
-        const findings = checkStatusVocab(opts.ticketsDir, statusAliases, includeTicket);
-        let pass = findings.length === 0;
-        let fixMsgs: string[] = [];
-        if (opts.fix && !pass) {
-          fixMsgs = fixStatusVocabGate(opts.ticketsDir, statusAliases);
-          if (fixMsgs.length > 0) {
-            // Rewriting is a cheap in-place file edit, so re-check like the
-            // code-map gate: the post-fix findings are exactly the values
-            // --fix could not resolve (green only when none remain).
-            const rechecked = checkStatusVocab(opts.ticketsDir, statusAliases, includeTicket);
-            findings.length = 0;
-            findings.push(...rechecked);
-            pass = rechecked.length === 0;
-          }
-        }
-        results.push({
-          gate,
-          pass,
-          findings,
-          ...(fixMsgs.length > 0 ? { fixes: fixMsgs } : {}),
-        });
-        break;
-      }
-    }
+  for (const gate of gates.filter((g): g is ConcreteGate => g !== "all")) {
+    results.push(runGate(gate, opts, scope));
   }
 
   const issueCount = results.reduce(

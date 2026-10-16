@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { CAVEATS_CHECKLIST, CAVEATS_REQUIRED_TYPES } from "../../tickets/sync-parse";
 import { sanitizeTicketBody } from "../../tickets/ticket-md";
 import type { TicketFlags } from "./args";
 
@@ -48,6 +49,18 @@ export function renderTicketFile(
   }
   if (flags.upstream) {
     content += `**Upstream:** ${flags.upstream}\n`;
+  }
+  // Required implementation-hazard field for FEAT/TASK/BUG tickets
+  // (FEAT-ticket-template-requires-possible-caveats-…): seeded with the
+  // standard checklist so filers cannot omit the field. A field present in
+  // the user body suppresses the seed, exactly like Context/Acceptance
+  // above. The plan validate format gate rejects a diff-scoped ticket of
+  // these types whose **Caveats:** is missing or empty.
+  if (
+    CAVEATS_REQUIRED_TYPES.includes(type)
+    && !hasSection(body, "Caveats")
+  ) {
+    content += `**Caveats:** ${CAVEATS_CHECKLIST}\n`;
   }
   content += `\n**Summary:**\n\n${cleanBody || "No description provided."}\n\n`;
   // A field present in the user body suppresses its placeholder — no

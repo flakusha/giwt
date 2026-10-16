@@ -1,0 +1,5308 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-.md",
+      "title": "abort hard-resets dev when a stash pop conflicts, destroying other sessions' tracked work",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/abort.test.ts",
+        "src/commands/abort.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md",
+      "title": "abort pops stashes by positional ref, destroying user-authored stashes",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/abort.test.ts",
+        "src/commands/abort.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-bad-config-toml-crashes-every-command-including-readers",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-bad-config-toml-crashes-every-command-including-readers.md",
+      "title": "bad config TOML crashes every command including readers",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-browser-e2e-404-allowlist-masks-real-404s",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-browser-e2e-404-allowlist-masks-real-404s.md",
+      "title": "browser e2e 404 allowlist masks real 404s",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-.md",
+      "title": "checkHeader does not strip the comment suffix, so every HTML/CSS SPDX header reads as a bogus license id",
+      "status": "done",
+      "srcRefs": [
+        "src/cli-registry.ts",
+        "src/cli-usage.ts",
+        "src/cli.ts",
+        "src/utils/reuse-toml.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-commit-msg-hook-drift-between-giwt-and-omp-plugins",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-commit-msg-hook-drift-between-giwt-and-omp-plugins.md",
+      "title": "commit-msg hook drift between giwt and omp-plugins",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p.md",
+      "title": "commit-wt hardcodes --no-verify, bypassing the consuming repo pre-commit hook",
+      "status": "done",
+      "srcRefs": [
+        "src/cli-usage.ts",
+        "src/commands/commit-wt.ts",
+        "src/git/predicates.ts",
+        "src/utils/git.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-delete-stash-dance-after-staging-merge-lands",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-delete-stash-dance-after-staging-merge-lands.md",
+      "title": "delete stash dance after staging merge lands",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
+      "title": "doctor check caps findings at 20 with no truncation notice - silently hides 113 of 134 real findings",
+      "status": "done",
+      "srcRefs": [
+        "src/doctor/check/run.ts",
+        "src/doctor/check/tools.ts",
+        "src/doctor/check/types.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-exec-identity-patterns-author-equals-form-only-misses-space-.md",
+      "title": "EXEC_IDENTITY_PATTERNS --author equals-form only misses space-form and gpgsign bypass",
+      "status": "done",
+      "srcRefs": [
+        "src/git/predicates.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-alreadymerged-check-is-incomplete.md",
+      "title": "finalize alreadyMerged check is incomplete — rev-list count misses content-equivalent branches",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/run.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-branchtopath-is-lossy",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-branchtopath-is-lossy.md",
+      "title": "finalize branchToPath is lossy — feature/foo and feature-foo map to same directory",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/config.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-check-failure-report-never-names-failed-gates-check.md",
+      "title": "finalize check-failure report never names failed gates (checks[].command schema ignored)",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-direct-merge-allows-fast-forward",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-direct-merge-allows-fast-forward.md",
+      "title": "finalize direct merge allows fast-forward — no merge commit created",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/merge-exec.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-findworktree-only-checks-tree-dir",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-findworktree-only-checks-tree-dir.md",
+      "title": "finalize findWorktree only checks `tree/<dirName>` — misses worktrees at custom paths",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/config.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c.md",
+      "title": "finalize leaks worktree and branch when the target already contains the branch",
+      "status": "done",
+      "srcRefs": [
+        "src/cli.ts",
+        "src/commands/finalize.test.ts",
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-leaves-dev-worktree-stale-after-merging",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-leaves-dev-worktree-stale-after-merging.md",
+      "title": "finalize leaves dev worktree stale after merging",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/staging-sync.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-lock-queue-test-flakes-marker-queued-never-appeared.md",
+      "title": "finalize-lock-queue test flakes marker queued never appeared got OK",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md",
+      "title": "finalize Step 5.5 rebuilds code-map from 2 sources, stripping docs/spec and docs/frontend entries",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/plan/code-map.ts",
+        "src/commands/scoped-reconcile.ts",
+        "src/commands/sync.ts",
+        "src/plan/code-map.ts",
+        "src/plan/validate.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md",
+      "title": "finalize step1 doesnt check untracked files — silent data loss on worktree removal",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/merge.ts",
+        "src/commands/finalize/run.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-teardown-branch-deletion-fallback-is-silent.md",
+      "title": "finalize teardown branch deletion -d to -D fallback is silent — discards unmerged commits without warning",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/teardown.ts",
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-teardown-doesnt-verify-worktree-exists.md",
+      "title": "finalize teardown doesnt verify worktree exists — confusing error on externally-removed worktree",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/teardown.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-finalize-teardown-worktree-removal-failure-is-non-fatal.md",
+      "title": "finalize teardown worktree removal failure is non-fatal — leaks worktree dir and admin entry",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/teardown.ts",
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md",
+      "title": "generated .plan/ files stamped with giwt's own AGPL header in consuming repos",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/scoped-reconcile.ts",
+        "src/commands/sync.ts",
+        "src/plan/feature-matrix.ts",
+        "src/plan/matrix.ts",
+        "src/plan/reconcile-conflicts/generated.ts",
+        "src/utils/spdx-fix.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio.md",
+      "title": "getTrackedFiles default git runner throws on every invocation: whole-tree spdx-check never checks a file",
+      "status": "done",
+      "srcRefs": [
+        "src/cli.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard.md",
+      "title": "giwt lifecycle config writes invisible to omp guard",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/create.ts",
+        "src/commands/doctor/apply.ts",
+        "src/commands/new-branch.ts",
+        "src/commands/sign.ts",
+        "src/doctor/generators/hooks.ts",
+        "src/utils/config-writes.ts",
+        "src/utils/config.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-new-default-base-dev-does-not-exist-in-this-clone",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-clone.md",
+      "title": "giwt new default base dev does not exist in this clone",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-new-default-base-dev-does-not-exist-in-this-repo.md",
+      "title": "giwt new default base dev does not exist in this repo",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch.md",
+      "title": "giwt remove cannot target a worktree by path — only by branch",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-ticket-drops-flags-that-follow-the-positional-body",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-ticket-drops-flags-that-follow-the-positional-body.md",
+      "title": "giwt ticket drops flags that follow the positional body",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-ticket-extid-double-prefix-resolved",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-ticket-extid-double-prefix-resolved.md",
+      "title": "giwt-ticket-extid-double-prefix-resolved",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/ticket.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
+      "title": "giwt ticket generates a Status the status-vocab gate then rejects",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/ticket.ts",
+        "src/plan/status-vocab.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-ledger-append-race-drops-records-under-concurrent-agents",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-ledger-append-race-drops-records-under-concurrent-agents.md",
+      "title": "ledger append race drops records under concurrent agents",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/ledger.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md",
+      "title": "parseTicketFile vs omp-roster: divergence on dual-status tickets",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/doctor.ts",
+        "src/tickets/sync-index.ts",
+        "src/tickets/sync-issues-ops.test.ts",
+        "src/tickets/sync-ticket-index.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-patch-id-duplicate-detection-is-defeated-by-a-rename-between",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-patch-id-duplicate-detection-is-defeated-by-a-rename-between.md",
+      "title": "patch-id duplicate detection is defeated by a rename between two identical commits",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r.md",
+      "title": "plan gen-docs Tasks column counts unchecked checkboxes, not Related tickets list entries",
+      "status": "done",
+      "srcRefs": [
+        "src/plan/gen-docs.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md",
+      "title": "rebase default target is the root branch, which is also protected, so the no-onto form always fails",
+      "status": "done",
+      "srcRefs": [
+        "src/cli.ts",
+        "src/commands/rebase.ts",
+        "src/utils/settings.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster.md",
+      "title": "rebase --exec identity guard bypassed by -ix short-flag cluster and regex gaps",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/git.ts",
+        "src/git/predicate-helpers.ts",
+        "src/git/predicates.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy.md",
+      "title": "rebase --exec not blocked in giwt git passthrough policy",
+      "status": "done",
+      "srcRefs": [
+        "src/git/predicates.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re.md",
+      "title": "rebase guard checks only the source branch, not the target - rebasing dev onto feature tips rewrote protected history 51x",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/rebase.test.ts",
+        "src/commands/rebase.ts",
+        "src/utils/git.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di.md",
+      "title": "rebase lacks already-contained guard, compounding an empty-diff rewrite loop",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.test.ts",
+        "src/commands/rebase.test.ts",
+        "src/commands/rebase.ts",
+        "src/plan/reconcile-conflicts.ts",
+        "src/resolve-diff-base.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch.md",
+      "title": "rebase refuses a dirty worktree with no escape hatch",
+      "status": "done",
+      "srcRefs": [
+        "src/cli-usage.ts",
+        "src/commands/rebase.test.ts",
+        "src/commands/rebase.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md",
+      "title": "reconcile-conflicts commit path does not pin GPG signing flags - unsigned commit, no error",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/commit-wt.ts",
+        "src/commands/commit.ts",
+        "src/commands/finalize/merge.ts",
+        "src/commands/scoped-worktree.ts",
+        "src/plan/reconcile-conflicts/git-io.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-reconcile-gpg-amend-test-flakes-under-parallel-gate-load.md",
+      "title": "reconcile gpg amend test flakes under parallel gate load",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as.md",
+      "title": "remove --branch-only --force deletes the reflog it advertises as the recovery path",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.test.ts",
+        "src/commands/finalize/teardown.ts",
+        "src/commands/remove.test.ts",
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-remove-path-auto-detection-matches-main-worktree-registratio.md",
+      "title": "remove path auto-detection matches main worktree registration",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
+      "title": "resolveDiffBase returns merge-base instead of the requested target, silently mis-scoping diff-base gates",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.test.ts",
+        "src/commands/finalize/checks.ts",
+        "src/commands/finalize/gates.ts",
+        "src/commands/finalize/run.ts",
+        "src/plan/reconcile-conflicts.test.ts",
+        "src/resolve-diff-base.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-scoped-marker-path-is-cwd-relative-so-worktree-scope-writes-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-scoped-marker-path-is-cwd-relative-so-worktree-scope-writes-.md",
+      "title": "scoped marker path is cwd-relative so worktree scope writes fail/misplace",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-squash-commit-failure-strands-staged-changes-in-dev",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-squash-commit-failure-strands-staged-changes-in-dev.md",
+      "title": "squash commit failure strands staged changes in dev",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize/gates.ts",
+        "src/commands/finalize/merge-exec.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-status-vocab-annotation-regex-rejects-nested-parentheses.md",
+      "title": "status-vocab annotation regex rejects nested parentheses",
+      "status": "done",
+      "srcRefs": [
+        "src/plan/status-vocab.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-sync-fix-leaves-feature-matrix-and-code-map-stale",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-sync-fix-leaves-feature-matrix-and-code-map-stale.md",
+      "title": "sync --fix leaves feature-matrix and code-map stale",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla.md",
+      "title": "sync --fix rewrites .md status to git issue state, reverting plan status-vocab normalization",
+      "status": "done",
+      "srcRefs": [
+        "src/plan/status-vocab.ts",
+        "src/plan/validate.ts",
+        "src/tickets/sync-index.ts",
+        "src/tickets/sync-issues-ops.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-sync-fix-stamps-ticket-done-without-provenance",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-sync-fix-stamps-ticket-done-without-provenance.md",
+      "title": "sync fix stamps ticket Done without provenance",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-sync-fix-statusmismatches-branch-writes-raw-git-state-into-m",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-sync-fix-statusmismatches-branch-writes-raw-git-state-into-m.md",
+      "title": "sync --fix statusMismatches branch writes raw git state into .md, bypassing the status-vocab map",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
+      "title": "sync-index shadows imported raw (oxlint no-shadow)",
+      "status": "done",
+      "srcRefs": [
+        "src/tickets/sync-index.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md",
+      "title": "tag parser keeps bracket-quote-backtick adornments producing ghost matrix rows",
+      "status": "done",
+      "srcRefs": [
+        "src/tickets/sync-parse.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "BUG-ticket-create-and-sync-fix-import-emit-lint-defective-duplic",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-ticket-create-and-sync-fix-import-emit-lint-defective-duplic.md",
+      "title": "ticket create and sync --fix --import emit lint-defective/duplicated ticket markdown",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-ticket-id-inputs-accept-hash-extid-slug-everywhere",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-ticket-id-inputs-accept-hash-extid-slug-everywhere.md",
+      "title": "ticket-id-inputs-accept-hash-extid-slug-everywhere",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "BUG-ticket-template-emits-empty-context-acceptance-placeholders-",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-ticket-template-emits-empty-context-acceptance-placeholders-.md",
+      "title": "ticket template emits empty Context/Acceptance placeholders alongside user-supplied body fields",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/ticket/create.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md",
+      "title": "advisory giwt lock status command",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli-registry.ts",
+        "src/cli-usage.ts",
+        "src/commands/finalize/lock.ts",
+        "src/commands/lock.ts",
+        "src/utils/check-slots.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout.md",
+      "title": "bound doctor check subprocesses with a configurable timeout",
+      "status": "done",
+      "srcRefs": [
+        "src/doctor/check.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-bounded-output-mode-for-check-and-test-streams",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-bounded-output-mode-for-check-and-test-streams.md",
+      "title": "bounded output mode for check and test streams",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat.md",
+      "title": "commit co-author trailer policy: strip LLM, keep real, aggregate in squash",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/coauthors.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-copy-ticket-files-between-worktrees",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-copy-ticket-files-between-worktrees.md",
+      "title": "copy ticket files between worktrees",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-destructive-gpg-bypass-git-guard-cc-safety-net-seeded",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-destructive-gpg-bypass-git-guard-cc-safety-net-seeded.md",
+      "title": "destructive + gpg-bypass git guard (cc-safety-net seeded)",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-detect-resurrected-files-identical-content-living-under-two-",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-detect-resurrected-files-identical-content-living-under-two-.md",
+      "title": "detect resurrected files: identical content living under two paths after a rename",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-docs-list-show-search-toml-and-emoji-output-parity",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-docs-list-show-search-toml-and-emoji-output-parity.md",
+      "title": "docs list/show/search toml and emoji output parity",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-docs-sync-agents-populate-agents-skill-files-from-the-docs-c",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-docs-sync-agents-populate-agents-skill-files-from-the-docs-c.md",
+      "title": "docs sync-agents: populate .agents/ skill files from the docs corpus",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel.md",
+      "title": "doctor check concurrency - run the five checks in parallel",
+      "status": "done",
+      "srcRefs": [
+        "src/doctor/check.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-doctor-unclosed-resource-leak-check",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-doctor-unclosed-resource-leak-check.md",
+      "title": "doctor unclosed-resource leak check",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md",
+      "title": "export a reusable cold-cache GPG warm helper so consumers stop inlining gpg-unlock internals",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/gpg-unlock",
+        "src/gpg-unlock.ts",
+        "src/index.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md",
+      "title": "feature matrix generation from ticket index",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/plan.ts",
+        "src/plan/feature-matrix.test.ts",
+        "src/plan/feature-matrix.ts",
+        "src/plan/validate.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename.md",
+      "title": "finalize --dry-run scope decision: true dry-run or rename",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli-usage.ts",
+        "src/commands/finalize/run.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-finalize-gates-plan-integration",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-finalize-gates-plan-integration.md",
+      "title": "finalize gates plan integration",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-gen-docs-check-freshness-gate",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-gen-docs-check-freshness-gate.md",
+      "title": "gen-docs check freshness gate",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-git-invocation-allowlist-policy-configurable-lists",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md",
+      "title": "git invocation allowlist policy + configurable lists",
+      "status": "done",
+      "srcRefs": [
+        "src/git/policy.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md",
+      "title": "giwt git passthrough command for harness rerouting",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/git.ts",
+        "src/git/policy.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou.md",
+      "title": "giwt history audit: classify history shape and flag suspicious commits before a rebase",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/settings-schema.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md",
+      "title": "isolatedGitEnv also strips agent-harness session vars",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/git.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-ledger-core-canonical-module",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ledger-core-canonical-module.md",
+      "title": "ledger-core canonical module",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/ledger-core.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link.md",
+      "title": "ledger lifecycle truthfulness: dispatcher finish and run links",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli.ts",
+        "src/commands/ledger.ts",
+        "src/utils/ledger-core.ts",
+        "src/utils/ledger.test.ts",
+        "src/utils/ledger.ts",
+        "src/utils/runlog-types.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-ledger-schema-v2-writer",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ledger-schema-v2-writer.md",
+      "title": "ledger schema v2 writer",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene.md",
+      "title": "logger internals: run correlation, fields, warnOnce, raw hygiene",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/utils/output.ts",
+        "src/utils/runlog.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-merge-in-staging-worktree-with-ref-move",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-merge-in-staging-worktree-with-ref-move.md",
+      "title": "merge in staging worktree with ref move",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-narrow-finalize-lock-to-merge-steps",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-narrow-finalize-lock-to-merge-steps.md",
+      "title": "narrow finalize lock to merge steps",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-one-line-outcome-contract-for-direct-cli-calls.md",
+      "title": "one-line outcome contract for direct CLI calls",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/commit-wt.ts",
+        "src/commands/finalize/run.ts",
+        "src/utils/output.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md",
+      "title": "plan check-links --fix to auto-repair stale markdown links and TASK refs",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli-usage.ts",
+        "src/commands/plan/check-links.ts",
+        "src/plan/check-links.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md",
+      "title": "plan links derive and validate producers consumers siblings",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/db/schema-core.ts",
+        "src/plan/code-map.ts",
+        "src/plan/index-projection.ts",
+        "src/plan/interconnect.ts",
+        "src/plan/src-refs.ts",
+        "src/routes/v1/actors-surface.ts",
+        "src/tickets/sync-parse.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection.md",
+      "title": "plan metadata subcommand - promote frontmatter-wins projection from loop-lore",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md",
+      "title": "plan normalize-statuses subcommand to normalize plan status values onto the closed vocabularies",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli-usage.ts",
+        "src/commands/plan.ts",
+        "src/index.ts",
+        "src/plan/status-vocab.ts",
+        "src/tickets/sync-normalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat.md",
+      "title": "plan report subcommand - promote loop-lore report-plan-metadata into src/plan",
+      "status": "done",
+      "srcRefs": [
+        "src/plan",
+        "src/plan/status-vocab"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-status-per-ticket-status-plus-checkbox-rollup",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-status-per-ticket-status-plus-checkbox-rollup.md",
+      "title": "plan status per-ticket Status plus checkbox rollup",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-status-subcommand",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-status-subcommand.md",
+      "title": "plan status subcommand",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind.md",
+      "title": "plan validate tickets gate reuses orphan-tag and orphan-binding detection",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-public-api-exports-for-plan-modules",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-public-api-exports-for-plan-modules.md",
+      "title": "public API exports for plan modules",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-rebase-auto-resolve-superset-side-conflicts",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-rebase-auto-resolve-superset-side-conflicts.md",
+      "title": "rebase auto-resolve superset-side conflicts",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-rebase-skip-decisions-are-not-recorded-so-dropped-work-is-un",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-rebase-skip-decisions-are-not-recorded-so-dropped-work-is-un.md",
+      "title": "rebase --skip decisions are not recorded, so dropped work is unrecoverable",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-reconcile-leftover-finalize-stashes-in-a-temp-worktree",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-reconcile-leftover-finalize-stashes-in-a-temp-worktree.md",
+      "title": "reconcile leftover finalize stashes in a temp worktree",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-record-per-step-durationms-in-run-events",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-record-per-step-durationms-in-run-events.md",
+      "title": "record per-step durationMs in run events",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/runlog.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm.md",
+      "title": "reject manual edits to plan tickets index.json with a frontmatter-is-source-of-truth error",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md",
+      "title": "repo-wide SPDX header check covering every tracked file and both SPDX tokens",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/plan/validate/content-gates.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-reuse-toml-precedence-override-semantics-decision.md",
+      "title": "REUSE.toml precedence override semantics decision",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/matrix.ts",
+        "src/commands/ticket/create.ts",
+        "src/plan/feature-matrix.ts",
+        "src/utils/reuse-toml.test.ts",
+        "src/utils/reuse-toml.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-rtk-minimal-context-output-for-giwt-git",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-rtk-minimal-context-output-for-giwt-git.md",
+      "title": "rtk minimal-context output for giwt git",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/git.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-runs-failure-triage-extract-fail-blocks-and-diff-two-runs",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-runs-failure-triage-extract-fail-blocks-and-diff-two-runs.md",
+      "title": "runs failure triage: extract fail blocks and diff two runs",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-runs-json-diet-default-projection-and-query-filters.md",
+      "title": "runs --json diet: default projection and query filters",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/runs.test.ts",
+        "src/commands/runs.ts",
+        "src/index.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-scoped-worktree-creation-new-scope-and-tickets-flags",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-scoped-worktree-creation-new-scope-and-tickets-flags.md",
+      "title": "scoped worktree creation: new --scope and --tickets flags",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-ship-a-consumer-runnable-conformance-suite-giwt-selftest-for",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ship-a-consumer-runnable-conformance-suite-giwt-selftest-for.md",
+      "title": "Ship a consumer-runnable conformance suite (giwt selftest) for repos that delete their local fork",
+      "status": "Not Started",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-show-unmerged-three-way-content-of-a-ticket-file",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-show-unmerged-three-way-content-of-a-ticket-file.md",
+      "title": "show unmerged three-way content of a ticket file",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
+      "title": "size the gate fan-out by available memory, not only by core count",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts",
+        "src/doctor/check.ts",
+        "src/utils/check-slots.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i.md",
+      "title": "sync re-reads tags epic related for entries already in the index on every sync",
+      "status": "done",
+      "srcRefs": [
+        "src/tickets/sync-index-write.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-ticket-close-writes-md-status-plus-issue-state",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ticket-close-writes-md-status-plus-issue-state.md",
+      "title": "ticket close writes md status plus issue state",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-ticket-header-conflict-resolver-in-rebase-loop",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ticket-header-conflict-resolver-in-rebase-loop.md",
+      "title": "ticket-header conflict resolver in rebase loop",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-ticket-template-requires-possible-caveats-and-issues-to-avoi",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-ticket-template-requires-possible-caveats-and-issues-to-avoi.md",
+      "title": "ticket template requires possible caveats and issues to avoid",
+      "status": "Not Started",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-universal-post-merge-plan-reconciliation",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-universal-post-merge-plan-reconciliation.md",
+      "title": "universal post-merge plan reconciliation",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-validate-fix-flag-auto-fix-gates",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-validate-fix-flag-auto-fix-gates.md",
+      "title": "validate fix flag auto-fix gates",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-validate-skip-gates-flag",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-validate-skip-gates-flag.md",
+      "title": "validate skip-gates flag",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md",
+      "title": "weave damage scan: duplicated and orphaned blocks are structurally silent",
+      "status": "done",
+      "srcRefs": [
+        "src/chat/service/branches.ts",
+        "src/frontend/ui.ts",
+        "src/plan/reconcile-conflicts.ts",
+        "src/test-utils/isolate-only.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FEAT-zero-shot-command-classifier-seam-prepare-only",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-zero-shot-command-classifier-seam-prepare-only.md",
+      "title": "zero-shot command classifier seam (prepare only)",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-abort-leaves-stale-rebase-head-and-finalize-is-blocked-by-th",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-abort-leaves-stale-rebase-head-and-finalize-is-blocked-by-th.md",
+      "title": "abort leaves stale REBASE_HEAD and finalize is blocked by the orphan marker",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-add-jitter-to-the-finalize-lock-retry-backoff.md",
+      "title": "add jitter to the finalize lock retry backoff",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-add-plan-to-ledger-silent-commands",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-add-plan-to-ledger-silent-commands.md",
+      "title": "add plan to LEDGER_SILENT_COMMANDS",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c.md",
+      "title": "bun test from the repo root sweeps 100 worktree test files, causing spurious failures",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/ticket.test.ts",
+        "src/finalize-signal-safety.test.ts",
+        "src/utils/worktree-root.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-errors-carry-no-remedy",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-errors-carry-no-remedy.md",
+      "title": "errors carry no remedy",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f.md",
+      "title": "errors.test.ts leaks process.env.REPO_ROOT into later test files, breaking loadConfig tests",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/errors.test.ts",
+        "src/utils/worktree-root.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the.md",
+      "title": "finalize cannot name the failed gate: report schema drops the name field",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-finalize-does-not-surface-gate-results-on-failure.md",
+      "title": "finalize does not surface gate results on failure",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-gates-accepts-ambiguous-display-names",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-gates-accepts-ambiguous-display-names.md",
+      "title": "--gates accepts ambiguous display names",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-gi-passthrough-contract-gi-close-rejects-documented-form",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-gi-passthrough-contract-gi-close-rejects-documented-form.md",
+      "title": "gi passthrough contract: gi close rejects documented form",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac.md",
+      "title": "giwt issues silently drops --state, so closed issues are unreachable",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/issues.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone.md",
+      "title": "giwt remove cannot delete a branch whose worktree is already gone",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/remove.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-json-output-polluted-by-run-record-announcement",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-json-output-polluted-by-run-record-announcement.md",
+      "title": "--json output polluted by Run record announcement",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/output.ts",
+        "src/utils/runlog.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-ledger-field-hygiene-wrong-branch-empty-branch-double-append",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-ledger-field-hygiene-wrong-branch-empty-branch-double-append.md",
+      "title": "ledger field hygiene: wrong branch, empty branch, double append",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-plan-validate-path-doubling-in-worktrees-and-unbounded-outpu",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-plan-validate-path-doubling-in-worktrees-and-unbounded-outpu.md",
+      "title": "plan validate: path doubling in worktrees and unbounded output",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-referenced-artifacts-must-outlive-the-console",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-referenced-artifacts-must-outlive-the-console.md",
+      "title": "referenced artifacts must outlive the console",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/runs.ts",
+        "src/utils/ledger-core.ts",
+        "src/utils/runlog-read.ts",
+        "src/utils/runlog-types.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-run-records-die-with-the-worktree-and-lack-outcome-data",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-run-records-die-with-the-worktree-and-lack-outcome-data.md",
+      "title": "run records die with the worktree and lack outcome data",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-stale-worktree-registry-list-shows-removed-worktrees-and-bra",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-stale-worktree-registry-list-shows-removed-worktrees-and-bra.md",
+      "title": "stale worktree registry: list shows removed worktrees and branches",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas.md",
+      "title": "sync --fix reports one refusal for every registry failure class",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose.md",
+      "title": "sync-parse first-bold-colon match mis-parses when body prose re-spells a field or metadata drifts past line 30",
+      "status": "done",
+      "srcRefs": [
+        "src/tickets/sync-parse.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "FIX-wire-plandir-setting-into-plan-command",
+      "kind": "ticket",
+      "path": ".plan/tickets/FIX-wire-plandir-setting-into-plan-command.md",
+      "title": "wire planDir setting into plan command",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "INFRA-dispose-two-stale-loop-lore-worktrees",
+      "kind": "ticket",
+      "path": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md",
+      "title": "dispose two stale loop lore worktrees",
+      "status": "done",
+      "srcRefs": [
+        "src/assets/service/create.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-add-author-identity-guard-to-commit-merge-paths",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md",
+      "title": "Add author-identity guard to commit/merge paths",
+      "status": "done",
+      "srcRefs": [
+        "src/utils/author-guard.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit.md",
+      "title": "colocation sweep: stranded tests, gpg-unlock split, testkit",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/finalize-lock-queue.test.ts",
+        "src/commands/finalize/checks.ts",
+        "src/commands/gpg-unlock.ts",
+        "src/commands/gripe.test.ts",
+        "src/commands/report.test.ts",
+        "src/finalize-args.test.ts",
+        "src/finalize-lock-fixture.ts",
+        "src/gpg-unlock.ts",
+        "src/gripe.test.ts",
+        "src/index.ts",
+        "src/report.test.ts",
+        "src/resolve-diff-base.test.ts",
+        "src/testkit",
+        "src/testkit/capture.ts",
+        "src/testkit/finalize-lock-fixture.ts",
+        "src/utils/gpg.ts",
+        "src/utils/worktree-root.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-commit-wt-on-protected-branch-direct-commit-scenario",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-commit-wt-on-protected-branch-direct-commit-scenario.md",
+      "title": "commit-wt on-protected-branch direct commit scenario",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/commit-protected.test.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow.md",
+      "title": "consolidation: worktree bootstrap, scanFlags, stale size-allow",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/commands/task/args.ts",
+        "src/commands/worktree-bootstrap.ts",
+        "src/tickets/sync-",
+        "src/utils/args-scan.ts",
+        "src/utils/config-writes.ts",
+        "src/utils/ledger-read.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-expose-file-size-check-via-public-api",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-expose-file-size-check-via-public-api.md",
+      "title": "Expose file-size check via public API",
+      "status": "done",
+      "srcRefs": [
+        "src/index.ts",
+        "src/utils/check-file-size.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-giwt-clean-age-size-capped-tmp-pruning",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-giwt-clean-age-size-capped-tmp-pruning.md",
+      "title": "Add `giwt clean` for age/size-capped .tmp pruning",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/clean.ts",
+        "src/utils/scratch.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-giwt-doctor-scratchpad-check",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-giwt-doctor-scratchpad-check.md",
+      "title": "Add `giwt doctor scratchpad` check (size + orphan + oldest)",
+      "status": "done",
+      "srcRefs": [
+        "src/doctor/check.ts",
+        "src/utils/scratch.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-giwt-plan-validate-status-vocab-gate.md",
+      "title": "Add `giwt plan validate --status-vocab` gate (closed enum + fix)",
+      "status": "done",
+      "srcRefs": [
+        "src/plan/status-vocab.ts",
+        "src/plan/validate.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree.md",
+      "title": "giwt sync: recalculate tickets index inside a worktree",
+      "status": "done",
+      "srcRefs": [
+        "src/tickets/sync-index.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-giwt-ticket-create-tickets-from-inside-a-worktree",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-giwt-ticket-create-tickets-from-inside-a-worktree.md",
+      "title": "giwt ticket: create tickets from inside a worktree",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md",
+      "title": "migrate plan backlog-sync to a top-level backlog command",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/backlog.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-plan-validate-reject-case-insensitive-ticket-filename-collis.md",
+      "title": "plan validate: reject case-insensitive ticket filename collisions",
+      "status": "done",
+      "srcRefs": [
+        "src/plan/validate.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md",
+      "title": "plan validate: scope ticket-format/link gates to the diff base",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts",
+        "src/plan/validate.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-pre-commit-hook-s-2s-rationale-for-the-unconditional-full-ga",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-pre-commit-hook-s-2s-rationale-for-the-unconditional-full-ga.md",
+      "title": "pre-commit hook's '~2s' rationale for the unconditional full gate is stale by ~19x",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d.md",
+      "title": "reach parity with the loop-lore worktree fork so it can be deleted",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/finalize.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md",
+      "title": "rebase must run from the repo root, with no in-worktree path for agents",
+      "status": "done",
+      "srcRefs": [
+        "src/cli.ts",
+        "src/commands/rebase.test.ts",
+        "src/commands/rebase.ts",
+        "src/utils/git.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-shard-tickets-index-or-stop-per-branch-index-commits",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-shard-tickets-index-or-stop-per-branch-index-commits.md",
+      "title": "shard tickets index or stop per-branch index commits",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    },
+    {
+      "id": "TASK-show-state-resolve-plan-tickets-filename-slugs",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-show-state-resolve-plan-tickets-filename-slugs.md",
+      "title": "show/state resolve plan tickets filename slugs",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/show.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-.md",
+      "title": "ticket index sync spends 3074 subprocess spawns on a single batched git cat-file --batch-check",
+      "status": "done",
+      "srcRefs": [
+        "src/index.ts",
+        "src/plan/validate.ts",
+        "src/tickets/sync-reconcile.ts",
+        "src/tickets/sync-ticket-index.test.ts",
+        "src/tickets/sync-ticket.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md",
+      "title": "Ticket index: tags end-to-end + unbound-to-epic advisory notice",
+      "status": "done",
+      "srcRefs": [
+        "src/commands/ticket.ts",
+        "src/plan/gen-docs.ts",
+        "src/plan/validate.ts",
+        "src/tickets/sync-ticket.ts"
+      ],
+      "related": []
+    },
+    {
+      "id": "TASK-verify-feat-chat-finishers-ticket-claims-before-merge",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-verify-feat-chat-finishers-ticket-claims-before-merge.md",
+      "title": "verify feat chat finishers ticket claims before merge",
+      "status": "done",
+      "srcRefs": [],
+      "related": []
+    }
+  ],
+  "srcNodes": [
+    {
+      "path": "src/assets/service/create.ts",
+      "owners": [
+        "INFRA-dispose-two-stale-loop-lore-worktrees"
+      ]
+    },
+    {
+      "path": "src/chat/service/branches.ts",
+      "owners": [
+        "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu"
+      ]
+    },
+    {
+      "path": "src/cli-registry.ts",
+      "owners": [
+        "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+        "FEAT-advisory-giwt-lock-status-command"
+      ]
+    },
+    {
+      "path": "src/cli-usage.ts",
+      "owners": [
+        "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+        "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+        "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+        "FEAT-advisory-giwt-lock-status-command",
+        "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+        "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+        "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-"
+      ]
+    },
+    {
+      "path": "src/cli.ts",
+      "owners": [
+        "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+        "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+        "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+        "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+        "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-"
+      ]
+    },
+    {
+      "path": "src/commands/abort.test.ts",
+      "owners": [
+        "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+        "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore"
+      ]
+    },
+    {
+      "path": "src/commands/abort.ts",
+      "owners": [
+        "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+        "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore"
+      ]
+    },
+    {
+      "path": "src/commands/backlog.ts",
+      "owners": [
+        "TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command"
+      ]
+    },
+    {
+      "path": "src/commands/clean.ts",
+      "owners": [
+        "TASK-giwt-clean-age-size-capped-tmp-pruning"
+      ]
+    },
+    {
+      "path": "src/commands/commit-protected.test.ts",
+      "owners": [
+        "TASK-commit-wt-on-protected-branch-direct-commit-scenario"
+      ]
+    },
+    {
+      "path": "src/commands/commit-wt.ts",
+      "owners": [
+        "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+        "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+        "FEAT-one-line-outcome-contract-for-direct-cli-calls"
+      ]
+    },
+    {
+      "path": "src/commands/commit.ts",
+      "owners": [
+        "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla"
+      ]
+    },
+    {
+      "path": "src/commands/create.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/commands/doctor.ts",
+      "owners": [
+        "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick"
+      ]
+    },
+    {
+      "path": "src/commands/doctor/apply.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/commands/finalize-lock-queue.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/commands/finalize.test.ts",
+      "owners": [
+        "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+        "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+        "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-"
+      ]
+    },
+    {
+      "path": "src/commands/finalize.ts",
+      "owners": [
+        "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+        "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+        "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+        "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+        "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+        "FIX-finalize-does-not-surface-gate-results-on-failure",
+        "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+        "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/checks.ts",
+      "owners": [
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/gates.ts",
+      "owners": [
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+        "BUG-squash-commit-failure-strands-staged-changes-in-dev"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/lock.ts",
+      "owners": [
+        "FEAT-advisory-giwt-lock-status-command"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/merge-exec.ts",
+      "owners": [
+        "BUG-finalize-direct-merge-allows-fast-forward",
+        "BUG-squash-commit-failure-strands-staged-changes-in-dev"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/merge.ts",
+      "owners": [
+        "BUG-finalize-step1-doesnt-check-untracked-files",
+        "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/run.ts",
+      "owners": [
+        "BUG-finalize-alreadymerged-check-is-incomplete",
+        "BUG-finalize-step1-doesnt-check-untracked-files",
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+        "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+        "FEAT-one-line-outcome-contract-for-direct-cli-calls"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/staging-sync.ts",
+      "owners": [
+        "BUG-finalize-leaves-dev-worktree-stale-after-merging"
+      ]
+    },
+    {
+      "path": "src/commands/finalize/teardown.ts",
+      "owners": [
+        "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+        "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+        "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+        "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as"
+      ]
+    },
+    {
+      "path": "src/commands/git.ts",
+      "owners": [
+        "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+        "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+        "FEAT-rtk-minimal-context-output-for-giwt-git"
+      ]
+    },
+    {
+      "path": "src/commands/gpg-unlock.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/commands/gripe.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/commands/issues.ts",
+      "owners": [
+        "FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac"
+      ]
+    },
+    {
+      "path": "src/commands/ledger.ts",
+      "owners": [
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link"
+      ]
+    },
+    {
+      "path": "src/commands/lock.ts",
+      "owners": [
+        "FEAT-advisory-giwt-lock-status-command"
+      ]
+    },
+    {
+      "path": "src/commands/matrix.ts",
+      "owners": [
+        "FEAT-reuse-toml-precedence-override-semantics-decision"
+      ]
+    },
+    {
+      "path": "src/commands/new-branch.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/commands/plan.ts",
+      "owners": [
+        "FEAT-feature-matrix-generation-from-ticket-index",
+        "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-"
+      ]
+    },
+    {
+      "path": "src/commands/plan/check-links.ts",
+      "owners": [
+        "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and"
+      ]
+    },
+    {
+      "path": "src/commands/plan/code-map.ts",
+      "owners": [
+        "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping"
+      ]
+    },
+    {
+      "path": "src/commands/rebase.test.ts",
+      "owners": [
+        "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+        "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+        "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+        "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-"
+      ]
+    },
+    {
+      "path": "src/commands/rebase.ts",
+      "owners": [
+        "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+        "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+        "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+        "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+        "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-"
+      ]
+    },
+    {
+      "path": "src/commands/remove.test.ts",
+      "owners": [
+        "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as"
+      ]
+    },
+    {
+      "path": "src/commands/remove.ts",
+      "owners": [
+        "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+        "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+        "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+        "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+        "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+        "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone"
+      ]
+    },
+    {
+      "path": "src/commands/report.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/commands/runs.test.ts",
+      "owners": [
+        "FEAT-runs-json-diet-default-projection-and-query-filters"
+      ]
+    },
+    {
+      "path": "src/commands/runs.ts",
+      "owners": [
+        "FEAT-runs-json-diet-default-projection-and-query-filters",
+        "FIX-referenced-artifacts-must-outlive-the-console"
+      ]
+    },
+    {
+      "path": "src/commands/scoped-reconcile.ts",
+      "owners": [
+        "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-"
+      ]
+    },
+    {
+      "path": "src/commands/scoped-worktree.ts",
+      "owners": [
+        "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla"
+      ]
+    },
+    {
+      "path": "src/commands/show.ts",
+      "owners": [
+        "TASK-show-state-resolve-plan-tickets-filename-slugs"
+      ]
+    },
+    {
+      "path": "src/commands/sign.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/commands/sync.ts",
+      "owners": [
+        "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-"
+      ]
+    },
+    {
+      "path": "src/commands/task/args.ts",
+      "owners": [
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/commands/ticket.test.ts",
+      "owners": [
+        "BUG-giwt-ticket-extid-double-prefix-resolved",
+        "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c"
+      ]
+    },
+    {
+      "path": "src/commands/ticket.ts",
+      "owners": [
+        "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+        "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice"
+      ]
+    },
+    {
+      "path": "src/commands/ticket/create.ts",
+      "owners": [
+        "BUG-ticket-template-emits-empty-context-acceptance-placeholders-",
+        "FEAT-reuse-toml-precedence-override-semantics-decision"
+      ]
+    },
+    {
+      "path": "src/commands/worktree-bootstrap.ts",
+      "owners": [
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/db/schema-core.ts",
+      "owners": [
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/doctor/check.ts",
+      "owners": [
+        "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+        "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+        "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+        "TASK-giwt-doctor-scratchpad-check"
+      ]
+    },
+    {
+      "path": "src/doctor/check/run.ts",
+      "owners": [
+        "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s"
+      ]
+    },
+    {
+      "path": "src/doctor/check/tools.ts",
+      "owners": [
+        "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s"
+      ]
+    },
+    {
+      "path": "src/doctor/check/types.ts",
+      "owners": [
+        "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s"
+      ]
+    },
+    {
+      "path": "src/doctor/generators/hooks.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/finalize-args.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/finalize-lock-fixture.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/finalize-signal-safety.test.ts",
+      "owners": [
+        "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c"
+      ]
+    },
+    {
+      "path": "src/frontend/ui.ts",
+      "owners": [
+        "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu"
+      ]
+    },
+    {
+      "path": "src/git/policy.ts",
+      "owners": [
+        "FEAT-git-invocation-allowlist-policy-configurable-lists",
+        "FEAT-giwt-git-passthrough-command-for-harness-rerouting"
+      ]
+    },
+    {
+      "path": "src/git/predicate-helpers.ts",
+      "owners": [
+        "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster"
+      ]
+    },
+    {
+      "path": "src/git/predicates.ts",
+      "owners": [
+        "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+        "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+        "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+        "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy"
+      ]
+    },
+    {
+      "path": "src/gpg-unlock",
+      "owners": [
+        "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st"
+      ]
+    },
+    {
+      "path": "src/gpg-unlock.ts",
+      "owners": [
+        "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/gripe.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/index.ts",
+      "owners": [
+        "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+        "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+        "FEAT-runs-json-diet-default-projection-and-query-filters",
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+        "TASK-expose-file-size-check-via-public-api",
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-"
+      ]
+    },
+    {
+      "path": "src/plan",
+      "owners": [
+        "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat"
+      ]
+    },
+    {
+      "path": "src/plan/check-links.ts",
+      "owners": [
+        "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and"
+      ]
+    },
+    {
+      "path": "src/plan/code-map.ts",
+      "owners": [
+        "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/plan/feature-matrix.test.ts",
+      "owners": [
+        "FEAT-feature-matrix-generation-from-ticket-index"
+      ]
+    },
+    {
+      "path": "src/plan/feature-matrix.ts",
+      "owners": [
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+        "FEAT-feature-matrix-generation-from-ticket-index",
+        "FEAT-reuse-toml-precedence-override-semantics-decision"
+      ]
+    },
+    {
+      "path": "src/plan/gen-docs.ts",
+      "owners": [
+        "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
+        "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice"
+      ]
+    },
+    {
+      "path": "src/plan/index-projection.ts",
+      "owners": [
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/plan/interconnect.ts",
+      "owners": [
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/plan/matrix.ts",
+      "owners": [
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-"
+      ]
+    },
+    {
+      "path": "src/plan/reconcile-conflicts.test.ts",
+      "owners": [
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-"
+      ]
+    },
+    {
+      "path": "src/plan/reconcile-conflicts.ts",
+      "owners": [
+        "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+        "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu"
+      ]
+    },
+    {
+      "path": "src/plan/reconcile-conflicts/generated.ts",
+      "owners": [
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-"
+      ]
+    },
+    {
+      "path": "src/plan/reconcile-conflicts/git-io.ts",
+      "owners": [
+        "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla"
+      ]
+    },
+    {
+      "path": "src/plan/src-refs.ts",
+      "owners": [
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/plan/status-vocab",
+      "owners": [
+        "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat"
+      ]
+    },
+    {
+      "path": "src/plan/status-vocab.ts",
+      "owners": [
+        "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+        "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+        "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+        "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+        "TASK-giwt-plan-validate-status-vocab-gate"
+      ]
+    },
+    {
+      "path": "src/plan/validate.ts",
+      "owners": [
+        "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+        "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+        "FEAT-feature-matrix-generation-from-ticket-index",
+        "TASK-giwt-plan-validate-status-vocab-gate",
+        "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+        "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+        "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice"
+      ]
+    },
+    {
+      "path": "src/plan/validate/content-gates.ts",
+      "owners": [
+        "FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-"
+      ]
+    },
+    {
+      "path": "src/report.test.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/resolve-diff-base.test.ts",
+      "owners": [
+        "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+        "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/routes/v1/actors-surface.ts",
+      "owners": [
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings"
+      ]
+    },
+    {
+      "path": "src/test-utils/isolate-only.ts",
+      "owners": [
+        "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu"
+      ]
+    },
+    {
+      "path": "src/testkit",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/testkit/capture.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/testkit/finalize-lock-fixture.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-",
+      "owners": [
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-index-write.ts",
+      "owners": [
+        "FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-index.ts",
+      "owners": [
+        "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+        "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+        "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+        "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-issues-ops.test.ts",
+      "owners": [
+        "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+        "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-normalize.ts",
+      "owners": [
+        "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-parse.ts",
+      "owners": [
+        "BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing",
+        "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+        "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-reconcile.ts",
+      "owners": [
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-ticket-index.test.ts",
+      "owners": [
+        "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-"
+      ]
+    },
+    {
+      "path": "src/tickets/sync-ticket.ts",
+      "owners": [
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+        "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice"
+      ]
+    },
+    {
+      "path": "src/utils/args-scan.ts",
+      "owners": [
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/utils/author-guard.ts",
+      "owners": [
+        "TASK-add-author-identity-guard-to-commit-merge-paths"
+      ]
+    },
+    {
+      "path": "src/utils/check-file-size.ts",
+      "owners": [
+        "TASK-expose-file-size-check-via-public-api"
+      ]
+    },
+    {
+      "path": "src/utils/check-slots.ts",
+      "owners": [
+        "FEAT-advisory-giwt-lock-status-command",
+        "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c"
+      ]
+    },
+    {
+      "path": "src/utils/coauthors.ts",
+      "owners": [
+        "FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat"
+      ]
+    },
+    {
+      "path": "src/utils/config-writes.ts",
+      "owners": [
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/utils/config.ts",
+      "owners": [
+        "BUG-finalize-branchtopath-is-lossy",
+        "BUG-finalize-findworktree-only-checks-tree-dir",
+        "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard"
+      ]
+    },
+    {
+      "path": "src/utils/errors.test.ts",
+      "owners": [
+        "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f"
+      ]
+    },
+    {
+      "path": "src/utils/git.ts",
+      "owners": [
+        "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+        "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+        "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+        "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-"
+      ]
+    },
+    {
+      "path": "src/utils/gpg.ts",
+      "owners": [
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    },
+    {
+      "path": "src/utils/ledger-core.ts",
+      "owners": [
+        "FEAT-ledger-core-canonical-module",
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+        "FIX-referenced-artifacts-must-outlive-the-console"
+      ]
+    },
+    {
+      "path": "src/utils/ledger-read.ts",
+      "owners": [
+        "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow"
+      ]
+    },
+    {
+      "path": "src/utils/ledger.test.ts",
+      "owners": [
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link"
+      ]
+    },
+    {
+      "path": "src/utils/ledger.ts",
+      "owners": [
+        "BUG-ledger-append-race-drops-records-under-concurrent-agents",
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link"
+      ]
+    },
+    {
+      "path": "src/utils/output.ts",
+      "owners": [
+        "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+        "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+        "FIX-json-output-polluted-by-run-record-announcement"
+      ]
+    },
+    {
+      "path": "src/utils/reuse-toml.test.ts",
+      "owners": [
+        "FEAT-reuse-toml-precedence-override-semantics-decision"
+      ]
+    },
+    {
+      "path": "src/utils/reuse-toml.ts",
+      "owners": [
+        "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+        "FEAT-reuse-toml-precedence-override-semantics-decision"
+      ]
+    },
+    {
+      "path": "src/utils/runlog-read.ts",
+      "owners": [
+        "FIX-referenced-artifacts-must-outlive-the-console"
+      ]
+    },
+    {
+      "path": "src/utils/runlog-types.ts",
+      "owners": [
+        "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+        "FIX-referenced-artifacts-must-outlive-the-console"
+      ]
+    },
+    {
+      "path": "src/utils/runlog.ts",
+      "owners": [
+        "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+        "FEAT-record-per-step-durationms-in-run-events",
+        "FIX-json-output-polluted-by-run-record-announcement"
+      ]
+    },
+    {
+      "path": "src/utils/scratch.ts",
+      "owners": [
+        "TASK-giwt-clean-age-size-capped-tmp-pruning",
+        "TASK-giwt-doctor-scratchpad-check"
+      ]
+    },
+    {
+      "path": "src/utils/settings-schema.ts",
+      "owners": [
+        "FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou"
+      ]
+    },
+    {
+      "path": "src/utils/settings.ts",
+      "owners": [
+        "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote"
+      ]
+    },
+    {
+      "path": "src/utils/spdx-fix.ts",
+      "owners": [
+        "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-"
+      ]
+    },
+    {
+      "path": "src/utils/worktree-root.test.ts",
+      "owners": [
+        "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+        "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+        "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+      "kind": "produces",
+      "to": "src/commands/abort.test.ts"
+    },
+    {
+      "from": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+      "kind": "produces",
+      "to": "src/commands/abort.ts"
+    },
+    {
+      "from": "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore",
+      "kind": "produces",
+      "to": "src/commands/abort.test.ts"
+    },
+    {
+      "from": "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore",
+      "kind": "produces",
+      "to": "src/commands/abort.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "produces",
+      "to": "src/cli-registry.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "produces",
+      "to": "src/utils/reuse-toml.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "produces",
+      "to": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "produces",
+      "to": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "produces",
+      "to": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s",
+      "kind": "produces",
+      "to": "src/doctor/check/run.ts"
+    },
+    {
+      "from": "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s",
+      "kind": "produces",
+      "to": "src/doctor/check/tools.ts"
+    },
+    {
+      "from": "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s",
+      "kind": "produces",
+      "to": "src/doctor/check/types.ts"
+    },
+    {
+      "from": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+      "kind": "produces",
+      "to": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "produces",
+      "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-branchtopath-is-lossy",
+      "kind": "produces",
+      "to": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-direct-merge-allows-fast-forward",
+      "kind": "produces",
+      "to": "src/commands/finalize/merge-exec.ts"
+    },
+    {
+      "from": "BUG-finalize-findworktree-only-checks-tree-dir",
+      "kind": "produces",
+      "to": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "produces",
+      "to": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaves-dev-worktree-stale-after-merging",
+      "kind": "produces",
+      "to": "src/commands/finalize/staging-sync.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "produces",
+      "to": "src/commands/plan/code-map.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "produces",
+      "to": "src/commands/scoped-reconcile.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "produces",
+      "to": "src/commands/sync.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "produces",
+      "to": "src/plan/code-map.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "produces",
+      "to": "src/commands/finalize/merge.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "produces",
+      "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "produces",
+      "to": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+      "kind": "produces",
+      "to": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "produces",
+      "to": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/commands/scoped-reconcile.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/commands/sync.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/plan/matrix.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/plan/reconcile-conflicts/generated.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "produces",
+      "to": "src/utils/spdx-fix.ts"
+    },
+    {
+      "from": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/commands/create.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/commands/doctor/apply.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/commands/new-branch.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/commands/sign.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/doctor/generators/hooks.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/utils/config-writes.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "produces",
+      "to": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-extid-double-prefix-resolved",
+      "kind": "produces",
+      "to": "src/commands/ticket.test.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "produces",
+      "to": "src/commands/ticket.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "produces",
+      "to": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-ledger-append-race-drops-records-under-concurrent-agents",
+      "kind": "produces",
+      "to": "src/utils/ledger.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "produces",
+      "to": "src/commands/doctor.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "produces",
+      "to": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "produces",
+      "to": "src/tickets/sync-issues-ops.test.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "produces",
+      "to": "src/tickets/sync-ticket-index.test.ts"
+    },
+    {
+      "from": "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
+      "kind": "produces",
+      "to": "src/plan/gen-docs.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "produces",
+      "to": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "produces",
+      "to": "src/utils/settings.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "produces",
+      "to": "src/commands/git.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "produces",
+      "to": "src/git/predicate-helpers.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "produces",
+      "to": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy",
+      "kind": "produces",
+      "to": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "produces",
+      "to": "src/commands/rebase.test.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "produces",
+      "to": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "produces",
+      "to": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "produces",
+      "to": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "produces",
+      "to": "src/commands/rebase.test.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "produces",
+      "to": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "produces",
+      "to": "src/plan/reconcile-conflicts.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "produces",
+      "to": "src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "produces",
+      "to": "src/commands/rebase.test.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "produces",
+      "to": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "produces",
+      "to": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "produces",
+      "to": "src/commands/commit.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "produces",
+      "to": "src/commands/finalize/merge.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "produces",
+      "to": "src/commands/scoped-worktree.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "produces",
+      "to": "src/plan/reconcile-conflicts/git-io.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "produces",
+      "to": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "produces",
+      "to": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "produces",
+      "to": "src/commands/remove.test.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/commands/finalize/checks.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/commands/finalize/gates.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/plan/reconcile-conflicts.test.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "produces",
+      "to": "src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "BUG-squash-commit-failure-strands-staged-changes-in-dev",
+      "kind": "produces",
+      "to": "src/commands/finalize/gates.ts"
+    },
+    {
+      "from": "BUG-squash-commit-failure-strands-staged-changes-in-dev",
+      "kind": "produces",
+      "to": "src/commands/finalize/merge-exec.ts"
+    },
+    {
+      "from": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "kind": "produces",
+      "to": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "produces",
+      "to": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "produces",
+      "to": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "produces",
+      "to": "src/tickets/sync-issues-ops.test.ts"
+    },
+    {
+      "from": "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+      "kind": "produces",
+      "to": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing",
+      "kind": "produces",
+      "to": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "BUG-ticket-template-emits-empty-context-acceptance-placeholders-",
+      "kind": "produces",
+      "to": "src/commands/ticket/create.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "produces",
+      "to": "src/cli-registry.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "produces",
+      "to": "src/commands/finalize/lock.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "produces",
+      "to": "src/commands/lock.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "produces",
+      "to": "src/utils/check-slots.ts"
+    },
+    {
+      "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+      "kind": "produces",
+      "to": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat",
+      "kind": "produces",
+      "to": "src/utils/coauthors.ts"
+    },
+    {
+      "from": "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+      "kind": "produces",
+      "to": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "produces",
+      "to": "src/gpg-unlock.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "produces",
+      "to": "src/gpg-unlock"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "produces",
+      "to": "src/commands/plan.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "produces",
+      "to": "src/plan/feature-matrix.test.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "produces",
+      "to": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "produces",
+      "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "FEAT-git-invocation-allowlist-policy-configurable-lists",
+      "kind": "produces",
+      "to": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "kind": "produces",
+      "to": "src/commands/git.ts"
+    },
+    {
+      "from": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "kind": "produces",
+      "to": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou",
+      "kind": "produces",
+      "to": "src/utils/settings-schema.ts"
+    },
+    {
+      "from": "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+      "kind": "produces",
+      "to": "src/utils/git.ts"
+    },
+    {
+      "from": "FEAT-ledger-core-canonical-module",
+      "kind": "produces",
+      "to": "src/utils/ledger-core.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/commands/ledger.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/utils/ledger-core.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/utils/ledger.test.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/utils/ledger.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "produces",
+      "to": "src/utils/runlog-types.ts"
+    },
+    {
+      "from": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "produces",
+      "to": "src/utils/output.ts"
+    },
+    {
+      "from": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "produces",
+      "to": "src/utils/runlog.ts"
+    },
+    {
+      "from": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "kind": "produces",
+      "to": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "kind": "produces",
+      "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "kind": "produces",
+      "to": "src/utils/output.ts"
+    },
+    {
+      "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "produces",
+      "to": "src/commands/plan/check-links.ts"
+    },
+    {
+      "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "produces",
+      "to": "src/plan/check-links.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/db/schema-core.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/plan/code-map.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/plan/index-projection.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/plan/interconnect.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/plan/src-refs.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/routes/v1/actors-surface.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "produces",
+      "to": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "produces",
+      "to": "src/commands/plan.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "produces",
+      "to": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "produces",
+      "to": "src/tickets/sync-normalize.ts"
+    },
+    {
+      "from": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
+      "kind": "produces",
+      "to": "src/plan/status-vocab"
+    },
+    {
+      "from": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
+      "kind": "produces",
+      "to": "src/plan"
+    },
+    {
+      "from": "FEAT-record-per-step-durationms-in-run-events",
+      "kind": "produces",
+      "to": "src/utils/runlog.ts"
+    },
+    {
+      "from": "FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-",
+      "kind": "produces",
+      "to": "src/plan/validate/content-gates.ts"
+    },
+    {
+      "from": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "produces",
+      "to": "src/commands/matrix.ts"
+    },
+    {
+      "from": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "produces",
+      "to": "src/commands/ticket/create.ts"
+    },
+    {
+      "from": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "produces",
+      "to": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "produces",
+      "to": "src/utils/reuse-toml.test.ts"
+    },
+    {
+      "from": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "kind": "produces",
+      "to": "src/utils/reuse-toml.ts"
+    },
+    {
+      "from": "FEAT-rtk-minimal-context-output-for-giwt-git",
+      "kind": "produces",
+      "to": "src/commands/git.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "produces",
+      "to": "src/commands/runs.test.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "produces",
+      "to": "src/commands/runs.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "produces",
+      "to": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "produces",
+      "to": "src/utils/check-slots.ts"
+    },
+    {
+      "from": "FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i",
+      "kind": "produces",
+      "to": "src/tickets/sync-index-write.ts"
+    },
+    {
+      "from": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "kind": "produces",
+      "to": "src/chat/service/branches.ts"
+    },
+    {
+      "from": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "kind": "produces",
+      "to": "src/frontend/ui.ts"
+    },
+    {
+      "from": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "kind": "produces",
+      "to": "src/plan/reconcile-conflicts.ts"
+    },
+    {
+      "from": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "kind": "produces",
+      "to": "src/test-utils/isolate-only.ts"
+    },
+    {
+      "from": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "produces",
+      "to": "src/commands/ticket.test.ts"
+    },
+    {
+      "from": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "produces",
+      "to": "src/finalize-signal-safety.test.ts"
+    },
+    {
+      "from": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "produces",
+      "to": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+      "kind": "produces",
+      "to": "src/utils/errors.test.ts"
+    },
+    {
+      "from": "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+      "kind": "produces",
+      "to": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-giwt-issues-silently-drops-state-so-closed-issues-are-unreac",
+      "kind": "produces",
+      "to": "src/commands/issues.ts"
+    },
+    {
+      "from": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "kind": "produces",
+      "to": "src/commands/remove.ts"
+    },
+    {
+      "from": "FIX-json-output-polluted-by-run-record-announcement",
+      "kind": "produces",
+      "to": "src/utils/output.ts"
+    },
+    {
+      "from": "FIX-json-output-polluted-by-run-record-announcement",
+      "kind": "produces",
+      "to": "src/utils/runlog.ts"
+    },
+    {
+      "from": "FIX-referenced-artifacts-must-outlive-the-console",
+      "kind": "produces",
+      "to": "src/commands/runs.ts"
+    },
+    {
+      "from": "FIX-referenced-artifacts-must-outlive-the-console",
+      "kind": "produces",
+      "to": "src/utils/ledger-core.ts"
+    },
+    {
+      "from": "FIX-referenced-artifacts-must-outlive-the-console",
+      "kind": "produces",
+      "to": "src/utils/runlog-read.ts"
+    },
+    {
+      "from": "FIX-referenced-artifacts-must-outlive-the-console",
+      "kind": "produces",
+      "to": "src/utils/runlog-types.ts"
+    },
+    {
+      "from": "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose",
+      "kind": "produces",
+      "to": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "INFRA-dispose-two-stale-loop-lore-worktrees",
+      "kind": "produces",
+      "to": "src/assets/service/create.ts"
+    },
+    {
+      "from": "TASK-add-author-identity-guard-to-commit-merge-paths",
+      "kind": "produces",
+      "to": "src/utils/author-guard.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/commands/finalize-lock-queue.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/commands/finalize/checks.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/commands/gpg-unlock.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/commands/gripe.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/commands/report.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/finalize-args.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/finalize-lock-fixture.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/gpg-unlock.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/gripe.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/report.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/testkit/capture.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/testkit/finalize-lock-fixture.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/testkit"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/utils/gpg.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "produces",
+      "to": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "TASK-commit-wt-on-protected-branch-direct-commit-scenario",
+      "kind": "produces",
+      "to": "src/commands/commit-protected.test.ts"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/commands/task/args.ts"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/commands/worktree-bootstrap.ts"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/tickets/sync-"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/utils/args-scan.ts"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/utils/config-writes.ts"
+    },
+    {
+      "from": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "kind": "produces",
+      "to": "src/utils/ledger-read.ts"
+    },
+    {
+      "from": "TASK-expose-file-size-check-via-public-api",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "TASK-expose-file-size-check-via-public-api",
+      "kind": "produces",
+      "to": "src/utils/check-file-size.ts"
+    },
+    {
+      "from": "TASK-giwt-clean-age-size-capped-tmp-pruning",
+      "kind": "produces",
+      "to": "src/commands/clean.ts"
+    },
+    {
+      "from": "TASK-giwt-clean-age-size-capped-tmp-pruning",
+      "kind": "produces",
+      "to": "src/utils/scratch.ts"
+    },
+    {
+      "from": "TASK-giwt-doctor-scratchpad-check",
+      "kind": "produces",
+      "to": "src/doctor/check.ts"
+    },
+    {
+      "from": "TASK-giwt-doctor-scratchpad-check",
+      "kind": "produces",
+      "to": "src/utils/scratch.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "produces",
+      "to": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree",
+      "kind": "produces",
+      "to": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command",
+      "kind": "produces",
+      "to": "src/commands/backlog.ts"
+    },
+    {
+      "from": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "kind": "produces",
+      "to": "src/commands/finalize.ts"
+    },
+    {
+      "from": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "kind": "produces",
+      "to": "src/cli.ts"
+    },
+    {
+      "from": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "kind": "produces",
+      "to": "src/commands/rebase.test.ts"
+    },
+    {
+      "from": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "kind": "produces",
+      "to": "src/commands/rebase.ts"
+    },
+    {
+      "from": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "kind": "produces",
+      "to": "src/utils/git.ts"
+    },
+    {
+      "from": "TASK-show-state-resolve-plan-tickets-filename-slugs",
+      "kind": "produces",
+      "to": "src/commands/show.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "produces",
+      "to": "src/tickets/sync-reconcile.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "produces",
+      "to": "src/tickets/sync-ticket-index.test.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "produces",
+      "to": "src/tickets/sync-ticket.ts"
+    },
+    {
+      "from": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "kind": "produces",
+      "to": "src/commands/ticket.ts"
+    },
+    {
+      "from": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "kind": "produces",
+      "to": "src/plan/gen-docs.ts"
+    },
+    {
+      "from": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "kind": "produces",
+      "to": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "kind": "produces",
+      "to": "src/tickets/sync-ticket.ts"
+    },
+    {
+      "from": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
+      "kind": "sibling",
+      "to": "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore",
+      "via": "src/commands/abort.test.ts; src/commands/abort.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-advisory-giwt-lock-status-command",
+      "via": "src/cli-registry.ts; src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "via": "src/utils/reuse-toml.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "via": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "via": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-advisory-giwt-lock-status-command",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+      "via": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+      "kind": "sibling",
+      "to": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
+      "kind": "sibling",
+      "to": "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "sibling",
+      "to": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "sibling",
+      "to": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-alreadymerged-check-is-incomplete",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-branchtopath-is-lossy",
+      "kind": "sibling",
+      "to": "BUG-finalize-findworktree-only-checks-tree-dir",
+      "via": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-finalize-branchtopath-is-lossy",
+      "kind": "sibling",
+      "to": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "via": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-check-failure-report-never-names-failed-gates-check",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-direct-merge-allows-fast-forward",
+      "kind": "sibling",
+      "to": "BUG-squash-commit-failure-strands-staged-changes-in-dev",
+      "via": "src/commands/finalize/merge-exec.ts"
+    },
+    {
+      "from": "BUG-finalize-findworktree-only-checks-tree-dir",
+      "kind": "sibling",
+      "to": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "via": "src/utils/config.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "via": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "via": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "via": "src/commands/scoped-reconcile.ts; src/commands/sync.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "FEAT-feature-matrix-generation-from-ticket-index",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "via": "src/plan/code-map.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "sibling",
+      "to": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "via": "src/commands/finalize/merge.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "sibling",
+      "to": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-step1-doesnt-check-untracked-files",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+      "via": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "via": "src/commands/finalize/teardown.ts; src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/finalize/teardown.ts; src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-branch-deletion-fallback-is-silent",
+      "kind": "sibling",
+      "to": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+      "kind": "sibling",
+      "to": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "via": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-doesnt-verify-worktree-exists",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/finalize/teardown.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "sibling",
+      "to": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/finalize/teardown.ts; src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "sibling",
+      "to": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-finalize-teardown-worktree-removal-failure-is-non-fatal",
+      "kind": "sibling",
+      "to": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "sibling",
+      "to": "FEAT-feature-matrix-generation-from-ticket-index",
+      "via": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-",
+      "kind": "sibling",
+      "to": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "via": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "kind": "sibling",
+      "to": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard",
+      "kind": "sibling",
+      "to": "TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow",
+      "via": "src/utils/config-writes.ts"
+    },
+    {
+      "from": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "kind": "sibling",
+      "to": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-giwt-remove-cannot-target-a-worktree-by-path-only-by-branch",
+      "kind": "sibling",
+      "to": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-extid-double-prefix-resolved",
+      "kind": "sibling",
+      "to": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "via": "src/commands/ticket.test.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "sibling",
+      "to": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "sibling",
+      "to": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/commands/ticket.ts"
+    },
+    {
+      "from": "BUG-ledger-append-race-drops-records-under-concurrent-agents",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/utils/ledger.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "sibling",
+      "to": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "via": "src/tickets/sync-index.ts; src/tickets/sync-issues-ops.test.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "sibling",
+      "to": "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+      "via": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "sibling",
+      "to": "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree",
+      "via": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/tickets/sync-ticket-index.test.ts"
+    },
+    {
+      "from": "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/gen-docs.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "sibling",
+      "to": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "via": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "sibling",
+      "to": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "via": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "sibling",
+      "to": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "via": "src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "BUG-rebase-default-target-is-the-root-branch-which-is-also-prote",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/cli.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "sibling",
+      "to": "BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy",
+      "via": "src/git/predicates.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "sibling",
+      "to": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "via": "src/commands/git.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "sibling",
+      "to": "FEAT-rtk-minimal-context-output-for-giwt-git",
+      "via": "src/commands/git.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "sibling",
+      "to": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "sibling",
+      "to": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "sibling",
+      "to": "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+      "via": "src/utils/git.ts"
+    },
+    {
+      "from": "BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts; src/utils/git.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "via": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "via": "src/commands/finalize.test.ts; src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu",
+      "via": "src/plan/reconcile-conflicts.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "FEAT-advisory-giwt-lock-status-command",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/commands/rebase.test.ts; src/commands/rebase.ts"
+    },
+    {
+      "from": "BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/commit-wt.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "sibling",
+      "to": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "sibling",
+      "to": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "via": "src/commands/finalize.test.ts"
+    },
+    {
+      "from": "BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as",
+      "kind": "sibling",
+      "to": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-remove-path-auto-detection-matches-main-worktree-registratio",
+      "kind": "sibling",
+      "to": "FIX-giwt-remove-cannot-delete-a-branch-whose-worktree-is-gone",
+      "via": "src/commands/remove.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "sibling",
+      "to": "BUG-squash-commit-failure-strands-staged-changes-in-dev",
+      "via": "src/commands/finalize/gates.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/commands/finalize/checks.ts; src/resolve-diff-base.test.ts"
+    },
+    {
+      "from": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "kind": "sibling",
+      "to": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-status-vocab-annotation-regex-rejects-nested-parentheses",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+      "via": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "FEAT-feature-matrix-generation-from-ticket-index",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/status-vocab.ts; src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree",
+      "via": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "BUG-sync-index-shadows-imported-raw-oxlint-no-shadow",
+      "kind": "sibling",
+      "to": "TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree",
+      "via": "src/tickets/sync-index.ts"
+    },
+    {
+      "from": "BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing",
+      "kind": "sibling",
+      "to": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "via": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing",
+      "kind": "sibling",
+      "to": "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose",
+      "via": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "BUG-ticket-template-emits-empty-context-acceptance-placeholders-",
+      "kind": "sibling",
+      "to": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "via": "src/commands/ticket/create.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "sibling",
+      "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "via": "src/utils/check-slots.ts"
+    },
+    {
+      "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+      "kind": "sibling",
+      "to": "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+      "kind": "sibling",
+      "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
+      "kind": "sibling",
+      "to": "TASK-giwt-doctor-scratchpad-check",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+      "kind": "sibling",
+      "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel",
+      "kind": "sibling",
+      "to": "TASK-giwt-doctor-scratchpad-check",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/gpg-unlock.ts; src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "TASK-expose-file-size-check-via-public-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/commands/plan.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "FEAT-reuse-toml-precedence-override-semantics-decision",
+      "via": "src/plan/feature-matrix.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-git-invocation-allowlist-policy-configurable-lists",
+      "kind": "sibling",
+      "to": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "via": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "kind": "sibling",
+      "to": "FEAT-rtk-minimal-context-output-for-giwt-git",
+      "via": "src/commands/git.ts"
+    },
+    {
+      "from": "FEAT-isolatedgitenv-also-strips-agent-harness-session-vars",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/utils/git.ts"
+    },
+    {
+      "from": "FEAT-ledger-core-canonical-module",
+      "kind": "sibling",
+      "to": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "via": "src/utils/ledger-core.ts"
+    },
+    {
+      "from": "FEAT-ledger-core-canonical-module",
+      "kind": "sibling",
+      "to": "FIX-referenced-artifacts-must-outlive-the-console",
+      "via": "src/utils/ledger-core.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "sibling",
+      "to": "FIX-referenced-artifacts-must-outlive-the-console",
+      "via": "src/utils/ledger-core.ts; src/utils/runlog-types.ts"
+    },
+    {
+      "from": "FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link",
+      "kind": "sibling",
+      "to": "TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-",
+      "via": "src/cli.ts"
+    },
+    {
+      "from": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "sibling",
+      "to": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "via": "src/utils/output.ts"
+    },
+    {
+      "from": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "sibling",
+      "to": "FEAT-record-per-step-durationms-in-run-events",
+      "via": "src/utils/runlog.ts"
+    },
+    {
+      "from": "FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene",
+      "kind": "sibling",
+      "to": "FIX-json-output-polluted-by-run-record-announcement",
+      "via": "src/utils/output.ts; src/utils/runlog.ts"
+    },
+    {
+      "from": "FEAT-one-line-outcome-contract-for-direct-cli-calls",
+      "kind": "sibling",
+      "to": "FIX-json-output-polluted-by-run-record-announcement",
+      "via": "src/utils/output.ts"
+    },
+    {
+      "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "sibling",
+      "to": "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose",
+      "via": "src/tickets/sync-parse.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "TASK-expose-file-size-check-via-public-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "TASK-giwt-plan-validate-status-vocab-gate",
+      "via": "src/plan/status-vocab.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-record-per-step-durationms-in-run-events",
+      "kind": "sibling",
+      "to": "FIX-json-output-polluted-by-run-record-announcement",
+      "via": "src/utils/runlog.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "sibling",
+      "to": "FIX-referenced-artifacts-must-outlive-the-console",
+      "via": "src/commands/runs.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "sibling",
+      "to": "TASK-expose-file-size-check-via-public-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "TASK-giwt-doctor-scratchpad-check",
+      "via": "src/doctor/check.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "sibling",
+      "to": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "sibling",
+      "to": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-add-jitter-to-the-finalize-lock-retry-backoff",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "sibling",
+      "to": "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+      "via": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "FIX-bun-test-from-the-repo-root-sweeps-100-worktree-test-files-c",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "FIX-errors-test-ts-leaks-process-env-repo-root-into-later-test-f",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/utils/worktree-root.test.ts"
+    },
+    {
+      "from": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "kind": "sibling",
+      "to": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "FIX-finalize-does-not-surface-gate-results-on-failure",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "sibling",
+      "to": "TASK-expose-file-size-check-via-public-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "TASK-expose-file-size-check-via-public-api",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "TASK-giwt-clean-age-size-capped-tmp-pruning",
+      "kind": "sibling",
+      "to": "TASK-giwt-doctor-scratchpad-check",
+      "via": "src/utils/scratch.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-giwt-plan-validate-status-vocab-gate",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-reject-case-insensitive-ticket-filename-collis",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "sibling",
+      "to": "TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d",
+      "via": "src/commands/finalize.ts"
+    },
+    {
+      "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
+      "via": "src/plan/validate.ts; src/tickets/sync-ticket.ts"
+    }
+  ]
+}

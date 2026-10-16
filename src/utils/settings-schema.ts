@@ -40,6 +40,7 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   },
   tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
   status: { aliases: "aliases" },
+  plan: { interconnect: "interconnect" },
   git: {
     rtk: "rtk",
     safe: "safe",
@@ -84,6 +85,7 @@ export const EXPECTED: Record<
   },
   tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
   status: { aliases: "map" },
+  plan: { interconnect: "boolean" },
   git: {
     rtk: "string",
     safe: "string[]",

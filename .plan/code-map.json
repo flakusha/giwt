@@ -555,6 +555,12 @@
       "source": ".plan/tickets/TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow.md"
     }
   ],
+  "src/db/schema-core.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
+    }
+  ],
   "src/doctor/check.ts": [
     {
       "kind": "ticket",
@@ -719,6 +725,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
     }
   ],
   "src/plan/feature-matrix.test.ts": [
@@ -749,6 +759,18 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/plan/index-projection.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
+    }
+  ],
+  "src/plan/interconnect.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
     }
   ],
   "src/plan/matrix.ts": [
@@ -783,6 +805,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla.md"
+    }
+  ],
+  "src/plan/src-refs.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
     }
   ],
   "src/plan/status-vocab": [
@@ -873,6 +901,12 @@
       "source": ".plan/tickets/TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit.md"
     }
   ],
+  "src/routes/v1/actors-surface.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
+    }
+  ],
   "src/test-utils/isolate-only.ts": [
     {
       "kind": "ticket",
@@ -947,6 +981,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md"
     },
     {
       "kind": "ticket",

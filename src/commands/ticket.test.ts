@@ -32,7 +32,12 @@ import { join } from "node:path";
 import { resolveStatus } from "../plan/status-vocab";
 import { TICKET_REQUIRED_SECTIONS } from "../plan/validate";
 import { runSync } from "../tickets/sync-index";
-import { parseTicketText } from "../tickets/sync-parse";
+import {
+  CAVEATS_CHECKLIST,
+  CAVEATS_REQUIRED_TYPES,
+  parseCaveatsField,
+  parseTicketText,
+} from "../tickets/sync-parse";
 import { loadConfig } from "../utils/config";
 import { scratchRoot } from "../utils/scratch-tmp";
 import {
@@ -277,6 +282,69 @@ describe("renderTicketFile — Upstream header line", () => {
       "BUG-t.md",
     );
     expect(absent?.upstream).toBe("");
+  });
+});
+
+describe("renderTicketFile — required Caveats field", () => {
+  const FLAGS: TicketFlags = {
+    labels: [],
+    priority: "medium",
+    epic: "",
+    tags: [],
+    effort: "Medium",
+    upstream: "",
+  };
+
+  it("seeds **Caveats:** for every FEAT/TASK/BUG ticket", () => {
+    for (const type of CAVEATS_REQUIRED_TYPES) {
+      const content = renderTicketFile({ type, title: "t", flags: FLAGS, body: "body" });
+      expect(content).toMatch(/\*\*Caveats:\*\* \S/);
+    }
+  });
+
+  it("omits the field for other ticket types", () => {
+    for (const type of ["FIX", "IDEA", "SOL", "INFRA"]) {
+      const content = renderTicketFile({ type, title: "t", flags: FLAGS, body: "body" });
+      expect(content).not.toMatch(/\*\*Caveats:/);
+    }
+  });
+
+  it("the seed names the full standard hazard checklist", () => {
+    const content = renderTicketFile({ type: "FEAT", title: "t", flags: FLAGS, body: "" });
+    expect(content).toMatch(/\*\*Caveats:\*\* \S/);
+    for (
+      const hazard of [
+        "TOCTOU",
+        "security",
+        "authorization",
+        "parallelism",
+        "lock/unlock lifecycle",
+        "partial failure",
+        "rollback",
+        "stale state",
+        "data races",
+        "idempotency",
+        "observability",
+      ]
+    ) {
+      expect(CAVEATS_CHECKLIST).toContain(hazard);
+    }
+  });
+
+  it("a body carrying **Caveats:** suppresses the seed", () => {
+    const content = renderTicketFile({
+      type: "BUG",
+      title: "t",
+      flags: FLAGS,
+      body: "**Caveats:** TOCTOU: none — no shared state\n\nbody",
+    });
+    expect(content.match(/\*\*Caveats:/g)?.length).toBe(1);
+    expect(content).toContain("TOCTOU: none");
+  });
+
+  it("parseTicketText round-trips the seeded field", () => {
+    const content = renderTicketFile({ type: "TASK", title: "t", flags: FLAGS, body: "" });
+    expect(parseCaveatsField(content.split("\n").slice(0, 30).join("\n"))).toBe(CAVEATS_CHECKLIST);
   });
 });
 

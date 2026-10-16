@@ -14,7 +14,13 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { scratchRoot } from "../utils/scratch-tmp";
-import { parseEpicField, parseTagsField, parseTicketFile, parseTicketText } from "./sync-parse";
+import {
+  parseCaveatsField,
+  parseEpicField,
+  parseTagsField,
+  parseTicketFile,
+  parseTicketText,
+} from "./sync-parse";
 
 function tempDir(): string {
   return mkdtempSync(join(scratchRoot(), "giwt-sync-parse-"));
@@ -145,6 +151,42 @@ describe("shared field parsers (parseTagsField / parseEpicField)", () => {
   test("prose-embedded mentions return empty / []", () => {
     expect(parseEpicField("the **Epic:** GHOST string appeared inline")).toBe("");
     expect(parseTagsField("echoed `**Tags:** ghost` from the docs")).toEqual([]);
+  });
+});
+
+describe("parseCaveatsField", () => {
+  test("reads the first line-anchored **Caveats:** value", () => {
+    const md = "# FEAT: t\n\n**Status:** Not Started\n**Caveats:** TOCTOU, rollback\n";
+    expect(parseCaveatsField(md)).toBe("TOCTOU, rollback");
+  });
+
+  test("accepts both colon placements and list/quote prefixes", () => {
+    expect(parseCaveatsField("**Caveats**: TOCTOU")).toBe("TOCTOU");
+    expect(parseCaveatsField("- **Caveats:** rollback\n> **Caveats:** stale state")).toBe(
+      "rollback",
+    );
+  });
+
+  test("missing or empty field yields an empty string", () => {
+    expect(parseCaveatsField("**Status:** Done\n")).toBe("");
+    expect(parseCaveatsField("**Caveats:**\n")).toBe("");
+  });
+
+  test("prose re-spelling the field mid-sentence never parses", () => {
+    expect(parseCaveatsField("the **Caveats:** GHOST marker in prose")).toBe("");
+  });
+
+  test("body-mention after the header block does not beat the header value", () => {
+    const md = [
+      "# TASK: t",
+      "",
+      "**Caveats:** idempotency",
+      "",
+      "**Summary:**",
+      "",
+      "Evidence mentioned a literal **Caveats:** fake marker in prose.",
+    ].join("\n");
+    expect(parseCaveatsField(md)).toBe("idempotency");
   });
 });
 

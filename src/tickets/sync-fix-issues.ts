@@ -15,7 +15,7 @@ import { isolatedGitEnv } from "../utils/git";
 import type { FixContext } from "./sync-fixes";
 import { appendIssueRef } from "./sync-md";
 import { normalizeStatus } from "./sync-normalize";
-import { vocabStatusTarget } from "./sync-parse";
+import { CAVEATS_CHECKLIST, CAVEATS_REQUIRED_TYPES, vocabStatusTarget } from "./sync-parse";
 import type { IndexEntry, SyncReport, TicketFile } from "./sync-ticket-types";
 import { sanitizeTicketBody } from "./ticket-md";
 
@@ -137,11 +137,16 @@ export function importBackIssues(
       const body = sanitizeTicketBody(
         `Imported from git issue ${fi.hash}.\n\ngit issue: ${fi.hash}`,
       );
+      // Same required-hazard field the `giwt ticket` template seeds for
+      // FEAT/TASK/BUG — a generated ticket must never omit it.
+      const caveats = CAVEATS_REQUIRED_TYPES.includes(type)
+        ? `**Caveats:** ${CAVEATS_CHECKLIST}\n`
+        : "";
       writeFileSync(
         target,
         `# ${type}: ${bareTitle}\n\n**Status:** ${
           vocabStatusTarget("open")
-        }\n**Priority:** medium\n\n${body}\n`,
+        }\n**Priority:** medium\n${caveats}\n${body}\n`,
       );
       fixed[fi.extid] = {
         hash: fi.hash,

@@ -48,7 +48,7 @@ export async function runValidateCmd(
     raw("  Comprehensive .plan/ validation");
     raw("  --gates       comma-separated gate list (default: all)");
     raw(
-      "                gates: format,linkage,backlog,tickets,code-map,links,spdx,naming,epics-doc,matrix,status-vocab,all",
+      "                gates: format,linkage,backlog,tickets,code-map,links,spdx,naming,epics-doc,matrix,status-vocab,interconnect,all",
     );
     raw("                status-vocab: **Status:** values must use the canonical vocabulary");
     raw(
@@ -59,7 +59,7 @@ export async function runValidateCmd(
     raw("                closed→Done; cancelled/dropped→Wontfix");
     raw("  --skip-gates  run all gates except these (mutually exclusive with --gates)");
     raw(
-      "  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc, matrix, status-vocab)",
+      "  --fix         auto-fix fixable gates (backlog, tickets, code-map, epics-doc, matrix, status-vocab, interconnect)",
     );
     raw("                unfixable failing gates are reported with a manual next step");
     raw(
@@ -114,6 +114,7 @@ export async function runValidateCmd(
       }),
     ...(fix ? { fix: true } : {}),
     ...(diffBase ? { diffBase } : {}),
+    ...(config.settings.plan.interconnect ? {} : { interconnectGate: false }),
     ...(Object.keys(config.settings.status.aliases).length > 0
       ? { statusAliases: config.settings.status.aliases }
       : {}),

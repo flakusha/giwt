@@ -20,6 +20,7 @@ export type GateName =
   | "epics-doc"
   | "matrix"
   | "status-vocab"
+  | "interconnect"
   | "all";
 
 export const ALL_GATES: GateName[] = [
@@ -34,6 +35,7 @@ export const ALL_GATES: GateName[] = [
   "epics-doc",
   "status-vocab",
   "matrix",
+  "interconnect",
 ];
 
 /** Gates that can be auto-fixed when --fix is passed. */
@@ -44,6 +46,7 @@ export const FIXABLE_GATES: GateName[] = [
   "epics-doc",
   "status-vocab",
   "matrix",
+  "interconnect",
 ];
 
 /** A gate that actually runs ("all" is expanded by runValidate, never a result). */
@@ -105,6 +108,12 @@ export interface ValidateOptions {
   runSync: TicketSyncFn;
   /** Extra freeform → canonical Status aliases ([status.aliases] in giwt.toml). */
   statusAliases?: Record<string, string>;
+  /**
+   * [plan] interconnect setting (default true). When false the freshness
+   * gate is excluded from the "all" expansion; naming it via --gates
+   * still runs it.
+   */
+  interconnectGate?: boolean;
   /**
    * Diff-base ref: when set, the purely per-file gates (format, linkage,
    * status-vocab, tickets) only inspect ticket/epic files changed relative

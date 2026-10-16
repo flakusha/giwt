@@ -24,6 +24,8 @@ const MANUAL_FIX_HINTS: Record<ConcreteGate, string> = {
   naming: "rename the flagged files to the TYPE-kebab-case-title.md convention",
   "epics-doc": "regenerate .plan/epics-index.md (giwt plan gen-docs)",
   matrix: "regenerate .plan/feature-matrix.md (giwt plan matrix)",
+  interconnect:
+    "regenerate the pair with `giwt plan links --write`; fix or remove broken **Related:** refs by hand",
   "status-vocab":
     "rename the flagged **Status:** values to the vocabulary, or add [status.aliases] entries in giwt.toml",
 };

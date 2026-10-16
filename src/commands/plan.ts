@@ -22,6 +22,7 @@ import { log, raw } from "../utils/output";
 import { runCheckLinks } from "./plan/check-links";
 import { runCodeMap } from "./plan/code-map";
 import { runGenDocs } from "./plan/gen-docs";
+import { runLinks } from "./plan/links";
 import { runMatrix } from "./plan/matrix";
 import { runMetadata } from "./plan/metadata";
 import { runNormalizeStatuses } from "./plan/normalize-statuses";
@@ -46,6 +47,12 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     flags: "--check, --find <path>, --stale",
   },
   { name: "gen-docs", description: "Generate .plan/epics-index.md from epics", flags: "--check" },
+  {
+    name: "links",
+    description: "Derive .plan producer/consumer/sibling graph + validate Related links",
+    flags:
+      "--write, --check, --json, --for <id>, --who-produces/--who-consumes <t>, --siblings <id>",
+  },
   {
     name: "matrix",
     description: "Generate feature matrix from ticket index",
@@ -137,6 +144,9 @@ export async function plan(
       break;
     case "gen-docs":
       await runGenDocs(rest, config);
+      break;
+    case "links":
+      await runLinks(rest, config);
       break;
     case "matrix":
       await runMatrix(rest, config);

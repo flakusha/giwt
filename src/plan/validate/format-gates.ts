@@ -10,6 +10,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { CAVEATS_REQUIRED_TYPES, guessType, parseCaveatsField } from "../../tickets/sync-parse";
 import type { Finding } from "./types";
 
 /** Required metadata markers for ticket files (format gate contract). */
@@ -54,6 +55,37 @@ export function checkTicketFormat(ticketsDir: string, include?: (f: string) => b
           message: `${f}: missing required section **${section}:**`,
         });
       }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Required `**Caveats:**` on FEAT/TASK/BUG tickets
+ * (FEAT-ticket-template-requires-possible-caveats-…). Scoped exactly like
+ * the other per-file format gates: enforced ONLY on the diff scope (new and
+ * changed files under --diff-base) so every legacy ticket already in the
+ * repo stays green while a newly filed/generated ticket can neither omit
+ * the field nor leave it blank. A full scan (no diff base) passes it vacuously.
+ */
+export function checkTicketCaveats(
+  ticketsDir: string,
+  include?: (f: string) => boolean,
+): Finding[] {
+  const findings: Finding[] = [];
+  if (include === undefined || !existsSync(ticketsDir)) return findings;
+  for (const f of readdirSync(ticketsDir)) {
+    if (!f.endsWith(".md")) continue;
+    if (!include(f)) continue;
+    if (!CAVEATS_REQUIRED_TYPES.includes(guessType(f))) continue;
+    const header = readFileSync(join(ticketsDir, f), "utf8").split("\n").slice(0, 30).join("\n");
+    if (parseCaveatsField(header) === "") {
+      findings.push({
+        gate: "format",
+        level: "error",
+        message:
+          `${f}: **Caveats:** missing or empty — enumerate the applicable caveats and how each is validated or ruled out`,
+      });
     }
   }
   return findings;

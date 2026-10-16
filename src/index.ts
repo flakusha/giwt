@@ -164,6 +164,33 @@ export { aggregate, byEpic, byTag, danglingRelated } from "./plan/report-queries
 export type { Aggregate } from "./plan/report-queries";
 export { checkOrphans } from "./plan/validate/orphan-gate";
 
+// Plan interconnect (producer/consumer/sibling graph over .plan/ + src/;
+// FEAT-plan-links-derive-and-validate-producers-consumers-siblings)
+export {
+  buildInterconnect,
+  edgesTouching,
+  findNode,
+  interconnectOutputs,
+  nodeReport,
+  renderInterconnectJson,
+  renderInterconnectMd,
+  resolveRef,
+  siblingsOf,
+  whoConsumes,
+  whoProduces,
+  writeInterconnectFiles,
+} from "./plan/interconnect";
+export type {
+  InterconnectEdge,
+  InterconnectFinding,
+  InterconnectGraph,
+  InterconnectNode,
+  InterconnectOptions,
+  InterconnectOutputs,
+  InterconnectSrcNode,
+  NodeReport,
+} from "./plan/interconnect";
+
 // History & weave audit detectors (src/audit/) — pure libraries returning
 // structured findings; a later workstream wires them into the `giwt history
 // audit` umbrella and standalone gates.

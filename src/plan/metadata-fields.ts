@@ -160,21 +160,40 @@ export function applyRewrites(text: string, rewrites: PlanRewrite[]): string {
  * `epic-items` in a sentence is indistinguishable from a reference, so it is
  * only counted when written as a path.
  */
-const RELATED_REF =
-  /(?:^|[\s,(`])((?:[A-Z]{2,6}-)?[a-z0-9][a-z0-9._-]*\.md|(?:BUG|FEAT|TASK|TEST|DOC|EPIC)-[A-Za-z0-9][A-Za-z0-9._-]*)(?=$|[\s,)`])/gi;
+/** Token grammar for `**Related:**` values: the optional
+ * `.plan/(tickets|epics)/` prefix, then a slug ending in `.md` or a typed
+ * id. Slash boundaries keep path-ish prose from tokenizing, so a ref can
+ * never traverse out of the plan dirs. */
+const RELATED_REF_TOKEN =
+  /(?:^|[\s,(`])((?:\.plan\/(?:tickets|epics)\/)?(?:[A-Z]{2,6}-)?[a-z0-9][a-z0-9._-]*\.md|(?:BUG|FEAT|TASK|TEST|DOC|EPIC)-[A-Za-z0-9][A-Za-z0-9._-]*)(?=$|[\s,)`])/gi;
+
+/**
+ * Every raw `**Related:**` ref token in a file, in order of first
+ * appearance, deduped. No resolution — callers decide how a token maps to
+ * a plan file (exact slug, index extid, unique prefix). Accepts both bare
+ * tokens and the `.plan/(tickets|epics)/`-prefixed form. Token shape is
+ * safe by construction: no leading slash, no `..` segments, so a ref can
+ * never traverse out of the plan dirs.
+ */
+export function relatedRefTokens(text: string): string[] {
+  const line = text.match(/^\s*\*\*Related:?\*\*\s*(.*)$/im)?.[1]?.trim();
+  const tokens: string[] = [];
+  if (!line) return tokens;
+  for (const hit of line.matchAll(RELATED_REF_TOKEN)) {
+    const ref = hit[1];
+    if (ref !== undefined && !tokens.includes(ref)) tokens.push(ref);
+  }
+  return tokens;
+}
 
 /** Every `**Related:**` ref in a file that names a known plan file. */
 export function relatedRefs(
   text: string,
   known: Set<string>,
 ): { refs: string[]; dangling: string[]; } {
-  const line = text.match(/^\s*\*\*Related:?\*\*\s*(.*)$/im)?.[1]?.trim();
   const refs: string[] = [];
   const dangling: string[] = [];
-  if (!line) return { refs, dangling };
-  for (const hit of line.matchAll(RELATED_REF)) {
-    const ref = hit[1];
-    if (ref === undefined) continue;
+  for (const ref of relatedRefTokens(text)) {
     const slug = ref.replace(/^\.plan\/(?:tickets|epics)\//, "").replace(/\.md$/, "");
     if (known.has(slug) || known.has(slug.replace(/^[A-Z]{2,6}-/, ""))) refs.push(ref);
     else dangling.push(ref);

@@ -158,6 +158,29 @@ export function parseEpicField(header: string): string {
 }
 
 /**
+ * Ticket types whose `giwt ticket` template carries a required
+ * `**Caveats:**` field (FEAT-ticket-template-requires-possible-caveats-…):
+ * the implementation-hazard checklist the plan validate format gate
+ * enforces on diff-scoped (new/changed) tickets.
+ */
+export const CAVEATS_REQUIRED_TYPES: readonly string[] = ["FEAT", "TASK", "BUG"];
+
+/** The standard caveat checklist seeded into new FEAT/TASK/BUG tickets. */
+export const CAVEATS_CHECKLIST =
+  "TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, "
+  + "partial failure, rollback, stale state, data races, idempotency, observability";
+
+/**
+ * Caveats from one header region blob — the single shared parser: the FIRST
+ * line-anchored `**Caveats:**` match (see {@link fieldLine}), trimmed.
+ * Returns "" when the field is absent or carries no value; the plan validate
+ * format gate rejects an empty field on diff-scoped FEAT/TASK/BUG tickets.
+ */
+export function parseCaveatsField(header: string): string {
+  return fieldLine(header.split("\n"), "Caveats")?.trim() ?? "";
+}
+
+/**
  * Normalize one comma-split **Tags:** token: strip surrounding bracket,
  * quote, and backtick adornments — JSON-array-style headers like
  * `**Tags:** [check, "inference", `worktree`]` must yield clean tags, not
@@ -175,7 +198,12 @@ function normalizeTagToken(token: string): string {
   return t;
 }
 
-function guessType(filename: string): string {
+/**
+ * Ticket type guessed from the filename prefix (`BUG-…` → `BUG`), shared by
+ * the header parser and the plan validate caveats gate; unknown prefixes
+ * default to TASK, exactly as parseTicketText does.
+ */
+export function guessType(filename: string): string {
   const prefix = filename.split("-")[0]?.toUpperCase();
   if (
     ["TASK", "FEAT", "BUG", "FIX", "EPIC", "SOL", "INFRA", "TEST", "PERF", "WIRE", "IMPROVE"]

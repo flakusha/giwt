@@ -99,7 +99,8 @@ describe("ALL_GATES", () => {
     expect(ALL_GATES).toContain("epics-doc");
     expect(ALL_GATES).toContain("matrix");
     expect(ALL_GATES).toContain("status-vocab");
-    expect(ALL_GATES).toHaveLength(11);
+    expect(ALL_GATES).toContain("interconnect");
+    expect(ALL_GATES).toHaveLength(12);
   });
 });
 
@@ -2029,6 +2030,127 @@ describe("validate / diffBase scoping", () => {
     try {
       const msgs = messages(runValidate(scopeOpts(fx, ["naming"], fx.diffBase)));
       expect(msgs.some((m) => m.includes("case-insensitive filename collision"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── caveats gate ────────────────────────────────────────────────
+// FEAT-ticket-template-requires-possible-caveats-…: a required
+// **Caveats:** on FEAT/TASK/BUG tickets, enforced on the diff scope only
+// (new/changed files under --diff-base) so legacy tickets stay green.
+
+describe("validate / caveats gate", () => {
+  const WITHOUT_CAVEATS = (name: string, type = "FEAT") =>
+    `# ${type}-${name}\n\n**Status:** Not Started\n**Priority:** high\n**Effort:** Small\n**Summary:** s\n**Context:** c\n**Acceptance Criteria:** a\n`;
+  const WITH_CAVEATS = (name: string, type = "FEAT", caveats = "TOCTOU, rollback") =>
+    `${WITHOUT_CAVEATS(name, type)}**Caveats:** ${caveats}\n`;
+
+  function git(dir: string, ...args: string[]): string {
+    return execFileSync("git", args, { cwd: dir, env: isolatedGitEnv(), encoding: "utf8" });
+  }
+
+  /** Fixture with a committed legacy ticket (no Caveats) as the diff base. */
+  function makeCaveatsFixture(): Fixture & { diffBase: string; } {
+    const fx = makeFixture();
+    const g = (...args: string[]) => git(fx.root, ...args);
+    g("init", "-q", "-b", "master");
+    g("config", "user.email", "giwt-test@example.com");
+    g("config", "user.name", "giwt test");
+    g("config", "commit.gpgsign", "false");
+    g("config", "core.excludesFile", "");
+    writeFileSync(join(fx.ticketsDir, "FEAT-legacy.md"), WITHOUT_CAVEATS("legacy"));
+    g("add", "-A");
+    g("commit", "-q", "-m", "legacy");
+    return { ...fx, diffBase: "HEAD" };
+  }
+
+  function scopeOpts(
+    fx: Fixture & { diffBase: string; },
+    gates: GateName[],
+    diffBase?: string,
+  ) {
+    return {
+      projectRoot: fx.root,
+      worktreeRoot: fx.root,
+      ticketsDir: fx.ticketsDir,
+      epicsDir: fx.epicsDir,
+      backlogDir: fx.backlogDir,
+      planDir: fx.planDir,
+      srcDir: "src",
+      codeMapPath: fx.codeMapPath,
+      epicsIndexPath: fx.epicsIndexPath,
+      mapSources: [],
+      linkScanDirs: [],
+      backlogIndexFiles: [],
+      gates,
+      runSync: () => 0,
+      ...(diffBase !== undefined ? { diffBase } : {}),
+    };
+  }
+
+  function messages(result: { results: Array<{ findings: Array<{ message: string; }>; }>; }) {
+    return result.results.flatMap((r) => r.findings.map((f) => f.message));
+  }
+
+  test("new diff-scoped ticket without **Caveats:** fails the format gate", () => {
+    const fx = makeCaveatsFixture();
+    try {
+      writeFileSync(join(fx.ticketsDir, "FEAT-new.md"), WITHOUT_CAVEATS("new"));
+      const result = runValidate(scopeOpts(fx, ["format"], fx.diffBase));
+      const formatResult = result.results.find((r) => r.gate === "format");
+      expect(formatResult!.pass).toBe(false);
+      expect(messages(result).some((m) => m.includes("FEAT-new.md: **Caveats:**"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("empty **Caveats:** value fails the same way", () => {
+    const fx = makeCaveatsFixture();
+    try {
+      writeFileSync(join(fx.ticketsDir, "TASK-blank.md"), WITH_CAVEATS("blank", "TASK", ""));
+      const msgs = messages(runValidate(scopeOpts(fx, ["format"], fx.diffBase)));
+      expect(msgs.some((m) => m.includes("TASK-blank.md: **Caveats:**"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("a filled **Caveats:** passes and the legacy committed ticket stays green", () => {
+    const fx = makeCaveatsFixture();
+    try {
+      writeFileSync(join(fx.ticketsDir, "FEAT-filled.md"), WITH_CAVEATS("filled"));
+      const result = runValidate(scopeOpts(fx, ["format"], fx.diffBase));
+      const msgs = messages(result);
+      expect(result.results.find((r) => r.gate === "format")!.pass).toBe(true);
+      expect(msgs.some((m) => m.includes("FEAT-legacy.md"))).toBe(false);
+      expect(msgs.some((m) => m.includes("**Caveats:**"))).toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("a full scan (no diff base) never enforces Caveats on legacy files", () => {
+    const fx = makeCaveatsFixture();
+    try {
+      const result = runValidate(scopeOpts(fx, ["format"]));
+      const msgs = messages(result);
+      expect(msgs.some((m) => m.includes("**Caveats:**"))).toBe(false);
+      expect(result.results.find((r) => r.gate === "format")!.pass).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("non-FEAT/TASK/BUG tickets are exempt in scope", () => {
+    const fx = makeCaveatsFixture();
+    try {
+      writeFileSync(join(fx.ticketsDir, "FIX-exempt.md"), WITHOUT_CAVEATS("exempt", "FIX"));
+      writeFileSync(join(fx.ticketsDir, "IMPROVE-also.md"), WITHOUT_CAVEATS("also", "IMPROVE"));
+      const result = runValidate(scopeOpts(fx, ["format"], fx.diffBase));
+      expect(result.results.find((r) => r.gate === "format")!.pass).toBe(true);
     } finally {
       fx.cleanup();
     }

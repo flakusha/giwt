@@ -197,9 +197,11 @@ describe("matrix gate", () => {
     writeFileSync(indexPath, JSON.stringify(entries, null, 2));
   }
 
-  test("registers in ALL_GATES (default-on, last)", () => {
-    expect(ALL_GATES[ALL_GATES.length - 1]).toBe("matrix");
-    expect(ALL_GATES).toContain("matrix");
+  test("registers in ALL_GATES (default-on, near-last)", () => {
+    // interconnect (added later) is the final gate; matrix stays default-on
+    // and ordered after the content gates it layers over.
+    expect(ALL_GATES[ALL_GATES.length - 1]).toBe("interconnect");
+    expect(ALL_GATES[ALL_GATES.length - 2]).toBe("matrix");
   });
 
   test("missing index is an error naming the path", () => {
