@@ -3,7 +3,7 @@
 
 # FEAT: plan check-links --fix to auto-repair stale markdown links and TASK refs
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** plan, migration

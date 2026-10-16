@@ -1,26 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+/**
+ * `giwt plan check-links` — validate internal markdown links + TASK refs;
+ * `--fix` rewrites broken link targets and orphan TASK refs in place
+ * (unique-candidate repairs only), then re-scans.
+ */
+
 import { runLinkCheck } from "../../plan/check-links";
+import { applyLinkFixes } from "../../plan/check-links/fix";
 import type { WorktreeConfig } from "../../utils/config";
 import { log, raw } from "../../utils/output";
+
+const USAGE = [
+  "Usage: giwt plan check-links [--fix]",
+  "  Validate internal markdown links + TASK refs",
+  "  --fix   rewrite broken link targets and orphan TASK refs to their",
+  "          resolved location (unique matches only), then re-scan",
+];
 
 export async function runCheckLinks(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  const unknown = args.filter(
-    (a) => a !== "--help" && a !== "-h",
-  );
+  const unknown = args.filter((a) => a !== "--help" && a !== "-h" && a !== "--fix");
   if (unknown.length > 0 || args.includes("--help") || args.includes("-h")) {
-    raw("Usage: giwt plan check-links");
-    raw("  Validate internal markdown links + TASK refs");
+    for (const line of USAGE) raw(line);
     process.exit(args.includes("--help") || args.includes("-h") ? 0 : 1);
   }
+  const fix = args.includes("--fix");
 
   const planDir = config.settings.paths.planDir;
   const scanDirs = ["docs", planDir];
   const ticketsDir = config.settings.paths.tickets;
+
+  if (fix) {
+    const fixes = applyLinkFixes(config.worktreeRoot, scanDirs, ticketsDir, "src");
+    for (const f of fixes.fixed) {
+      log(
+        "info",
+        f.kind === "link"
+          ? `${f.file}: relinked ${f.from} -> ${f.to}`
+          : `${f.file}: TASK ref ${f.from} -> ${f.to}`,
+      );
+    }
+    for (const u of fixes.unfixableLinks) log("warn", `no unique repair target: ${u}`);
+    for (const u of fixes.unfixableRefs) log("warn", `no unique ticket match: ${u}`);
+    log("info", `${fixes.fixed.length} repair(s) applied`);
+  }
+
   const result = runLinkCheck(
     config.worktreeRoot,
     scanDirs,

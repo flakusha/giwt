@@ -51,7 +51,11 @@ const SUBCOMMAND_INFO: SubcommandInfo[] = [
     description: "Generate feature matrix from ticket index",
     flags: "--check, --json, --cooccurrence",
   },
-  { name: "check-links", description: "Validate internal markdown links + TASK refs", flags: "" },
+  {
+    name: "check-links",
+    description: "Validate internal markdown links + TASK refs",
+    flags: "--fix",
+  },
   {
     name: "validate",
     description: "Comprehensive .plan/ validation",
