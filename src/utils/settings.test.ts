@@ -336,6 +336,48 @@ describe("loadSettings", () => {
     }
   });
 
+  test("unknown section warns once and is ignored", () => {
+    const fx = makeFixture();
+    try {
+      const errSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+      writeFileSync(fx.localPath, `[nosuchsection]\nkey = "v"\n`);
+      try {
+        const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+        expect(s).toEqual(DEFAULT_SETTINGS);
+        const warned = errSpy.mock.calls.map((args) => String(args[0])).join("");
+        expect(warned).toContain("unknown section [nosuchsection]");
+      } finally {
+        errSpy.mockRestore();
+      }
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("section that is not a TOML table throws naming file and section", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `branches = "nope"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/branches.*must be a TOML table/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("unreadable config file throws naming the path", () => {
+    const fx = makeFixture();
+    try {
+      // A directory at the config path makes readFileSync throw (EISDIR)
+      // without relying on permission bits (root ignores chmod 000).
+      mkdirSync(fx.globalPath, { recursive: true });
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/unreadable/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("[audit] wrong type throws naming file and key", () => {
     const fx = makeFixture();
     try {
