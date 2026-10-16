@@ -379,6 +379,41 @@ describe("appendGripe", () => {
       const records = readLedger(dir, 10);
       expect(records[0]!.branch).toBe("");
       expect(records[0]!.msg).toBe("gripe :: 😤 boom");
+      // Fallback append is terminal: nothing else will finish it.
+      expect(records[0]!.state).toBe("finished");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fallback lands terminal beside a live dispatcher line (finalize exit-hook shape)", () => {
+    const dir = makeTreeDir();
+    try {
+      // The finalize failure hook fires while the invocation's own ledger
+      // line (cmd "finalize", same pid) is still open; appendGripe must not
+      // strand its supplement line in-progress.
+      appendLedger(dir, "finalize", ["feat-x"], null, "feat-x");
+      appendGripe(dir, "feat-x", "finalize feat-x failed (exit 1)");
+      const records = readLedger(dir, 10);
+      expect(records.length).toBe(2);
+      expect(records[1]!.cmd).toBe("gripe");
+      expect(records[1]!.state).toBe("finished");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("enrich path is unaffected: an own in-progress gripe line is closed in place", () => {
+    const dir = makeTreeDir();
+    try {
+      // Same pid + cmd as this process: appendGripe's finishRecord finds the
+      // line and enriches it instead of falling back to an append.
+      appendLedger(dir, "gripe", ["feat-x"], null, "feat-x");
+      appendGripe(dir, "feat-x", "boom");
+      const records = readLedger(dir, 10);
+      expect(records.length).toBe(1);
+      expect(records[0]!.msg).toBe("gripe feat-x :: 😤 boom");
+      expect(records[0]!.state).toBe("finished");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -828,11 +863,13 @@ describe("schema v2 writer", () => {
       appendCommitOutcome(dir, "commit", "dev", "abc1234567890", "fix: x");
       const enriched = readLedger(dir, 10)[0]!;
       expect(enriched.msg).toBe("commit dev :: ✅ abc123456 fix: x");
-      // appendGripe: same msg text as before.
+      // appendGripe: same msg text as before, and the supplement line is
+      // terminal — no dispatcher path runs behind a silent-command fallback,
+      // so an in-progress write would strand forever.
       appendGripe(dir, "my-branch", "boom");
       const gripe = readLedger(dir, 10)[1]!;
       expect(gripe.msg).toBe("gripe my-branch :: 😤 boom");
-      expect(gripe.state).toBe("in-progress");
+      expect(gripe.state).toBe("finished");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
