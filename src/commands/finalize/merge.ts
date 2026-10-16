@@ -92,6 +92,17 @@ export function parseFinalizeArgs(args: string[]): {
       // agents finalize worktrees concurrently and co-scheduled heavy gates
       // OOM the host. `--jobs N` is the explicit opt-in to a faster run.
       jobs = args[++i] || "";
+    } else if (arg === "--show-ledger") {
+      // Consumed here so it never lands in the positional branch slot;
+      // runFinalize re-reads args.includes("--show-ledger") to gate the
+      // recent-ledger preamble (FEAT-one-line-outcome-contract).
+    } else if (arg === "--prune-dry-run" || arg === "--dry-run") {
+      // Same reason: both are no-value flags read later via
+      // args.includes("...") — --prune-dry-run scopes the Step-6a prune,
+      // --dry-run is the legacy name rejected by rejectLegacyDryRun().
+      // Unhandled here they became the branch, so the leading form
+      // (`finalize --dry-run <branch>`) died on a phantom worktree lookup
+      // (BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the-branch-name).
     } else {
       nonFlagArgs.push(arg);
     }

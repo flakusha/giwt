@@ -28,7 +28,7 @@ import { installFailureGripe } from "./finalize/checks";
 import { checkDevMergeable } from "./finalize/gates";
 import { acquireFinalizeLock } from "./finalize/lock";
 import { parseFinalizeArgs } from "./finalize/merge";
-import { runFinalize } from "./finalize/run";
+import { rejectLegacyDryRun, runFinalize } from "./finalize/run";
 import {
   installSignalHandlers,
   publishActiveLockRelease,
@@ -50,6 +50,11 @@ export async function finalize(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  // Reject the legacy --dry-run BEFORE parsing: as a positional it became the
+  // branch and the operator got `no worktree found for branch '--dry-run'`
+  // instead of the remedy (runFinalize's copy of this guard sits past every
+  // preflight, so it could not fire first).
+  rejectLegacyDryRun(args);
   let gripeBranch = "";
   installFailureGripe(config.treeDir, () => gripeBranch);
   // finalize is allowed from inside the worktree (e.g. while iterating on it):
@@ -79,8 +84,9 @@ export async function finalize(
 
   if (!branch) {
     log("error", "branch name required");
-    raw(
-      "  Usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--onto <branch>] [--force] [--gates <csv>] [--skip-gates <csv>] [--jobs <n>]",
+    log(
+      "error",
+      "usage: giwt finalize <branch> [--merge-strategy rebase|squash|direct] [--onto <branch>] [--force] [--gates <csv>] [--skip-gates <csv>] [--jobs <n>]",
     );
     process.exit(1);
   }

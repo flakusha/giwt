@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
+// size-allow: 300
 
 import { existsSync } from "fs";
 import { join, resolve } from "path";
@@ -10,7 +11,7 @@ import { runSync } from "../../tickets/sync-index";
 import type { WorktreeConfig } from "../../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../../utils/git";
 import { printRecentLedger } from "../../utils/ledger";
-import { log, raw, section } from "../../utils/output";
+import { log, logLevelAtLeast, outcomeLine, raw, section } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 import { reconcilePlanPostMerge } from "../scoped-reconcile";
 import { closeScopedIssues, readScopedMeta } from "../scoped-worktree";
@@ -20,6 +21,20 @@ import { runCheckGateStep } from "./gates";
 import { executeStagingMerge } from "./staging";
 import { refuseUnsyncedDev } from "./staging-sync";
 import { teardownFinalizedWorktree } from "./teardown";
+
+/**
+ * FEAT-finalize-dry-run-scope-decision (Option B): the old --dry-run
+ * never skipped the merge/teardown (prune-plan-only), which broke the
+ * house "dry-run mutates nothing" convention. Reject it up-front with a
+ * remedy; the behavior lives under --prune-dry-run.
+ */
+export function rejectLegacyDryRun(args: string[]): void {
+  if (!args.includes("--dry-run")) return;
+  throw new Error(
+    "finalize: --dry-run is no longer accepted — it never skipped the merge or teardown."
+      + " Use --prune-dry-run for the Step-6a prune-plan-only behavior (see `giwt finalize --help`).",
+  );
+}
 
 export async function runFinalize(
   branch: string,
@@ -36,8 +51,12 @@ export async function runFinalize(
   args: string[],
 ): Promise<void> {
   section(`Finalizing '${branch}'`);
-  // Shared-state view: what agents recorded lately, before mutating dev.
-  printRecentLedger(config.treeDir, 10);
+  rejectLegacyDryRun(args);
+  // Shared-state preamble is opt-in (--show-ledger / GIWT_LOG=debug): the
+  // ~700 B of pre-step ledger chatter is one `giwt ledger --last 10` away.
+  if (args.includes("--show-ledger") || logLevelAtLeast("debug")) {
+    printRecentLedger(config.treeDir, 10);
+  }
   // Step 1: Check worktree clean
   const wtMissing = ensureWorktreeClean(wtPath);
 
@@ -103,11 +122,11 @@ export async function runFinalize(
             }
           }
         }
-        // Outcome before exit: process.exit bypasses the dispatch catch,
-        // the exit hook only backfills end/exitCode, never outcome data.
+        // Outcome before exit: the exit hook backfills end/exitCode only.
         activeRun()?.outcome({
           failedGates: planResult.results.filter((r) => !r.pass).map((r) => r.gate),
         });
+        outcomeLine(false, `plan validation failed (${planResult.issueCount} issue(s))`);
         process.exit(1);
       }
     }
@@ -149,6 +168,7 @@ export async function runFinalize(
       activeRun()?.outcome({ failedGates: ["tests"] });
       log("error", "Tests failed — fix before finalizing (or use --force)");
       raw(`  Full test log: ${activeRun()?.capturePath("test.log") ?? "(not captured)"}`);
+      outcomeLine(false, "tests failed");
       process.exit(1);
     }
   }
@@ -217,9 +237,8 @@ export async function runFinalize(
       args,
     );
 
-    // Record the merge result: the SHA is the durable answer to "what did
-    // this finalize land" (the CAS-moved target ref, not dev's HEAD — dev
-    // may legitimately lag when its working tree was dirty).
+    // Record the merge result: the CAS-moved target ref, not dev's HEAD
+    // (dev may legitimately lag when its working tree was dirty).
     const mergeCommit = staged?.targetSha
       ?? gitSyncQuiet(config.repoRoot, "rev-parse", `refs/heads/${targetBranch}`);
     activeRun()?.outcome({ mergeCommit });
@@ -251,9 +270,11 @@ export async function runFinalize(
       }
     }
 
-    // `--dry-run` scopes to the Step 6a scratchpad prune only (see USAGE):
-    // the merge, the worktree removal and the branch delete still run.
-    const dryRun = args.includes("--dry-run");
+    // `--prune-dry-run` scopes to the Step 6a scratchpad prune only (see
+    // USAGE): the merge, the worktree removal and the branch delete still
+    // run. It is NOT a whole-run dry-run (the old --dry-run was rejected
+    // for exactly that reason).
+    const dryRun = args.includes("--prune-dry-run");
     teardownFinalizedWorktree({ branch, wtPath, config, alreadyMerged, targetBranch, dryRun });
   });
 }

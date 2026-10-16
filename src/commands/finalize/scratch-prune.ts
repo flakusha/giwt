@@ -123,7 +123,7 @@ export function pruneWorktreeScratch({ wtPath, config, dryRun }: PruneOptions): 
     unclassifiedBytes: Math.max(0, scan.totalBytes - scan.totalCandidateBytes),
   };
   if (dryRun) {
-    log("info", "Step 6a: --dry-run — scratchpad left untouched");
+    log("info", "Step 6a: --prune-dry-run — scratchpad left untouched");
     return result;
   }
 

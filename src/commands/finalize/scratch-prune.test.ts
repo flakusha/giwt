@@ -121,7 +121,7 @@ describe("finalize scratchpad prune", () => {
   test("--dry-run reports the plan and deletes nothing", () => {
     const stale = aged("leftover.tmp", "x".repeat(2048), 30);
     const out = run({ dryRun: true });
-    expect(out).toContain("--dry-run — scratchpad left untouched");
+    expect(out).toContain("--prune-dry-run — scratchpad left untouched");
     expect(out).toContain("1 artifact(s)");
     expect(existsSync(stale)).toBe(true);
 

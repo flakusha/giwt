@@ -12,7 +12,7 @@
  */
 
 import type { WorktreeConfig } from "../../utils/config";
-import { log, raw } from "../../utils/output";
+import { log, outcomeLine, raw } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 import { setLastFailedGates } from "./checks";
 import {
@@ -154,5 +154,6 @@ export function refuseUnsyncedDev({
   raw(
     `  Then: commit or stash the changes in ${config.repoRoot}, then re-run 'giwt finalize ${branch}' to finish teardown`,
   );
+  outcomeLine(false, "dev checkout not synced");
   process.exit(1);
 }

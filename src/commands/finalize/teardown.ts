@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import type { WorktreeConfig } from "../../utils/config";
 import { isolatedGitEnv } from "../../utils/git";
 import { appendGripe } from "../../utils/ledger";
-import { log, raw } from "../../utils/output";
+import { log, outcomeLine, raw } from "../../utils/output";
 import { activeRun } from "../../utils/runlog";
 import { pruneWorktreeScratch } from "./scratch-prune";
 
@@ -121,10 +121,16 @@ export function teardownFinalizedWorktree({
   }
 
   raw("");
+  const summary = alreadyMerged
+    ? `already contained in ${targetBranch}`
+    : `merged to ${targetBranch}`;
   log(
     "success",
     alreadyMerged
       ? `Finalized '${branch}' — already contained in ${targetBranch}`
       : `Finalized '${branch}' — merged to ${targetBranch}`,
   );
+  // The one-line outcome contract: finalize ends with exactly one
+  // `ok finalize <summary> · run <id>` line.
+  outcomeLine(true, summary);
 }

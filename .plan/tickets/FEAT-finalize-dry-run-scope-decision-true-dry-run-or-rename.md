@@ -3,7 +3,7 @@
 
 # FEAT: finalize --dry-run scope decision: true dry-run or rename
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** finalize, cli, decision
@@ -42,6 +42,15 @@ Evidence (read from source):
   deletion from finalize --dry-run.
 
 Decision to make:
+
+**DECIDED (2026-10-16): Option B — reject `--dry-run`, rename to `--prune-dry-run`.**
+Rationale: the flag never skipped the merge/teardown, so it could not be made
+toothless without a large, separately-designed "plan the staging CAS merge"
+surface (Option A); the house convention (`clean`/`tmp`/`doctor`/`abort`)
+already owns the name `--dry-run`, and a flag that merges and deletes branches
+under that name is a trap. `finalize` now rejects `--dry-run` with a remedy
+naming `--prune-dry-run` (src/commands/finalize/run.ts `rejectLegacyDryRun`);
+the Step-6a prune-plan-only behavior is unchanged under the new name.
 
 - Option A (true dry-run): `--dry-run` performs every step read-only — run the gates
   (or plan them), report merge plan/prune plan/teardown plan, mutate nothing. Larger
