@@ -3,7 +3,7 @@
 
 # FEAT: plan normalize-statuses subcommand to normalize plan status values onto the closed vocabularies
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** critical
 **Effort:** Medium
 **Tags:** plan, migration

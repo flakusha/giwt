@@ -948,7 +948,7 @@
       "finalize"
     ],
     "source": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
@@ -1109,7 +1109,7 @@
       "migration"
     ],
     "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
     "hash": "8e9078f",
@@ -1143,7 +1143,7 @@
       "decision"
     ],
     "source": ".plan/tickets/FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-FINALIZE-GATES-PLAN-INTEGRATION": {
     "hash": "d0394fb",
@@ -1268,7 +1268,7 @@
       "agents"
     ],
     "source": ".plan/tickets/FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-LEDGER-SCHEMA-V2-WRITER": {
     "hash": "2491db8",
@@ -1301,7 +1301,7 @@
       "cli"
     ],
     "source": ".plan/tickets/FEAT-logger-internals-run-correlation-fields-warnonce-raw-hygiene.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-MERGE-IN-STAGING-WORKTREE-WITH-REF-MOVE": {
     "hash": "1098041",
@@ -1350,7 +1350,7 @@
       "agents"
     ],
     "source": ".plan/tickets/FEAT-one-line-outcome-contract-for-direct-cli-calls.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND": {
     "hash": "00787da",
@@ -1366,7 +1366,7 @@
       "migration"
     ],
     "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-METADATA-SUBCOMMAND-PROMOTE-FRONTMATTER-WINS-PROJECTION": {
     "hash": "1231504",
@@ -1399,7 +1399,7 @@
       "migration"
     ],
     "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-PLAN-REPORT-SUBCOMMAND-PROMOTE-LOOP-LORE-REPORT-PLAN-METADAT": {
     "hash": "b431d70",
@@ -1564,7 +1564,7 @@
       "migration"
     ],
     "source": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-REUSE-TOML-PRECEDENCE-OVERRIDE-SEMANTICS-DECISION": {
     "hash": "09ed866",
@@ -1581,7 +1581,7 @@
       "decision"
     ],
     "source": ".plan/tickets/FEAT-reuse-toml-precedence-override-semantics-decision.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-RTK-MINIMAL-CONTEXT-OUTPUT-FOR-GIWT-GIT": {
     "hash": "5c8a4b5",
@@ -1630,7 +1630,7 @@
       "cli"
     ],
     "source": ".plan/tickets/FEAT-runs-json-diet-default-projection-and-query-filters.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-SCOPED-WORKTREE-CREATION-NEW-SCOPE-AND-TICKETS-FLAGS": {
     "hash": "60f133c",
@@ -1656,7 +1656,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-ship-a-consumer-runnable-conformance-suite-giwt-selftest-for.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-SHOW-UNMERGED-THREE-WAY-CONTENT-OF-A-TICKET-FILE": {
     "hash": "cdde664",
@@ -2026,7 +2026,7 @@
       "observability"
     ],
     "source": ".plan/tickets/FIX-referenced-artifacts-must-outlive-the-console.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FIX-RUN-RECORDS-DIE-WITH-THE-WORKTREE-AND-LACK-OUTCOME-DATA": {
     "hash": "0df14c4",
@@ -2143,7 +2143,7 @@
       "structure"
     ],
     "source": ".plan/tickets/TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-COMMIT-WT-ON-PROTECTED-BRANCH-DIRECT-COMMIT-SCENARIO": {
     "hash": "9ef7c2f",
@@ -2173,7 +2173,7 @@
       "cli"
     ],
     "source": ".plan/tickets/TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API": {
     "hash": "ac01204",
