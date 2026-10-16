@@ -3,7 +3,7 @@
 
 # FEAT: repo-wide SPDX header check covering every tracked file and both SPDX tokens
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Medium
 **Tags:** plan, migration

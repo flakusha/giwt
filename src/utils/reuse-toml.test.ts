@@ -10,8 +10,11 @@ import {
   checkHeader,
   commentStyleFor,
   generatedHeader,
+  headerRegion,
   parseLicenses,
   parseReuseToml,
+  type ReuseRule,
+  selectRule,
 } from "./reuse-toml";
 
 describe("parseReuseToml", () => {
@@ -328,5 +331,115 @@ SPDX-FileCopyrightText = "2026 Sub Corp"
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  test("override rule beats aggregate when both match (Option A decision)", () => {
+    withFixture(
+      `[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 Aggregate Corp"
+
+[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "2026 Override Corp"
+precedence = "override"
+`,
+      (dir) => {
+        expect(generatedHeader(join(dir, "plans", "x.md"), ".md")).toBe(
+          "<!-- SPDX-License-Identifier: Apache-2.0-->\n<!-- SPDX-FileCopyrightText: 2026 Override Corp-->\n",
+        );
+      },
+    );
+  });
+
+  test("last override wins among multiple overrides", () => {
+    withFixture(
+      `[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = "2026 A"
+precedence = "override"
+
+[[annotations]]
+path = ["plans/**"]
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "2026 B"
+precedence = "override"
+`,
+      (dir) => {
+        expect(generatedHeader(join(dir, "plans", "x.md"), ".md")).toContain("Apache-2.0");
+      },
+    );
+  });
+});
+
+describe("selectRule", () => {
+  const aggregate: ReuseRule = {
+    paths: ["src/**"],
+    license: "MIT",
+    copyright: "2026 A",
+    matchers: [/^src\/.*$/],
+    precedence: "aggregate",
+  };
+  const override: ReuseRule = {
+    paths: ["src/special/**"],
+    license: "Apache-2.0",
+    copyright: "2026 B",
+    matchers: [/^src\/special\/.*$/],
+    precedence: "override",
+  };
+
+  test("override beats aggregate when both match", () => {
+    expect(selectRule([aggregate, override], "src/special/x.ts")).toBe(override);
+  });
+
+  test("first match wins with no overrides", () => {
+    expect(selectRule([aggregate], "src/x.ts")).toBe(aggregate);
+  });
+
+  test("returns undefined when nothing matches", () => {
+    expect(selectRule([aggregate], "docs/x.md")).toBeUndefined();
+  });
+});
+
+describe("headerRegion / header-anchored checkHeader", () => {
+  const rule = {
+    paths: ["**"],
+    license: "AGPL-3.0-or-later",
+    copyright: "2026 giwt Contributors",
+    matchers: [/.*/],
+    precedence: "aggregate",
+  };
+
+  const HEADER =
+    "// SPDX-License-Identifier: AGPL-3.0-or-later\n// SPDX-FileCopyrightText: 2026 giwt Contributors\n";
+
+  test("token buried in the body is not a header", () => {
+    const body = `export const x = 1;\n\n`.repeat(15)
+      + "// mentioned in a comment: SPDX-License-Identifier: AGPL-3.0-or-later\n";
+    expect(checkHeader(body, rule, ".ts").valid).toBe(false);
+  });
+
+  test("tokens in the header region still pass", () => {
+    expect(checkHeader(`${HEADER}export const x = 1;\n`, rule, ".ts").valid).toBe(true);
+  });
+
+  test("shebang is skipped before the header region", () => {
+    const content = `#!/usr/bin/env bun\n${HEADER}export const x = 1;\n`;
+    expect(checkHeader(content, rule, ".ts").valid).toBe(true);
+  });
+
+  test("YAML frontmatter is skipped before the header region", () => {
+    const content = `---\ntitle: doc\n---\n${HEADER}# doc\n`;
+    expect(checkHeader(content, rule, ".md").valid).toBe(true);
+  });
+
+  test("token just past the region boundary does not validate", () => {
+    const filler = Array.from({ length: 25 }, (_, i) => `line ${i}`).join("\n") + "\n";
+    const content = filler + HEADER;
+    expect(headerRegion(content).includes("SPDX-License-Identifier")).toBe(false);
+    expect(checkHeader(content, rule, ".ts").valid).toBe(false);
   });
 });

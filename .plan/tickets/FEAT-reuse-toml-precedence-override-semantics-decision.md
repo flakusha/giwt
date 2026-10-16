@@ -3,7 +3,7 @@
 
 # FEAT: REUSE.toml precedence override semantics decision
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** spdx, licensing, decision

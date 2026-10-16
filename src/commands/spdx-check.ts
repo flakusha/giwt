@@ -5,7 +5,11 @@
  * `giwt spdx-check` — SPDX license header guard.
  *
  * Reads REUSE.toml for per-directory rules, validates that each checked
- * file's SPDX-License-Identifier matches the rule for its path.
+ * file's SPDX-License-Identifier matches the rule for its path. Both tokens
+ * are matched in the HEADER REGION only (first lines after shebang/YAML
+ * frontmatter — see headerRegion in utils/reuse-toml.ts); a token buried in
+ * the file body is not a header. Rule selection follows selectRule:
+ * override-precedence rules beat aggregate rules within one REUSE.toml.
  *
  * Modes:
  *   default — scan whole tracked tree (warn-only)
@@ -18,7 +22,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { log, raw } from "../utils/output";
-import { checkHeader, parseReuseToml } from "../utils/reuse-toml";
+import { checkHeader, parseReuseToml, selectRule } from "../utils/reuse-toml";
 import {
   getStagedFiles,
   getTrackedFiles,
@@ -69,7 +73,7 @@ export async function runSpdxCheck(args: string[], config: WorktreeConfig): Prom
   const violations: { file: string; detail: string; }[] = [];
   for (const file of files) {
     const content = await Bun.file(join(config.repoRoot, file)).text();
-    const rule = rules.find((r) => r.matchers.some((m) => m.test(file)));
+    const rule = selectRule(rules, file);
     if (!rule) continue;
     const result = checkHeader(content, rule, file.slice(file.lastIndexOf(".")));
     if (!result.valid) {

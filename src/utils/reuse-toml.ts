@@ -98,8 +98,40 @@ function parseTagValue(line: string, tag: string, suffix: string): string | null
     : trimmed;
 }
 
-export function checkHeader(content: string, rule: ReuseRule, ext = ""): HeaderCheck {
+/**
+ * Rule selection among the rules of ONE REUSE.toml whose matchers hit `rel`.
+ * An `override`-precedence rule beats `aggregate` rules (the last override in
+ * file order wins among overrides); with no overrides, the first matching rule
+ * in file order wins. This is the single selection policy for both header
+ * validation (giwt spdx-check) and generated-file headers (generatedHeader).
+ */
+export function selectRule(rules: ReuseRule[], rel: string): ReuseRule | undefined {
+  const matching = rules.filter((r) => r.matchers.some((m) => m.test(rel)));
+  return matching.filter((r) => r.precedence === "override").pop() ?? matching[0];
+}
+
+/** Lines scanned for SPDX tokens after shebang/frontmatter stripping. */
+const HEADER_SCAN_LINES = 20;
+
+/**
+ * The header region of a file: everything after an optional shebang line and
+ * an optional YAML frontmatter block, limited to the first
+ * {@linkcode HEADER_SCAN_LINES} lines. SPDX tokens count as a header only
+ * inside this region — a token buried in the body is not a header.
+ */
+export function headerRegion(content: string): string {
   const lines = content.split("\n");
+  let start = 0;
+  if (lines[0]?.startsWith("#!")) start = 1;
+  if (lines[start] === "---") {
+    const end = lines.indexOf("---", start + 1);
+    if (end !== -1) start = end + 1;
+  }
+  return lines.slice(start, start + HEADER_SCAN_LINES).join("\n");
+}
+
+export function checkHeader(content: string, rule: ReuseRule, ext = ""): HeaderCheck {
+  const lines = headerRegion(content).split("\n");
   const licenseLine = lines.find((l) => l.includes("SPDX-License-Identifier:"));
   const copyrightLine = lines.find((l) => l.includes("SPDX-FileCopyrightText:"));
   const { suffix } = commentStyleFor(ext);
@@ -148,7 +180,11 @@ export function buildHeader(rule: ReuseRule, ext: string): string {
  * consuming repo has no matching rule (or no REUSE.toml at all). Walks up from
  * the file's directory; the nearest REUSE.toml wins (parent rules are not
  * merged). Rule matchers are tested against the path relative to that
- * REUSE.toml.
+ * REUSE.toml. When several rules in that REUSE.toml match, selection follows
+ * {@linkcode selectRule}: an `override`-precedence rule beats `aggregate`
+ * rules (last override in file order wins), otherwise first match in file
+ * order. Decision ticket: FEAT-reuse-toml-precedence-override-semantics-decision
+ * (Option A — precedence honored, chosen over documenting first-match-final).
  */
 export function generatedHeader(absPath: string, ext: string): string {
   const target = resolve(absPath);
@@ -157,8 +193,7 @@ export function generatedHeader(absPath: string, ext: string): string {
     const toml = join(dir, "REUSE.toml");
     if (existsSync(toml)) {
       const rel = relative(dir, target).split(sep).join("/");
-      const rule = parseReuseToml(readFileSync(toml, "utf8"))
-        .find((r) => r.matchers.some((m) => m.test(rel)));
+      const rule = selectRule(parseReuseToml(readFileSync(toml, "utf8")), rel);
       if (!rule || !rule.license || !rule.copyright) return "";
       return buildHeader(rule, ext);
     }

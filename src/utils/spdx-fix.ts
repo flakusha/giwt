@@ -7,7 +7,7 @@
  * frontmatter.
  */
 import { relative } from "node:path";
-import { buildHeader, type ReuseRule } from "./reuse-toml";
+import { buildHeader, type ReuseRule, selectRule } from "./reuse-toml";
 
 function applyHeader(content: string, header: string): string {
   const lines = content.split("\n");
@@ -61,7 +61,7 @@ export async function fixFiles(
     const content = await Bun.file(file).text();
     const ext = file.slice(file.lastIndexOf("."));
     const matchPath = repoRoot === undefined ? file : relative(repoRoot, file);
-    const rule = rules.find((r) => r.matchers.some((m) => m.test(matchPath)));
+    const rule = selectRule(rules, matchPath);
     if (!rule) continue;
     const next = applyHeader(content, buildHeader(rule, ext));
     if (next !== content) {
