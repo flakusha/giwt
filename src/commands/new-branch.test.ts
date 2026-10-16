@@ -209,7 +209,7 @@ describe("new-branch argument guards", () => {
   test("requires a branch name and prints usage", async () => {
     const out = await runExpectExit1(() => execute([], config));
     expect(out).toContain("branch name required");
-    expect(out).toContain("Usage: giwt new-branch <branch> [base]");
+    expect(out).toContain("usage: giwt new-branch <branch> [base]");
     expect(existsSync(join(root, "tree"))).toBe(false);
   });
 

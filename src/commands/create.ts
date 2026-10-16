@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
-import { existsSync, mkdirSync, rmdirSync } from "fs";
+import { existsSync, rmdirSync } from "fs";
 import { resolve } from "path";
-import {
-  branchToPath,
-  configureGpgSigningSilently,
-  linkWorktreeCredentials,
-  type WorktreeConfig,
-} from "../utils/config";
-import { gitConfigSet } from "../utils/config-writes";
+import { branchToPath, type WorktreeConfig } from "../utils/config";
 import { reportMissingBranch } from "../utils/errors";
-import { gitSync, gitSyncQuiet, isolatedGitEnv, isProtected } from "../utils/git";
-import { linkNodeModules } from "../utils/modules";
-import { log, raw } from "../utils/output";
+import { gitSync } from "../utils/git";
+import { log, outcomeLine } from "../utils/output";
 import { applyScopedTickets, parseScopeFlags, resolveScopedTickets } from "./scoped-worktree";
+import { bootstrapWorktree, refuseProtectedBranch } from "./worktree-bootstrap";
 import {
   hasWorktreeDir,
   isDirEmpty,
@@ -28,17 +22,14 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
   const branch = rest[0];
   if (!branch) {
     log("error", "branch name required");
-    raw("  Usage: giwt create <branch>");
+    log("error", "usage: giwt create <branch>");
     process.exit(1);
   }
   // Ticket resolution is a pre-flight: an unknown id must refuse before any
   // git mutation (worktree add), not leave a half-created tree behind.
   if (tickets !== undefined) resolveScopedTickets(config, tickets);
 
-  if (isProtected(branch, config.settings.branches.protected)) {
-    log("error", `cannot create worktree for protected branch '${branch}'`);
-    process.exit(1);
-  }
+  refuseProtectedBranch(branch, config);
 
   const dirName = branchToPath(branch);
   const wtPath = resolve(config.treeDir, dirName);
@@ -69,6 +60,7 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
   const registration = await registrationFor(config.repoRoot, wtPath);
   if (registration && hasWorktreeDir(wtPath)) {
     log("warn", `worktree already exists: ${wtPath}`);
+    outcomeLine(true, `worktree already exists: ${wtPath}`);
     return;
   }
   if (registration) {
@@ -86,55 +78,26 @@ export async function execute(args: string[], config: WorktreeConfig): Promise<v
         "warn",
         `directory exists but is not a registered worktree: ${wtPath} — inspect and remove it first: rm -rf ${wtPath}`,
       );
+      outcomeLine(false, "unregistered non-empty directory in the way");
       return;
     }
   }
 
-  // Ensure tree dir
-  mkdirSync(config.treeDir, { recursive: true });
-
   log("info", `Creating worktree for branch: ${branch}`);
 
-  const result = Bun.spawnSync(["git", "-C", config.repoRoot, "worktree", "add", wtPath, branch], {
-    env: isolatedGitEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
+  await bootstrapWorktree({
+    config,
+    wtPath,
+    branch,
+    hooksReason: "hooksPath install (giwt create)",
   });
-  if (result.exitCode !== 0) {
-    log("error", `worktree add failed (exit ${result.exitCode})`);
-    log("error", String(result.stderr.toString()).replace(/\n$/, ""));
-    process.exit(1);
-  }
-
-  // Configure GPG signing (silent on cold cache — see configureGpgSigningSilently).
-  configureGpgSigningSilently(wtPath, config.agentGpgKeyId);
-
-  // Configure hooks
-  const hooksDir = resolve(config.repoRoot, ".githooks");
-  if (existsSync(hooksDir)) {
-    gitConfigSet({
-      root: wtPath,
-      entries: [{ key: "core.hooksPath", value: hooksDir }],
-      reason: "hooksPath install (giwt create)",
-    });
-    log("success", "hooks configured");
-  }
-
-  // Warn when the repo has no configured identity — commits will fail later
-  const repoEmail = gitSyncQuiet(config.repoRoot, "config", "user.email");
-  if (!repoEmail) {
-    log("warn", "repo has no user.email configured — commits will fail until you set it");
-    raw("  Run: git config user.email 'you@example.com' && git config user.name 'Your Name'");
-  }
-
-  linkNodeModules(config.repoRoot, wtPath);
-  linkWorktreeCredentials(config.repoRoot, wtPath);
 
   if (tickets !== undefined || scope !== undefined) {
     applyScopedTickets(config, wtPath, scope, tickets ?? []);
   }
 
   log("success", `Created: ${wtPath}`);
+  outcomeLine(true, `created ${wtPath}`);
 }
 
 /**

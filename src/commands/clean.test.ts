@@ -13,7 +13,7 @@
  * process.exitCode and process.exit spies are saved/restored per test.
  */
 
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   chmodSync,
   existsSync,
@@ -26,6 +26,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
+import { setOutputFormat } from "../utils/output";
 import { scanScratch } from "../utils/scratch";
 import type { ScratchClass, ScratchConfig, ScratchScan } from "../utils/scratch";
 import { scratchRoot } from "../utils/scratch-tmp";
@@ -45,6 +46,12 @@ const CFG: ScratchConfig = {
 };
 
 let root = "";
+
+// clean's handler flips the module-level output format for machine runs;
+// reset so later human-mode tests keep log() traffic on stdout.
+beforeEach(() => {
+  setOutputFormat("simple");
+});
 
 afterEach(() => {
   if (root !== "") {
@@ -412,7 +419,9 @@ describe("clean handler", () => {
       expect(parsed.totalCandidateCount).toBe(8);
       expect(parsed.classes).toHaveLength(4);
       expect(parsed.classes.find((c) => c.name === "tmp")?.candidateCount).toBe(1);
-      expect(cap.err()).toBe(""); // nothing else leaked, not even log lines
+      // Under machine formats stdout carries only the payload; stderr's
+      // only extra line is the one-line outcome contract.
+      expect(cap.err()).toBe("ok ? dry-run: 8 artifact(s), 3.5 KB\n");
     } finally {
       cap.restore();
     }

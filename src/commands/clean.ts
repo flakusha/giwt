@@ -21,9 +21,10 @@
 
 import { existsSync, lstatSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { scanFlags } from "../utils/args-scan.ts";
 import type { WorktreeConfig } from "../utils/config.ts";
 import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit.ts";
-import { log, raw } from "../utils/output.ts";
+import { log, outcomeLine, raw, setOutputFormat } from "../utils/output.ts";
 import { activeRun } from "../utils/runlog.ts";
 import { scanScratch } from "../utils/scratch.ts";
 import type { ScratchClass, ScratchScan } from "../utils/scratch.ts";
@@ -63,6 +64,12 @@ function printHelp(): void {
   raw("  --verbose   list every candidate path, not just per-class totals");
 }
 
+const CLEAN_FLAGS = {
+  "--apply": { value: "none" },
+  "--dry-run": { value: "none" },
+  "--verbose": { value: "none" },
+} as const;
+
 /** Raw string[] parsing in the doctor.ts style: no values, flags only.
  *  --apply/--dry-run override each other, last occurrence wins. Output
  *  flags (--json/--toml/--emoji) come from the shared parseOutFlags —
@@ -75,17 +82,29 @@ function parseArgs(args: string[]): CleanOptions {
     log("warn", `multiple output flags given — using --${format}`);
   }
   const out: CleanOptions = { apply: false, format, verbose: false };
-  for (let i = 0; i < rest.length; i++) {
-    const a = rest[i]!;
-    if (a === "--apply") out.apply = true;
-    else if (a === "--dry-run") out.apply = false;
-    else if (a === "--verbose") out.verbose = true;
-    else {
-      log("error", `unknown flag '${a}'`);
-      raw("  Usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]");
-      process.exit(1);
-    }
+  let scan: ReturnType<typeof scanFlags>;
+  try {
+    scan = scanFlags(rest, CLEAN_FLAGS);
+  } catch (error) {
+    log("error", (error as Error).message);
+    log("error", "usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]");
+    process.exit(1);
   }
+  if (scan.positionals.length > 0) {
+    log("error", `unknown flag '${scan.positionals[0]}'`);
+    log("error", "usage: giwt clean [--dry-run] [--apply] [--json|--toml|--emoji] [--verbose]");
+    process.exit(1);
+  }
+  // --apply/--dry-run override each other, last occurrence wins.
+  for (const name of scan.order) {
+    if (name === "--apply") out.apply = true;
+    else if (name === "--dry-run") out.apply = false;
+    else if (name === "--verbose") out.verbose = true;
+  }
+  // cli.ts only forces machine format for --json; --toml/--emoji must
+  // route the progress log lines (and the outcome line) to stderr
+  // themselves so stdout carries only the payload (same as sync.ts).
+  if (out.format !== "human") setOutputFormat("json");
   return out;
 }
 
@@ -216,19 +235,19 @@ export async function clean(args: string[], config: WorktreeConfig): Promise<voi
   }
 
   if (!opts.apply) {
-    activeRun()?.outcome({
-      clean: `dry-run: ${scan.totalCandidateCount} artifact(s), ${
-        humanBytes(scan.totalCandidateBytes)
-      }`,
-    });
+    const drySummary = `dry-run: ${scan.totalCandidateCount} artifact(s), ${
+      humanBytes(scan.totalCandidateBytes)
+    }`;
+    activeRun()?.outcome({ clean: drySummary });
     if (opts.format !== "human") {
       raw(renderRecords(machinePayload(scan, false, 0, 0, []), opts.format, {
         emoji: cleanEmoji,
       }));
-      return;
+    } else {
+      printPlan(scan, opts.verbose);
+      log("info", "Dry-run only — pass --apply to delete these artifacts");
     }
-    printPlan(scan, opts.verbose);
-    log("info", "Dry-run only — pass --apply to delete these artifacts");
+    outcomeLine(true, drySummary);
     return;
   }
 
@@ -258,5 +277,8 @@ export async function clean(args: string[], config: WorktreeConfig): Promise<voi
       log("error", `failed to delete ${f.path}: ${f.error}`);
     }
     process.exitCode = 1;
+    outcomeLine(false, summary);
+  } else {
+    outcomeLine(true, summary);
   }
 }

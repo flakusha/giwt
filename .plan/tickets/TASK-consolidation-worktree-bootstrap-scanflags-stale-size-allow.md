@@ -3,7 +3,7 @@
 
 # TASK: consolidation: worktree bootstrap, scanFlags, stale size-allow
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Tags:** refactor, dedup, cli

@@ -187,7 +187,7 @@ describe("create: argument and registry guards", () => {
   test("requires a branch name and prints usage", async () => {
     const out = await runExpectExit1([]);
     expect(out).toContain("branch name required");
-    expect(out).toContain("Usage: giwt create <branch>");
+    expect(out).toContain("usage: giwt create <branch>");
   });
 
   test("refuses a protected branch name", async () => {
