@@ -56,7 +56,7 @@ export interface RunMeta {
   outcome?: RunOutcome | undefined;
   /** Seq of this run's ledger line (cross-link from ledger record `run`;
    *  attached by the dispatcher right after the append, so early meta
-   *  writes omit it). */
+   *  writes omit it). Best-effort display link, never used for lookup. */
   ledgerSeq?: number;
 }
 

@@ -182,6 +182,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       branch,
       ...(runRec !== null ? [basename(runRec.dir)] : []),
     );
+    // Best-effort display link (ledger seq ↔ run meta); never used for lookup.
     if (runRec !== null && record !== null) runRec.setLedgerSeq(record.seq);
     // Close the line if the handler called process.exit() and never let the
     // try/catch below run — process.on("exit") fires for process.exit(), the

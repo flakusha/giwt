@@ -132,18 +132,18 @@ export function normalizeRecord(raw: unknown): LedgerRecordView | null {
 /** Result of an incremental tail parse: complete records + resume point. */
 export interface LedgerTail {
   records: LedgerRecordView[];
-  /** Byte offset of the first incomplete trailing line (or text length). */
+  /** String index of the first incomplete trailing line (or text length). */
   offset: number;
 }
 
 /**
- * Parse the complete `\n`-terminated lines of `text` starting at byte
- * offset `fromOffset`. Unparseable or non-normalizable lines are skipped,
+ * Parse the complete `\n`-terminated lines of `text` starting at string
+ * index `fromOffset`. Unparseable or non-normalizable lines are skipped,
  * never fatal. The returned offset resumes at the first incomplete
  * trailing line; when the text ends with `\n` it is `text.length`.
  *
  * @param text - full current ledger file contents
- * @param fromOffset - byte offset of the first unparsed byte (<0 → 0)
+ * @param fromOffset - string index of the first unparsed character (<0 → 0)
  * @returns complete records and the new resume offset
  */
 export function parseLedgerTail(text: string, fromOffset: number): LedgerTail {
