@@ -3,7 +3,7 @@
 
 # FEAT: export a reusable cold-cache GPG warm helper so consumers stop inlining gpg-unlock internals
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** gpg, migration

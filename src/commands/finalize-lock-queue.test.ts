@@ -34,7 +34,7 @@ import { join } from "node:path";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { acquireFinalizeLock, queuePollDelayMs, queueWaitMs } from "./finalize";
 
-const FIXTURE_PATH = join(import.meta.dirname, "../finalize-lock-fixture.ts");
+const FIXTURE_PATH = join(import.meta.dirname, "../testkit/finalize-lock-fixture.ts");
 const LOCK_NAME = ".worktree-finalize.lock";
 const QUEUE_NAME = `${LOCK_NAME}.queue`;
 

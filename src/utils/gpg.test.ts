@@ -25,9 +25,9 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { probeCachedPassphrase, warmCacheViaPassphrase } from "../gpg-unlock";
 import { credentials } from "./credentials";
 import { assertAgentGpgUnlocked, assertGpgUnlocked } from "./gpg";
+import { probeCachedPassphrase, warmCacheViaPassphrase } from "./gpg-cache";
 
 const gpgBin = Bun.which("gpg");
 const gpgConf = Bun.which("gpgconf");

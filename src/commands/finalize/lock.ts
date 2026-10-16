@@ -106,7 +106,7 @@ export function queueWaitMs(): number {
  * without requiring the full `finalize()` entry point (which needs a real
  * worktree + GPG key + dev checkout).
  * knip: only reachable from the test's child-process fixture
- * (`finalize-lock-fixture.ts`, run via spawn — not a static import knip
+ * (`testkit/finalize-lock-fixture.ts`, run via spawn — not a static import knip
  * can trace), plus one intra-file call knip doesn't track.
  */
 export function acquireFinalizeLock(repoRoot: string): () => void {

@@ -1,10 +1,8 @@
-#!/usr/bin/env bun
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
-// size-allow: 300
 
 /**
- * GPG passphrase cache manager for giwt agent commits.
+ * gpg-agent passphrase-cache primitives.
  *
  * Semantics verified against gpg 2.5.21 (temp-GNUPGHOME rig, 2026-09-12):
  *
@@ -30,28 +28,12 @@
  *     max-cache-ttl), so the warm path performs a real sign to prolong.
  *
  * Usage:
- *   giwt gpg-unlock
+ *   import { probeCachedPassphrase, warmAgentCache } from "../utils/gpg-cache";
  */
 
 import { spawnSync } from "bun";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { credentials } from "./utils/credentials";
-import { log, raw } from "./utils/output";
-
-// ── Credentials ──────────────────────────────────────────────────
-
-function loadCredentials(): string {
-  if (!credentials.keyId) {
-    log("error", String("Error: AGENT_GPG_KEY_ID not set in .credentials.env").replace(/\n$/, ""));
-    log(
-      "error",
-      String("Copy .credentials.env.example and fill in your values.").replace(/\n$/, ""),
-    );
-    process.exit(1);
-  }
-  return credentials.keyId;
-}
 
 // ── gpg-agent config ─────────────────────────────────────────────
 
@@ -99,7 +81,7 @@ interface SignOpts {
   timeoutMs?: number;
 }
 
-interface SignResult {
+export interface SignResult {
   exitCode: number | null;
   sigCreated: boolean;
   statusOut: string;
@@ -112,7 +94,7 @@ interface SignResult {
  * stdin "ignore" gives gpg immediate EOF (Bun.spawnSync exposes no stdin
  * handle, so "pipe" would deadlock — gpg would wait for EOF forever).
  */
-function runSign(keyId: string, { mode, passphrase = "", timeoutMs }: SignOpts): SignResult {
+export function runSign(keyId: string, { mode, passphrase = "", timeoutMs }: SignOpts): SignResult {
   const args = ["gpg"];
   if (passphrase) {
     args.push("--batch", "--yes", "--pinentry-mode", "loopback", "--passphrase", passphrase);
@@ -205,68 +187,62 @@ function passphraseSource(): string | null {
   }
 }
 
-// ── CLI ──────────────────────────────────────────────────────────
+// ── Reusable cold→warm helper (public API) ─────────────────────
 
-/** Subcommand entry point (registered in src/cli.ts as `giwt gpg-unlock`). */
-export function runGpgUnlock(): void {
-  const keyId = loadCredentials();
-  const ttl = effectiveCacheTtl();
-  raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s)`);
+export type WarmAgentCacheVia = "passphrase-source" | "pinentry" | "none";
 
-  if (probeCachedPassphrase(keyId).warm) {
-    const sign = runSign(keyId, { mode: "default", timeoutMs: 5_000 });
-    if (sign.exitCode === 0 && sign.sigCreated) {
-      raw("Cache is warm; TTL re-armed via real sign.");
-      process.exit(0);
-    }
-    log("error", "Warm-cache real sign failed; falling back to cold path.");
-    if (sign.stderrOut.trim()) {
-      log("error", `gpg stderr: ${sign.stderrOut.trim()}`);
-    }
-  }
+export interface WarmAgentCacheResult {
+  /** True only when the cache is VERIFIABLY warm (re-probed after warming). */
+  warm: boolean;
+  /** Which path of the decision tree produced the result. */
+  via: WarmAgentCacheVia;
+  /** gpg stderr from the failed attempt ("" when warm or refused). */
+  stderrOut: string;
+}
 
+export interface WarmAgentCacheOptions {
+  /** Called before each warming attempt starts ("passphrase-source" or
+   * "pinentry"), so interactive callers can announce before blocking. */
+  announce?: (via: Exclude<WarmAgentCacheVia, "none">) => void;
+}
+
+/**
+ * Go from a cold gpg-agent cache to a verifiably warm one, running the same
+ * decision tree as `giwt gpg-unlock`:
+ *
+ * 1. headless passphrase source (GIT_GPG_PASSPHRASE or ~/.gpg-passphrase),
+ *    warmed via loopback batch mode;
+ * 2. pinentry prompt — ONLY when `process.stdin.isTTY` (the TTY guard is
+ *    internal; callers never prompt without a TTY);
+ * 3. otherwise an honest refusal (`via: "none"`) — this is a NON-HANG
+ *    guarantee for agent-harness callers: the function never blocks waiting
+ *    for input outside a TTY.
+ *
+ * Success is only reported after a re-probe with
+ * {@linkcode probeCachedPassphrase} confirms the passphrase is cached.
+ */
+export function warmAgentCache(
+  keyId: string,
+  opts: WarmAgentCacheOptions = {},
+): WarmAgentCacheResult {
   const passphrase = passphraseSource();
   if (passphrase) {
-    raw("Cache is cold — warming via loopback passphrase source...");
+    opts.announce?.("passphrase-source");
     const warmed = warmCacheViaPassphrase(keyId, passphrase);
     if (warmed.ok && probeCachedPassphrase(keyId).warm) {
-      raw("Passphrase cached (verified).");
-      process.exit(0);
+      return { warm: true, via: "passphrase-source", stderrOut: "" };
     }
-    log(
-      "error",
-      String("Failed — the passphrase source did not warm the cache:").replace(/\n$/, ""),
-    );
-    if (warmed.stderrOut.trim()) {
-      log("error", String(`gpg stderr: ${warmed.stderrOut.trim()}`).replace(/\n$/, ""));
-    }
-    process.exit(1);
+    return { warm: false, via: "passphrase-source", stderrOut: warmed.stderrOut };
   }
 
   if (process.stdin.isTTY) {
-    raw("Cache is cold — enter the key passphrase at the pinentry prompt...");
+    opts.announce?.("pinentry");
     const warmed = warmCacheViaPinentry(keyId);
     if (warmed.ok && probeCachedPassphrase(keyId).warm) {
-      raw("Passphrase cached (verified).");
-      process.exit(0);
+      return { warm: true, via: "pinentry", stderrOut: "" };
     }
-    log(
-      "error",
-      String("Failed — gpg-agent did not accept a passphrase for this key.").replace(/\n$/, ""),
-    );
-    if (warmed.stderrOut.trim()) {
-      log("error", String(`gpg stderr: ${warmed.stderrOut.trim()}`).replace(/\n$/, ""));
-    }
-    process.exit(1);
+    return { warm: false, via: "pinentry", stderrOut: warmed.stderrOut };
   }
 
-  log(
-    "error",
-    String("Cache is cold, and this context has no TTY and no passphrase source.").replace(
-      /\n$/,
-      "",
-    ),
-  );
-  log("error", String("Run `giwt gpg-unlock` in your terminal to warm it.").replace(/\n$/, ""));
-  process.exit(1);
+  return { warm: false, via: "none", stderrOut: "" };
 }

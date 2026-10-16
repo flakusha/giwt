@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { scratchRoot } from "./utils/scratch-tmp";
+import { scratchRoot } from "../utils/scratch-tmp";
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
@@ -27,7 +27,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveDiffBase } from "./commands/finalize";
+import { resolveDiffBase } from "./finalize";
 
 let workDir: string;
 let baseSha: string;

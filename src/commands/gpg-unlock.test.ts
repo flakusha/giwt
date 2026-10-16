@@ -19,14 +19,15 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { credentials } from "../utils/credentials";
 import {
   effectiveCacheTtl,
   probeCachedPassphrase,
-  runGpgUnlock,
+  warmAgentCache,
   warmCacheViaPassphrase,
-} from "./gpg-unlock";
-import { credentials } from "./utils/credentials";
-import { scratchRoot } from "./utils/scratch-tmp";
+} from "../utils/gpg-cache";
+import { scratchRoot } from "../utils/scratch-tmp";
+import { runGpgUnlock } from "./gpg-unlock";
 
 const gpgBin = Bun.which("gpg");
 const gpgConnectAgent = Bun.which("gpg-connect-agent");
@@ -382,6 +383,166 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
         expect(r.code).toBe(0);
         expect(r.out).toContain("enter the key passphrase at the pinentry prompt");
         expect(r.out).toContain("Passphrase cached (verified).");
+      } finally {
+        process.stdin.isTTY = false as never;
+      }
+    });
+  },
+);
+
+describe.skipIf(!gpgBin || !gpgConnectAgent)(
+  "warmAgentCache (real agent, temp GNUPGHOME)",
+  () => {
+    // Resource contract (mirrors the runGpgUnlock CLI describe): owns a
+    // mkdtemp'd GNUPGHOME + HOME, a dedicated generated key, and the TTY
+    // flag; every env var is saved and restored in beforeAll/afterAll.
+    // Each cache-sensitive case kills the agent first (gpgconf --kill) and
+    // tests that sign rewrite gpg-agent.conf explicitly, so cases do not
+    // depend on declaration order. bun runs tests within a file
+    // sequentially, so the env snapshot is never observed mid-mutation.
+    const UID = "gpg-unlock-warm@example";
+    const PASS = "warmpass";
+
+    let home: string;
+    let passHome: string;
+    let prevGnupg: string | undefined;
+    let prevHome: string | undefined;
+    let prevUserProfile: string | undefined;
+    let prevGitPass: string | undefined;
+    let prevTTY: boolean | undefined;
+
+    function killAgent(): void {
+      Bun.spawnSync(["gpgconf", "--homedir", home, "--kill", "gpg-agent"], {
+        stdout: "ignore",
+        stderr: "ignore",
+      });
+    }
+
+    beforeAll(() => {
+      home = mkdtempSync(join(scratchRoot(), "giwt-warm-cache-"));
+      passHome = mkdtempSync(join(scratchRoot(), "giwt-warm-home-"));
+      writeFileSync(join(home, "gpg-agent.conf"), "default-cache-ttl 30\nmax-cache-ttl 90\n");
+      prevGnupg = process.env.GNUPGHOME;
+      prevHome = process.env.HOME;
+      prevUserProfile = process.env.USERPROFILE;
+      prevGitPass = process.env.GIT_GPG_PASSPHRASE;
+      process.env.GNUPGHOME = home;
+      process.env.HOME = passHome;
+      delete process.env.GIT_GPG_PASSPHRASE;
+      prevTTY = process.stdin.isTTY;
+      process.stdin.isTTY = false as never;
+
+      const gen = Bun.spawnSync(
+        [
+          "gpg",
+          "--batch",
+          "--passphrase",
+          PASS,
+          "--pinentry-mode",
+          "loopback",
+          "--quick-generate-key",
+          UID,
+          "ed25519",
+          "sign",
+          "0",
+        ],
+        { stdout: "ignore", stderr: "pipe", env: process.env },
+      );
+      if (gen.exitCode !== 0) throw new Error(gen.stderr.toString("utf8"));
+    });
+
+    afterAll(() => {
+      killAgent();
+      rmSync(home, { recursive: true, force: true });
+      rmSync(passHome, { recursive: true, force: true });
+      if (prevGnupg === undefined) delete process.env.GNUPGHOME;
+      else process.env.GNUPGHOME = prevGnupg;
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+      if (prevUserProfile === undefined) delete process.env.USERPROFILE;
+      else process.env.USERPROFILE = prevUserProfile;
+      if (prevGitPass === undefined) delete process.env.GIT_GPG_PASSPHRASE;
+      else process.env.GIT_GPG_PASSPHRASE = prevGitPass;
+      process.stdin.isTTY = prevTTY as never;
+    });
+
+    test("warms via GIT_GPG_PASSPHRASE and verifies the cache", () => {
+      killAgent();
+      // Loopback signs never invoke pinentry, but pin the default conf so
+      // this case is independent of any pinentry left by earlier cases.
+      writeFileSync(join(home, "gpg-agent.conf"), "default-cache-ttl 30\nmax-cache-ttl 90\n");
+      process.env.GIT_GPG_PASSPHRASE = PASS;
+      try {
+        const announced: string[] = [];
+        const r = warmAgentCache(UID, { announce: (via) => announced.push(via) });
+        expect(r).toEqual({ warm: true, via: "passphrase-source", stderrOut: "" });
+        expect(announced).toEqual(["passphrase-source"]);
+        expect(probeCachedPassphrase(UID).warm).toBe(true);
+      } finally {
+        delete process.env.GIT_GPG_PASSPHRASE;
+      }
+    });
+
+    test("a wrong passphrase source fails without warming", () => {
+      killAgent();
+      writeFileSync(join(home, "gpg-agent.conf"), "default-cache-ttl 30\nmax-cache-ttl 90\n");
+      process.env.GIT_GPG_PASSPHRASE = "definitely-wrong";
+      try {
+        const r = warmAgentCache(UID);
+        expect(r.warm).toBe(false);
+        expect(r.via).toBe("passphrase-source");
+        expect(r.stderrOut).toContain("Bad passphrase");
+        expect(probeCachedPassphrase(UID).warm).toBe(false);
+      } finally {
+        delete process.env.GIT_GPG_PASSPHRASE;
+      }
+    });
+
+    test("no source and no TTY is an honest refusal, not a hang", () => {
+      killAgent();
+      process.stdin.isTTY = false as never;
+      const r = warmAgentCache(UID);
+      expect(r).toEqual({ warm: false, via: "none", stderrOut: "" });
+    });
+
+    test("TTY with a failing pinentry reports the pinentry path", () => {
+      killAgent();
+      writeFileSync(join(home, "gpg-agent.conf"), "pinentry-program /bin/false\n");
+      process.stdin.isTTY = true as never;
+      try {
+        const r = warmAgentCache(UID);
+        expect(r.warm).toBe(false);
+        expect(r.via).toBe("pinentry");
+        expect(r.stderrOut.trim().length).toBeGreaterThan(0);
+      } finally {
+        process.stdin.isTTY = false as never;
+      }
+    });
+
+    test("TTY with a scripted pinentry warms and verifies", () => {
+      killAgent();
+      const fakePinentry = join(passHome, "fake-pinentry.sh");
+      const script = [
+        "#!/bin/sh",
+        "echo \"OK Pleased to meet you\"",
+        "while IFS= read -r line; do",
+        "  cmd=$(printf '%s' \"$line\" | cut -d' ' -f1)",
+        "  case \"$cmd\" in",
+        `    GETPIN) echo "D ${PASS}"; echo "OK" ;;`,
+        "    BYE) echo \"OK\"; exit 0 ;;",
+        "    *) echo \"OK\" ;;",
+        "  esac",
+        "done",
+        "",
+      ].join("\n");
+      writeFileSync(fakePinentry, script);
+      chmodSync(fakePinentry, 0o755);
+      writeFileSync(join(home, "gpg-agent.conf"), `pinentry-program ${fakePinentry}\n`);
+      process.stdin.isTTY = true as never;
+      try {
+        const r = warmAgentCache(UID);
+        expect(r).toEqual({ warm: true, via: "pinentry", stderrOut: "" });
+        expect(probeCachedPassphrase(UID).warm).toBe(true);
       } finally {
         process.stdin.isTTY = false as never;
       }

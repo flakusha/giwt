@@ -199,3 +199,17 @@ export {
   sizeAllowFor,
 } from "./utils/check-file-size";
 export type { SizeFinding } from "./utils/check-file-size";
+
+// GPG agent cache management (cold→warm helper for agent-harness callers)
+export {
+  effectiveCacheTtl,
+  probeCachedPassphrase,
+  warmAgentCache,
+  warmCacheViaPassphrase,
+} from "./utils/gpg-cache";
+export type {
+  CacheProbe,
+  WarmAgentCacheOptions,
+  WarmAgentCacheResult,
+  WarmAgentCacheVia,
+} from "./utils/gpg-cache";

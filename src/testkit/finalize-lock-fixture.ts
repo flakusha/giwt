@@ -17,10 +17,10 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { LOCK_FILENAME } from "./commands/abort";
-import { acquireFinalizeLock } from "./commands/finalize";
-import { acquireCheckSlot, CHECK_TREE_MEM_BUDGET_MB } from "./utils/check-slots";
-import { log, raw } from "./utils/output";
+import { LOCK_FILENAME } from "../commands/abort";
+import { acquireFinalizeLock } from "../commands/finalize";
+import { acquireCheckSlot, CHECK_TREE_MEM_BUDGET_MB } from "../utils/check-slots";
+import { log, raw } from "../utils/output";
 
 const tmp = process.argv[2]!;
 const mode = process.argv[3]!;

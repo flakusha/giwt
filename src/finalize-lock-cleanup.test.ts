@@ -54,7 +54,7 @@ describe("finalize lock cleanup", () => {
    * semantics — `process.exit` inside a `bun test` block would tear
    * down the test runner itself.
    */
-  const FIXTURE_PATH = join(import.meta.dirname, "finalize-lock-fixture.ts");
+  const FIXTURE_PATH = join(import.meta.dirname, "testkit/finalize-lock-fixture.ts");
 
   async function runFixture(
     mode: "exit" | "signal" | "normal" | "slot",

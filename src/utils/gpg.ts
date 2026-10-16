@@ -46,9 +46,9 @@
  */
 
 import { spawnSync } from "bun";
-import { probeCachedPassphrase } from "../gpg-unlock";
 import { credentials } from "./credentials";
-import { log } from "./output";
+import { probeCachedPassphrase } from "./gpg-cache";
+import { log, outcomeLine } from "./output";
 
 type GpgHint = "invalid-key" | "key-not-in-keyring" | "key-not-unlocked";
 
@@ -64,6 +64,7 @@ const MAX_LEN = 40;
 function fail(hint: GpgHint, message: string): never {
   log("error", String(`hint: ${hint}`).replace(/\n$/, ""));
   log("error", String(message).replace(/\n$/, ""));
+  outcomeLine(false, `gpg key unusable (hint: ${hint})`);
   process.exit(1);
 }
 

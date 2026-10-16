@@ -27,9 +27,10 @@ import { scratchRoot } from "../utils/scratch-tmp";
  * afterAll so other test files are unaffected.
  */
 
-import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { captureOutput } from "../testkit/capture";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { setLogLevel } from "../utils/output";
@@ -143,32 +144,9 @@ function stageChange(name: string, cwd: string = root): void {
   git(["add", name], cwd);
 }
 
-function captureStreams(): { lines: () => string; restore: () => void; } {
-  const chunks: string[] = [];
-  const push = (chunk: unknown): boolean => {
-    chunks.push(String(chunk));
-    return true;
-  };
-  const outSpy = spyOn(process.stdout, "write").mockImplementation(push as never);
-  const errSpy = spyOn(process.stderr, "write").mockImplementation(push as never);
-  return {
-    lines: () => chunks.join(""),
-    restore: () => {
-      outSpy.mockRestore();
-      errSpy.mockRestore();
-    },
-  };
-}
-
 /** Run `fn` expecting process.exit(1); returns captured output. */
 async function expectExit1(fn: (cfg: WorktreeConfig) => Promise<void>): Promise<string> {
-  const chunks: string[] = [];
-  const push = (c: unknown): boolean => {
-    chunks.push(String(c));
-    return true;
-  };
-  const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-  const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+  const cap = captureOutput();
   const original = process.exit;
   const codes: number[] = [];
   process.exit = ((code: number) => {
@@ -185,11 +163,10 @@ async function expectExit1(fn: (cfg: WorktreeConfig) => Promise<void>): Promise<
     }
     expect(aborted).toBe(true);
     expect(codes).toEqual([1]);
-    return chunks.join("");
+    return cap.lines();
   } finally {
     process.exit = original;
-    o.mockRestore();
-    e.mockRestore();
+    cap.restore();
   }
 }
 
@@ -274,7 +251,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   test("warns when signature verification is inconclusive", async () => {
     stageChange("unclear.txt");
     const restore = installSigningStub({ goodSignature: false });
-    const cap = captureStreams();
+    const cap = captureOutput();
     try {
       await commit(["--on-protected", "fix(x): direct"], credConfig());
       expect(cap.lines()).toContain("signature verification failed");
@@ -285,13 +262,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   });
 
   test("does not set GIT_COMMITTER_NAME/EMAIL env (committer resolves from repo config)", async () => {
-    const chunks: string[] = [];
-    const push = (c: unknown): boolean => {
-      chunks.push(String(c));
-      return true;
-    };
-    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const cap = captureOutput();
     const real = Bun.spawnSync;
     const capturedEnvs: Record<string, string>[] = [];
     const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
@@ -319,19 +290,12 @@ describe("commit/commit-wt: on-protected direct commit", () => {
       expect(capturedEnvs[0]?.["GIT_COMMITTER_EMAIL"]).toBeUndefined();
     } finally {
       Bun.spawnSync = real;
-      o.mockRestore();
-      e.mockRestore();
+      cap.restore();
     }
   });
 
   test("committer log line reflects the resolved repo-config identity", async () => {
-    const chunks: string[] = [];
-    const push = (c: unknown): boolean => {
-      chunks.push(String(c));
-      return true;
-    };
-    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const cap = captureOutput();
     const real = Bun.spawnSync;
     const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
     Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
@@ -340,15 +304,18 @@ describe("commit/commit-wt: on-protected direct commit", () => {
       if (cmd[0] === "git" && cmd.includes("verify-commit")) return ok();
       return real(cmd as never, opts as never);
     }) as unknown as typeof Bun.spawnSync;
+    // The Author/Committer/GPG/Message context moved behind the debug gate
+    // (FEAT-one-line-outcome-contract): opt in for this assertion.
+    setLogLevel("debug");
     try {
       await commit(["--on-protected", "fix(x): direct"], config);
-      const out = chunks.join("");
+      const out = cap.lines();
       expect(out).toContain("Committer: giwt test <test@giwt.local> (from repo config)");
       expect(out).not.toContain("Committer: t <");
     } finally {
+      setLogLevel("info");
       Bun.spawnSync = real;
-      o.mockRestore();
-      e.mockRestore();
+      cap.restore();
     }
   });
 
@@ -364,13 +331,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   });
 
   test("creates a signed commit on the protected branch with --on-protected", async () => {
-    const chunks: string[] = [];
-    const push = (c: unknown): boolean => {
-      chunks.push(String(c));
-      return true;
-    };
-    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const cap = captureOutput();
     const real = Bun.spawnSync;
     const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
     Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
@@ -388,11 +349,13 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     }) as unknown as typeof Bun.spawnSync;
     try {
       await commit(["--on-protected", "fix(x): direct"], config);
-      expect(chunks.join("")).toContain("Commit created and GPG-signed");
+      // Success line carries ✅ <short-sha> <subject> (the ledger
+      // enrichment format) since the outcome-contract change.
+      expect(cap.lines()).toContain("✅");
+      expect(cap.lines()).toContain("fix(x): direct");
     } finally {
       Bun.spawnSync = real;
-      o.mockRestore();
-      e.mockRestore();
+      cap.restore();
     }
   });
 
@@ -418,7 +381,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     // not a tree/ worktree. Signing succeeds or fails depending on whether
     // the fake key materializes in a keyring; either way the commit step ran
     // against the main checkout.
-    const cap = captureStreams();
+    const cap = captureOutput();
     const original = process.exit;
     process.exit = ((code: number) => {
       throw new Error(`__exit__:${code}`);
@@ -433,7 +396,10 @@ describe("commit/commit-wt: on-protected direct commit", () => {
       const out = cap.lines();
       expect(out).toContain("direct commit on protected branch 'master'");
       expect(out).toContain("Creating GPG-signed commit in 'master'");
-      expect(out).toContain("Commit created:");
+      // commit-wt's success line carries ✅ <short-sha> <subject>; the old
+      // multi-line git-log dump is gone (outcome-contract change).
+      expect(out).toContain("✅");
+      expect(out).toContain("fix(x): direct");
     } finally {
       process.exit = original;
       cap.restore();
@@ -491,7 +457,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   test("wt warns when signature verification is inconclusive", async () => {
     stageChange("wt-unclear.txt");
     const restore = installSigningStub({ goodSignature: false });
-    const cap = captureStreams();
+    const cap = captureOutput();
     try {
       await commitWt(["master", "--on-protected", "fix(x): direct"], credConfig());
       expect(cap.lines()).toContain("signature verification unclear");
@@ -517,13 +483,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     });
     if (p.exitCode !== 0) throw new Error("git init failed");
     stageChange("f.txt", wt);
-    const chunks: string[] = [];
-    const push = (c: unknown): boolean => {
-      chunks.push(String(c));
-      return true;
-    };
-    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const cap = captureOutput();
     const original = process.exit;
     process.exit = ((code: number) => {
       throw new Error(`__exit__:${code}`);
@@ -535,10 +495,9 @@ describe("commit/commit-wt: on-protected direct commit", () => {
       expect((err as Error).message).toBe("__exit__:1");
     } finally {
       process.exit = original;
-      o.mockRestore();
-      e.mockRestore();
+      cap.restore();
     }
-    expect(chunks.join("")).toContain("worktree user.name/user.email not configured");
+    expect(cap.lines()).toContain("worktree user.name/user.email not configured");
   });
 
   test("wt rejects --on-protected on non-protected", async () => {
@@ -558,13 +517,7 @@ describe("commit/commit-wt: on-protected direct commit", () => {
   });
 
   test("commit-wt signs in the main checkout with --on-protected", async () => {
-    const chunks: string[] = [];
-    const push = (c: unknown): boolean => {
-      chunks.push(String(c));
-      return true;
-    };
-    const o = spyOn(process.stdout, "write").mockImplementation(push as never);
-    const e = spyOn(process.stderr, "write").mockImplementation(push as never);
+    const cap = captureOutput();
     const real = Bun.spawnSync;
     const ok = () => ({ exitCode: 0, stdout: Buffer.from(""), stderr: Buffer.from("") });
     Bun.spawnSync = ((cmd: string[], opts?: unknown) => {
@@ -582,11 +535,13 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     }) as unknown as typeof Bun.spawnSync;
     try {
       await commit(["--on-protected", "fix(x): direct"], config);
-      expect(chunks.join("")).toContain("Commit created and GPG-signed");
+      // Success line carries ✅ <short-sha> <subject> (the ledger
+      // enrichment format) since the outcome-contract change.
+      expect(cap.lines()).toContain("✅");
+      expect(cap.lines()).toContain("fix(x): direct");
     } finally {
       Bun.spawnSync = real;
-      o.mockRestore();
-      e.mockRestore();
+      cap.restore();
     }
   });
 });

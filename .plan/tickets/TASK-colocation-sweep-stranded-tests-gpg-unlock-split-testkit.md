@@ -3,7 +3,7 @@
 
 # TASK: colocation sweep: stranded tests, gpg-unlock split, testkit
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** refactor, testing, structure
