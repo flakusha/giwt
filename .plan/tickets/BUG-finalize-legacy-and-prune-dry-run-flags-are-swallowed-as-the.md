@@ -3,7 +3,7 @@
 
 # BUG: finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the-branch-name
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** finalize, cli, args
@@ -55,6 +55,7 @@ notes
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-16T12:02:18.485Z landed on master via plan-links-interconnect merge (09c9101)

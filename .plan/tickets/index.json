@@ -277,6 +277,23 @@
     "source": ".plan/tickets/BUG-finalize-leaves-dev-worktree-stale-after-merging.md",
     "status": "done"
   },
+  "BUG-FINALIZE-LEGACY-AND-PRUNE-DRY-RUN-FLAGS-ARE-SWALLOWED-AS-THE": {
+    "hash": "282e944",
+    "git_issue": "282e944",
+    "extid": "BUG-FINALIZE-LEGACY-AND-PRUNE-DRY-RUN-FLAGS-ARE-SWALLOWED-AS-THE",
+    "type": "BUG",
+    "title": "finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the-branch-name",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "finalize",
+      "cli",
+      "args"
+    ],
+    "source": ".plan/tickets/BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the.md",
+    "status": "done"
+  },
   "BUG-FINALIZE-LOCK-QUEUE-TEST-FLAKES-MARKER-QUEUED-NEVER-APPEARED": {
     "hash": "8f38844",
     "git_issue": "8f38844",
@@ -1368,6 +1385,23 @@
     "source": ".plan/tickets/FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and.md",
     "status": "done"
   },
+  "FEAT-PLAN-LINKS-DERIVE-AND-VALIDATE-PRODUCERS-CONSUMERS-SIBLINGS": {
+    "hash": "262d063",
+    "git_issue": "262d063",
+    "extid": "FEAT-PLAN-LINKS-DERIVE-AND-VALIDATE-PRODUCERS-CONSUMERS-SIBLINGS",
+    "type": "FEAT",
+    "title": "plan links derive and validate producers consumers siblings",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "plan",
+      "interconnection",
+      "validation"
+    ],
+    "source": ".plan/tickets/FEAT-plan-links-derive-and-validate-producers-consumers-siblings.md",
+    "status": "done"
+  },
   "FEAT-PLAN-METADATA-SUBCOMMAND-PROMOTE-FRONTMATTER-WINS-PROJECTION": {
     "hash": "1231504",
     "git_issue": "1231504",
@@ -1734,6 +1768,23 @@
       "reconcile"
     ],
     "source": ".plan/tickets/FEAT-ticket-header-conflict-resolver-in-rebase-loop.md",
+    "status": "done"
+  },
+  "FEAT-TICKET-TEMPLATE-REQUIRES-POSSIBLE-CAVEATS-AND-ISSUES-TO-AVOI": {
+    "hash": "79ac392",
+    "git_issue": "79ac392",
+    "extid": "FEAT-TICKET-TEMPLATE-REQUIRES-POSSIBLE-CAVEATS-AND-ISSUES-TO-AVOI",
+    "type": "FEAT",
+    "title": "ticket template requires possible caveats and issues to avoid",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "validation",
+      "ticket-template",
+      "safety"
+    ],
+    "source": ".plan/tickets/FEAT-ticket-template-requires-possible-caveats-and-issues-to-avoi.md",
     "status": "done"
   },
   "FEAT-UNIVERSAL-POST-MERGE-PLAN-RECONCILIATION": {

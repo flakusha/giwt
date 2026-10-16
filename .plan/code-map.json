@@ -62,6 +62,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio.md"
     },
     {
@@ -250,6 +254,10 @@
   "src/commands/finalize/merge.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-step1-doesnt-check-untracked-files.md"
     },
     {
@@ -261,6 +269,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-finalize-alreadymerged-check-is-incomplete.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the.md"
     },
     {
       "kind": "ticket",

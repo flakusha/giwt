@@ -3,7 +3,7 @@
 
 # FEAT: ticket template requires possible caveats and issues to avoid
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** validation, ticket-template, safety
@@ -28,6 +28,7 @@ Acceptance criteria:
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-10-16T12:02:18.460Z landed on master via plan-links-interconnect merge (09c9101)
