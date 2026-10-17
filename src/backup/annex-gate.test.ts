@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
 /**
  * Unit tests for the annex-aware dump gate (src/backup/annex-gate.ts): the
  * fixture is a plain directory tree — detection is filesystem-only, and the

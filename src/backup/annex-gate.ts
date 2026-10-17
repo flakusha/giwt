@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+
 /**
  * Annex-aware dump gate: the L0 tar payload stores worktree annex SYMLINKS,
  * not content — a repo with dropped-but-present annexed files would dump
