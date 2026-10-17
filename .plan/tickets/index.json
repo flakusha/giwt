@@ -50,7 +50,7 @@
       "filesystem"
     ],
     "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "cd119e1"
   },
   "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS": {
@@ -182,7 +182,7 @@
       "data-loss"
     ],
     "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "d755e4f"
   },
   "BUG-EXEC-IDENTITY-PATTERNS-AUTHOR-EQUALS-FORM-ONLY-MISSES-SPACE-": {
@@ -1018,7 +1018,7 @@
       "api"
     ],
     "source": ".plan/epics/epic-backup-annex-and-api.md",
-    "status": "📋 Planned",
+    "status": "done",
     "git_issue": "091616f"
   },
   "FEAT-ADVISORY-GIWT-LOCK-STATUS-COMMAND": {
@@ -1053,7 +1053,7 @@
       "orchestration"
     ],
     "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "de8d81b"
   },
   "FEAT-BACKUP-COMMAND-FAMILY-L0-DUMP-ENGINE-TAR-ZST-LISTED-INCREMEN": {
@@ -1649,7 +1649,7 @@
       "exports"
     ],
     "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md",
-    "status": "Not Started",
+    "status": "done",
     "git_issue": "2ad50d6"
   },
   "FEAT-PUBLIC-API-EXPORTS-FOR-PLAN-MODULES": {

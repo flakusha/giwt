@@ -13,11 +13,11 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | abort | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | agents | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
-| annex | 6 | 1 | 0 | 0 | 0 | 0 | 5 |
-| api | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
+| annex | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
+| api | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | args | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | audit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| backup | 7 | 2 | 0 | 0 | 0 | 0 | 5 |
+| backup | 7 | 7 | 0 | 0 | 0 | 0 | 0 |
 | bug | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | check | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -29,7 +29,7 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | commit-wt | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | concurrency | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | config | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| data-loss | 3 | 2 | 0 | 0 | 0 | 0 | 1 |
+| data-loss | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | decision | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | dedup | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | dev-sync | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -38,13 +38,13 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | documentation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | drift | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| dump | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| dump | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | dx | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| exports | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| exports | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | false-green | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| filesystem | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| filesystem | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | finalize | 24 | 24 | 0 | 0 | 0 | 0 | 0 |
 | fix | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | flaky | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -75,7 +75,7 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | naming | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | observability | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | offsite | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| orchestration | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| orchestration | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | parser | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -106,7 +106,7 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | stash | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | status-vocab | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | structure | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| sync | 10 | 9 | 0 | 0 | 0 | 0 | 1 |
+| sync | 10 | 10 | 0 | 0 | 0 | 0 | 0 |
 | tar | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | teardown | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | testing | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -118,7 +118,7 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 | validate | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | validation | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | verification | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| verify | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| verify | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | weave | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | worktree | 13 | 13 | 0 | 0 | 0 | 0 | 0 |
 | worktrees | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -128,13 +128,13 @@ Total tickets: **171** — untagged: **49** — unbound to epic: **153**
 
 | Epic | Total | done | in_progress | open | draft | cancelled | other |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| epic-backup-annex-and-api | 4 | 0 | 0 | 0 | 0 | 0 | 4 |
+| epic-backup-annex-and-api | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | git-rerouting-safety | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | ledger-redesign | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | spdx-compliance | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 153 | 152 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 153 | 153 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

@@ -5,6 +5,12 @@
       "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md"
     }
   ],
+  "src/backup/annex-gate.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md"
+    }
+  ],
   "src/backup/annex-status.ts": [
     {
       "kind": "ticket",
@@ -13,6 +19,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
+    }
+  ],
+  "src/backup/annex-sync.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md"
     }
   ],
   "src/backup/orchestrate.ts": [
@@ -149,10 +161,24 @@
       "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md"
     }
   ],
+  "src/commands/backup-gates.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md"
+    }
+  ],
   "src/commands/backup.ts": [
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md"
     }
   ],
   "src/commands/clean.ts": [
@@ -767,6 +793,12 @@
       "source": ".plan/tickets/TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit.md"
     }
   ],
+  "src/index.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
+    }
+  ],
   "src/index.ts": [
     {
       "kind": "epic",
@@ -1327,6 +1359,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-rebase-default-target-is-the-root-branch-which-is-also-prote.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md"
     }
   ],
   "src/utils/spdx-fix.ts": [
