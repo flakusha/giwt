@@ -3,7 +3,7 @@
 
 # FEAT: backup command family L0 dump engine tar-zst listed-incremental sha256 verify GFS rotation
 
-**Status:** Not Started
+**Status:** Done — L0 dump engine landed on master (commit feat(backup)); verify/rotation/lock/quiesce + tests in src/backup/, orchestration ticket remains open
 **Priority:** high
 **Effort:** Large
 **Tags:** backup, dump, tar

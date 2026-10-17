@@ -2,39 +2,24 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 // size-allow: 300
 
-import {
-  closeSync,
-  mkdirSync,
-  openSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  unlinkSync,
-  writeSync,
-} from "node:fs";
+import { mkdirSync, readdirSync, rmSync, unlinkSync } from "node:fs";
 import { join, resolve } from "path";
 import { log } from "../../utils/output";
-import { formatLockAge, pidAlive, reportHeldLock } from "./lock-report";
+import {
+  formatLockAge,
+  LOCK_RETRY_ATTEMPTS,
+  lockRetryDelayMs,
+  pidAlive,
+  tryPidLock,
+} from "../../utils/pid-lock";
+import { reportHeldLock } from "./lock-report";
+
+// Full-jitter draw + retry budget live in utils/pid-lock (shared with the
+// backup lock); re-exported so `giwt finalize`'s public surface and
+// finalize-lock-cleanup.test.ts keep their import path.
+export { lockRetryDelayMs } from "../../utils/pid-lock";
 
 const LOCK_FILENAME = ".worktree-finalize.lock";
-// Finalize lock acquisition: retry budget. Ceiling stays 50 attempts,
-// each sleeping at most 20ms — 1s worst case, unchanged by the jitter.
-const LOCK_RETRY_ATTEMPTS = 50;
-const LOCK_RETRY_MAX_MS = 20;
-
-/**
- * Full-jitter backoff draw for one failed `acquireFinalizeLock` attempt.
- *
- * Contenders that retry on a fixed interval stay in lockstep and keep
- * colliding; drawing uniformly from [0, 20ms] de-phases them without
- * raising the worst case (still ≤20ms per attempt, 1s over 50 attempts).
- *
- * Exported so `finalize-lock-cleanup.test.ts` can assert the draw is
- * non-constant and bounded.
- */
-export function lockRetryDelayMs(): number {
-  return Math.floor(Math.random() * LOCK_RETRY_MAX_MS);
-}
 
 // FIFO wait queue for contending finalizes. The lockfile stays the sole
 // mutual-exclusion authority; the queue only decides WHO tries next, so a
@@ -113,53 +98,6 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
   const lockPath = resolve(repoRoot, LOCK_FILENAME);
   const myPid = process.pid;
 
-  const tryCreate = (): boolean => {
-    try {
-      const fd = openSync(lockPath, "wx");
-      writeSync(fd, String(myPid));
-      closeSync(fd);
-      return true;
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-      return false;
-    }
-  };
-
-  const reapStale = (): boolean => {
-    let lockRaw = "";
-    try {
-      lockRaw = readFileSync(lockPath, "utf8").trim();
-    } catch {
-      return false;
-    }
-    const ownerPid = parseInt(lockRaw, 10);
-    if (!Number.isFinite(ownerPid)) {
-      // Empty or corrupt lockfile: a previous holder died between create
-      // and PID write (SIGKILL leaves a 0-byte file). Reap and retry.
-      try {
-        unlinkSync(lockPath);
-      } catch { /* best-effort */ }
-      return tryCreate();
-    }
-    if (ownerPid === myPid) return false;
-    try {
-      process.kill(ownerPid, 0);
-      // Owner still alive — keep their lock.
-      return false;
-    } catch (err) {
-      // Only reap on ESRCH (process truly gone). EPERM means we lack
-      // permission to signal the owner — typical for non-root agents
-      // checking PID 1 (init) — but the process IS alive, so respect
-      // its lock. Other errors fall through to retry that will fail
-      // safely if the owner is actually gone.
-      if ((err as NodeJS.ErrnoException).code !== "ESRCH") return false;
-    }
-    try {
-      unlinkSync(lockPath);
-    } catch { /* best-effort */ }
-    return tryCreate();
-  };
-
   const release = (): void => {
     try {
       unlinkSync(lockPath);
@@ -233,8 +171,9 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
     // not steal the lock through the fast path — it queues behind them.
     // (A queue-unaware OLD binary still races here; see the queue comment.)
     if (readQueue().some((e) => e.pid !== myPid && pidAlive(e.pid))) break;
-    if (tryCreate()) return releaseAll;
-    if (reapStale()) return releaseAll;
+    // Shared-kit attempt: wx-create + dead-owner reap. A won lockfile is
+    // released by releaseAll's own unlink — same path, best-effort.
+    if (tryPidLock(lockPath, myPid) !== null) return releaseAll;
     // Jittered backoff: full jitter over [0, 20ms] so contenders
     // de-phase instead of retrying in lockstep. Ceiling unchanged at
     // 50 attempts × ≤20ms = 1s worst case.
@@ -253,11 +192,7 @@ export function acquireFinalizeLock(repoRoot: string): () => void {
     // Everyone else sleeps — no thundering herd, no seq-order inversions.
     const head = readQueue()[0];
     if (head === undefined || head.pid === myPid) {
-      if (tryCreate()) {
-        dequeue();
-        return releaseAll;
-      }
-      if (reapStale()) {
+      if (tryPidLock(lockPath, myPid) !== null) {
         dequeue();
         return releaseAll;
       }

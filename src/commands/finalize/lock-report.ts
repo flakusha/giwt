@@ -3,31 +3,11 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { log, raw } from "../../utils/output";
+import { formatLockAge, pidAlive } from "../../utils/pid-lock";
 
-/**
- * True when `pid` refers to a live process (kill -0 semantics). EPERM
- * counts as alive: the process exists, we merely lack permission to
- * signal it — same policy as the stale-reap path above.
- */
-export function pidAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (err) {
-    return (err as NodeJS.ErrnoException).code !== "ESRCH";
-  }
-}
-
-/** Compact human duration for the held-lock report ("45s", "3m12s", "2h05m"). */
-export function formatLockAge(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h}h${String(m).padStart(2, "0")}m`;
-  if (m > 0) return `${m}m${s}s`;
-  return `${s}s`;
-}
+// Re-exported for `giwt lock` (src/commands/lock.ts), which reads these
+// through the finalize lock-report module.
+export { formatLockAge, pidAlive };
 
 /**
  * Report a finalize lock we could not acquire, with everything an operator

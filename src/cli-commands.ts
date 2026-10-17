@@ -1,0 +1,257 @@
+#!/usr/bin/env bun
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 giwt Contributors
+// size-allow: 300
+
+/**
+ * The command table proper, split out of cli-registry.ts for the file-size
+ * budget (mirroring the settings split). Keys match src/commands/<key>.ts;
+ * `src/cli.ts` builds the Optique parser/dispatch from this Record.
+ */
+
+import type { CommandHandler } from "./cli-registry";
+import { abort } from "./commands/abort";
+import { agentMerge } from "./commands/agent-merge";
+import { attach } from "./commands/attach";
+import { attachDir } from "./commands/attach-dir";
+import { backlog } from "./commands/backlog";
+import { backup } from "./commands/backup";
+import { execute as branchesCmd } from "./commands/branches";
+import { clean } from "./commands/clean";
+import { execute as cleanupCmd } from "./commands/cleanup";
+import { comment } from "./commands/comment";
+import { commit } from "./commands/commit";
+import { commitWt } from "./commands/commit-wt";
+import { execute as createCmd } from "./commands/create";
+import { execute as diffCmd } from "./commands/diff";
+import { docs } from "./commands/docs";
+import { doctor } from "./commands/doctor";
+import { edit } from "./commands/edit";
+import { finalize } from "./commands/finalize";
+import { gi } from "./commands/gi";
+import { gitPassthrough } from "./commands/git";
+import { runGpgUnlock } from "./commands/gpg-unlock";
+import { gripe } from "./commands/gripe";
+import { history } from "./commands/history";
+import { issues } from "./commands/issues";
+import { ledger } from "./commands/ledger";
+import { listWorktrees } from "./commands/list";
+import { lock } from "./commands/lock";
+import { merge } from "./commands/merge";
+import { execute as newBranchCmd } from "./commands/new-branch";
+import { plan } from "./commands/plan";
+import { execute as prsCmd } from "./commands/prs";
+import { rebase } from "./commands/rebase";
+import { execute as removeCmd } from "./commands/remove";
+import { report } from "./commands/report";
+import { runs } from "./commands/runs";
+import { search } from "./commands/search";
+import { selftest } from "./commands/selftest";
+import { show } from "./commands/show";
+import { execute as signCmd } from "./commands/sign";
+import { runSpdxCheck as spdxCheck } from "./commands/spdx-check";
+import { runSpdxFix as spdxFix } from "./commands/spdx-fix";
+import { state } from "./commands/state";
+import { execute as statusCmd } from "./commands/status";
+import { sync } from "./commands/sync";
+import { task } from "./commands/task";
+import { ticket } from "./commands/ticket";
+import { tmp } from "./commands/tmp";
+
+export const commands: Record<string, CommandHandler> = {
+  "abort": {
+    description:
+      "Manually recover a finalize that left dev in a bad state (in-progress merge, leftover stash, stale lock)",
+    run: abort,
+  },
+  "commit-wt": {
+    description: "GPG-signed commit in worktree",
+    run: commitWt,
+  },
+  "agent-merge": {
+    description: "Alias for finalize — merge worktree into current branch and clean up",
+    run: agentMerge,
+  },
+  "attach": {
+    description: "Attach file to issue as comment",
+    run: attach,
+  },
+  "attach-dir": {
+    description: "Attach all files in directory to issue",
+    run: attachDir,
+  },
+  "branches": {
+    description: "List branches with status",
+    run: branchesCmd,
+  },
+  "clean": {
+    description: "Age/size-capped pruning of .tmp scratchpad artifacts (dry-run by default)",
+    run: clean,
+  },
+  "cleanup": {
+    description: "Remove stale worktrees for deleted branches",
+    run: cleanupCmd,
+  },
+  "tmp": {
+    description: "Analyze the machine temp root and prune stale test fixtures (dry-run by default)",
+    run: tmp,
+  },
+  "docs": {
+    description: "List, show, search, or dump the repo's markdown docs",
+    run: docs,
+  },
+  "comment": {
+    description: "Add comment to issue",
+    run: comment,
+  },
+  "commit": {
+    description: "GPG-signed commit on current branch",
+    run: commit,
+  },
+  "create": {
+    description: "Create worktree for existing branch",
+    run: createCmd,
+  },
+  "diff": {
+    description: "Show diff for worktree branch",
+    run: diffCmd,
+  },
+  "doctor": {
+    description:
+      "Detect project structure and set up dev tooling (oxlint, biome, knip, jscpd, hooks); `doctor check` runs repo-health checks",
+    run: doctor,
+  },
+  "edit": {
+    description: "Edit issue metadata",
+    run: edit,
+  },
+  "finalize": {
+    description: "Validate, merge, remove worktree, delete branch",
+    run: finalize,
+  },
+  "gi": {
+    description: "Run git-issue command directly",
+    run: gi,
+  },
+  "git": {
+    description:
+      "Safety-gated git passthrough (harness reroutes raw git here): allowlist + destructive/gpg guard, run-record capture, rtk compact output",
+    run: gitPassthrough,
+  },
+  "gpg-unlock": {
+    description: "Warm/verify the GPG agent passphrase cache for agent commits",
+    run: async () => runGpgUnlock(),
+  },
+  "gripe": {
+    description: "Vent at another agent on the shared ledger",
+    run: gripe,
+  },
+  "history": {
+    description:
+      "Pre-rebase history tooling: `audit` classifies shape and flags suspicious commits (incl. rename-insensitive duplicates), `skips` reads back the rebase skip ledger, `resurrected` scans for resurrected files, `weave` scans for weave damage",
+    run: history,
+  },
+  "issues": {
+    description: "List issues",
+    run: issues,
+  },
+  "ledger": {
+    description: "Show recent agent ledger records",
+    run: ledger,
+  },
+  "list": {
+    description: "Show all worktrees with status",
+    run: listWorktrees,
+  },
+  "lock": {
+    description: "Advisory finalize lock + check-slot status (read-only, gates nothing)",
+    run: lock,
+  },
+  "merge": {
+    description: "Merge source branch into worktree branch",
+    run: merge,
+  },
+  "new": {
+    description: "Create new branch + worktree",
+    run: newBranchCmd,
+  },
+  "backlog": {
+    description: "Backlog tooling — sync .plan/backlog/ indexes",
+    run: backlog,
+  },
+  "backup": {
+    description:
+      "L0 dump lane — tar.zst listed-incremental chains: `dump` (weekly full + daily incremental, sha256 sidecar, zstd verify, GFS rotation), `verify` (replay youngest chain into the repo scratch area)",
+    run: backup,
+  },
+  "plan": {
+    description: "Plan tooling — code map, docs, link check, validate",
+    run: plan,
+  },
+  "prs": {
+    description: "Create worktrees for open PRs",
+    run: prsCmd,
+  },
+  "rebase": {
+    description: "Rebase worktree branch onto target",
+    run: rebase,
+  },
+  "remove": {
+    description: "Remove specific worktree; --branch-only deletes a bare branch",
+    run: removeCmd,
+  },
+  "report": {
+    description: "Aggregate check-report status across worktrees",
+    run: report,
+  },
+  "runs": {
+    description: "List run records; triage failures; diff two runs (.tmp scratchpad)",
+    run: runs,
+  },
+  "search": {
+    description: "Search issues by text pattern",
+    run: search,
+  },
+  "show": {
+    description: "Show issue details and comments",
+    run: show,
+  },
+  "sign": {
+    description: "Configure GPG signing for existing worktree",
+    run: signCmd,
+  },
+  "spdx-check": {
+    description: "Validate SPDX headers against REUSE.toml rules",
+    run: spdxCheck,
+  },
+  "selftest": {
+    description:
+      "Run giwt's shipped conformance suites against this installed copy (--filter <suite>)",
+    run: selftest,
+  },
+  "spdx-fix": {
+    description: "Apply SPDX headers to files that need them",
+    run: spdxFix,
+  },
+  "state": {
+    description: "Change issue state",
+    run: state,
+  },
+  "status": {
+    description: "Show branch sync status",
+    run: statusCmd,
+  },
+  "sync": {
+    description: "Sync ticket index with files + git issues",
+    run: sync,
+  },
+  "task": {
+    description:
+      "Render an agent task prompt: flags -> generic implementation/finalization guidance, user directive last",
+    run: task,
+  },
+  "ticket": {
+    description: "Create ticket file + git issue; close/copy/3way subactions",
+    run: ticket,
+  },
+};

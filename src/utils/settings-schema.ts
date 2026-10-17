@@ -39,6 +39,15 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     root: "root",
   },
   tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
+  backup: {
+    root: "root",
+    targets: "targets",
+    keep_daily: "keepDaily",
+    keep_weekly: "keepWeekly",
+    keep_monthly: "keepMonthly",
+    timeout_ms: "timeoutMs",
+    allow_root_owned: "allowRootOwned",
+  },
   status: { aliases: "aliases" },
   plan: { interconnect: "interconnect" },
   git: {
@@ -84,6 +93,15 @@ export const EXPECTED: Record<
     root: "string",
   },
   tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
+  backup: {
+    root: "string",
+    targets: "string[]",
+    keepDaily: "number",
+    keepWeekly: "number",
+    keepMonthly: "number",
+    timeoutMs: "number",
+    allowRootOwned: "boolean",
+  },
   status: { aliases: "map" },
   plan: { interconnect: "boolean" },
   git: {

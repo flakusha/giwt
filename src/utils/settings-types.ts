@@ -42,6 +42,19 @@ export interface GiwtSettings {
     root: string;
   };
   tmp: { root: string; prefixes: string[]; maxAgeHours: number; };
+  backup: {
+    /** Archive root; relative paths resolve against the repo root. */
+    root: string;
+    /** Default dump targets (repo-root-relative paths; "." = whole repo). */
+    targets: string[];
+    keepDaily: number;
+    keepWeekly: number;
+    keepMonthly: number;
+    /** Per-tool subprocess budget for tar/zstd/sqlite3 (ms). */
+    timeoutMs: number;
+    /** Allow dumping root-owned target paths (default refuse). */
+    allowRootOwned: boolean;
+  };
   status: { aliases: Record<string, string>; };
   plan: { interconnect: boolean; };
   git: {
@@ -81,6 +94,15 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     root: "/tmp",
     prefixes: DEFAULT_TMP_OPTIONS.prefixes,
     maxAgeHours: DEFAULT_TMP_OPTIONS.maxAgeHours,
+  },
+  backup: {
+    root: ".backups",
+    targets: [],
+    keepDaily: 7,
+    keepWeekly: 4,
+    keepMonthly: 12,
+    timeoutMs: 600_000,
+    allowRootOwned: false,
   },
   status: { aliases: {} },
   plan: { interconnect: true },
