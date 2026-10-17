@@ -292,6 +292,27 @@ describe("backup dump/verify (real tar)", () => {
     rmSync(fx.repo, { recursive: true, force: true });
   });
 
+  test("root-owned target is refused by default (deny path, guard precedes tar)", async () => {
+    // No privileges needed: any root-owned dir on the system fires the guard
+    // (uid === 0 && !allowRootOwned) BEFORE any read, tar, or quiesce runs.
+    // /etc is root-owned and statable by any user. The refusal is a HARD
+    // failure: dumpLocked throws so nothing is committed.
+    const fx = makeFixture("root-owned");
+    const opts = dumpOptions(fx);
+    opts.targets = [{ target: "etc", targetAbs: "/etc" }];
+    let message = "";
+    try {
+      await runDump(opts);
+    } catch (err) {
+      message = (err as Error).message;
+    }
+    expect(message).toContain("owned by root");
+    expect(message).toContain("allow_root_owned");
+    expect(message).toContain(".snar chains left untouched");
+    expect(archivesOf(fx.root, /^etc\./)).toEqual([]);
+    rmSync(fx.repo, { recursive: true, force: true });
+  });
+
   test("held backup lock refuses the dump with a remedy", async () => {
     const fx = makeFixture("lock");
     mkdirSync(fx.root, { recursive: true });
