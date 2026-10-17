@@ -178,6 +178,9 @@ export interface SettingsPaths {
   globalPath?: string;
   /** Local config file; default <repoRoot>/giwt.toml. */
   localPath?: string;
+  /** Skip the global layer entirely — security-sensitive per-repo policy
+   *  (e.g. [git] allow) must be decided by the repo's own file only. */
+  skipGlobal?: boolean;
 }
 
 /**
@@ -190,7 +193,7 @@ export function loadSettings(repoRoot: string, paths: SettingsPaths = {}): GiwtS
   const localPath = paths.localPath ?? join(repoRoot, "giwt.toml");
 
   let settings = DEFAULT_SETTINGS;
-  const globalDoc = parseFile(globalPath);
+  const globalDoc = paths.skipGlobal === true ? null : parseFile(globalPath);
   if (globalDoc) settings = mergeLayer(settings, globalDoc, globalPath);
   const localDoc = parseFile(localPath);
   if (localDoc) settings = mergeLayer(settings, localDoc, localPath);

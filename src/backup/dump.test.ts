@@ -333,22 +333,28 @@ describe("backup dump/verify (real tar)", () => {
     rmSync(fx.repo, { recursive: true, force: true });
   });
 
-  test("annex-detected dump degrades silently when the annex probe is unavailable", async () => {
-    // A `.git/annex` dir with no working git-annex behind it: the gate's
-    // probe spawn fails, advisory is null, dump proceeds unchanged.
-    const fx = makeFixture("annex-probe-fail");
-    mkdirSync(join(fx.repo, ".git", "annex"), { recursive: true });
-    const config = fakeConfig(fx.repo, ["docs"]);
-    const writeSpy = spyOn(process.stdout, "write");
-    await backup(["dump"], config);
-    expect(writeSpy.mock.calls.some((call) => String(call[0]).includes("annex advisory"))).toBe(
-      false,
-    );
-    expect(writeSpy.mock.calls.some((call) => String(call[0]).includes("dumped 1 archive(s)")))
-      .toBe(true);
-    writeSpy.mockRestore();
-    rmSync(fx.repo, { recursive: true, force: true });
-  });
+  test(
+    "annex-detected dump degrades silently when the annex probe is unavailable",
+    // Real git/tar spawns with the full [backup] timeout budget — under a
+    // parallel suite those can exceed bun's 5s default, so widen the gate.
+    async () => {
+      // A `.git/annex` dir with no working git-annex behind it: the gate's
+      // probe spawn fails, advisory is null, dump proceeds unchanged.
+      const fx = makeFixture("annex-probe-fail");
+      mkdirSync(join(fx.repo, ".git", "annex"), { recursive: true });
+      const config = fakeConfig(fx.repo, ["docs"]);
+      const writeSpy = spyOn(process.stdout, "write");
+      await backup(["dump"], config);
+      expect(writeSpy.mock.calls.some((call) => String(call[0]).includes("annex advisory"))).toBe(
+        false,
+      );
+      expect(writeSpy.mock.calls.some((call) => String(call[0]).includes("dumped 1 archive(s)")))
+        .toBe(true);
+      writeSpy.mockRestore();
+      rmSync(fx.repo, { recursive: true, force: true });
+    },
+    30_000,
+  );
 
   test("root-owned target is refused by default (deny path, guard precedes tar)", async () => {
     // No privileges needed: any root-owned dir on the system fires the guard

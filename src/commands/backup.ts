@@ -26,7 +26,14 @@ import { verifyRoot } from "../backup/verify";
 import type { WorktreeConfig } from "../utils/config";
 import { log, outcomeLine, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
-import { HELP, runRemoteGate, runScheduleGate, runStatusGate, usageError } from "./backup-gates";
+import {
+  HELP,
+  runAnnexSyncGate,
+  runRemoteGate,
+  runScheduleGate,
+  runStatusGate,
+  usageError,
+} from "./backup-gates";
 import { humanBytes } from "./clean";
 
 function backupOptions(
@@ -190,7 +197,7 @@ async function runVerifyCommand(
   outcomeLine(failed === 0, summary);
 }
 
-/** `giwt backup` entry: subcommand dispatch (dump | verify | status | schedule | remote). */
+/** `giwt backup` entry: subcommand dispatch (dump | verify | annex-sync | status | schedule | remote). */
 export async function backup(args: string[], config: WorktreeConfig): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
     raw(HELP);
@@ -200,10 +207,11 @@ export async function backup(args: string[], config: WorktreeConfig): Promise<vo
   if (subcommand === "status") return runStatusGate(args.slice(1), config);
   if (subcommand === "schedule") return runScheduleGate(args.slice(1));
   if (subcommand === "remote") return runRemoteGate(args.slice(1), config);
+  if (subcommand === "annex-sync") return runAnnexSyncGate(args.slice(1), config);
   if (subcommand !== "dump" && subcommand !== "verify") {
     usageError(
       subcommand === undefined
-        ? "a subcommand is required (dump|verify|status|schedule|remote)"
+        ? "a subcommand is required (dump|verify|annex-sync|status|schedule|remote)"
         : `unknown subcommand '${subcommand}'`,
     );
   }

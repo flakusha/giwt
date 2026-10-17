@@ -8,16 +8,26 @@
  * the shared usageError used by the dump/verify dispatch.
  */
 
+import { runAnnexSync } from "../backup/annex-sync";
 import { runRemoteCommand, runScheduleCommand, runStatusCommand } from "../backup/orchestrate";
 import { OFFSITE_KINDS } from "../backup/remote";
 import { parseDuration } from "../backup/state";
 import type { WorktreeConfig } from "../utils/config";
 
-export const HELP = `backup <dump|verify|status|schedule|remote> [flags]
+export const HELP = `backup <dump|verify|annex-sync|status|schedule|remote> [flags]
   dump     tar.zst archive per target (weekly full + incremental .snar chain,
            sha256 sidecar, zstd -t after write, GFS rotation after verify)
   verify   replay the youngest full+increment chain per target into the
            repo scratch area and assert the tar table + manifest presence
+  annex-sync drive 'git annex sync --content' behind the SAME [git] allow
+           policy as the 'giwt git' passthrough (repo giwt.toml decides;
+           global config or env alone never authorizes); refuses when
+           numcopies is unverifiable (RO whereis probe) and records the
+           outcome as a 'sync' event in .backup.jsonl (visible as
+           'sync (local)' in status). Operator ordering guidance: run it
+           BEFORE 'backup dump' in cron chains ('backup annex-sync &&
+           backup dump && backup verify') so archives capture converged
+           content — the dump lane never syncs on its own
   status   last success per kind/remote from .backup.jsonl; staleness gate:
            --staleness <n><s|m|h|d> (default 24h), --strict exits 1 when
            stale (cron-visible), --annex adds read-only git-annex counts
@@ -62,6 +72,20 @@ export function runScheduleGate(rest: string[]): void {
     remoteKind: flagValue(rest, "--remote"),
     staleness: flagValue(rest, "--staleness") || "24h",
     calendar: flagValue(rest, "--calendar") || "daily",
+  });
+}
+
+/** `backup annex-sync` gate: no flags today — any flag is a usage error,
+ *  keeping the lane surface as narrow as its authorization. */
+export function runAnnexSyncGate(rest: string[], config: WorktreeConfig): void {
+  const unknown = rest.find((arg) => arg.startsWith("-"));
+  if (unknown !== undefined) {
+    usageError(`annex-sync takes no flags (got '${unknown}')`);
+  }
+  runAnnexSync({
+    repoRoot: config.repoRoot,
+    treeDir: config.worktreeRoot,
+    timeoutMs: config.settings.backup.timeoutMs,
   });
 }
 
