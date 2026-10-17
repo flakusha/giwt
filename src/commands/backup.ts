@@ -19,25 +19,14 @@ import {
   runDump,
 } from "../backup/dump";
 import { safeTargetName } from "../backup/plan";
-import { type BackupTool, verifyRoot } from "../backup/verify";
-import { boundedSpawn, defaultSpawn } from "../doctor/check/spawn";
+import { backupTool } from "../backup/remote";
+import { appendState } from "../backup/state";
+import { verifyRoot } from "../backup/verify";
 import type { WorktreeConfig } from "../utils/config";
 import { log, outcomeLine, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
+import { HELP, runRemoteGate, runScheduleGate, runStatusGate, usageError } from "./backup-gates";
 import { humanBytes } from "./clean";
-
-const HELP = `backup <dump|verify> [targets...] [--dry-run]
-  dump     tar.zst archive per target (weekly full + incremental .snar chain,
-           sha256 sidecar, zstd -t after write, GFS rotation after verify)
-  verify   replay the youngest full+increment chain per target into the
-           repo scratch area and assert the tar table + manifest presence
-  --dry-run   (dump only) print the plan without writing anything
-  Targets default to [backup] targets (else the repo root); archives land
-  under [backup] root (default .backups).`;
-
-function usageError(message: string): never {
-  throw new Error(`backup: ${message}\n${HELP}`);
-}
 
 function backupOptions(
   config: WorktreeConfig,
@@ -93,11 +82,6 @@ function printPreview(rows: DumpPreviewRow[]): string {
   } incremental)`;
 }
 
-function backupTool(timeoutMs: number): BackupTool {
-  const bounded = boundedSpawn(defaultSpawn, timeoutMs);
-  return async (cmd, cwd) => await bounded(cmd, cwd);
-}
-
 async function runDumpCommand(
   config: WorktreeConfig,
   rootAbs: string,
@@ -111,6 +95,17 @@ async function runDumpCommand(
           d.sha256.slice(0, 12)
         }…)`,
       );
+      // State beacon: one dump event per archive (single fsync append).
+      appendState(config.worktreeRoot, {
+        ts: new Date().toISOString(),
+        kind: "dump",
+        remote: "",
+        path: d.archive,
+        type: d.level === "full" ? "full" : "incr",
+        size: d.bytes,
+        sha256: d.sha256,
+        ok: true,
+      });
     }
     for (const name of result.pruned) log("info", `rotated out: ${name}`);
     for (const skip of result.skippedDbs) {
@@ -122,6 +117,15 @@ async function runDumpCommand(
     outcomeLine(true, summary);
   } catch (err) {
     log("error", (err as Error).message);
+    // Failure beacon BEFORE the exit code lands, so staleness sees truth.
+    appendState(config.worktreeRoot, {
+      ts: new Date().toISOString(),
+      kind: "dump",
+      remote: "",
+      path: rootAbs,
+      ok: false,
+      note: (err as Error).message.slice(0, 200),
+    });
     activeRun()?.outcome({ backup: "dump failed" });
     outcomeLine(false, "dump failed");
     process.exitCode = 1;
@@ -151,22 +155,33 @@ async function runVerifyCommand(
   const summary = failed === 0
     ? `verified ${verdicts.length} chain(s)`
     : `verify failed for ${failed}/${verdicts.length} chain(s)`;
+  appendState(config.worktreeRoot, {
+    ts: new Date().toISOString(),
+    kind: "verify",
+    remote: "",
+    path: rootAbs,
+    ok: failed === 0,
+    ...(failed === 0 ? {} : { note: summary }),
+  });
   activeRun()?.outcome({ backup: summary });
   if (failed > 0) process.exitCode = 1;
   outcomeLine(failed === 0, summary);
 }
 
-/** `giwt backup` entry: subcommand dispatch (dump | verify). */
+/** `giwt backup` entry: subcommand dispatch (dump | verify | status | schedule | remote). */
 export async function backup(args: string[], config: WorktreeConfig): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
     raw(HELP);
     return;
   }
   const subcommand = args[0];
+  if (subcommand === "status") return runStatusGate(args.slice(1), config);
+  if (subcommand === "schedule") return runScheduleGate(args.slice(1));
+  if (subcommand === "remote") return runRemoteGate(args.slice(1), config);
   if (subcommand !== "dump" && subcommand !== "verify") {
     usageError(
       subcommand === undefined
-        ? "a subcommand is required (dump|verify)"
+        ? "a subcommand is required (dump|verify|status|schedule|remote)"
         : `unknown subcommand '${subcommand}'`,
     );
   }

@@ -54,6 +54,8 @@ export interface GiwtSettings {
     timeoutMs: number;
     /** Allow dumping root-owned target paths (default refuse). */
     allowRootOwned: boolean;
+    /** Two-key gate for server-side deletion: also requires --prune. */
+    allowRemoteDelete: boolean;
   };
   status: { aliases: Record<string, string>; };
   plan: { interconnect: boolean; };
@@ -103,6 +105,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     keepMonthly: 12,
     timeoutMs: 600_000,
     allowRootOwned: false,
+    allowRemoteDelete: false,
   },
   status: { aliases: {} },
   plan: { interconnect: true },

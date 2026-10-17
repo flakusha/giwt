@@ -181,7 +181,7 @@ export const commands: Record<string, CommandHandler> = {
   },
   "backup": {
     description:
-      "L0 dump lane — tar.zst listed-incremental chains: `dump` (weekly full + daily incremental, sha256 sidecar, zstd verify, GFS rotation), `verify` (replay youngest chain into the repo scratch area)",
+      "Backup family: dump (tar.zst listed-incremental chains), verify (chain replay), status (state ledger + staleness gate, --annex), schedule (byte-identical systemd+cron units), remote (rclone/rsync/ssh off-site, deletion two-key gated, --discover)",
     run: backup,
   },
   "plan": {

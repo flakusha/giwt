@@ -116,6 +116,10 @@ export const ANNEX_RO_SUBCOMMANDS: Record<string, true> = {
   info: true,
   version: true,
   describe: true,
+  // `unused` computes + caches the unused-key listing (state file only, no
+  // object/graph mutation) — read-only for policy purposes; `unused --send`
+  // stays unlisted (blocked without an explicit [git] allow entry).
+  unused: true,
 };
 
 /** Annex ops that mutate state recoverably — opt-in per repo. */
