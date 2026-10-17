@@ -3,7 +3,7 @@
 
 # FEAT: git-annex passthrough second-level classifier policy for destructive annex ops
 
-**Status:** Not Started
+**Status:** Done — implemented by agent session 2026-10-17 (FEAT-git-annex-passthrough-second-level-classifier-policy-for-des): two-token annex policy in src/git/policy-annex.ts + policy-tables.ts, annex `-c`/`${` refusals, warn-once destructive-allow in src/commands/git.ts; classify matrix in src/git/policy.test.ts.
 **Priority:** medium
 **Effort:** Medium
 **Tags:** annex, git-passthrough, policy

@@ -98,6 +98,56 @@ export const RW_SUBCOMMANDS: Record<string, true> = {
 };
 
 /**
+ * git-annex second-level tables — keyed by the `annex <op>` sub-op token.
+ * Entries in [git] safe/allow/deny may carry two tokens (`"annex status"`)
+ * to target annex ops; a bare `"annex"` entry still matches every op on
+ * the first token (except built-in-deny ops, which always need the
+ * explicit two-token form). Precedence unchanged: deny > allow > safe.
+ *
+ * Defaults: RO ops pass outright; RW ops are reachable ONLY via an
+ * explicit per-repo `[git] allow` entry (giwt never enables them by
+ * default); destructive ops are denied by default.
+ */
+export const ANNEX_RO_SUBCOMMANDS: Record<string, true> = {
+  status: true,
+  whereis: true,
+  find: true,
+  log: true,
+  info: true,
+  version: true,
+  describe: true,
+};
+
+/** Annex ops that mutate state recoverably — opt-in per repo. */
+export const ANNEX_ALLOW_SUBCOMMANDS: Record<string, true> = {
+  init: true,
+  add: true,
+  sync: true,
+  copy: true,
+  get: true,
+  move: true,
+  initremote: true,
+  enableremote: true,
+  mirror: true,
+  export: true,
+  import: true,
+};
+
+/** Denied by default — a backup stack must never destroy its last known
+ *  copy (numcopies remains the only safety net once these run). */
+export const ANNEX_DENY_SUBCOMMANDS: Record<string, true> = {
+  drop: true,
+  dropunused: true,
+  dropkey: true,
+  forget: true,
+  dead: true,
+  untrust: true,
+  semitrust: true,
+  unannex: true,
+  uninit: true,
+};
+
+/**
  * Subcommands refused outright — destructive, unrecoverable, or
  * execution-of-arbitrary-code shapes. Not reachable from [git] allow.
  */

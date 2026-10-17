@@ -46,8 +46,11 @@
  *                             # still runs it when false)
  *   [git]                    # `giwt git` passthrough policy (harness reroutes git here)
  *   rtk = "auto"             # auto|on|off — rtk compact console output for reads
- *   safe = []                # extra subcommands treated as read-only
+ *   safe = []                # extra subcommands treated as read-only;
+ *                              entries may carry two tokens ("annex status")
  *   allow = []               # extra subcommands treated as recoverable mutations
+ *                              (two-token annex ops; bare "annex.mincopies" keys
+ *                              lift the -c annex.* refusal)
  *   deny = []                # extra subcommands refused outright (wins)
  *   classify = "builtin"     # reserved for the future 0-shot classifier seam
  *   config_writes = "allow"  # allow|refuse — giwt's own lifecycle git-config

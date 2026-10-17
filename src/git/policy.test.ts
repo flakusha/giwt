@@ -4,6 +4,7 @@
 import { describe, expect, test } from "bun:test";
 import { classifyGitInvocation, parseGlobalArgs } from "./policy";
 import type { GitPolicyLists } from "./policy";
+import { destructiveAnnexAllows } from "./policy-annex";
 
 const NO_FS = { pathExists: () => false };
 
@@ -388,5 +389,103 @@ describe("classifyGitInvocation — configurable lists", () => {
 
   test("deny never unblocks built-in blocks", () => {
     expect(verdict(["clean"], lists).verdict).toBe("block");
+  });
+});
+
+describe("classifyGitInvocation — git-annex two-token policy", () => {
+  test("built-in annex RO ops pass by default", () => {
+    for (const op of ["status", "whereis", "find", "log", "info", "version", "describe"]) {
+      expect(verdict(["annex", op]).verdict).toBe("pass");
+    }
+  });
+
+  test("built-in annex RW ops are opt-in — blocked by default, pass via two-token allow", () => {
+    for (const op of ["sync", "copy", "get", "move", "initremote", "mirror", "import"]) {
+      expect(verdict(["annex", op]).verdict).toBe("block");
+    }
+    expect(verdict(["annex", "sync"], { safe: [], allow: ["annex sync"], deny: [] }).verdict).toBe(
+      "pass",
+    );
+  });
+
+  test("bare 'annex' allow keeps first-token matching and admits RW ops", () => {
+    expect(verdict(["annex", "sync"], { safe: [], allow: ["annex"], deny: [] }).verdict).toBe(
+      "pass",
+    );
+  });
+
+  test("safe entry treats an annex op as read-only", () => {
+    expect(verdict(["annex", "sync"], { safe: ["annex sync"], allow: [], deny: [] }).verdict).toBe(
+      "pass",
+    );
+  });
+
+  test("destructive annex ops are denied by default citing the built-in table", () => {
+    for (const op of ["drop", "dropunused", "dropkey", "forget", "dead", "uninit", "unannex"]) {
+      const v = verdict(["annex", op]);
+      expect(v.verdict).toBe("block");
+      expect(v.reason).toContain("built-in default policy");
+    }
+  });
+
+  test("exact two-token 'annex drop' allow lifts the built-in deny", () => {
+    expect(verdict(["annex", "drop"], { safe: [], allow: ["annex drop"], deny: [] }).verdict).toBe(
+      "pass",
+    );
+  });
+
+  test("bare 'annex' allow never lifts the built-in deny", () => {
+    expect(verdict(["annex", "drop"], { safe: [], allow: ["annex"], deny: [] }).verdict).toBe(
+      "block",
+    );
+  });
+
+  test("[git] deny wins over allow, two-token or blanket", () => {
+    const two = { safe: [], allow: ["annex drop"], deny: ["annex drop"] };
+    expect(verdict(["annex", "drop"], two).verdict).toBe("block");
+    expect(verdict(["annex", "drop"], two).reason).toContain("repo giwt.toml");
+    const blanket = { safe: [], allow: ["annex sync"], deny: ["annex"] };
+    expect(verdict(["annex", "sync"], blanket).verdict).toBe("block");
+  });
+
+  test("refusal reasons name the policy source (built-in vs repo giwt.toml)", () => {
+    expect(verdict(["annex", "dropunused"]).reason).toContain("built-in default policy");
+    expect(verdict(["annex", "copy"]).reason).toContain("repo giwt.toml");
+  });
+
+  test("bare 'annex' blocks; unknown annex op is err-closed", () => {
+    expect(verdict(["annex"]).verdict).toBe("block");
+    const v = verdict(["annex", "fakemagic"]);
+    expect(v.verdict).toBe("block");
+    expect(v.reason).toContain("err-closed");
+  });
+
+  test("'${' interpolation in annex args is refused", () => {
+    const v = verdict(["annex", "find", "--include='${HOME}'"]);
+    expect(v.verdict).toBe("block");
+    expect(v.reason).toContain("interpolation");
+    expect(verdict(["annex", "status", "${PID}"]).verdict).toBe("block");
+  });
+
+  test("-c annex.* overrides are refused unless the exact key is allow-listed", () => {
+    const blocked = verdict(["-c", "annex.mincopies=2", "annex", "sync"]);
+    expect(blocked.verdict).toBe("block");
+    expect(blocked.reason).toContain("annex.mincopies");
+    expect(verdict(["-cannex.mincopies=2", "annex", "sync"]).verdict).toBe("block");
+    const lifted = { safe: [], allow: ["annex sync", "annex.mincopies"], deny: [] };
+    expect(verdict(["-c", "annex.mincopies=2", "annex", "sync"], lifted).verdict).toBe("pass");
+  });
+
+  test("destructiveAnnexAllows surfaces exactly the two-token destructive entries", () => {
+    expect(
+      destructiveAnnexAllows({
+        safe: [],
+        allow: ["annex drop", "annex sync", "annex", "deploy"],
+        deny: [],
+      }),
+    ).toEqual(["annex drop"]);
+    expect(
+      destructiveAnnexAllows({ safe: ["annex dropunused"], allow: [], deny: [] }),
+    ).toEqual([]);
   });
 });

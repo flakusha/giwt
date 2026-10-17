@@ -13,11 +13,12 @@
 
 import { writeFileSync } from "node:fs";
 import { classifyGitInvocation } from "../git/policy";
+import { destructiveAnnexAllows } from "../git/policy-annex";
 import { RTK_DISPLAY_SUBCOMMANDS } from "../git/policy-tables";
 import { ALLOW_AUTHOR_OVERRIDE_FLAG, assertGitAuthorIdentity } from "../utils/author-guard";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
-import { log, raw } from "../utils/output";
+import { log, raw, warnOnce } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import type { RunRecorder } from "../utils/runlog";
 import { applyTrailerPolicy, removeTempFiles } from "./git-trailers";
@@ -53,6 +54,23 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
     log("warn", `[git] rtk '${settings.rtk}' invalid — using 'auto'`);
   }
   const rtkMode = ["auto", "on", "off"].includes(settings.rtk) ? settings.rtk : "auto";
+
+  // Operator allow-listed a destructive annex op — warn once loudly per
+  // entry: giwt will no longer stand between the backup stack and its
+  // last known copy (numcopies is the only remaining safety net).
+  for (
+    const entry of destructiveAnnexAllows({
+      safe: settings.safe,
+      allow: settings.allow,
+      deny: settings.deny,
+    })
+  ) {
+    warnOnce(
+      `git-policy:destructive-annex-allow:${entry}`,
+      `git policy: "${entry}" in [git] allow allow-lists a DESTRUCTIVE git-annex operation (repo giwt.toml) — `
+        + `giwt will run it as asked; numcopies is the only remaining safety net`,
+    );
+  }
 
   const verdict = classifyGitInvocation(rest, {
     safe: settings.safe,

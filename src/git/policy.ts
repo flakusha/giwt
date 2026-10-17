@@ -12,6 +12,7 @@
  * → [git] safe/allow → block (unknown).
  */
 import { existsSync } from "node:fs";
+import { classifyAnnex } from "./policy-annex";
 import {
   BLOCK_SUBCOMMANDS,
   GPG_BYPASS_TOKENS,
@@ -157,7 +158,29 @@ export function classifyGitInvocation(
   const sub = rest[0]!;
   const subArgs = rest.slice(1);
 
-  const denyBlock = `git ${sub} is listed in [git] deny`;
+  // `-c annex.*` overrides mutate git-annex config — refused unless the
+  // exact config key is allow-listed (e.g. [git] allow = ["annex.mincopies"]).
+  for (let i = 0; i < args.length; i++) {
+    const tok = args[i]!;
+    const pair = tok === "-c"
+      ? args[i + 1]
+      : tok.startsWith("-c") && tok.length > 2
+      ? tok.slice(2)
+      : undefined;
+    if (pair === undefined) continue;
+    const key = pair.split("=", 1)[0] ?? "";
+    if (!key.toLowerCase().startsWith("annex.")) continue;
+    if (!lists.allow.includes(key)) {
+      return {
+        verdict: "block",
+        reason:
+          `-c ${key} override is refused — annex.* config mutations need an explicit [git] allow = ["${key}"] entry in repo giwt.toml`,
+        subcommand: sub,
+      };
+    }
+  }
+
+  const denyBlock = `git ${sub} is listed in [git] deny (repo giwt.toml policy)`;
   if (lists.deny.includes(sub)) return { verdict: "block", reason: denyBlock, subcommand: sub };
   if (GPG_BYPASS_TOKENS.some((t) => subArgs.includes(t))) {
     return {
@@ -173,6 +196,7 @@ export function classifyGitInvocation(
       subcommand: sub,
     };
   }
+  if (sub === "annex") return classifyAnnex(subArgs, lists);
   const predicate = PREDICATES[sub];
   if (predicate !== undefined) {
     const reason = predicate(subArgs, ctx);
@@ -188,7 +212,7 @@ export function classifyGitInvocation(
   return {
     verdict: "block",
     reason:
-      `git ${sub} is not in the giwt allowlist — add it under [git] allow in giwt.toml if it is safe`,
+      `git ${sub} is not in the giwt built-in allowlist — add it under [git] allow in giwt.toml if it is safe`,
     subcommand: sub,
   };
 }
