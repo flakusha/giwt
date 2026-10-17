@@ -16,7 +16,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | annex | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | args | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | audit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| backup | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
+| backup | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | bug | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | check | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -71,8 +71,8 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | migrations | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | naming | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | observability | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| offsite | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
-| orchestration | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| offsite | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
+| orchestration | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | output | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | parallel-sessions | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | parser | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -129,7 +129,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | spdx-compliance | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 152 | 151 | 0 | 0 | 0 | 0 | 1 |
+| (unbound) | 152 | 152 | 0 | 0 | 0 | 0 | 0 |
 
 ## Ticket detail
 

@@ -1017,7 +1017,7 @@
       "offsite"
     ],
     "source": ".plan/tickets/FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
