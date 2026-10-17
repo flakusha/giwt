@@ -6,13 +6,25 @@
 > Auto-generated from `.plan/epics/`. Do not edit manually.
 > Regenerate with `giwt plan gen-docs`.
 
-**Total:** 0 epics
+**Total:** 1 epics
 
 ## Summary
 
 | Status | Title | Priority | Effort | Tasks | File |
 | ------ | ----- | -------- | ------ | ----- | ---- |
+| 📋 Planned | backup annex hardening and public API surface | high | Large | 0/4 | [epic-backup-annex-and-api.md](/.plan/epics/epic-backup-annex-and-api.md) |
 
 ---
 
 ## Epics
+
+### backup annex hardening and public API surface
+
+- **Status:** 📋 Planned
+- **Priority:** high
+- **Effort:** Large
+- **Type:** epic
+- **Tags:** backup, annex, api
+- **File:** `.plan/epics/epic-backup-annex-and-api.md`
+
+`giwt backup` is the zero-dependency insurance layer, but on git-annex repos

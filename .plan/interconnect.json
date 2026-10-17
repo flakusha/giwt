@@ -26,6 +26,21 @@
       "related": []
     },
     {
+      "id": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md",
+      "title": "backup dump verify: scratch cleanup EACCES and leaked trees",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/backup/tarball.ts",
+        "src/backup/verify.ts",
+        "src/commands/backup.ts"
+      ],
+      "related": [
+        "BUG-dump-on-annex-repos-is-a-silent-partial-backup"
+      ]
+    },
+    {
       "id": "BUG-bad-config-toml-crashes-every-command-including-readers",
       "kind": "ticket",
       "path": ".plan/tickets/BUG-bad-config-toml-crashes-every-command-including-readers.md",
@@ -101,6 +116,22 @@
         "src/doctor/check/types.ts"
       ],
       "related": []
+    },
+    {
+      "id": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md",
+      "title": "dump on annex repos is a silent partial backup",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/backup/annex-status.ts",
+        "src/backup/tarball.ts"
+      ],
+      "related": [
+        "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+        "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen",
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+      ]
     },
     {
       "id": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
@@ -397,7 +428,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md",
       "title": "linked-worktree sync defers canonical index write but sync and plan validate treat stale index as actionable",
-      "status": "Not Started",
+      "status": "done",
       "srcRefs": [
         "src/tickets/sync-index-write.ts",
         "src/tickets/sync-index.ts",
@@ -723,11 +754,26 @@
       "related": []
     },
     {
+      "id": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md",
+      "title": "annex sync orchestration lane in giwt backup",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/cli-usage.ts"
+      ],
+      "related": [
+        "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s",
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+      ]
+    },
+    {
       "id": "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen",
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen.md",
       "title": "backup command family L0 dump engine tar-zst listed-incremental sha256 verify GFS rotation",
-      "status": "Not Started",
+      "status": "done",
       "srcRefs": [],
       "related": [
         "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s",
@@ -739,7 +785,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s.md",
       "title": "backup orchestration state staleness alerts scheduling off-site mirrors MagicDNS",
-      "status": "Not Started",
+      "status": "done",
       "srcRefs": [],
       "related": [
         "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen",
@@ -904,8 +950,13 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md",
       "title": "git-annex passthrough second-level classifier policy for destructive annex ops",
-      "status": "Not Started",
-      "srcRefs": [],
+      "status": "done",
+      "srcRefs": [
+        "src/commands/git.ts",
+        "src/git/policy-annex.ts",
+        "src/git/policy.test.ts",
+        "src/git/policy.ts"
+      ],
       "related": [
         "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen",
         "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s"
@@ -1127,6 +1178,25 @@
       "status": "done",
       "srcRefs": [],
       "related": []
+    },
+    {
+      "id": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "ticket",
+      "path": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md",
+      "title": "programmatic API surface for backup and annex seams",
+      "status": "Not Started",
+      "srcRefs": [
+        "src/backup/annex-status.ts",
+        "src/backup/orchestrate.ts",
+        "src/backup/state.ts",
+        "src/git/policy.ts",
+        "src/index.ts"
+      ],
+      "related": [
+        "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+        "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s",
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des"
+      ]
     },
     {
       "id": "FEAT-public-api-exports-for-plan-modules",
@@ -1856,6 +1926,17 @@
       "status": "done",
       "srcRefs": [],
       "related": []
+    },
+    {
+      "id": "epic-backup-annex-and-api",
+      "kind": "epic",
+      "path": ".plan/epics/epic-backup-annex-and-api.md",
+      "title": "backup annex hardening and public API surface",
+      "status": "📋 Planned",
+      "srcRefs": [
+        "src/index.ts"
+      ],
+      "related": []
     }
   ],
   "srcNodes": [
@@ -1863,6 +1944,38 @@
       "path": "src/assets/service/create.ts",
       "owners": [
         "INFRA-dispose-two-stale-loop-lore-worktrees"
+      ]
+    },
+    {
+      "path": "src/backup/annex-status.ts",
+      "owners": [
+        "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+      ]
+    },
+    {
+      "path": "src/backup/orchestrate.ts",
+      "owners": [
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+      ]
+    },
+    {
+      "path": "src/backup/state.ts",
+      "owners": [
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+      ]
+    },
+    {
+      "path": "src/backup/tarball.ts",
+      "owners": [
+        "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+        "BUG-dump-on-annex-repos-is-a-silent-partial-backup"
+      ]
+    },
+    {
+      "path": "src/backup/verify.ts",
+      "owners": [
+        "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees"
       ]
     },
     {
@@ -1885,6 +1998,7 @@
         "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
         "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
         "FEAT-advisory-giwt-lock-status-command",
+        "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
         "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
         "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
         "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-"
@@ -1920,6 +2034,12 @@
       "path": "src/commands/backlog.ts",
       "owners": [
         "TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command"
+      ]
+    },
+    {
+      "path": "src/commands/backup.ts",
+      "owners": [
+        "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees"
       ]
     },
     {
@@ -2059,6 +2179,7 @@
       "path": "src/commands/git.ts",
       "owners": [
         "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
         "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
         "FEAT-rtk-minimal-context-output-for-giwt-git"
       ]
@@ -2308,10 +2429,24 @@
       ]
     },
     {
+      "path": "src/git/policy-annex.ts",
+      "owners": [
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des"
+      ]
+    },
+    {
+      "path": "src/git/policy.test.ts",
+      "owners": [
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des"
+      ]
+    },
+    {
       "path": "src/git/policy.ts",
       "owners": [
+        "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
         "FEAT-git-invocation-allowlist-policy-configurable-lists",
-        "FEAT-giwt-git-passthrough-command-for-harness-rerouting"
+        "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
       ]
     },
     {
@@ -2353,10 +2488,12 @@
       "owners": [
         "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
         "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+        "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
         "FEAT-runs-json-diet-default-projection-and-query-filters",
         "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
         "TASK-expose-file-size-check-via-public-api",
-        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-"
+        "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+        "epic-backup-annex-and-api"
       ]
     },
     {
@@ -2775,6 +2912,50 @@
   ],
   "edges": [
     {
+      "from": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "consumes",
+      "to": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "via": "src/backup/tarball.ts"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "consumes",
+      "to": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "via": "src/backup/tarball.ts"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "consumes",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "via": "src/backup/annex-status.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "consumes",
+      "to": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "via": "src/git/policy.ts"
+    },
+    {
+      "from": "epic-backup-annex-and-api",
+      "kind": "owns",
+      "to": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees"
+    },
+    {
+      "from": "epic-backup-annex-and-api",
+      "kind": "owns",
+      "to": "BUG-dump-on-annex-repos-is-a-silent-partial-backup"
+    },
+    {
+      "from": "epic-backup-annex-and-api",
+      "kind": "owns",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup"
+    },
+    {
+      "from": "epic-backup-annex-and-api",
+      "kind": "owns",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+    },
+    {
       "from": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
       "kind": "produces",
       "to": "src/commands/abort.test.ts"
@@ -2793,6 +2974,21 @@
       "from": "BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore",
       "kind": "produces",
       "to": "src/commands/abort.ts"
+    },
+    {
+      "from": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "produces",
+      "to": "src/backup/tarball.ts"
+    },
+    {
+      "from": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "produces",
+      "to": "src/backup/verify.ts"
+    },
+    {
+      "from": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "produces",
+      "to": "src/commands/backup.ts"
     },
     {
       "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
@@ -2848,6 +3044,16 @@
       "from": "BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s",
       "kind": "produces",
       "to": "src/doctor/check/types.ts"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "produces",
+      "to": "src/backup/annex-status.ts"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "produces",
+      "to": "src/backup/tarball.ts"
     },
     {
       "from": "BUG-exec-identity-patterns-author-equals-form-only-misses-space-",
@@ -3360,6 +3566,11 @@
       "to": "src/utils/check-slots.ts"
     },
     {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "produces",
+      "to": "src/cli-usage.ts"
+    },
+    {
       "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
       "kind": "produces",
       "to": "src/doctor/check.ts"
@@ -3418,6 +3629,26 @@
       "from": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
       "kind": "produces",
       "to": "src/commands/finalize/run.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "produces",
+      "to": "src/commands/git.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "produces",
+      "to": "src/git/policy-annex.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "produces",
+      "to": "src/git/policy.test.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "produces",
+      "to": "src/git/policy.ts"
     },
     {
       "from": "FEAT-git-invocation-allowlist-policy-configurable-lists",
@@ -3588,6 +3819,31 @@
       "from": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
       "kind": "produces",
       "to": "src/plan"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "produces",
+      "to": "src/backup/annex-status.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "produces",
+      "to": "src/backup/orchestrate.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "produces",
+      "to": "src/backup/state.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "produces",
+      "to": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "produces",
+      "to": "src/index.ts"
     },
     {
       "from": "FEAT-record-per-step-durationms-in-run-events",
@@ -4040,6 +4296,46 @@
       "to": "src/tickets/sync-ticket.ts"
     },
     {
+      "from": "epic-backup-annex-and-api",
+      "kind": "produces",
+      "to": "src/index.ts"
+    },
+    {
+      "from": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
+      "kind": "related",
+      "to": "BUG-dump-on-annex-repos-is-a-silent-partial-backup"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "related",
+      "to": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "related",
+      "to": "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen"
+    },
+    {
+      "from": "BUG-dump-on-annex-repos-is-a-silent-partial-backup",
+      "kind": "related",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "related",
+      "to": "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "related",
+      "to": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "related",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams"
+    },
+    {
       "from": "FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen",
       "kind": "related",
       "to": "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s"
@@ -4068,6 +4364,21 @@
       "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
       "kind": "related",
       "to": "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "related",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "related",
+      "to": "FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "related",
+      "to": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des"
     },
     {
       "from": "BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-",
@@ -4116,6 +4427,12 @@
       "kind": "sibling",
       "to": "FEAT-advisory-giwt-lock-status-command",
       "via": "src/cli-registry.ts; src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
+      "kind": "sibling",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "via": "src/cli-usage.ts"
     },
     {
       "from": "BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-",
@@ -4193,6 +4510,12 @@
       "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
       "kind": "sibling",
       "to": "FEAT-advisory-giwt-lock-status-command",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p",
+      "kind": "sibling",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
       "via": "src/cli-usage.ts"
     },
     {
@@ -4822,6 +5145,12 @@
     {
       "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
       "kind": "sibling",
+      "to": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "via": "src/commands/git.ts"
+    },
+    {
+      "from": "BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster",
+      "kind": "sibling",
       "to": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
       "via": "src/commands/git.ts"
     },
@@ -4895,6 +5224,12 @@
       "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
       "kind": "sibling",
       "to": "FEAT-advisory-giwt-lock-status-command",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch",
+      "kind": "sibling",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
       "via": "src/cli-usage.ts"
     },
     {
@@ -5074,6 +5409,12 @@
     {
       "from": "FEAT-advisory-giwt-lock-status-command",
       "kind": "sibling",
+      "to": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-advisory-giwt-lock-status-command",
+      "kind": "sibling",
       "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
       "via": "src/cli-usage.ts"
     },
@@ -5094,6 +5435,24 @@
       "kind": "sibling",
       "to": "FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c",
       "via": "src/utils/check-slots.ts"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "sibling",
+      "to": "FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "sibling",
+      "to": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "via": "src/cli-usage.ts"
+    },
+    {
+      "from": "FEAT-annex-sync-orchestration-lane-in-giwt-backup",
+      "kind": "sibling",
+      "to": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "via": "src/cli-usage.ts"
     },
     {
       "from": "FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout",
@@ -5134,6 +5493,12 @@
     {
       "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
       "kind": "sibling",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
       "to": "FEAT-runs-json-diet-default-projection-and-query-filters",
       "via": "src/index.ts"
     },
@@ -5153,6 +5518,12 @@
       "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
       "kind": "sibling",
       "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
       "via": "src/index.ts"
     },
     {
@@ -5216,9 +5587,39 @@
       "via": "src/cli-usage.ts"
     },
     {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "sibling",
+      "to": "FEAT-git-invocation-allowlist-policy-configurable-lists",
+      "via": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "sibling",
+      "to": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "via": "src/commands/git.ts; src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-git-annex-passthrough-second-level-classifier-policy-for-des",
+      "kind": "sibling",
+      "to": "FEAT-rtk-minimal-context-output-for-giwt-git",
+      "via": "src/commands/git.ts"
+    },
+    {
       "from": "FEAT-git-invocation-allowlist-policy-configurable-lists",
       "kind": "sibling",
       "to": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "via": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-git-invocation-allowlist-policy-configurable-lists",
+      "kind": "sibling",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "via": "src/git/policy.ts"
+    },
+    {
+      "from": "FEAT-giwt-git-passthrough-command-for-harness-rerouting",
+      "kind": "sibling",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
       "via": "src/git/policy.ts"
     },
     {
@@ -5296,6 +5697,12 @@
     {
       "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
       "kind": "sibling",
+      "to": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
       "to": "FEAT-runs-json-diet-default-projection-and-query-filters",
       "via": "src/index.ts"
     },
@@ -5321,6 +5728,42 @@
       "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
       "kind": "sibling",
       "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "sibling",
+      "to": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "sibling",
+      "to": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "sibling",
+      "to": "TASK-expose-file-size-check-via-public-api",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "sibling",
+      "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-programmatic-api-surface-for-backup-and-annex-seams",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
       "via": "src/index.ts"
     },
     {
@@ -5351,6 +5794,12 @@
       "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
       "kind": "sibling",
       "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "FEAT-runs-json-diet-default-projection-and-query-filters",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
       "via": "src/index.ts"
     },
     {
@@ -5474,9 +5923,21 @@
       "via": "src/index.ts"
     },
     {
+      "from": "TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
+      "via": "src/index.ts"
+    },
+    {
       "from": "TASK-expose-file-size-check-via-public-api",
       "kind": "sibling",
       "to": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "via": "src/index.ts"
+    },
+    {
+      "from": "TASK-expose-file-size-check-via-public-api",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
       "via": "src/index.ts"
     },
     {
@@ -5550,6 +6011,12 @@
       "kind": "sibling",
       "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
       "via": "src/plan/validate.ts; src/tickets/sync-ticket.ts"
+    },
+    {
+      "from": "TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-",
+      "kind": "sibling",
+      "to": "epic-backup-annex-and-api",
+      "via": "src/index.ts"
     }
   ]
 }

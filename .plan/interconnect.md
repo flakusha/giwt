@@ -8,17 +8,19 @@ src/ paths they own. Regenerate with `giwt plan links --write`; freshness is
 gated by `giwt plan links --check` / `giwt plan validate`. No timestamps —
 output is byte-identical for identical inputs.
 
-- tickets: 166
-- epics: 0
-- src paths owned: 132
-- edges: produces 253, consumes 0, sibling 247, owns 0, related 6
+- tickets: 170
+- epics: 1
+- src paths owned: 140
+- edges: produces 269, consumes 4, sibling 273, owns 4, related 16
 
 ## Shared src hubs
 
 | src path | owners |
 | --- | --- |
+| `src/backup/annex-status.ts` | `BUG-dump-on-annex-repos-is-a-silent-partial-backup`, `FEAT-programmatic-api-surface-for-backup-and-annex-seams` |
+| `src/backup/tarball.ts` | `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees`, `BUG-dump-on-annex-repos-is-a-silent-partial-backup` |
 | `src/cli-registry.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `FEAT-advisory-giwt-lock-status-command` |
-| `src/cli-usage.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p`, `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch`, `FEAT-advisory-giwt-lock-status-command`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` |
+| `src/cli-usage.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p`, `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch`, `FEAT-advisory-giwt-lock-status-command`, `FEAT-annex-sync-orchestration-lane-in-giwt-backup`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` |
 | `src/cli.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c`, `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio`, `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote`, `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link`, `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` |
 | `src/commands/abort.test.ts` | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-`, `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` |
 | `src/commands/abort.ts` | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-`, `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` |
@@ -31,7 +33,7 @@ output is byte-identical for identical inputs.
 | `src/commands/finalize/merge.ts` | `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla` |
 | `src/commands/finalize/run.ts` | `BUG-finalize-alreadymerged-check-is-incomplete`, `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-one-line-outcome-contract-for-direct-cli-calls` |
 | `src/commands/finalize/teardown.ts` | `BUG-finalize-teardown-branch-deletion-fallback-is-silent`, `BUG-finalize-teardown-doesnt-verify-worktree-exists`, `BUG-finalize-teardown-worktree-removal-failure-is-non-fatal`, `BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as` |
-| `src/commands/git.ts` | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster`, `FEAT-giwt-git-passthrough-command-for-harness-rerouting`, `FEAT-rtk-minimal-context-output-for-giwt-git` |
+| `src/commands/git.ts` | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster`, `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des`, `FEAT-giwt-git-passthrough-command-for-harness-rerouting`, `FEAT-rtk-minimal-context-output-for-giwt-git` |
 | `src/commands/plan.ts` | `FEAT-feature-matrix-generation-from-ticket-index`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` |
 | `src/commands/rebase.test.ts` | `BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re`, `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di`, `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch`, `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` |
 | `src/commands/rebase.ts` | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote`, `BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re`, `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di`, `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch`, `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` |
@@ -43,10 +45,10 @@ output is byte-identical for identical inputs.
 | `src/commands/ticket.ts` | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re`, `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` |
 | `src/commands/ticket/create.ts` | `BUG-ticket-template-emits-empty-context-acceptance-placeholders-`, `FEAT-reuse-toml-precedence-override-semantics-decision` |
 | `src/doctor/check.ts` | `FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout`, `FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel`, `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c`, `TASK-giwt-doctor-scratchpad-check` |
-| `src/git/policy.ts` | `FEAT-git-invocation-allowlist-policy-configurable-lists`, `FEAT-giwt-git-passthrough-command-for-harness-rerouting` |
+| `src/git/policy.ts` | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des`, `FEAT-git-invocation-allowlist-policy-configurable-lists`, `FEAT-giwt-git-passthrough-command-for-harness-rerouting`, `FEAT-programmatic-api-surface-for-backup-and-annex-seams` |
 | `src/git/predicates.ts` | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p`, `BUG-exec-identity-patterns-author-equals-form-only-misses-space-`, `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster`, `BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy` |
 | `src/gpg-unlock.ts` | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st`, `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` |
-| `src/index.ts` | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-`, `FEAT-runs-json-diet-default-projection-and-query-filters`, `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit`, `TASK-expose-file-size-check-via-public-api`, `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` |
+| `src/index.ts` | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-`, `FEAT-programmatic-api-surface-for-backup-and-annex-seams`, `FEAT-runs-json-diet-default-projection-and-query-filters`, `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit`, `TASK-expose-file-size-check-via-public-api`, `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-`, `epic-backup-annex-and-api` |
 | `src/plan/code-map.ts` | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping`, `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` |
 | `src/plan/feature-matrix.ts` | `BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-`, `FEAT-feature-matrix-generation-from-ticket-index`, `FEAT-reuse-toml-precedence-override-semantics-decision` |
 | `src/plan/gen-docs.ts` | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r`, `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` |
@@ -77,10 +79,21 @@ output is byte-identical for identical inputs.
 
 | from | kind | to | via |
 | --- | --- | --- | --- |
+| `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | consumes | `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | `src/backup/tarball.ts` |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | consumes | `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | `src/backup/tarball.ts` |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | consumes | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | `src/backup/annex-status.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | consumes | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | `src/git/policy.ts` |
+| `epic-backup-annex-and-api` | owns | `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | - |
+| `epic-backup-annex-and-api` | owns | `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | - |
+| `epic-backup-annex-and-api` | owns | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | - |
+| `epic-backup-annex-and-api` | owns | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | - |
 | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-` | produces | `src/commands/abort.test.ts` | - |
 | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-` | produces | `src/commands/abort.ts` | - |
 | `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` | produces | `src/commands/abort.test.ts` | - |
 | `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` | produces | `src/commands/abort.ts` | - |
+| `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | produces | `src/backup/tarball.ts` | - |
+| `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | produces | `src/backup/verify.ts` | - |
+| `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | produces | `src/commands/backup.ts` | - |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | produces | `src/cli-registry.ts` | - |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | produces | `src/cli-usage.ts` | - |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | produces | `src/cli.ts` | - |
@@ -92,6 +105,8 @@ output is byte-identical for identical inputs.
 | `BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s` | produces | `src/doctor/check/run.ts` | - |
 | `BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s` | produces | `src/doctor/check/tools.ts` | - |
 | `BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s` | produces | `src/doctor/check/types.ts` | - |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | produces | `src/backup/annex-status.ts` | - |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | produces | `src/backup/tarball.ts` | - |
 | `BUG-exec-identity-patterns-author-equals-form-only-misses-space-` | produces | `src/git/predicates.ts` | - |
 | `BUG-finalize-alreadymerged-check-is-incomplete` | produces | `src/commands/finalize/run.ts` | - |
 | `BUG-finalize-branchtopath-is-lossy` | produces | `src/utils/config.ts` | - |
@@ -194,6 +209,7 @@ output is byte-identical for identical inputs.
 | `FEAT-advisory-giwt-lock-status-command` | produces | `src/commands/finalize/lock.ts` | - |
 | `FEAT-advisory-giwt-lock-status-command` | produces | `src/commands/lock.ts` | - |
 | `FEAT-advisory-giwt-lock-status-command` | produces | `src/utils/check-slots.ts` | - |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | produces | `src/cli-usage.ts` | - |
 | `FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout` | produces | `src/doctor/check.ts` | - |
 | `FEAT-commit-co-author-trailer-policy-strip-llm-keep-real-aggregat` | produces | `src/utils/coauthors.ts` | - |
 | `FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel` | produces | `src/doctor/check.ts` | - |
@@ -206,6 +222,10 @@ output is byte-identical for identical inputs.
 | `FEAT-feature-matrix-generation-from-ticket-index` | produces | `src/plan/validate.ts` | - |
 | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | produces | `src/cli-usage.ts` | - |
 | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | produces | `src/commands/finalize/run.ts` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | produces | `src/commands/git.ts` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | produces | `src/git/policy-annex.ts` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | produces | `src/git/policy.test.ts` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | produces | `src/git/policy.ts` | - |
 | `FEAT-git-invocation-allowlist-policy-configurable-lists` | produces | `src/git/policy.ts` | - |
 | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | produces | `src/commands/git.ts` | - |
 | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | produces | `src/git/policy.ts` | - |
@@ -240,6 +260,11 @@ output is byte-identical for identical inputs.
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | produces | `src/tickets/sync-normalize.ts` | - |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | produces | `src/plan/status-vocab` | - |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | produces | `src/plan` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | produces | `src/backup/annex-status.ts` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | produces | `src/backup/orchestrate.ts` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | produces | `src/backup/state.ts` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | produces | `src/git/policy.ts` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | produces | `src/index.ts` | - |
 | `FEAT-record-per-step-durationms-in-run-events` | produces | `src/utils/runlog.ts` | - |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | produces | `src/plan/validate/content-gates.ts` | - |
 | `FEAT-reuse-toml-precedence-override-semantics-decision` | produces | `src/commands/matrix.ts` | - |
@@ -330,12 +355,23 @@ output is byte-identical for identical inputs.
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/plan/gen-docs.ts` | - |
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/plan/validate.ts` | - |
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/tickets/sync-ticket.ts` | - |
+| `epic-backup-annex-and-api` | produces | `src/index.ts` | - |
+| `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | related | `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | - |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | related | `BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees` | - |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | related | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | - |
+| `BUG-dump-on-annex-repos-is-a-silent-partial-backup` | related | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | - |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | related | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | - |
 | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
 | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
 | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | related | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | - |
 | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
 | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | related | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | - |
 | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | related | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
 | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-` | sibling | `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` | `src/commands/abort.test.ts; src/commands/abort.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | `src/cli-usage.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | `src/cli.ts` |
@@ -344,6 +380,7 @@ output is byte-identical for identical inputs.
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | `src/cli.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | `src/cli-usage.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `FEAT-advisory-giwt-lock-status-command` | `src/cli-registry.ts; src/cli-usage.ts` |
+| `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | `src/cli-usage.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/cli-usage.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link` | `src/cli.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | `src/cli-usage.ts` |
@@ -357,6 +394,7 @@ output is byte-identical for identical inputs.
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | `src/cli-usage.ts` |
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla` | `src/commands/commit-wt.ts` |
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `FEAT-advisory-giwt-lock-status-command` | `src/cli-usage.ts` |
+| `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | `src/cli-usage.ts` |
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/cli-usage.ts` |
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `FEAT-isolatedgitenv-also-strips-agent-harness-session-vars` | `src/utils/git.ts` |
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `FEAT-one-line-outcome-contract-for-direct-cli-calls` | `src/commands/commit-wt.ts` |
@@ -461,6 +499,7 @@ output is byte-identical for identical inputs.
 | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | sibling | `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link` | `src/cli.ts` |
 | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/cli.ts; src/commands/rebase.ts` |
 | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster` | sibling | `BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy` | `src/git/predicates.ts` |
+| `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster` | sibling | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | `src/commands/git.ts` |
 | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster` | sibling | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | `src/commands/git.ts` |
 | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster` | sibling | `FEAT-rtk-minimal-context-output-for-giwt-git` | `src/commands/git.ts` |
 | `BUG-rebase-guard-checks-only-the-source-branch-not-the-target-re` | sibling | `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di` | `src/commands/rebase.test.ts; src/commands/rebase.ts` |
@@ -474,6 +513,7 @@ output is byte-identical for identical inputs.
 | `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/resolve-diff-base.test.ts` |
 | `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/commands/rebase.test.ts; src/commands/rebase.ts` |
 | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | sibling | `FEAT-advisory-giwt-lock-status-command` | `src/cli-usage.ts` |
+| `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | sibling | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | `src/cli-usage.ts` |
 | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/cli-usage.ts` |
 | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | sibling | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | `src/cli-usage.ts` |
 | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/cli-usage.ts` |
@@ -503,20 +543,26 @@ output is byte-identical for identical inputs.
 | `BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing` | sibling | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | `src/tickets/sync-parse.ts` |
 | `BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `src/tickets/sync-parse.ts` |
 | `BUG-ticket-template-emits-empty-context-acceptance-placeholders-` | sibling | `FEAT-reuse-toml-precedence-override-semantics-decision` | `src/commands/ticket/create.ts` |
+| `FEAT-advisory-giwt-lock-status-command` | sibling | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | `src/cli-usage.ts` |
 | `FEAT-advisory-giwt-lock-status-command` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/cli-usage.ts` |
 | `FEAT-advisory-giwt-lock-status-command` | sibling | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | `src/cli-usage.ts` |
 | `FEAT-advisory-giwt-lock-status-command` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/cli-usage.ts` |
 | `FEAT-advisory-giwt-lock-status-command` | sibling | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | `src/utils/check-slots.ts` |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/cli-usage.ts` |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | sibling | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | `src/cli-usage.ts` |
+| `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/cli-usage.ts` |
 | `FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout` | sibling | `FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel` | `src/doctor/check.ts` |
 | `FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout` | sibling | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | `src/doctor/check.ts` |
 | `FEAT-bound-doctor-check-subprocesses-with-a-configurable-timeout` | sibling | `TASK-giwt-doctor-scratchpad-check` | `src/doctor/check.ts` |
 | `FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel` | sibling | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | `src/doctor/check.ts` |
 | `FEAT-doctor-check-concurrency-run-the-five-checks-in-parallel` | sibling | `TASK-giwt-doctor-scratchpad-check` | `src/doctor/check.ts` |
 | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/index.ts` |
+| `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | `src/index.ts` |
 | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `FEAT-runs-json-diet-default-projection-and-query-filters` | `src/index.ts` |
 | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/gpg-unlock.ts; src/index.ts` |
 | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` |
 | `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/commands/plan.ts` |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `FEAT-reuse-toml-precedence-override-semantics-decision` | `src/plan/feature-matrix.ts` |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/validate.ts` |
@@ -527,7 +573,12 @@ output is byte-identical for identical inputs.
 | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | sibling | `FEAT-one-line-outcome-contract-for-direct-cli-calls` | `src/commands/finalize/run.ts` |
 | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | sibling | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | `src/cli-usage.ts` |
 | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/cli-usage.ts` |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | sibling | `FEAT-git-invocation-allowlist-policy-configurable-lists` | `src/git/policy.ts` |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | sibling | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | `src/commands/git.ts; src/git/policy.ts` |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | sibling | `FEAT-rtk-minimal-context-output-for-giwt-git` | `src/commands/git.ts` |
 | `FEAT-git-invocation-allowlist-policy-configurable-lists` | sibling | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | `src/git/policy.ts` |
+| `FEAT-git-invocation-allowlist-policy-configurable-lists` | sibling | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | `src/git/policy.ts` |
+| `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | sibling | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | `src/git/policy.ts` |
 | `FEAT-giwt-git-passthrough-command-for-harness-rerouting` | sibling | `FEAT-rtk-minimal-context-output-for-giwt-git` | `src/commands/git.ts` |
 | `FEAT-isolatedgitenv-also-strips-agent-harness-session-vars` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/utils/git.ts` |
 | `FEAT-ledger-core-canonical-module` | sibling | `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link` | `src/utils/ledger-core.ts` |
@@ -540,16 +591,24 @@ output is byte-identical for identical inputs.
 | `FEAT-one-line-outcome-contract-for-direct-cli-calls` | sibling | `FIX-json-output-polluted-by-run-record-announcement` | `src/utils/output.ts` |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `src/cli-usage.ts` |
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `src/tickets/sync-parse.ts` |
+| `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | `src/index.ts` |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `FEAT-runs-json-diet-default-projection-and-query-filters` | `src/index.ts` |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/index.ts` |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/status-vocab.ts` |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `FEAT-runs-json-diet-default-projection-and-query-filters` | `src/index.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/index.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
 | `FEAT-record-per-step-durationms-in-run-events` | sibling | `FIX-json-output-polluted-by-run-record-announcement` | `src/utils/runlog.ts` |
 | `FEAT-runs-json-diet-default-projection-and-query-filters` | sibling | `FIX-referenced-artifacts-must-outlive-the-console` | `src/commands/runs.ts` |
 | `FEAT-runs-json-diet-default-projection-and-query-filters` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/index.ts` |
 | `FEAT-runs-json-diet-default-projection-and-query-filters` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` |
 | `FEAT-runs-json-diet-default-projection-and-query-filters` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `FEAT-runs-json-diet-default-projection-and-query-filters` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
 | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | sibling | `FIX-add-jitter-to-the-finalize-lock-retry-backoff` | `src/commands/finalize.ts` |
 | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | sibling | `FIX-finalize-cannot-name-the-failed-gate-report-schema-drops-the` | `src/commands/finalize.ts` |
 | `FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c` | sibling | `FIX-finalize-does-not-surface-gate-results-on-failure` | `src/commands/finalize.ts` |
@@ -570,7 +629,9 @@ output is byte-identical for identical inputs.
 | `FIX-finalize-does-not-surface-gate-results-on-failure` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `src/commands/finalize.ts` |
 | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` |
 | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
 | `TASK-expose-file-size-check-via-public-api` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/index.ts` |
+| `TASK-expose-file-size-check-via-public-api` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |
 | `TASK-giwt-clean-age-size-capped-tmp-pruning` | sibling | `TASK-giwt-doctor-scratchpad-check` | `src/utils/scratch.ts` |
 | `TASK-giwt-plan-validate-status-vocab-gate` | sibling | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | `src/plan/validate.ts` |
 | `TASK-giwt-plan-validate-status-vocab-gate` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `src/plan/validate.ts` |
@@ -583,3 +644,4 @@ output is byte-identical for identical inputs.
 | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/plan/validate.ts` |
 | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | sibling | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | `src/plan/validate.ts` |
 | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | sibling | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | `src/plan/validate.ts; src/tickets/sync-ticket.ts` |
+| `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | sibling | `epic-backup-annex-and-api` | `src/index.ts` |

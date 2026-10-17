@@ -35,6 +35,24 @@
     "source": ".plan/tickets/BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore.md",
     "status": "done"
   },
+  "BUG-BACKUP-DUMP-VERIFY-SCRATCH-CLEANUP-EACCES-AND-LEAKED-TREES": {
+    "hash": "cd119e1",
+    "extid": "BUG-BACKUP-DUMP-VERIFY-SCRATCH-CLEANUP-EACCES-AND-LEAKED-TREES",
+    "type": "BUG",
+    "title": "backup dump verify: scratch cleanup EACCES and leaked trees",
+    "label": "bug",
+    "priority": "critical",
+    "epic": "epic-backup-annex-and-api",
+    "tags": [
+      "backup",
+      "annex",
+      "verify",
+      "filesystem"
+    ],
+    "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md",
+    "status": "Not Started",
+    "git_issue": "cd119e1"
+  },
   "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS": {
     "hash": "4813397",
     "extid": "BUG-BAD-CONFIG-TOML-CRASHES-EVERY-COMMAND-INCLUDING-READERS",
@@ -148,6 +166,24 @@
     ],
     "source": ".plan/tickets/BUG-doctor-check-caps-findings-at-20-with-no-truncation-notice-s.md",
     "status": "done"
+  },
+  "BUG-DUMP-ON-ANNEX-REPOS-IS-A-SILENT-PARTIAL-BACKUP": {
+    "hash": "d755e4f",
+    "extid": "BUG-DUMP-ON-ANNEX-REPOS-IS-A-SILENT-PARTIAL-BACKUP",
+    "type": "BUG",
+    "title": "dump on annex repos is a silent partial backup",
+    "label": "bug",
+    "priority": "high",
+    "epic": "epic-backup-annex-and-api",
+    "tags": [
+      "backup",
+      "annex",
+      "dump",
+      "data-loss"
+    ],
+    "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md",
+    "status": "Not Started",
+    "git_issue": "d755e4f"
   },
   "BUG-EXEC-IDENTITY-PATTERNS-AUTHOR-EQUALS-FORM-ONLY-MISSES-SPACE-": {
     "hash": "04cb67a",
@@ -968,6 +1004,23 @@
     "source": ".plan/tickets/BUG-ticket-template-emits-empty-context-acceptance-placeholders-.md",
     "status": "done"
   },
+  "EPIC-BACKUP-ANNEX-AND-API": {
+    "hash": "091616f",
+    "extid": "EPIC-BACKUP-ANNEX-AND-API",
+    "type": "EPIC",
+    "title": "backup annex hardening and public API surface",
+    "label": "epic",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "backup",
+      "annex",
+      "api"
+    ],
+    "source": ".plan/epics/epic-backup-annex-and-api.md",
+    "status": "📋 Planned",
+    "git_issue": "091616f"
+  },
   "FEAT-ADVISORY-GIWT-LOCK-STATUS-COMMAND": {
     "hash": "2a27393",
     "git_issue": "2a27393",
@@ -984,6 +1037,24 @@
     ],
     "source": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md",
     "status": "done"
+  },
+  "FEAT-ANNEX-SYNC-ORCHESTRATION-LANE-IN-GIWT-BACKUP": {
+    "hash": "de8d81b",
+    "extid": "FEAT-ANNEX-SYNC-ORCHESTRATION-LANE-IN-GIWT-BACKUP",
+    "type": "FEAT",
+    "title": "annex sync orchestration lane in giwt backup",
+    "label": "feat",
+    "priority": "low",
+    "epic": "epic-backup-annex-and-api",
+    "tags": [
+      "backup",
+      "annex",
+      "sync",
+      "orchestration"
+    ],
+    "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md",
+    "status": "Not Started",
+    "git_issue": "de8d81b"
   },
   "FEAT-BACKUP-COMMAND-FAMILY-L0-DUMP-ENGINE-TAR-ZST-LISTED-INCREMEN": {
     "hash": "5f19090",
@@ -1562,6 +1633,24 @@
     ],
     "source": ".plan/tickets/FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind.md",
     "status": "done"
+  },
+  "FEAT-PROGRAMMATIC-API-SURFACE-FOR-BACKUP-AND-ANNEX-SEAMS": {
+    "hash": "2ad50d6",
+    "extid": "FEAT-PROGRAMMATIC-API-SURFACE-FOR-BACKUP-AND-ANNEX-SEAMS",
+    "type": "FEAT",
+    "title": "programmatic API surface for backup and annex seams",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "epic-backup-annex-and-api",
+    "tags": [
+      "api",
+      "backup",
+      "annex",
+      "exports"
+    ],
+    "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md",
+    "status": "Not Started",
+    "git_issue": "2ad50d6"
   },
   "FEAT-PUBLIC-API-EXPORTS-FOR-PLAN-MODULES": {
     "hash": "fbaa6f7",

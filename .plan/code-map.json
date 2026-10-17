@@ -5,6 +5,44 @@
       "source": ".plan/tickets/INFRA-dispose-two-stale-loop-lore-worktrees.md"
     }
   ],
+  "src/backup/annex-status.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
+    }
+  ],
+  "src/backup/orchestrate.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
+    }
+  ],
+  "src/backup/state.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
+    }
+  ],
+  "src/backup/tarball.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-dump-on-annex-repos-is-a-silent-partial-backup.md"
+    }
+  ],
+  "src/backup/verify.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md"
+    }
+  ],
   "src/chat/service/branches.ts": [
     {
       "kind": "ticket",
@@ -37,6 +75,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-annex-sync-orchestration-lane-in-giwt-backup.md"
     },
     {
       "kind": "ticket",
@@ -105,6 +147,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md"
+    }
+  ],
+  "src/commands/backup.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md"
     }
   ],
   "src/commands/clean.ts": [
@@ -667,6 +715,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
     }
   ],
   "src/git/predicate-helpers.ts": [
@@ -717,12 +769,20 @@
   ],
   "src/index.ts": [
     {
+      "kind": "epic",
+      "source": ".plan/epics/epic-backup-annex-and-api.md"
+    },
+    {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md"
     },
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-programmatic-api-surface-for-backup-and-annex-seams.md"
     },
     {
       "kind": "ticket",
