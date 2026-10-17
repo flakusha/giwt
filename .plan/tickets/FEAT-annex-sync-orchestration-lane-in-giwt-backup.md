@@ -58,5 +58,7 @@ implementation.
 - [ ] sync outcome (success/failure, remote deltas if available) is recorded in `.backup.jsonl` and visible via the status runner
 - [ ] numcopies-unverifiable repos refuse with a clear message instead of a green exit
 - [ ] USAGE table (src/cli-usage.ts) and registry entry updated for the new surface; `bun run check` green
+- [ ] default-deny verified by test: a repo with NO `[git] allow` entry refuses `backup annex-sync` with a policy-source-named reason, and the refusal is produced server-side by the classifier (classifyGitInvocation/classifyAnnex), not by a caller-side convenience check
+- [ ] the authorization is per-resource (per-repo giwt.toml): an allow entry in ~/.config/giwt/config.toml or env alone must NOT authorize the sync — the repo's own resolved config decides; test covers both layers
 
 git issue: de8d81b

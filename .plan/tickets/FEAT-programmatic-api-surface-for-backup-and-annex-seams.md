@@ -67,5 +67,7 @@ keep everything on the single `.` path).
 - [ ] the options-object wrapper returns verdicts identical to the positional `classifyGitInvocation` for the same inputs (unit test incl. a custom `pathExists`)
 - [ ] no behavior change in any existing module (re-exports + wrapper only); positional `classifyGitInvocation` untouched
 - [ ] knip/deadcode and `bun run check` stay green
+- [ ] no exported symbol bypasses the git-invocation classifier: a documented trust-boundary note in the src/index.ts header section states that library consumers invoking giwt runners execute git/annex/transfer commands in-process with the caller's privileges, and that any git/annex mutation path exported must route through the classifier contract — never a raw spawn
+- [ ] negative-path test: the classifier wrapper's block verdicts are preserved through the public API (importing from "giwt" and calling the wrapper on a destructive annex op without allow entries returns verdict "block")
 
 git issue: 2ad50d6
