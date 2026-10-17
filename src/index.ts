@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+// size-allow: 300
 /**
  * giwt public API — the stable surface external components should import.
  *
@@ -13,6 +14,12 @@
  *
  * Only add exports here deliberately: everything re-exported becomes a
  * compatibility promise for external callers.
+ *
+ * Trust boundary: library consumers invoking giwt runners execute
+ * git/annex/transfer commands in-process with the caller's privileges.
+ * Every git/annex mutation path exported here routes through the
+ * classifier contract (`classifyGit` / `classifyGitInvocation`, err-closed)
+ * — never a raw spawn.
  */
 
 // CLI entry (direct execution / embedding)
@@ -240,3 +247,39 @@ export type {
   WarmAgentCacheResult,
   WarmAgentCacheVia,
 } from "./utils/gpg-cache";
+
+// Backup + annex seams (FEAT-programmatic-api-surface-for-backup-and-annex-seams)
+// Dump lane entry (transactional runner) and its record types.
+export { previewDump, runDump, STAGING_PREFIX } from "./backup/dump";
+export type {
+  DumpOptions,
+  DumpPreviewRow,
+  DumpRecord,
+  DumpRunResult,
+  ResolvedTarget,
+} from "./backup/dump";
+// tar plan types travel with the dump lane.
+export type { TarPlan } from "./backup/tarball";
+// Verify replay verdicts.
+export type { TargetVerdict, VerifyVerdict } from "./backup/verdict";
+export { verifyRoot } from "./backup/verify";
+// Orchestrate runners (status/schedule/remote).
+export { runRemoteCommand, runScheduleCommand, runStatusCommand } from "./backup/orchestrate";
+export type { RemoteOptions, ScheduleOptions, StatusOptions } from "./backup/orchestrate";
+// State-ledger readers + staleness verdicts (writer stays internal).
+export {
+  lastSuccessMs,
+  lastSuccessRow,
+  parseDuration,
+  readState,
+  stalenessAlert,
+  stalenessVerdict,
+  successes,
+} from "./backup/state";
+export type { BackupEvent, BackupKind, BackupType, StalenessVerdict } from "./backup/state";
+// Read-only annex inventory.
+export { annexCounts } from "./backup/annex-status";
+export type { AnnexCounts } from "./backup/annex-status";
+// Git-invocation classifier: options-object wrapper + verdict types.
+export { classifyGit } from "./git/policy";
+export type { ClassifyGitArgs, ClassifyOptions, GitPolicyLists, GitVerdict } from "./git/policy";

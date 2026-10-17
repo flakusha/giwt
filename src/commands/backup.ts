@@ -11,6 +11,7 @@
 
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { annexAdvisory, warnAnnexAdvisory } from "../backup/annex-gate";
 import {
   type DumpOptions,
   type DumpPreviewRow,
@@ -96,6 +97,18 @@ async function runDumpCommand(
   targets: ResolvedTarget[],
 ): Promise<void> {
   try {
+    const advisory = annexAdvisory({
+      repoRoot: config.repoRoot,
+      spawn: (cmd) => {
+        const r = Bun.spawnSync(cmd, { stdout: "pipe", stderr: "pipe" });
+        return {
+          exitCode: r.exitCode,
+          stdout: new TextDecoder().decode(r.stdout),
+          stderr: new TextDecoder().decode(r.stderr),
+        };
+      },
+    });
+    if (advisory !== null) warnAnnexAdvisory(advisory);
     const result = await runDump(backupOptions(config, rootAbs, targets));
     for (const d of result.dumps) {
       raw(
@@ -120,7 +133,8 @@ async function runDumpCommand(
       log("warn", `backup: DB NOT backed up — ${skip.file} (${skip.reason})`);
     }
     const summary = `dumped ${result.dumps.length} archive(s)`
-      + (result.pruned.length > 0 ? `, pruned ${result.pruned.length}` : "");
+      + (result.pruned.length > 0 ? `, pruned ${result.pruned.length}` : "")
+      + (advisory !== null ? `, annex advisory: ${advisory.dropped} dropped file(s)` : "");
     activeRun()?.outcome({ backup: summary });
     outcomeLine(true, summary);
   } catch (err) {

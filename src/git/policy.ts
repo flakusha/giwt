@@ -219,6 +219,26 @@ export function classifyGitInvocation(
   };
 }
 
+/** Options-object form of {@link classifyGitInvocation} (3+-param rule). */
+export interface ClassifyGitArgs {
+  /** Raw git argv (post `giwt git` prefix). */
+  args: readonly string[];
+  /** User-configurable policy lists ([git] safe/allow/deny in giwt.toml). */
+  lists?: GitPolicyLists;
+  /** Classification options (e.g. an injected `pathExists` probe). */
+  options?: ClassifyOptions;
+}
+
+/**
+ * Options-object wrapper around the positional
+ * {@link classifyGitInvocation} primitive — same tables, same verdict.
+ * Public-API consumers should prefer this form; the positional seam stays
+ * grandfathered for in-repo callsites.
+ */
+export function classifyGit({ args, lists, options }: ClassifyGitArgs): GitVerdict {
+  return classifyGitInvocation(args, lists ?? DEFAULT_POLICY_LISTS, options ?? {});
+}
+
 function t0(args: readonly string[]): string {
   const tok = args.find((a) => GPG_BYPASS_TOKENS.includes(a));
   return tok ?? "--no-gpg-sign";

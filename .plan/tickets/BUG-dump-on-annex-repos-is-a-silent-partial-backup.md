@@ -3,7 +3,7 @@
 
 # BUG: dump on annex repos is a silent partial backup
 
-**Status:** Not Started
+**Status:** Done (dump-lane fixes session, 2026-10-17: loud advisory gate landed, not a refusal — see Context design decision below; implemented as `annexAdvisory` in src/backup/annex-gate.ts wired into `runDumpCommand` in src/commands/backup.ts; verified end-to-end on a real git-annex fixture: dropped-but-present file → dump exits 0 with warn lines naming count, file, remediation, and the outcome line reads `annex advisory: 1 dropped file(s)`)
 **Priority:** high
 **Effort:** Large
 **Epic:** epic-backup-annex-and-api
@@ -62,13 +62,37 @@ vs symlink-preserving with a whereis/numcopies cross-check (no duplication,
 restore then needs the annex store). Both satisfy the no-silent-green
 invariant; pick one and record why.
 
+**Design decision (recorded before implementation, 2026-10-17):**
+
+- Lane: loud ADVISORY GATE, not a dedicated annex dump lane and not a
+  refusal. Dropping local content is a legitimate intentional state
+  (archival repos holding one copy of many), so refusing would break
+  valid workflows; the annex-sync/export lane remains ticket de8d81b.
+- `--dereference`: KEEP SYMLINKS, do not dereference. Folding annex
+  content into every tarball duplicates the annex store (~2x storage,
+  tar time proportional to content), while the annex store itself is the
+  correct restore artifact; the gate compensates by never letting a
+  partial-availability dump look clean.
+- Detection: filesystem-only — `.git/annex` presence (direct `.git` dir
+  or via a worktree `.git` gitdir pointer file) — so NON-ANNEX REPOS PAY
+  ZERO SPAWN COST. Only when annex is detected does dump run ONE bounded
+  read-only probe: `git annex find --not --in here` (default-allow RO row
+  in the passthrough policy), satisfying the not-O(whereis-per-file)
+  constraint. Probe failure (annex binary absent) degrades to no
+  advisory — dump stays usable.
+- Advisory shape: warn lines name the dropped-file COUNT, up to 5 sample
+  paths, and the remediation (`git annex get <files>`, or a backup target
+  covering `.git/annex`); the ok outcome line carries
+  `annex advisory: N dropped file(s)` so even the summary is never a
+  bare green.
+
 **Acceptance Criteria:**
 
-- [ ] dump on a repo with dropped-but-present annexed files either completes with a loud annex advisory or refuses with a clear message — never a silent partial green
-- [ ] the lane/gate decision and the `--dereference` tradeoff are recorded in this ticket's Context before implementation lands
-- [ ] advisory/refusal names affected files or counts plus remediation, not a bare "annex detected"
-- [ ] non-annex repos are unaffected (no new spawn cost, no behavior change)
-- [ ] tests cover: dropped-but-present file (advisory/refusal), fully-present repo (clean ok), non-annex repo (unchanged)
-- [ ] `bun run check` green
+- [x] dump on a repo with dropped-but-present annexed files either completes with a loud annex advisory or refuses with a clear message — never a silent partial green
+- [x] the lane/gate decision and the `--dereference` tradeoff are recorded in this ticket's Context before implementation lands
+- [x] advisory/refusal names affected files or counts plus remediation, not a bare "annex detected"
+- [x] non-annex repos are unaffected (no new spawn cost, no behavior change)
+- [x] tests cover: dropped-but-present file (advisory/refusal), fully-present repo (clean ok), non-annex repo (unchanged)
+- [x] `bun run check` green
 
 git issue: d755e4f
