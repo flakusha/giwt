@@ -474,6 +474,8 @@ describe("classifyGitInvocation — git-annex two-token policy", () => {
     expect(verdict(["-cannex.mincopies=2", "annex", "sync"]).verdict).toBe("block");
     const lifted = { safe: [], allow: ["annex sync", "annex.mincopies"], deny: [] };
     expect(verdict(["-c", "annex.mincopies=2", "annex", "sync"], lifted).verdict).toBe("pass");
+    // git config keys are case-insensitive — the allow lift matches case-insensitively.
+    expect(verdict(["-c", "ANNEX.MinCopies=2", "annex", "sync"], lifted).verdict).toBe("pass");
   });
 
   test("destructiveAnnexAllows surfaces exactly the two-token destructive entries", () => {

@@ -170,7 +170,9 @@ export function classifyGitInvocation(
     if (pair === undefined) continue;
     const key = pair.split("=", 1)[0] ?? "";
     if (!key.toLowerCase().startsWith("annex.")) continue;
-    if (!lists.allow.includes(key)) {
+    // git config keys are case-insensitive — compare allow entries the same way.
+    const allowed = lists.allow.some((e) => e.toLowerCase() === key.toLowerCase());
+    if (!allowed) {
       return {
         verdict: "block",
         reason:
