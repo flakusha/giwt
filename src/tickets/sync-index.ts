@@ -42,13 +42,20 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { log, raw } from "../utils/output";
+import { isLinkedWorktree } from "../utils/worktree-probe";
 import { applyFixes } from "./sync-fixes";
 import { persistIndexCanonical } from "./sync-index-write";
 import { acquireFixLock, releaseFixLock } from "./sync-lock";
 import { type SyncOptions } from "./sync-options";
 import { parseTicketFile } from "./sync-parse";
 import { logFixRefusal, readGitIssues, readIndex } from "./sync-registry";
-import { countIssueTotals, renderReport } from "./sync-report";
+import {
+  countIssueTotals,
+  deferIndexWriteClasses,
+  renderCheckSummary,
+  renderPostFixSummary,
+  renderReport,
+} from "./sync-report";
 import { scopedPlanExtids } from "./sync-scope";
 import { reconcile } from "./sync-ticket";
 import type { IndexEntry, TicketFile } from "./sync-ticket-types";
@@ -174,8 +181,22 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     report.importableTickets = [];
   }
 
+  // Linked worktree: persistIndexCanonical defers the index.json write to the
+  // post-merge regeneration on the target branch (sync-index-write.ts), so
+  // index-write-dependent classes (orphan .md files awaiting an index entry)
+  // cannot be resolved here. Reclassify them as deferred — excluded from the
+  // actionable total (exit 0), reported separately, never claimed as fixed.
+  const linked = isLinkedWorktree(repoRoot);
+  const deferred = linked ? deferIndexWriteClasses(report) : { count: 0, files: [] as string[] };
+
   // Report
   renderReport(report, verbose);
+  if (deferred.count > 0) {
+    raw(`\n⏸ ${deferred.count} deferred — canonical index regenerates post-merge`);
+    if (verbose) {
+      deferred.files.forEach((f) => raw(`   ${f}`));
+    }
+  }
 
   // Summary — only *actionable* issues gate the result. Placeholder hashes,
   // missing-hash suggestions, missing git_issue links, and orphan git issues
@@ -260,47 +281,44 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
       repoRoot,
       scope,
     );
-    const { total: postTotal, advisory: postAdvisory } = countIssueTotals(postReport);
-
-    if (postTotal === 0) {
-      raw(`Index is in sync${postAdvisory > 0 ? ` (${postAdvisory} advisory remaining)` : ""}`);
-    } else {
-      raw(
-        `${postTotal} actionable issue(s) remain${
-          postAdvisory > 0 ? `, ${postAdvisory} advisory` : ""
-        }`,
-      );
+    let postDeferred = 0;
+    if (linked) {
+      // The recompute below runs against the UNPERSISTED fixed index, so it
+      // would resolve orphans in memory and fake a green verdict. The
+      // persisted picture still has them deferred — report the pre-fix count.
+      postReport.orphanFiles = [];
+      postDeferred = deferred.count;
     }
+    const { total: postTotal, advisory: postAdvisory } = countIssueTotals(postReport);
+    renderPostFixSummary({
+      linked,
+      deferred: postDeferred,
+      total: postTotal,
+      advisory: postAdvisory,
+    });
     opts.onSummary?.({
       tickets: ticketFiles.length,
       fixesApplied: report.fixesApplied.length,
       issuesRemaining: postTotal,
       advisoryRemaining: postAdvisory,
+      ...(postDeferred > 0 ? { deferredRemaining: postDeferred } : {}),
     });
     return postTotal > 0 ? 1 : 0;
   }
 
-  if (fixMode && totalIssues === 0) {
-    raw(`\nNothing to fix`);
-  } else if (totalIssues > 0) {
-    raw(`\nRun with --fix to apply automatic fixes`);
-  }
-
-  if (totalIssues === 0) {
-    raw(`Index is in sync${advisoryCount > 0 ? ` (${advisoryCount} advisory)` : ""}`);
-  } else {
-    raw(
-      `${totalIssues} actionable issue(s) found${
-        advisoryCount > 0 ? `, ${advisoryCount} advisory` : ""
-      }`,
-    );
-  }
+  renderCheckSummary({
+    fixMode,
+    total: totalIssues,
+    advisory: advisoryCount,
+    deferred: deferred.count,
+  });
 
   opts.onSummary?.({
     tickets: ticketFiles.length,
     fixesApplied: 0,
     issuesRemaining: totalIssues,
     advisoryRemaining: advisoryCount,
+    ...(deferred.count > 0 ? { deferredRemaining: deferred.count } : {}),
   });
 
   // Exit code

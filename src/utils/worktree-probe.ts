@@ -9,12 +9,19 @@
 
 import { isolatedGitEnv } from "./git";
 
-/** True when `root` is a linked worktree rather than the main checkout. */
+/** True when `root` is a linked worktree rather than the main checkout.
+ *  An unreadable probe (e.g. git missing entirely) is treated as the main
+ *  checkout: callers either fail later on their own git reads, or are
+ *  fix-mode runs that `runSync` already refuses before persisting. */
 export function isLinkedWorktree(root: string): boolean {
-  const probe = Bun.spawnSync(
-    ["git", "-C", root, "rev-parse", "--git-dir", "--git-common-dir"],
-    { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
-  );
-  const dirs = probe.exitCode === 0 ? probe.stdout.toString().trim().split("\n") : [];
-  return dirs.length === 2 && dirs[0] !== dirs[1];
+  try {
+    const probe = Bun.spawnSync(
+      ["git", "-C", root, "rev-parse", "--git-dir", "--git-common-dir"],
+      { stdout: "pipe", stderr: "pipe", env: isolatedGitEnv() },
+    );
+    const dirs = probe.exitCode === 0 ? probe.stdout.toString().trim().split("\n") : [];
+    return dirs.length === 2 && dirs[0] !== dirs[1];
+  } catch {
+    return false;
+  }
 }

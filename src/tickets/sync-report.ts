@@ -38,6 +38,70 @@ export function countIssueTotals(report: SyncReport): { total: number; advisory:
   return { total, advisory };
 }
 
+/** Linked-worktree deferral (BUG-linked-worktree-sync-defers-…): the canonical
+ *  index write is postponed (sync-index-write.ts), so index-write-dependent
+ *  classes — orphan .md files awaiting an index entry — cannot be resolved in
+ *  this worktree. Remove them from the report and return them for the
+ *  deferred notice; they regenerate post-merge on the target branch. */
+export function deferIndexWriteClasses(report: SyncReport): { count: number; files: string[]; } {
+  const files = report.orphanFiles;
+  report.orphanFiles = [];
+  return { count: files.length, files };
+}
+
+/** Post-fix verdict line. In a linked worktree index-bound fixes are NOT
+ *  persisted (the write is deferred), so the verdict must never read
+ *  "in sync" — it reports persisted-vs-deferred instead. */
+export function renderPostFixSummary(
+  { linked, deferred, total, advisory }: {
+    linked: boolean;
+    deferred: number;
+    total: number;
+    advisory: number;
+  },
+): void {
+  const advisorySuffix = advisory > 0 ? `, ${advisory} advisory` : "";
+  if (total === 0) {
+    if (linked && deferred > 0) {
+      raw(
+        `0 persisted, ${deferred} deferred — canonical index regenerates post-merge${advisorySuffix}`,
+      );
+    } else {
+      raw(`Index is in sync${advisory > 0 ? ` (${advisory} advisory remaining)` : ""}`);
+    }
+  } else {
+    raw(
+      `${total} actionable issue(s) remain${
+        deferred > 0 ? `, ${deferred} deferred` : ""
+      }${advisorySuffix}`,
+    );
+  }
+}
+
+/** Dry-run verdict block: fix hint, sync/counts line, final deferred notice. */
+export function renderCheckSummary(
+  { fixMode, total, advisory, deferred }: {
+    fixMode: boolean;
+    total: number;
+    advisory: number;
+    deferred: number;
+  },
+): void {
+  if (fixMode && total === 0) {
+    raw(`\nNothing to fix`);
+  } else if (total > 0) {
+    raw(`\nRun with --fix to apply automatic fixes`);
+  }
+  if (total === 0) {
+    raw(`Index is in sync${advisory > 0 ? ` (${advisory} advisory)` : ""}`);
+  } else {
+    raw(`${total} actionable issue(s) found${advisory > 0 ? `, ${advisory} advisory` : ""}`);
+  }
+  if (deferred > 0) {
+    raw(`${deferred} deferred — canonical index regenerates post-merge`);
+  }
+}
+
 export function renderReport(report: SyncReport, verbose: boolean): void {
   raw(`\n📋 Reconciliation Report`);
   raw(`${"─".repeat(60)}`);

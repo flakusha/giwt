@@ -642,6 +642,10 @@
   "src/git/policy.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md"
     },
     {
@@ -952,10 +956,18 @@
   "src/tickets/sync-index-write.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i.md"
     }
   ],
   "src/tickets/sync-index.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"
@@ -1027,6 +1039,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice.md"
+    }
+  ],
+  "src/tickets/sync-worktree.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md"
     }
   ],
   "src/utils/args-scan.ts": [
@@ -1239,6 +1257,12 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-.md"
+    }
+  ],
+  "src/utils/worktree-probe.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md"
     }
   ],
   "src/utils/worktree-root.test.ts": [

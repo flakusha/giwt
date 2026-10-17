@@ -56,4 +56,8 @@ export interface SyncSummary {
   issuesRemaining: number;
   /** Advisory (non-gating) findings remaining. */
   advisoryRemaining: number;
+  /** Findings reclassified as deferred because the canonical index write is
+   *  postponed in a linked worktree (regenerates post-merge). Absent on the
+   *  main checkout. */
+  deferredRemaining?: number;
 }

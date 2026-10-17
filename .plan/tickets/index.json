@@ -540,6 +540,24 @@
     "status": "done",
     "git_issue": "afe3bf9"
   },
+  "BUG-LINKED-WORKTREE-SYNC-DEFERS-CANONICAL-INDEX-WRITE-BUT-SYNC-A": {
+    "hash": "a26b79d",
+    "git_issue": "a26b79d",
+    "extid": "BUG-LINKED-WORKTREE-SYNC-DEFERS-CANONICAL-INDEX-WRITE-BUT-SYNC-A",
+    "type": "BUG",
+    "title": "linked-worktree sync defers canonical index write but sync and plan validate treat stale index as actionable",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "sync",
+      "worktree",
+      "index",
+      "false-green"
+    ],
+    "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md",
+    "status": "done"
+  },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
     "extid": "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK",
@@ -967,6 +985,40 @@
     "source": ".plan/tickets/FEAT-advisory-giwt-lock-status-command.md",
     "status": "done"
   },
+  "FEAT-BACKUP-COMMAND-FAMILY-L0-DUMP-ENGINE-TAR-ZST-LISTED-INCREMEN": {
+    "hash": "5f19090",
+    "git_issue": "5f19090",
+    "extid": "FEAT-BACKUP-COMMAND-FAMILY-L0-DUMP-ENGINE-TAR-ZST-LISTED-INCREMEN",
+    "type": "FEAT",
+    "title": "backup command family L0 dump engine tar-zst listed-incremental sha256 verify GFS rotation",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "tags": [
+      "backup",
+      "dump",
+      "tar"
+    ],
+    "source": ".plan/tickets/FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen.md",
+    "status": "Not Started"
+  },
+  "FEAT-BACKUP-ORCHESTRATION-STATE-STALENESS-ALERTS-SCHEDULING-OFF-S": {
+    "hash": "e19abad",
+    "git_issue": "e19abad",
+    "extid": "FEAT-BACKUP-ORCHESTRATION-STATE-STALENESS-ALERTS-SCHEDULING-OFF-S",
+    "type": "FEAT",
+    "title": "backup orchestration state staleness alerts scheduling off-site mirrors MagicDNS",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "backup",
+      "orchestration",
+      "offsite"
+    ],
+    "source": ".plan/tickets/FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s.md",
+    "status": "Not Started"
+  },
   "FEAT-BOUND-DOCTOR-CHECK-SUBPROCESSES-WITH-A-CONFIGURABLE-TIMEOUT": {
     "hash": "7968809",
     "git_issue": "7968809",
@@ -1187,6 +1239,23 @@
     "tags": [],
     "source": ".plan/tickets/FEAT-gen-docs-check-freshness-gate.md",
     "status": "done"
+  },
+  "FEAT-GIT-ANNEX-PASSTHROUGH-SECOND-LEVEL-CLASSIFIER-POLICY-FOR-DES": {
+    "hash": "a99a38c",
+    "git_issue": "a99a38c",
+    "extid": "FEAT-GIT-ANNEX-PASSTHROUGH-SECOND-LEVEL-CLASSIFIER-POLICY-FOR-DES",
+    "type": "FEAT",
+    "title": "git-annex passthrough second-level classifier policy for destructive annex ops",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "annex",
+      "git-passthrough",
+      "policy"
+    ],
+    "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md",
+    "status": "Not Started"
   },
   "FEAT-GIT-INVOCATION-ALLOWLIST-POLICY-CONFIGURABLE-LISTS": {
     "hash": "181389f",

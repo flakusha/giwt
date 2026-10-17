@@ -36,16 +36,16 @@ export function buildTestArgs(filter: string | null, reportFile: string): string
 
 // Extract the failing suite file paths from a junit XML report (bun
 // writes one testcase element per test with a file attribute = suite
-// path; a nested failure element marks that test failed). Sorted,
-// deduplicated.
+// path; passing tests are self-closing, failing ones carry a nested
+// failure element). Sorted, deduplicated.
 export function parseFailureSuites(xml: string): string[] {
   const failures: string[] = [];
-  const re = /<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g;
+  const re = /<testcase\b([^>]*?)(?:\/>|>([\s\S]*?)<\/testcase>)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
     const attrs = m[1];
-    const body = m[2];
-    if (attrs === undefined || body === undefined || !body.includes("<failure")) continue;
+    const body = m[2] ?? "";
+    if (attrs === undefined || !body.includes("<failure")) continue;
     const cls = attrs.match(/\bfile="([^"]+)"/)?.[1];
     if (cls !== undefined && !failures.includes(cls)) failures.push(cls);
   }

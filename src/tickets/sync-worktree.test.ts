@@ -44,6 +44,7 @@ import { join } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { runSync } from "./sync-index";
+import type { SyncSummary } from "./sync-options";
 
 // ── Fixture helpers ────────────────────────────────────────────
 
@@ -245,6 +246,98 @@ describe("runSync worktree isolation", () => {
       expect(existsSync(join(wt1, ".plan/tickets", "index.json"))).toBe(false);
       expect(existsSync(join(main, ".plan/tickets", "index.json"))).toBe(false);
       expect(syncResidue(wt2)).toEqual([]);
+    } finally {
+      silencer.restore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runSync linked-worktree deferred index classes", () => {
+  test("worktree ticket → --fix deferred → check exit 0 pre-merge → post-merge regenerates", () => {
+    const dir = mkdtempSync(join(scratchRoot(), "sync-deferred-"));
+    const silencer = quiet();
+    try {
+      const { main, wts } = initRepoWithWorktrees(dir, 1);
+      const wt = wts[0]!;
+      const wtIndexPath = join(wt, ".plan/tickets", "index.json");
+
+      // Worktree-only ticket (BUG-linked-worktree-sync-defers-…): the
+      // canonical index write is deferred, so the orphan must never gate.
+      writeTicket(wt, "TASK-wt-deferred-ticket.md", "wt deferred ticket");
+      // The harness-wide global gitignore (`.*/`) hides .plan/ from fixture
+      // adds — neutralize it for the staging call.
+      git(wt, "-c", "core.excludesFile=", "add", "-A");
+      git(wt, "commit", "-q", "-m", "ticket");
+
+      const fixSummaries: SyncSummary[] = [];
+      const fixExit = runSync(wt, {
+        fix: true,
+        ticketsPath: ".plan/tickets",
+        onSummary: (s) => fixSummaries.push(s),
+      });
+      if (!gitIssueLsAvailable(wt)) {
+        // Documented refusal: registry unreadable → --fix must not guess.
+        expect(fixExit).toBe(1);
+        return;
+      }
+      // Deferred verdict: exit 0, but NEVER "resolved" — the fix was not
+      // persisted and the summary says so.
+      expect(fixExit).toBe(0);
+      expect(fixSummaries[0]!.issuesRemaining).toBe(0);
+      expect(fixSummaries[0]!.deferredRemaining).toBe(1);
+      expect(existsSync(wtIndexPath)).toBe(false);
+
+      // Check mode pre-merge: same orphans, now deferred → exit 0.
+      const checkSummaries: SyncSummary[] = [];
+      const checkExit = runSync(wt, {
+        ticketsPath: ".plan/tickets",
+        onSummary: (s) => checkSummaries.push(s),
+      });
+      expect(checkExit).toBe(0);
+      expect(checkSummaries[0]!.issuesRemaining).toBe(0);
+      expect(checkSummaries[0]!.deferredRemaining).toBe(1);
+      expect(existsSync(wtIndexPath)).toBe(false);
+
+      // Post-merge: the ticket lands on the target branch; the main checkout
+      // regenerates the canonical index and reconciles for real.
+      git(main, "merge", "-q", "--no-edit", "wt-branch-1");
+      const mainSummaries: SyncSummary[] = [];
+      const mainExit = runSync(main, {
+        fix: true,
+        ticketsPath: ".plan/tickets",
+        onSummary: (s) => mainSummaries.push(s),
+      });
+      expect(mainExit).toBe(0);
+      expect(mainSummaries[0]!.deferredRemaining).toBeUndefined();
+      const canonical = JSON.parse(
+        readFileSync(join(main, ".plan/tickets", "index.json"), "utf8"),
+      ) as Record<string, unknown>;
+      expect(Object.keys(canonical)).toContain("TASK-WT-DEFERRED-TICKET");
+    } finally {
+      silencer.restore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("linked-worktree check mode exits 0 with deferred orphans even without --fix", () => {
+    const dir = mkdtempSync(join(scratchRoot(), "sync-deferred-check-"));
+    const silencer = quiet();
+    try {
+      const { wts } = initRepoWithWorktrees(dir, 1);
+      const wt = wts[0]!;
+      writeTicket(wt, "TASK-wt-check-deferred.md", "wt check deferred");
+
+      const summaries: SyncSummary[] = [];
+      const exit = runSync(wt, {
+        ticketsPath: ".plan/tickets",
+        onSummary: (s) => summaries.push(s),
+      });
+      expect(exit).toBe(0);
+      expect(summaries[0]!.deferredRemaining).toBe(1);
+      expect(summaries[0]!.issuesRemaining).toBe(0);
+      expect(existsSync(join(wt, ".plan/tickets", "index.json"))).toBe(false);
+      expect(syncResidue(wt)).toEqual([]);
     } finally {
       silencer.restore();
       rmSync(dir, { recursive: true, force: true });

@@ -125,6 +125,16 @@ describe("parseFailureSuites", () => {
     expect(parseFailureSuites(xml)).toEqual(["src/b.test.ts"]);
   });
 
+  it("ignores self-closing passing testcases (bun ≥1.4 junit shape)", () => {
+    const xml = [
+      "<testsuites>",
+      `<testcase name="passes" classname="" file="src/green.test.ts" line="1" assertions="1" />`,
+      `<testcase name="fails" classname="" file="src/red.test.ts" line="1" assertions="1"><failure type="AssertionError">x</failure></testcase>`,
+      "</testsuites>",
+    ].join("\n");
+    expect(parseFailureSuites(xml)).toEqual(["src/red.test.ts"]);
+  });
+
   it("returns nothing for a green report", () => {
     expect(parseFailureSuites(`<testcase name="ok" file="src/a.test.ts"></testcase>`)).toEqual(
       [],
