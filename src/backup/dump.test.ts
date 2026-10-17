@@ -268,6 +268,11 @@ describe("backup dump/verify (real tar)", () => {
     await expectThrow([], "a subcommand is required");
     await expectThrow(["verify", "--dry-run"], "--dry-run applies to dump only");
     await expectThrow(["dump", "no-such-dir"], "is not a directory");
+    // Caveat gate: targets that climb out of (or bypass) the repo root are
+    // refused before any tar runs. Both shapes EXIST on disk, so only the
+    // containment check can reject them.
+    await expectThrow(["dump", "../"], "outside the repo root");
+    await expectThrow(["dump", "/tmp"], "outside the repo root");
     rmSync(fx.repo, { recursive: true, force: true });
   });
 

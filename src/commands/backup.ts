@@ -10,7 +10,7 @@
  */
 
 import { existsSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import {
   type DumpOptions,
   type DumpPreviewRow,
@@ -65,6 +65,14 @@ export function resolveTargets(config: WorktreeConfig, given: string[]): Resolve
     const targetAbs = resolve(config.repoRoot, target);
     if (!existsSync(targetAbs) || !statSync(targetAbs).isDirectory()) {
       throw new Error(`backup: target '${target}' is not a directory (resolved ${targetAbs})`);
+    }
+    // Caveat gate: never archive outside the repo root. An absolute target
+    // would silently discard repoRoot in resolve(); `..` climbs out.
+    const rel = relative(config.repoRoot, targetAbs);
+    if (rel.startsWith("..") || isAbsolute(rel)) {
+      throw new Error(
+        `backup: target '${target}' resolves outside the repo root (${targetAbs})`,
+      );
     }
     return { target, targetAbs };
   });
