@@ -8,10 +8,10 @@ src/ paths they own. Regenerate with `giwt plan links --write`; freshness is
 gated by `giwt plan links --check` / `giwt plan validate`. No timestamps —
 output is byte-identical for identical inputs.
 
-- tickets: 161
+- tickets: 166
 - epics: 0
-- src paths owned: 130
-- edges: produces 246, consumes 0, sibling 230, owns 0, related 0
+- src paths owned: 132
+- edges: produces 253, consumes 0, sibling 247, owns 0, related 6
 
 ## Shared src hubs
 
@@ -19,7 +19,7 @@ output is byte-identical for identical inputs.
 | --- | --- |
 | `src/cli-registry.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `FEAT-advisory-giwt-lock-status-command` |
 | `src/cli-usage.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p`, `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch`, `FEAT-advisory-giwt-lock-status-command`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` |
-| `src/cli.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c`, `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio`, `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote`, `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link`, `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` |
+| `src/cli.ts` | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-`, `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c`, `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio`, `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote`, `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link`, `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` |
 | `src/commands/abort.test.ts` | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-`, `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` |
 | `src/commands/abort.ts` | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-`, `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` |
 | `src/commands/commit-wt.ts` | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p`, `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla`, `FEAT-one-line-outcome-contract-for-direct-cli-calls` |
@@ -28,8 +28,8 @@ output is byte-identical for identical inputs.
 | `src/commands/finalize/checks.ts` | `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` |
 | `src/commands/finalize/gates.ts` | `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `BUG-squash-commit-failure-strands-staged-changes-in-dev` |
 | `src/commands/finalize/merge-exec.ts` | `BUG-finalize-direct-merge-allows-fast-forward`, `BUG-squash-commit-failure-strands-staged-changes-in-dev` |
-| `src/commands/finalize/merge.ts` | `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla` |
-| `src/commands/finalize/run.ts` | `BUG-finalize-alreadymerged-check-is-incomplete`, `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-one-line-outcome-contract-for-direct-cli-calls` |
+| `src/commands/finalize/merge.ts` | `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla` |
+| `src/commands/finalize/run.ts` | `BUG-finalize-alreadymerged-check-is-incomplete`, `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the`, `BUG-finalize-step1-doesnt-check-untracked-files`, `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename`, `FEAT-one-line-outcome-contract-for-direct-cli-calls` |
 | `src/commands/finalize/teardown.ts` | `BUG-finalize-teardown-branch-deletion-fallback-is-silent`, `BUG-finalize-teardown-doesnt-verify-worktree-exists`, `BUG-finalize-teardown-worktree-removal-failure-is-non-fatal`, `BUG-remove-branch-only-force-deletes-the-reflog-it-advertises-as` |
 | `src/commands/git.ts` | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster`, `FEAT-giwt-git-passthrough-command-for-harness-rerouting`, `FEAT-rtk-minimal-context-output-for-giwt-git` |
 | `src/commands/plan.ts` | `FEAT-feature-matrix-generation-from-ticket-index`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` |
@@ -54,7 +54,8 @@ output is byte-identical for identical inputs.
 | `src/plan/status-vocab.ts` | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re`, `BUG-status-vocab-annotation-regex-rejects-nested-parentheses`, `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla`, `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-`, `TASK-giwt-plan-validate-status-vocab-gate` |
 | `src/plan/validate.ts` | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping`, `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla`, `FEAT-feature-matrix-generation-from-ticket-index`, `TASK-giwt-plan-validate-status-vocab-gate`, `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis`, `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas`, `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-`, `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` |
 | `src/resolve-diff-base.test.ts` | `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di`, `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-`, `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` |
-| `src/tickets/sync-index.ts` | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick`, `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla`, `BUG-sync-index-shadows-imported-raw-oxlint-no-shadow`, `TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree` |
+| `src/tickets/sync-index-write.ts` | `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a`, `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` |
+| `src/tickets/sync-index.ts` | `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a`, `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick`, `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla`, `BUG-sync-index-shadows-imported-raw-oxlint-no-shadow`, `TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree` |
 | `src/tickets/sync-issues-ops.test.ts` | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick`, `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla` |
 | `src/tickets/sync-parse.ts` | `BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing`, `FEAT-plan-links-derive-and-validate-producers-consumers-siblings`, `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` |
 | `src/tickets/sync-ticket-index.test.ts` | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick`, `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` |
@@ -101,6 +102,9 @@ output is byte-identical for identical inputs.
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | produces | `src/commands/finalize.test.ts` | - |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | produces | `src/commands/finalize.ts` | - |
 | `BUG-finalize-leaves-dev-worktree-stale-after-merging` | produces | `src/commands/finalize/staging-sync.ts` | - |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | produces | `src/cli.ts` | - |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | produces | `src/commands/finalize/merge.ts` | - |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | produces | `src/commands/finalize/run.ts` | - |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | produces | `src/commands/plan/code-map.ts` | - |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | produces | `src/commands/scoped-reconcile.ts` | - |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | produces | `src/commands/sync.ts` | - |
@@ -132,6 +136,10 @@ output is byte-identical for identical inputs.
 | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re` | produces | `src/commands/ticket.ts` | - |
 | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re` | produces | `src/plan/status-vocab.ts` | - |
 | `BUG-ledger-append-race-drops-records-under-concurrent-agents` | produces | `src/utils/ledger.ts` | - |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | produces | `src/tickets/sync-index-write.ts` | - |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | produces | `src/tickets/sync-index.ts` | - |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | produces | `src/tickets/sync-worktree.test.ts` | - |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | produces | `src/utils/worktree-probe.ts` | - |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | produces | `src/commands/doctor.ts` | - |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | produces | `src/tickets/sync-index.ts` | - |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | produces | `src/tickets/sync-issues-ops.test.ts` | - |
@@ -322,9 +330,16 @@ output is byte-identical for identical inputs.
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/plan/gen-docs.ts` | - |
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/plan/validate.ts` | - |
 | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | produces | `src/tickets/sync-ticket.ts` | - |
+| `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
+| `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
+| `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | related | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | - |
+| `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | related | `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | related | `FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen` | - |
+| `FEAT-git-annex-passthrough-second-level-classifier-policy-for-des` | related | `FEAT-backup-orchestration-state-staleness-alerts-scheduling-off-s` | - |
 | `BUG-abort-hard-resets-dev-when-a-stash-pop-conflicts-destroying-` | sibling | `BUG-abort-pops-stashes-by-positional-ref-destroying-user-authore` | `src/commands/abort.test.ts; src/commands/abort.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | `src/cli-usage.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | `src/cli.ts` |
+| `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | `src/cli.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio` | `src/cli.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | `src/cli.ts` |
 | `BUG-checkheader-does-not-strip-the-comment-suffix-so-every-html-` | sibling | `BUG-rebase-refuses-a-dirty-worktree-with-no-escape-hatch` | `src/cli-usage.ts` |
@@ -350,6 +365,7 @@ output is byte-identical for identical inputs.
 | `BUG-commit-wt-hardcodes-no-verify-bypassing-the-consuming-repo-p` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/utils/git.ts` |
 | `BUG-exec-identity-patterns-author-equals-form-only-misses-space-` | sibling | `BUG-rebase-exec-identity-guard-bypassed-by-ix-short-flag-cluster` | `src/git/predicates.ts` |
 | `BUG-exec-identity-patterns-author-equals-form-only-misses-space-` | sibling | `BUG-rebase-exec-not-blocked-in-giwt-git-passthrough-policy` | `src/git/predicates.ts` |
+| `BUG-finalize-alreadymerged-check-is-incomplete` | sibling | `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | `src/commands/finalize/run.ts` |
 | `BUG-finalize-alreadymerged-check-is-incomplete` | sibling | `BUG-finalize-step1-doesnt-check-untracked-files` | `src/commands/finalize/run.ts` |
 | `BUG-finalize-alreadymerged-check-is-incomplete` | sibling | `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-` | `src/commands/finalize/run.ts` |
 | `BUG-finalize-alreadymerged-check-is-incomplete` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/commands/finalize/run.ts` |
@@ -365,6 +381,7 @@ output is byte-identical for identical inputs.
 | `BUG-finalize-check-failure-report-never-names-failed-gates-check` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `src/commands/finalize.ts` |
 | `BUG-finalize-direct-merge-allows-fast-forward` | sibling | `BUG-squash-commit-failure-strands-staged-changes-in-dev` | `src/commands/finalize/merge-exec.ts` |
 | `BUG-finalize-findworktree-only-checks-tree-dir` | sibling | `BUG-giwt-lifecycle-config-writes-invisible-to-omp-guard` | `src/utils/config.ts` |
+| `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | `src/cli.ts` |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio` | `src/cli.ts` |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | `src/cli.ts` |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `BUG-rebase-lacks-already-contained-guard-compounding-an-empty-di` | `src/commands/finalize.test.ts` |
@@ -378,6 +395,15 @@ output is byte-identical for identical inputs.
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `src/commands/finalize.ts` |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `src/commands/finalize.ts` |
 | `BUG-finalize-leaks-worktree-and-branch-when-the-target-already-c` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/cli.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `BUG-finalize-step1-doesnt-check-untracked-files` | `src/commands/finalize/merge.ts; src/commands/finalize/run.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio` | `src/cli.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `BUG-rebase-default-target-is-the-root-branch-which-is-also-prote` | `src/cli.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `BUG-reconcile-conflicts-commit-path-does-not-pin-gpg-signing-fla` | `src/commands/finalize/merge.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-` | `src/commands/finalize/run.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `FEAT-finalize-dry-run-scope-decision-true-dry-run-or-rename` | `src/commands/finalize/run.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link` | `src/cli.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `FEAT-one-line-outcome-contract-for-direct-cli-calls` | `src/commands/finalize/run.ts` |
+| `BUG-finalize-legacy-and-prune-dry-run-flags-are-swallowed-as-the` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `src/cli.ts` |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `BUG-generated-plan-files-stamped-with-giwt-s-own-agpl-header-in-` | `src/commands/scoped-reconcile.ts; src/commands/sync.ts` |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla` | `src/plan/validate.ts` |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `FEAT-feature-matrix-generation-from-ticket-index` | `src/plan/validate.ts` |
@@ -419,6 +445,11 @@ output is byte-identical for identical inputs.
 | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/status-vocab.ts` |
 | `BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re` | sibling | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | `src/commands/ticket.ts` |
 | `BUG-ledger-append-race-drops-records-under-concurrent-agents` | sibling | `FEAT-ledger-lifecycle-truthfulness-dispatcher-finish-and-run-link` | `src/utils/ledger.ts` |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | sibling | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | `src/tickets/sync-index.ts` |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | sibling | `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla` | `src/tickets/sync-index.ts` |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | sibling | `BUG-sync-index-shadows-imported-raw-oxlint-no-shadow` | `src/tickets/sync-index.ts` |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `src/tickets/sync-index-write.ts` |
+| `BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a` | sibling | `TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree` | `src/tickets/sync-index.ts` |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | sibling | `BUG-sync-fix-rewrites-md-status-to-git-issue-state-reverting-pla` | `src/tickets/sync-index.ts; src/tickets/sync-issues-ops.test.ts` |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | sibling | `BUG-sync-index-shadows-imported-raw-oxlint-no-shadow` | `src/tickets/sync-index.ts` |
 | `BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick` | sibling | `TASK-giwt-sync-recalculate-tickets-index-inside-a-worktree` | `src/tickets/sync-index.ts` |
