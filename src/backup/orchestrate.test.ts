@@ -230,6 +230,7 @@ describe("backup remote (runRemoteCommand)", () => {
       sqliteAvailable: false,
       allowRootOwned: false,
       scratchRoot: fx.scratch,
+      scratchRel: ".tmp",
     });
     await expect(runRemoteCommand(fakeConfig(fx.repo), {
       kind: "rsync",
@@ -253,6 +254,7 @@ describe("backup remote (runRemoteCommand)", () => {
       sqliteAvailable: false,
       allowRootOwned: false,
       scratchRoot: fx.scratch,
+      scratchRel: ".tmp",
     });
     await expect(runRemoteCommand(fakeConfig(fx.repo), {
       kind: "rsync",
@@ -276,6 +278,7 @@ describe("backup remote (runRemoteCommand)", () => {
       sqliteAvailable: false,
       allowRootOwned: false,
       scratchRoot: fx.scratch,
+      scratchRel: ".tmp",
     });
     const dest = join(fx.scratch, "offsite-copy");
     await runRemoteCommand(fakeConfig(fx.repo), {

@@ -31,7 +31,17 @@ export interface TarPlan {
 
 /** Assemble the tar command sequence for one target. */
 export function buildTarPlan(
-  { payloadTar, archivePath, stagingSnar, staging, rootAbs, targetAbs, snapshot, dbRefs }: {
+  {
+    payloadTar,
+    archivePath,
+    stagingSnar,
+    staging,
+    rootAbs,
+    targetAbs,
+    snapshot,
+    dbRefs,
+    scratchRel,
+  }: {
     /** Uncompressed payload tar path (staging; removed after compress). */
     payloadTar: string;
     /** Final compressed archive path (staging; renamed into the root later). */
@@ -43,6 +53,10 @@ export function buildTarPlan(
     /** Snapshot dir to append (null when the target had no snapshottable DB). */
     snapshot: { dir: string; member: string; } | null;
     dbRefs: Array<{ rel: string; }>;
+    /** Scratch root relative to the repo root (e.g. ".tmp"), or null when
+     *  it lies outside the repo — used to anchor the verify-scratch
+     *  exclusion. */
+    scratchRel: string | null;
   },
 ): TarPlan {
   const base = basename(targetAbs);
@@ -60,6 +74,20 @@ export function buildTarPlan(
   const guardRel = relative(targetAbs, rootAbs);
   if (guardRel !== "" && !guardRel.startsWith("..")) {
     payload.push("--exclude", member(guardRel), "--exclude", `${member(guardRel)}/*`);
+  }
+  // Verify-scratch guard: never archive the replay scratch (a leaked or
+  // concurrently-live `giwt-backup-verify-*` tree under the scratch root).
+  // Pattern-anchored from the target, like the recursion guard above; a
+  // live scratch tree belongs to a running verify lane, so this is an
+  // exclusion, never a sweep.
+  if (scratchRel !== null) {
+    const scratchPattern = member(join(scratchRel, "giwt-backup-verify-*"));
+    payload.push(
+      "--exclude",
+      scratchPattern,
+      "--exclude",
+      `${scratchPattern}/*`,
+    );
   }
   for (const db of dbRefs) payload.push("--exclude", member(db.rel));
   payload.push("-C", dirname(targetAbs), base);

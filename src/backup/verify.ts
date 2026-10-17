@@ -10,8 +10,18 @@
  * verdict interpreter (verdict.ts).
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { basename, join } from "node:path";
+import { log } from "../utils/output";
 import { type BackupArchive, listArchives, selectChain } from "./plan";
 import { COMPRESS_PROGRAM } from "./tarball";
 import {
@@ -101,7 +111,33 @@ async function verifyTarget(
   try {
     return await replayChain({ rootAbs, target, chain, tool, tmp });
   } finally {
-    rmSync(tmp, { recursive: true, force: true });
+    removeScratchTree(tmp);
+  }
+}
+
+/** Grant user-write on `dir` and every entry under it (giwt-owned scratch
+ *  only — never call this on a target tree). Tar-preserved annex modes
+ *  (dirs 0555, files 0444) would otherwise make `rm` fail with EACCES. */
+function makeTreeWritable(dir: string): void {
+  chmodSync(dir, 0o700);
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    const st = lstatSync(path);
+    if (st.isDirectory()) makeTreeWritable(path);
+    else if (!st.isSymbolicLink()) chmodSync(path, st.mode | 0o200);
+  }
+}
+
+/** Mode-safe removal of one giwt verify-scratch dir: unwritable entries
+ *  are made user-writable first, and a residual failure is reported as a
+ *  warning — cleanup must never fail a run whose verify evidence is
+ *  complete. */
+export function removeScratchTree(dir: string): void {
+  try {
+    makeTreeWritable(dir);
+    rmSync(dir, { recursive: true, force: true });
+  } catch (err) {
+    log("warn", `backup verify: scratch cleanup failed for ${dir} (${(err as Error).message})`);
   }
 }
 

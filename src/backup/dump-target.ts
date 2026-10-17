@@ -44,6 +44,7 @@ export async function dumpTarget(
     stamp,
     created,
     now,
+    scratchRel,
   }: {
     target: string;
     targetAbs: string;
@@ -56,6 +57,8 @@ export async function dumpTarget(
     stamp: string;
     created: string;
     now: number;
+    /** Scratch root relative to the repo root, or null when outside it. */
+    scratchRel: string | null;
   },
 ): Promise<TargetStepResult> {
   const safe = safeTargetName(target);
@@ -99,6 +102,7 @@ export async function dumpTarget(
     targetAbs,
     snapshot: quiesced.snapshotDir === "" ? null : { dir: quiesced.snapshotDir, member: safe },
     dbRefs: quiesced.excluded.map((ref) => ({ rel: ref.rel })),
+    scratchRel,
   });
 
   // Payload (chain driver) → appends (snapshots, manifest) → compress.

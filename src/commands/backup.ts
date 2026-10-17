@@ -42,7 +42,15 @@ function backupOptions(
     sqliteAvailable: Bun.which("sqlite3") !== null,
     allowRootOwned: b.allowRootOwned,
     scratchRoot: join(config.worktreeRoot, config.settings.scratch.root),
+    scratchRel: scratchRelOf(config),
   };
+}
+
+/** Scratch root relative to the repo root, or null when it resolves outside
+ *  the repo (then the tar exclusion has no anchor and is skipped). */
+function scratchRelOf(config: WorktreeConfig): string | null {
+  const rel = relative(config.repoRoot, join(config.worktreeRoot, config.settings.scratch.root));
+  return rel.startsWith("..") || isAbsolute(rel) || rel === "" ? null : rel;
 }
 
 /** Validate + resolve target paths against the repo root. */

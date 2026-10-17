@@ -3,7 +3,7 @@
 
 # BUG: backup dump verify: scratch cleanup EACCES and leaked trees
 
-**Status:** Not Started
+**Status:** Done (dump-lane fixes session, 2026-10-17: verify scratch removal made mode-safe in `removeScratchTree`/`makeTreeWritable` (src/backup/verify.ts), verify-scratch tar exclusion anchored from `scratchRel` in `buildTarPlan` (src/backup/tarball.ts), threaded DumpOptions → dumpTarget; repro'd EACCES before and green dump after on a real git-annex fixture)
 **Priority:** critical
 **Effort:** Medium
 **Epic:** epic-backup-annex-and-api
@@ -66,11 +66,11 @@ the configured scratch-root contract), or `rm -rf` with elevated perms
 
 **Acceptance Criteria:**
 
-- [ ] dump on an annex-content repo (one annexed file `annex get`-ed) exits 0 with mode-safe cleanup — no EACCES from verify scratch removal
-- [ ] no `giwt-backup-verify-*` dirs remain under the scratch root after success AND after an injected verify failure
-- [ ] a dump target covering the scratch root never archives `giwt-backup-verify-*` members (assert via `tar --list` on a fixture)
-- [ ] standalone `giwt backup verify` gets the same mode-safe cleanup
-- [ ] regression test with a mode-preserved fixture (dir 0555, file 0444) extracted into a scratch dir, asserting removal succeeds
-- [ ] `bun run check` green
+- [x] dump on an annex-content repo (one annexed file `annex get`-ed) exits 0 with mode-safe cleanup — no EACCES from verify scratch removal
+- [x] no `giwt-backup-verify-*` dirs remain under the scratch root after success AND after an injected verify failure
+- [x] a dump target covering the scratch root never archives `giwt-backup-verify-*` members (assert via `tar --list` on a fixture)
+- [x] standalone `giwt backup verify` gets the same mode-safe cleanup
+- [x] regression test with a mode-preserved fixture (dir 0555, file 0444) extracted into a scratch dir, asserting removal succeeds
+- [x] `bun run check` green
 
 git issue: cd119e1

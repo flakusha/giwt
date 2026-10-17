@@ -10,6 +10,7 @@
 
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -26,7 +27,7 @@ import { type DumpOptions, previewDump, runDump } from "./dump";
 import { acquireBackupLock } from "./lock";
 import { utcStamp } from "./plan";
 import { quiesceTarget } from "./quiesce";
-import { verifyRoot } from "./verify";
+import { removeScratchTree, verifyRoot } from "./verify";
 
 const BASE = join(process.cwd(), ".tmp", "giwt-backup-fixture");
 const HAS_SQLITE = Bun.which("sqlite3") !== null;
@@ -69,6 +70,7 @@ function dumpOptions(fx: Fixture, sqliteAvailable: boolean = HAS_SQLITE): DumpOp
     sqliteAvailable,
     allowRootOwned: false,
     scratchRoot: fx.scratch,
+    scratchRel: ".tmp",
   };
 }
 
@@ -249,6 +251,45 @@ describe("backup dump/verify (real tar)", () => {
     });
     expect(verdicts[0]!.ok).toBe(false);
     expect(verdicts[0]!.reason).toContain("tar -t failed");
+    rmSync(fx.repo, { recursive: true, force: true });
+  });
+
+  test("mode-safe scratch cleanup removes tar-preserved read-only trees", () => {
+    const fx = makeFixture("modesafe");
+    mkdirSync(fx.scratch, { recursive: true });
+    const scratch = mkdtempSync(join(fx.scratch, "giwt-backup-verify-"));
+    // Annex-style modes after a tar extract: dir 0555, file 0444.
+    const locked = join(scratch, "locked");
+    mkdirSync(locked, { recursive: true });
+    writeFileSync(join(locked, "key.txt"), "content\n");
+    chmodSync(locked, 0o555);
+    chmodSync(join(locked, "key.txt"), 0o444);
+    chmodSync(scratch, 0o555);
+    removeScratchTree(scratch);
+    expect(existsSync(scratch)).toBe(false);
+    rmSync(fx.repo, { recursive: true, force: true });
+  });
+
+  test("mode-safe cleanup never throws on an already-vanished scratch dir", () => {
+    const fx = makeFixture("modesafe-gone");
+    expect(() => removeScratchTree(join(fx.scratch, "giwt-backup-verify-none"))).not.toThrow();
+    rmSync(fx.repo, { recursive: true, force: true });
+  });
+
+  test("dump never archives a leaked giwt-backup-verify-* scratch tree", async () => {
+    const fx = makeFixture("exclude");
+    const leaked = join(fx.scratch, "giwt-backup-verify-Pbrhtu");
+    mkdirSync(join(leaked, "repo"), { recursive: true });
+    writeFileSync(join(leaked, "repo", "leftover.txt"), "stale\n");
+    const opts = dumpOptions(fx);
+    // Target the whole repo so the scratch root is inside the payload.
+    opts.targets = [{ target: ".", targetAbs: fx.repo }];
+    const result = await runDump(opts);
+    const table = tarTable(join(fx.root, result.dumps[0]!.archive));
+    expect(table.some((e) => e.includes("giwt-backup-verify-"))).toBe(false);
+    expect(table.some((e) => e.endsWith("docs/a.txt"))).toBe(true);
+    // A concurrent-live scratch tree also stays out while dump still succeeds.
+    expect(existsSync(leaked)).toBe(true);
     rmSync(fx.repo, { recursive: true, force: true });
   });
 

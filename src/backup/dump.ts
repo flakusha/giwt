@@ -59,6 +59,9 @@ export interface DumpOptions {
   /** Scratch area (repo [scratch] root, default .tmp) — dump verify replays
    *  extract here, never into /tmp root or another repo. */
   scratchRoot: string;
+  /** Scratch root relative to the repo root (e.g. ".tmp"), or null when it
+   *  lies outside the repo — anchors the verify-scratch tar exclusion. */
+  scratchRel: string | null;
 }
 
 export interface DumpRecord {
@@ -180,6 +183,7 @@ async function dumpLocked(options: DumpOptions, staging: string): Promise<DumpRu
       stamp,
       created,
       now,
+      scratchRel: options.scratchRel,
     });
     if (step.record !== null) dumps.push(step.record);
     if (step.staged !== null) staged.push(step.staged);
