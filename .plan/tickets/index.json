@@ -1000,7 +1000,7 @@
       "tar"
     ],
     "source": ".plan/tickets/FEAT-backup-command-family-l0-dump-engine-tar-zst-listed-incremen.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-BACKUP-ORCHESTRATION-STATE-STALENESS-ALERTS-SCHEDULING-OFF-S": {
     "hash": "e19abad",
@@ -1255,7 +1255,7 @@
       "policy"
     ],
     "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md",
-    "status": "Not Started"
+    "status": "done"
   },
   "FEAT-GIT-INVOCATION-ALLOWLIST-POLICY-CONFIGURABLE-LISTS": {
     "hash": "181389f",

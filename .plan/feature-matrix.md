@@ -13,10 +13,10 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | abort | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | agents | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
-| annex | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| annex | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | args | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | audit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| backup | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
+| backup | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
 | bug | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | check | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | checks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -37,7 +37,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | doctor | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | documentation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | drift | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| dump | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| dump | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | dx | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | e2e | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -49,7 +49,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | gen-docs | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | generator | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | git | 16 | 16 | 0 | 0 | 0 | 0 | 0 |
-| git-passthrough | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| git-passthrough | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | githooks | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | gpg | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | history-safety | 5 | 5 | 0 | 0 | 0 | 0 | 0 |
@@ -78,7 +78,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | parser | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | plan | 17 | 17 | 0 | 0 | 0 | 0 | 0 |
 | plan-validate | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| policy | 6 | 5 | 0 | 0 | 0 | 0 | 1 |
+| policy | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | pre-commit | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | rebase | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | reconcile | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -104,7 +104,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | status-vocab | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | structure | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | sync | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
-| tar | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| tar | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | teardown | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | testing | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | tests | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -129,7 +129,7 @@ Total tickets: **166** — untagged: **49** — unbound to epic: **152**
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | spdx-compliance | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 152 | 149 | 0 | 0 | 0 | 0 | 3 |
+| (unbound) | 152 | 151 | 0 | 0 | 0 | 0 | 1 |
 
 ## Ticket detail
 

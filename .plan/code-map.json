@@ -322,6 +322,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-giwt-git-passthrough-command-for-harness-rerouting.md"
     },
     {
@@ -637,6 +641,18 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu.md"
+    }
+  ],
+  "src/git/policy-annex.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md"
+    }
+  ],
+  "src/git/policy.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/FEAT-git-annex-passthrough-second-level-classifier-policy-for-des.md"
     }
   ],
   "src/git/policy.ts": [
