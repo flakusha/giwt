@@ -39,6 +39,7 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     root: "root",
   },
   tmp: { root: "root", prefixes: "prefixes", max_age_hours: "maxAgeHours" },
+  verify: { scripts: "scripts", timeout_ms: "timeoutMs" },
   backup: {
     root: "root",
     targets: "targets",
@@ -94,6 +95,7 @@ export const EXPECTED: Record<
     root: "string",
   },
   tmp: { root: "string", prefixes: "string[]", maxAgeHours: "number" },
+  verify: { scripts: "string[]", timeoutMs: "number" },
   backup: {
     root: "string",
     targets: "string[]",

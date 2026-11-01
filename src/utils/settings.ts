@@ -38,6 +38,13 @@
  *   root = "/tmp"              # cleanup root — only /tmp, $TMPDIR, os.tmpdir() allowed
  *   prefixes = ["giwt", ...]   # name allowlist for `giwt tmp --apply` candidates
  *   max_age_hours = 6          # entries younger than this are never deleted
+ *   [verify]                 # `giwt verify` — repo verify/probe scripts
+ *   scripts = []             # repo-root-relative glob-ish patterns (or plain
+ *                            # directories); empty = convention defaults
+ *                            # .tmp/verify* and scripts/verify*
+ *   timeout_ms = 120000      # per-script subprocess budget, mirroring
+ *                            # [doctor] timeout_ms; over it the child is
+ *                            # killed and reported as a timeout
  *   [status.aliases]
  *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate
  *   [plan]

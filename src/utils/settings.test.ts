@@ -172,6 +172,42 @@ describe("loadSettings", () => {
     }
   });
 
+  test("[verify] parses scripts and timeout_ms and defaults sensibly", () => {
+    const fx = makeFixture();
+    try {
+      const defaults = loadSettings(fx.root, {
+        globalPath: fx.globalPath,
+        localPath: fx.localPath,
+      });
+      // Unset [verify] scripts falls back to the documented convention
+      // defaults in the verify command itself (empty = unset here).
+      expect(defaults.verify).toEqual({ scripts: [], timeoutMs: 120_000 });
+      writeFileSync(
+        fx.localPath,
+        `[verify]\nscripts = ["probes/*", "scripts/verify*"]\ntimeout_ms = 5000\n`,
+      );
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.verify.scripts).toEqual(["probes/*", "scripts/verify*"]);
+      expect(s.verify.timeoutMs).toBe(5000);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[verify] wrong types throw naming file and key", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[verify]\ntimeout_ms = "lots"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/timeout_ms must be number/);
+      writeFileSync(fx.localPath, `[verify]\nscripts = "probes/*"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/scripts must be string\[\]/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("invalid TOML warns naming the file and falls back to defaults", () => {
     const fx = makeFixture();
     try {

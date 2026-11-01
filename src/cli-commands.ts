@@ -57,6 +57,7 @@ import { sync } from "./commands/sync";
 import { task } from "./commands/task";
 import { ticket } from "./commands/ticket";
 import { tmp } from "./commands/tmp";
+import { verify } from "./commands/verify";
 
 export const commands: Record<string, CommandHandler> = {
   "abort": {
@@ -253,5 +254,10 @@ export const commands: Record<string, CommandHandler> = {
   "ticket": {
     description: "Create ticket file + git issue; close/copy/3way subactions",
     run: ticket,
+  },
+  "verify": {
+    description:
+      "Run the repo's verify/probe scripts (discovered via [verify] scripts; sequential, timeout-bounded, --json)",
+    run: verify,
   },
 };

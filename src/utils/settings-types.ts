@@ -42,6 +42,14 @@ export interface GiwtSettings {
     root: string;
   };
   tmp: { root: string; prefixes: string[]; maxAgeHours: number; };
+  verify: {
+    /** Repo-root-relative glob-ish patterns (or plain directories) for
+     *  verify/probe scripts; empty = convention defaults (.tmp/verify*,
+     *  scripts/verify*). */
+    scripts: string[];
+    /** Per-script subprocess budget (ms); mirrors [doctor] timeout_ms. */
+    timeoutMs: number;
+  };
   backup: {
     /** Archive root; relative paths resolve against the repo root. */
     root: string;
@@ -97,6 +105,7 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
     prefixes: DEFAULT_TMP_OPTIONS.prefixes,
     maxAgeHours: DEFAULT_TMP_OPTIONS.maxAgeHours,
   },
+  verify: { scripts: [], timeoutMs: 120_000 },
   backup: {
     root: ".backups",
     targets: [],
