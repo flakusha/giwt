@@ -10,7 +10,7 @@ Regenerate with `giwt plan links --write`; freshness is gated by `giwt plan
 links --check` / `giwt plan validate`. No timestamps — output is
 byte-identical for identical inputs.
 
-- tickets: 179
+- tickets: 181
 - epics: 1
 - artifacts: 0
 - src paths owned: 145

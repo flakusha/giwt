@@ -26,6 +26,15 @@
       "related": []
     },
     {
+      "id": "BUG-backup-dump-test-fixture-uses-a-fixed-tmp-giwt-backup-fixtur",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-backup-dump-test-fixture-uses-a-fixed-tmp-giwt-backup-fixtur.md",
+      "title": "backup dump test fixture uses a fixed .tmp/giwt-backup-fixture path — parallel runs collide",
+      "status": "open",
+      "srcRefs": [],
+      "related": []
+    },
+    {
       "id": "BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees",
       "kind": "ticket",
       "path": ".plan/tickets/BUG-backup-dump-verify-scratch-cleanup-eacces-and-leaked-trees.md",
@@ -711,6 +720,15 @@
       "srcRefs": [
         "src/tickets/sync-index.ts"
       ],
+      "related": []
+    },
+    {
+      "id": "BUG-tag",
+      "kind": "ticket",
+      "path": ".plan/tickets/BUG-tag.md",
+      "title": "--tag",
+      "status": "done",
+      "srcRefs": [],
       "related": []
     },
     {
@@ -1767,7 +1785,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md",
       "title": "backlog dir requirement should be optional given ticket/epic auto-discovery",
-      "status": "open",
+      "status": "done",
       "srcRefs": [
         "src/commands/backlog.ts",
         "src/plan/validate/content-gates.ts",

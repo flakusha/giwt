@@ -3,7 +3,7 @@
 
 # TASK: backlog dir requirement should be optional given ticket/epic auto-discovery
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -22,6 +22,7 @@ Motivating consumer: sibling repo loop-lore landed branch `backlog-drop-tiers` a
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (no doc referenced the warn message; gate behavior is the validate --verbose surface)
+**Resolved:** 2026-11-01T05:32:55.438Z
