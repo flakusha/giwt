@@ -868,6 +868,10 @@
     },
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-feature-matrix-generation-from-ticket-index.md"
     },
     {
@@ -1106,6 +1110,10 @@
   "src/tickets/sync-normalize.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-.md"
     }
   ],
@@ -1130,6 +1138,10 @@
     }
   ],
   "src/tickets/sync-ticket-index.test.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u.md"
+    },
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-parseticketfile-vs-omp-roster-divergence-on-dual-status-tick.md"

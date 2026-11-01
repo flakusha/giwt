@@ -3,7 +3,7 @@
 
 # BUG: normalizeStatus leaves 'Not Started' entries in 'other' bucket, undercounting open workstack
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** plan, status-vocab
@@ -19,6 +19,6 @@ Mechanism: normalizeStatus (src/tickets/sync-normalize.ts:4-59) maps done/in_pro
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (verified: no doc enumerates the normalizeStatus open-class patterns; nothing to update)

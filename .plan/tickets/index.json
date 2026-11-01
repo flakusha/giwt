@@ -594,6 +594,22 @@
     "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md",
     "status": "done"
   },
+  "BUG-NORMALIZESTATUS-LEAVES-NOT-STARTED-ENTRIES-IN-OTHER-BUCKET-U": {
+    "hash": "f92b0ca",
+    "git_issue": "f92b0ca",
+    "extid": "BUG-NORMALIZESTATUS-LEAVES-NOT-STARTED-ENTRIES-IN-OTHER-BUCKET-U",
+    "type": "BUG",
+    "title": "normalizeStatus leaves 'Not Started' entries in 'other' bucket, undercounting open workstack",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "tags": [
+      "plan",
+      "status-vocab"
+    ],
+    "source": ".plan/tickets/BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u.md",
+    "status": "done"
+  },
   "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK": {
     "hash": "6c8b279",
     "extid": "BUG-PARSETICKETFILE-VS-OMP-ROSTER-DIVERGENCE-ON-DUAL-STATUS-TICK",
@@ -1344,6 +1360,32 @@
     "source": ".plan/tickets/FEAT-git-invocation-allowlist-policy-configurable-lists.md",
     "status": "done"
   },
+  "FEAT-GIWT-CODE-MAP-SCAN-PATH-SUPPORT-FOR-PACKAGES-MONOREPO": {
+    "hash": "d1828bb",
+    "git_issue": "d1828bb",
+    "extid": "FEAT-GIWT-CODE-MAP-SCAN-PATH-SUPPORT-FOR-PACKAGES-MONOREPO",
+    "type": "FEAT",
+    "title": "giwt code-map: scan-path support for packages/ (monorepo)",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-code-map-scan-path-support-for-packages-monorepo.md",
+    "status": "open"
+  },
+  "FEAT-GIWT-FEATURE-MATRIX-PROJECT-DIMENSION-UPSTREAM-SEAM": {
+    "hash": "5f2ce65",
+    "git_issue": "5f2ce65",
+    "extid": "FEAT-GIWT-FEATURE-MATRIX-PROJECT-DIMENSION-UPSTREAM-SEAM",
+    "type": "FEAT",
+    "title": "giwt feature-matrix: project dimension (upstream seam)",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-feature-matrix-project-dimension-upstream-seam.md",
+    "status": "open"
+  },
   "FEAT-GIWT-GIT-PASSTHROUGH-COMMAND-FOR-HARNESS-REROUTING": {
     "hash": "ccd5711",
     "git_issue": "ccd5711",
@@ -1376,6 +1418,58 @@
     ],
     "source": ".plan/tickets/FEAT-giwt-history-audit-classify-history-shape-and-flag-suspiciou.md",
     "status": "done"
+  },
+  "FEAT-GIWT-INDEXENTRY-PROJECT-ADD-PROJECT-FIELD-AND-PROJECT-HEADER": {
+    "hash": "8bd4882",
+    "git_issue": "8bd4882",
+    "extid": "FEAT-GIWT-INDEXENTRY-PROJECT-ADD-PROJECT-FIELD-AND-PROJECT-HEADER",
+    "type": "FEAT",
+    "title": "giwt IndexEntry.project: add project field and Project header read (upstream seam)",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-indexentry-project-add-project-field-and-project-header.md",
+    "status": "open"
+  },
+  "FEAT-GIWT-INTERCONNECT-DERIVE-PRODUCERS-CONSUMERS-SIBLINGS-FROM-F": {
+    "hash": "04826ee",
+    "git_issue": "04826ee",
+    "extid": "FEAT-GIWT-INTERCONNECT-DERIVE-PRODUCERS-CONSUMERS-SIBLINGS-FROM-F",
+    "type": "FEAT",
+    "title": "giwt interconnect: derive producers/consumers/siblings from feature matrices",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-interconnect-derive-producers-consumers-siblings-from-f.md",
+    "status": "open"
+  },
+  "FEAT-GIWT-INTERCONNECT-INTERCONNECTNODEKIND-ARTIFACT-GENERATES-ED": {
+    "hash": "9c3c9c4",
+    "git_issue": "9c3c9c4",
+    "extid": "FEAT-GIWT-INTERCONNECT-INTERCONNECTNODEKIND-ARTIFACT-GENERATES-ED",
+    "type": "FEAT",
+    "title": "giwt interconnect: InterconnectNodeKind artifact + generates edge (upstream seam)",
+    "label": "feat",
+    "priority": "low",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-interconnect-interconnectnodekind-artifact-generates-ed.md",
+    "status": "open"
+  },
+  "FEAT-GIWT-VERIFY-PROBE-WRAP-REPO-VERIFY-SCRIPTS-AS-A-GIWT-SUBCOMM": {
+    "hash": "b05a044",
+    "git_issue": "b05a044",
+    "extid": "FEAT-GIWT-VERIFY-PROBE-WRAP-REPO-VERIFY-SCRIPTS-AS-A-GIWT-SUBCOMM",
+    "type": "FEAT",
+    "title": "giwt verify probe: wrap repo verify scripts as a giwt subcommand",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/FEAT-giwt-verify-probe-wrap-repo-verify-scripts-as-a-giwt-subcomm.md",
+    "status": "open"
   },
   "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
     "hash": "52e9b13",
