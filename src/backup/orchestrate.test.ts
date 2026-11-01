@@ -6,9 +6,21 @@
  * real state-ledger fixtures, byte-identical schedule output, and a real
  * local rsync transfer for the success path. No network: rsync copies to a
  * scratch dir, tailscale/annex paths go through injected deps.
+ *
+ * RESOURCE CONTRACT (parallel safety):
+ * - Every test owns a PRIVATE root created by makeFixture via mkdtempSync
+ *   under the repo's gitignored .tmp/ — never a fixed shared path, so two
+ *   suites (or two concurrent runs) can never contend on the same state
+ *   ledger, backup root, or rsync scratch dir.
+ * - All sub-paths (backups root, state ledger, scratch) derive from that
+ *   private root; no test depends on a previous test's leftovers.
+ * - Roots are registered in tempRoots at creation and removed in a file-level
+ *   afterEach (rmSync recursive+force), so even a failed test cannot leak.
+ * - No test writes outside its private root; injected deps keep network and
+ *   remote paths synthetic.
  */
 
-import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import {
   chmodSync,
   existsSync,
@@ -34,7 +46,8 @@ import { boundedRunner } from "./remote";
 import { appendState, readState } from "./state";
 import { verifyRoot } from "./verify";
 
-const BASE = join(process.cwd(), ".tmp", "giwt-backup-fixture");
+/** Private fixture roots created this file; afterEach guarantees removal. */
+const tempRoots: string[] = [];
 
 interface Fixture {
   repo: string;
@@ -43,8 +56,9 @@ interface Fixture {
 }
 
 function makeFixture(name: string): Fixture {
-  mkdirSync(BASE, { recursive: true });
-  const repo = mkdtempSync(join(BASE, `orch-${name}-`));
+  mkdirSync(join(process.cwd(), ".tmp"), { recursive: true });
+  const repo = mkdtempSync(join(process.cwd(), ".tmp", `giwt-orchestrate-${name}-`));
+  tempRoots.push(repo);
   const docs = join(repo, "docs");
   mkdirSync(docs, { recursive: true });
   writeFileSync(join(docs, "a.txt"), "alpha\n");
@@ -59,8 +73,10 @@ function fakeConfig(repo: string): WorktreeConfig {
   return { repoRoot: repo, worktreeRoot: repo, treeDir: repo, settings };
 }
 
-afterAll(() => {
-  rmSync(BASE, { recursive: true, force: true });
+afterEach(() => {
+  for (const root of tempRoots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 describe("backup status (runStatusCommand)", () => {
@@ -102,7 +118,6 @@ describe("backup status (runStatusCommand)", () => {
     expect(out).toContain("dump (local):");
     expect(out).toContain("sync nas:");
     expect(readState(fx.repo).some((e) => e.kind === "alert")).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("stale history appends an alert event and --strict exits 1", () => {
@@ -125,7 +140,6 @@ describe("backup status (runStatusCommand)", () => {
     const alerts = readState(fx.repo).filter((e) => e.kind === "alert");
     expect(alerts).toHaveLength(1);
     expect(alerts[0]!.note).toContain("24.0h");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("--annex with an injected inventory prints counts and notes", () => {
@@ -142,7 +156,6 @@ describe("backup status (runStatusCommand)", () => {
     expect(exit).toBe(0);
     expect(out).toContain("annex whereis files: 3");
     expect(out).toContain("annex unused keys: 1");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -182,7 +195,6 @@ describe("backup remote (runRemoteCommand)", () => {
     spy.mockRestore();
     expect(out).toContain("box.tailnet. (offline) → try: --dest box");
     expect(existsSync(join(fx.repo, ".backup.jsonl"))).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("missing --dest and missing backup root are hard errors", async () => {
@@ -199,7 +211,6 @@ describe("backup remote (runRemoteCommand)", () => {
       prune: false,
       discover: false,
     })).rejects.toThrow("no backup root");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("failed verify refuses the transfer and never appends a sync event", async () => {
@@ -215,7 +226,6 @@ describe("backup remote (runRemoteCommand)", () => {
     const events = readState(fx.repo);
     expect(events.some((e) => e.kind === "sync")).toBe(false);
     expect(events.some((e) => e.kind === "verify" && e.ok === false)).toBe(true);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("prune is refused without [backup] allow_remote_delete (two-key auth)", async () => {
@@ -239,7 +249,6 @@ describe("backup remote (runRemoteCommand)", () => {
       discover: false,
     })).rejects.toThrow("server-side deletion refused");
     expect(readState(fx.repo).some((e) => e.kind === "sync")).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("failed transfer surfaces the runner exit as an error", async () => {
@@ -263,7 +272,6 @@ describe("backup remote (runRemoteCommand)", () => {
       discover: false,
     })).rejects.toThrow("rsync exited");
     expect(readState(fx.repo).some((e) => e.kind === "sync")).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("verified backup transfers via local rsync and appends offsiteAt", async () => {
@@ -293,7 +301,6 @@ describe("backup remote (runRemoteCommand)", () => {
     expect(sync?.ok).toBe(true);
     expect(sync?.remote).toBe(dest);
     expect(sync?.offsiteAt).toBeDefined();
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -307,7 +314,6 @@ describe("backup arg gates (status/schedule/remote)", () => {
     await expect(runRemoteGate(["--target", "ftp"], config)).rejects.toThrow(
       "--target expects rclone|rsync|ssh",
     );
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("valid gates parse through: status gate ok path, schedule gate, remote dest gate", async () => {
@@ -333,7 +339,6 @@ describe("backup arg gates (status/schedule/remote)", () => {
     spy.mockRestore();
     await expect(runRemoteGate([], config)).rejects.toThrow("--dest <remote> is required");
     process.exitCode = prevExit;
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -403,7 +408,6 @@ describe("annex inventory seam", () => {
     spy.mockRestore();
     expect(exit).toBe(0);
     expect(out).toContain("annex whereis files: 0");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -414,7 +418,6 @@ describe("bounded runner stdin path", () => {
     const res = await boundedRunner(60_000)(["tee", out], fx.repo, join(fx.repo, "docs", "a.txt"));
     expect(res.exitCode).toBe(0);
     expect(readFileSync(out, "utf8")).toBe("alpha\n");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -431,7 +434,6 @@ describe("backup handler verify failure path", () => {
     expect(process.exitCode ?? 0).toBe(1);
     process.exitCode = 0;
     expect(readState(fx.repo).some((e) => e.kind === "verify" && e.ok === false)).toBe(true);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -447,7 +449,6 @@ describe("verify and quiesce edge paths", () => {
     expect(verdicts).toHaveLength(1);
     expect(verdicts[0]!.ok).toBe(false);
     expect(verdicts[0]!.reason).toContain("no full archive found");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("findSqliteFiles walks subdirs, skips symlinks, and tolerates unreadable dirs", () => {
@@ -464,6 +465,5 @@ describe("verify and quiesce edge paths", () => {
     const afterChmod = findSqliteFiles(fx.repo);
     chmodSync(join(fx.repo, "deep"), 0o755);
     expect(Array.isArray(afterChmod)).toBe(true);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });

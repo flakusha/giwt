@@ -2,13 +2,24 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
- * Real-tar fixture: a small tree under the repo scratch area (.tmp/ — never
- * /tmp root or another repo) driven through dump → verify with real GNU
+ * Real-tar fixture: a small tree driven through dump → verify with real GNU
  * tar/zstd/sqlite3 spawns. Deterministic: fixed file contents, stamp-collision
  * safety via name selection, no wall-clock timing assertions.
+ *
+ * RESOURCE CONTRACT (parallel safety):
+ * - Every test owns a PRIVATE root created by makeFixture via mkdtempSync
+ *   under the repo's gitignored .tmp/ — never a fixed shared path, so two
+ *   suites (or two concurrent runs) can never contend on the same lock dir,
+ *   .snar chain, or staging area.
+ * - All sub-paths (backups root, scratch staging, lock dir) derive from that
+ *   private root; no test depends on a previous test's leftovers (the
+ *   lock-refusal test acquires its own held lock).
+ * - Roots are registered in tempRoots at creation and removed in a file-level
+ *   afterEach (rmSync recursive+force), so even a failed test cannot leak.
+ * - Child spawns are bounded (per-test timeouts; the annex test widens its own).
  */
 
-import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import {
   chmodSync,
   existsSync,
@@ -29,7 +40,8 @@ import { utcStamp } from "./plan";
 import { quiesceTarget } from "./quiesce";
 import { removeScratchTree, verifyRoot } from "./verify";
 
-const BASE = join(process.cwd(), ".tmp", "giwt-backup-fixture");
+/** Private fixture roots created this file; afterEach guarantees removal. */
+const tempRoots: string[] = [];
 const HAS_SQLITE = Bun.which("sqlite3") !== null;
 
 interface Fixture {
@@ -39,8 +51,9 @@ interface Fixture {
 }
 
 function makeFixture(name: string): Fixture {
-  mkdirSync(BASE, { recursive: true });
-  const repo = mkdtempSync(join(BASE, `${name}-`));
+  mkdirSync(join(process.cwd(), ".tmp"), { recursive: true });
+  const repo = mkdtempSync(join(process.cwd(), ".tmp", `giwt-dump-${name}-`));
+  tempRoots.push(repo);
   const docs = join(repo, "docs");
   const data = join(repo, "data");
   mkdirSync(docs, { recursive: true });
@@ -109,8 +122,10 @@ function fakeConfig(repo: string, targets: string[]): WorktreeConfig {
   return { repoRoot: repo, worktreeRoot: repo, treeDir: repo, settings };
 }
 
-afterAll(() => {
-  rmSync(BASE, { recursive: true, force: true });
+afterEach(() => {
+  for (const root of tempRoots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 describe("backup dump/verify (real tar)", () => {
@@ -156,7 +171,6 @@ describe("backup dump/verify (real tar)", () => {
       ["docs", true, undefined],
       ["data", true, undefined],
     ]);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("second dump rides the .snar chain as an incremental, never overwriting", async () => {
@@ -175,7 +189,6 @@ describe("backup dump/verify (real tar)", () => {
     });
     expect(verdicts[0]!.ok).toBe(true);
     expect(verdicts[0]!.chain).toHaveLength(2);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("rotation prunes expired archives but pins the live chain", async () => {
@@ -195,7 +208,6 @@ describe("backup dump/verify (real tar)", () => {
     expect(existsSync(join(fx.root, `docs.full.${strayStamp}.tar.zst.sha256`))).toBe(false);
     // Live chain intact: today's docs full + inc survived the tight budget.
     expect(archivesOf(fx.root, /^docs\..+\.tar\.zst$/)).toHaveLength(2);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("dry-run preview plans without writing", async () => {
@@ -207,7 +219,6 @@ describe("backup dump/verify (real tar)", () => {
     ]);
     expect(rows.every((r) => r.wouldPrune === 0)).toBe(true);
     expect(existsSync(fx.root)).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("missing sqlite3 skips the DB loudly and archives neither live file nor snapshot", async () => {
@@ -220,7 +231,6 @@ describe("backup dump/verify (real tar)", () => {
     const table = tarTable(join(fx.root, dataArchive));
     expect(table.some((e) => e.includes("store.db"))).toBe(false);
     expect(table.some((e) => e.includes("_giwt-quiesced"))).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("a failed sqlite snapshot excludes the live DB and reports the skip", async () => {
@@ -236,7 +246,6 @@ describe("backup dump/verify (real tar)", () => {
     expect(outcome.snapshotDir).toBe("");
     expect(outcome.skipped).toHaveLength(1);
     expect(outcome.skipped[0]!.reason).toContain("exited 1");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("verify fails loudly on a corrupted archive (exit + extraction paths)", async () => {
@@ -251,7 +260,6 @@ describe("backup dump/verify (real tar)", () => {
     });
     expect(verdicts[0]!.ok).toBe(false);
     expect(verdicts[0]!.reason).toContain("tar -t failed");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("mode-safe scratch cleanup removes tar-preserved read-only trees", () => {
@@ -267,13 +275,11 @@ describe("backup dump/verify (real tar)", () => {
     chmodSync(scratch, 0o555);
     removeScratchTree(scratch);
     expect(existsSync(scratch)).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("mode-safe cleanup never throws on an already-vanished scratch dir", () => {
     const fx = makeFixture("modesafe-gone");
     expect(() => removeScratchTree(join(fx.scratch, "giwt-backup-verify-none"))).not.toThrow();
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("dump never archives a leaked giwt-backup-verify-* scratch tree", async () => {
@@ -290,7 +296,6 @@ describe("backup dump/verify (real tar)", () => {
     expect(table.some((e) => e.endsWith("docs/a.txt"))).toBe(true);
     // A concurrent-live scratch tree also stays out while dump still succeeds.
     expect(existsSync(leaked)).toBe(true);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("command usage errors: unknown subcommand, bad target, --dry-run on verify", async () => {
@@ -314,7 +319,6 @@ describe("backup dump/verify (real tar)", () => {
     // containment check can reject them.
     await expectThrow(["dump", "../"], "outside the repo root");
     await expectThrow(["dump", "/tmp"], "outside the repo root");
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("command round trip: dry-run preview, real dump, verify through the handler", async () => {
@@ -330,7 +334,6 @@ describe("backup dump/verify (real tar)", () => {
     await backup(["verify"], config);
     expect(emitted("verified 1 chain(s)")).toBe(true);
     writeSpy.mockRestore();
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test(
@@ -351,7 +354,6 @@ describe("backup dump/verify (real tar)", () => {
       expect(writeSpy.mock.calls.some((call) => String(call[0]).includes("dumped 1 archive(s)")))
         .toBe(true);
       writeSpy.mockRestore();
-      rmSync(fx.repo, { recursive: true, force: true });
     },
     30_000,
   );
@@ -374,7 +376,6 @@ describe("backup dump/verify (real tar)", () => {
     expect(message).toContain("allow_root_owned");
     expect(message).toContain(".snar chains left untouched");
     expect(archivesOf(fx.root, /^etc\./)).toEqual([]);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("held backup lock refuses the dump with a remedy", async () => {
@@ -392,7 +393,6 @@ describe("backup dump/verify (real tar)", () => {
     } finally {
       release();
     }
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 
   test("a vanished target is a reported problem, not a crash", async () => {
@@ -407,7 +407,6 @@ describe("backup dump/verify (real tar)", () => {
     }
     expect(message).toContain("cannot stat target");
     expect(existsSync(join(fx.root, "state", "gone.snar"))).toBe(false);
-    rmSync(fx.repo, { recursive: true, force: true });
   });
 });
 
@@ -440,7 +439,6 @@ describe("giwt backup command (in-process)", () => {
       expect(verifyOut.join("")).toContain("verified 1 chain(s)");
     } finally {
       process.exitCode = originalExit;
-      rmSync(fx.repo, { recursive: true, force: true });
     }
   });
 });
