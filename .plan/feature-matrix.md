@@ -109,7 +109,7 @@ Total tickets: **183** — untagged: **58** — unbound to epic: **165**
 | sync | 10 | 10 | 0 | 0 | 0 | 0 | 0 |
 | tar | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | teardown | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
-| test-flake | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
+| test-flake | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | testing | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | tests | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | ticket | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
@@ -135,7 +135,7 @@ Total tickets: **183** — untagged: **58** — unbound to epic: **165**
 | output-tooling | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | quality | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | spdx-compliance | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| (unbound) | 165 | 163 | 0 | 2 | 0 | 0 | 0 |
+| (unbound) | 165 | 164 | 0 | 1 | 0 | 0 | 0 |
 
 ## Ticket detail
 

@@ -49,7 +49,7 @@
       "test-flake"
     ],
     "source": ".plan/tickets/BUG-backup-dump-test-fixture-uses-a-fixed-tmp-giwt-backup-fixtur.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-BACKUP-DUMP-VERIFY-SCRATCH-CLEANUP-EACCES-AND-LEAKED-TREES": {
     "hash": "cd119e1",

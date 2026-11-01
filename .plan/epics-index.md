@@ -12,7 +12,7 @@
 
 | Status | Title | Priority | Effort | Tasks | File |
 | ------ | ----- | -------- | ------ | ----- | ---- |
-| 📋 Planned | backup annex hardening and public API surface | high | Large | 0/4 | [epic-backup-annex-and-api.md](/.plan/epics/epic-backup-annex-and-api.md) |
+| ✅ Done | backup annex hardening and public API surface | high | Large | 4/4 | [epic-backup-annex-and-api.md](/.plan/epics/epic-backup-annex-and-api.md) |
 
 ---
 
@@ -20,7 +20,7 @@
 
 ### backup annex hardening and public API surface
 
-- **Status:** 📋 Planned
+- **Status:** ✅ Done
 - **Priority:** high
 - **Effort:** Large
 - **Type:** epic
