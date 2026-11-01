@@ -34,15 +34,14 @@ import { log } from "../utils/output.ts";
 /** Convention defaults when [verify] scripts is unset/empty (USAGE-documented). */
 export const DEFAULT_SCRIPT_PATTERNS: readonly string[] = [".tmp/verify*", "scripts/verify*"];
 
-/** One executed script. `path` is repo-root-relative (stable identity and
- *  sort key); `exitCode` is -1 on timeout, mirroring SpawnResult. */
+/** One executed script. `path` is repo-root-relative (stable identity and sort key); `exitCode` is -1 on timeout, mirroring SpawnResult. */
 export interface ScriptResult {
   name: string;
   path: string;
   status: "pass" | "fail" | "timeout";
   exitCode: number;
   durationMs: number;
-  /** Last [output] stream_tail lines of combined output (fail/timeout only). */
+  /** Last [output] stream_tail lines (fail/timeout only). */
   outputTail?: string;
 }
 
@@ -98,8 +97,7 @@ function safeLstat(path: string): { isDirectory(): boolean; isFile(): boolean; }
   }
 }
 
-/** Executable regular files under dir (recursive); hidden entries and
- *  symlinks are never followed (dirent types + lstat, TOCTOU-bounded). */
+/** Executable regular files under dir (recursive); hidden entries and symlinks are never followed (dirent types + lstat, TOCTOU-bounded). */
 function collectDir(root: string, dir: string, rel: string, out: string[]): void {
   let entries;
   try {
@@ -213,8 +211,7 @@ export function selectScripts(
 
 // ── Execution ────────────────────────────────────────────────────────────
 
-/** Last `max` lines of combined stdout+stderr; a notice marks dropped
- *  lines (the [output] stream_tail contract). */
+/** Last `max` lines of combined stdout+stderr; a notice marks dropped lines (the [output] stream_tail contract). */
 function outputTail(res: SpawnResult, max: number): string | null {
   const text = [res.stdout, res.stderr].filter((s) => s.length > 0).join("\n").replace(/\s+$/, "");
   if (text.length === 0) return null;
@@ -226,7 +223,11 @@ function outputTail(res: SpawnResult, max: number): string | null {
 
 /** Run each script sequentially under the bounded spawn seam; aggregate
  *  pass/fail/timeout into the report. A timeout kills the child (whole
- *  process group via the seam's detached spawn) and names script+budget. */
+ *  process group via the seam's detached spawn), names script+budget, and
+ *  merges the killed child's captured streams, so the tail reports partial
+ *  output on fail AND timeout — grace-bounded: in-group streams close on
+ *  SIGKILL and settle promptly; an escaped process holding the pipes open
+ *  falls back to the empty timeout result. */
 export async function runVerifyScripts(opts: VerifyRunOptions): Promise<VerifyReport> {
   const spawn = opts.spawn ?? boundedSpawn(defaultSpawn, opts.timeoutMs);
   const results: ScriptResult[] = [];

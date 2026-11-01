@@ -12,6 +12,14 @@ import { capFindings, type CheckFinding } from "./types.ts";
  *  worker slot forever; override via `[doctor] timeout_ms` / `--timeout`. */
 export const CHECK_TIMEOUT_DEFAULT_MS = 120_000;
 
+/** Grace window (ms) for merging a killed child's captured streams into its
+ *  timeout result. In-group streams close on SIGKILL and settle promptly, but
+ *  a process that ESCAPED the killed group (e.g. `setsid sleep 30 &`)
+ *  inherits stdout/stderr, so the pipes never reach EOF and the child's
+ *  result never settles; past this window the merge falls back to the empty
+ *  budget result so the report still returns on time. */
+const TIMEOUT_DRAIN_GRACE_MS = 500;
+
 export interface SpawnResult {
   exitCode: number;
   stdout: string;
@@ -52,15 +60,21 @@ export function defaultSpawn(cmd: string[], cwd: string): SpawnHandle {
   // 8s `sleep` ran to full completion and `proc.exited` resolved 0 at 8002ms
   // with a 500ms signal. So the signal cannot be the kill mechanism.
   //
-  // `detached: true` puts the child in its own process group so kill() also
-  // reaches a shell wrapper's `sleep` grandchild; without it the direct child
-  // dies and the grandchild is reparented and leaks.
+  // `detached: true` makes the child its own process group leader, so kill()
+  // signals the whole group at once (negative pid; proc.pid is the pgid) — a
+  // shell wrapper's `sleep` grandchild dies with the group instead of being
+  // reparented and leaking.
   const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", cwd, detached: true });
   const kill = () => {
     try {
-      proc.kill(9);
+      process.kill(-proc.pid, "SIGKILL");
     } catch {
-      /* already exited */
+      // ESRCH (already-exited group): fall through to the direct-child no-op.
+      try {
+        proc.kill(9);
+      } catch {
+        /* already exited */
+      }
     }
   };
   const result = (async () => {
@@ -102,15 +116,28 @@ export function boundedSpawn(raw: InnerSpawn, timeoutMs: number): SpawnFn {
     const inFlight: Promise<SpawnResult> = handle
       ? handle.result
       : Promise.resolve(started as SpawnResult);
+    const { promise: grace, resolve: settleGrace } = Promise.withResolvers<SpawnResult>();
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
     return Promise.race([inFlight, budget])
-      .then((res) => {
+      .then(async (res) => {
         if (res.exitCode === -1) {
           handle?.kill();
-          return { ...res, timedOut: timeoutError(cmd, timeoutMs) };
+          // The budget result carries no captured output. In-group streams
+          // close on SIGKILL and the killed child's result settles promptly,
+          // merging its partial output into the report; a group escaper
+          // (setsid …) keeps the pipes open forever, so the merge races the
+          // grace timer — its win resolves to the budget result itself,
+          // i.e. the pre-merge empty-output timeout semantics.
+          graceTimer = setTimeout(() => settleGrace(res), TIMEOUT_DRAIN_GRACE_MS);
+          const real = handle ? await Promise.race([inFlight, grace]) : res;
+          return { ...real, exitCode: -1, timedOut: timeoutError(cmd, timeoutMs) };
         }
         return res;
       })
-      .finally(() => clearTimeout(timer));
+      .finally(() => {
+        clearTimeout(timer);
+        clearTimeout(graceTimer);
+      });
   };
 }
 

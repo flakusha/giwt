@@ -15,7 +15,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { SpawnResult } from "../doctor/check/spawn";
 import type { WorktreeConfig } from "../utils/config";
@@ -322,6 +322,86 @@ describe("runVerifyScripts", () => {
     expect(entry.durationMs).toBeLessThan(10_000);
     expect(report.ok).toBe(false);
     expect(report.failed).toBe(1);
+  }, 20_000);
+
+  test("real seam: budget kill reaches the wedged child's grandchild", async () => {
+    const base = makeRoot("grandchild-kill");
+    // A backgrounded subshell (sleep + marker touch) shares the script's
+    // process group. If the kill only signaled the direct child PID, the
+    // reparented grandchild would touch the marker at ~2s; the group SIGKILL
+    // takes it out with the child. Parallel-safe: mkdtemp-private marker
+    // path, bounded sleeps (2s horizon; the direct child dies at 300ms).
+    const marker = join(base, "grandchild-marker");
+    writeScript(base, "scripts/verify-orphan.sh", `(sleep 2; touch "${marker}") & sleep 30`);
+
+    const report = await runVerifyScripts({
+      root: base,
+      scripts: ["scripts/verify-orphan.sh"],
+      timeoutMs: 300,
+      tailLines: 25,
+    });
+
+    expect(report.scripts[0]!.status).toBe("timeout");
+    // Poll past the marker horizon (fails fast on a regression), then prove
+    // the orphaned grandchild never got to run its touch.
+    const deadline = Date.now() + 3_500;
+    while (Date.now() < deadline && !existsSync(marker)) {
+      await Bun.sleep(50);
+    }
+    expect(existsSync(marker)).toBe(false);
+  }, 20_000);
+
+  test("real seam: timeout result carries the captured partial output tail", async () => {
+    const base = makeRoot("timeout-tail");
+    // Print to both streams, then wedge. The budget-won result used to drop
+    // the captured streams (empty tail); the seam now merges them into the
+    // timeout result so the [TIMEOUT] report stays diagnosable.
+    writeScript(
+      base,
+      "scripts/verify-chatty.sh",
+      "echo alpha; echo beta >&2; echo gamma; sleep 30",
+    );
+
+    const report = await runVerifyScripts({
+      root: base,
+      scripts: ["scripts/verify-chatty.sh"],
+      timeoutMs: 300,
+      tailLines: 25,
+    });
+
+    const entry = report.scripts[0]!;
+    expect(entry.status).toBe("timeout");
+    expect(entry.exitCode).toBe(-1);
+    // outputTail combines stdout then stderr (the join adds the blank line
+    // between the trailing-newlined streams) and strips trailing whitespace.
+    expect(entry.outputTail).toBe("alpha\ngamma\n\nbeta");
+  }, 20_000);
+
+  test("real seam: an escaped pipe holder cannot stall the timeout report", async () => {
+    const base = makeRoot("escaped-grace");
+    // `setsid` escapes the killed process group and inherits the script's
+    // stdout/stderr, so the pipes never reach EOF; the merge must be
+    // grace-bounded and the report still return on time (sleep 5, not 30:
+    // bounded orphan risk, still ≫ budget + grace).
+    writeScript(
+      base,
+      "scripts/verify-escaper.sh",
+      "echo pre-kill-output; setsid sleep 5 & sleep 5",
+    );
+
+    const report = await runVerifyScripts({
+      root: base,
+      scripts: ["scripts/verify-escaper.sh"],
+      timeoutMs: 300,
+      tailLines: 25,
+    });
+
+    const entry = report.scripts[0]!;
+    expect(entry.status).toBe("timeout");
+    expect(entry.exitCode).toBe(-1);
+    // Budget + grace + assert window: with an unbounded merge this report
+    // never returns (pre-grace regression hung until the 20s test timeout).
+    expect(entry.durationMs).toBeLessThan(300 + 500 + 300);
   }, 20_000);
 });
 
