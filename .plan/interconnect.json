@@ -997,7 +997,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-code-map-scan-path-support-for-packages-monorepo.md",
       "title": "giwt code-map: scan-path support for packages/ (monorepo)",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },
@@ -1006,7 +1006,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-feature-matrix-project-dimension-upstream-seam.md",
       "title": "giwt feature-matrix: project dimension (upstream seam)",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },
@@ -1038,7 +1038,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-indexentry-project-add-project-field-and-project-header.md",
       "title": "giwt IndexEntry.project: add project field and Project header read (upstream seam)",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },
@@ -1047,7 +1047,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-interconnect-derive-producers-consumers-siblings-from-f.md",
       "title": "giwt interconnect: derive producers/consumers/siblings from feature matrices",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },
@@ -1056,7 +1056,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-interconnect-interconnectnodekind-artifact-generates-ed.md",
       "title": "giwt interconnect: InterconnectNodeKind artifact + generates edge (upstream seam)",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },
@@ -1065,7 +1065,7 @@
       "kind": "ticket",
       "path": ".plan/tickets/FEAT-giwt-verify-probe-wrap-repo-verify-scripts-as-a-giwt-subcomm.md",
       "title": "giwt verify probe: wrap repo verify scripts as a giwt subcommand",
-      "status": "open",
+      "status": "done",
       "srcRefs": [],
       "related": []
     },

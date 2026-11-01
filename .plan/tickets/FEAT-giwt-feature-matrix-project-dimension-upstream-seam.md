@@ -3,7 +3,7 @@
 
 # FEAT: giwt feature-matrix: project dimension (upstream seam)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ Upstream feature request from loop-lore project-metadata spec §10.4(ii). Add a 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (FORMAT MARKER module doc)
+**Resolved:** 2026-11-01T05:07:05.134Z

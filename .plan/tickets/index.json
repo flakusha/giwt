@@ -1371,7 +1371,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-code-map-scan-path-support-for-packages-monorepo.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-FEATURE-MATRIX-PROJECT-DIMENSION-UPSTREAM-SEAM": {
     "hash": "5f2ce65",
@@ -1384,7 +1384,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-feature-matrix-project-dimension-upstream-seam.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-GIT-PASSTHROUGH-COMMAND-FOR-HARNESS-REROUTING": {
     "hash": "ccd5711",
@@ -1430,7 +1430,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-indexentry-project-add-project-field-and-project-header.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-INTERCONNECT-DERIVE-PRODUCERS-CONSUMERS-SIBLINGS-FROM-F": {
     "hash": "04826ee",
@@ -1443,7 +1443,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-interconnect-derive-producers-consumers-siblings-from-f.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-INTERCONNECT-INTERCONNECTNODEKIND-ARTIFACT-GENERATES-ED": {
     "hash": "9c3c9c4",
@@ -1456,7 +1456,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-interconnect-interconnectnodekind-artifact-generates-ed.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-VERIFY-PROBE-WRAP-REPO-VERIFY-SCRIPTS-AS-A-GIWT-SUBCOMM": {
     "hash": "b05a044",
@@ -1469,7 +1469,7 @@
     "epic": "",
     "tags": [],
     "source": ".plan/tickets/FEAT-giwt-verify-probe-wrap-repo-verify-scripts-as-a-giwt-subcomm.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-ISOLATEDGITENV-ALSO-STRIPS-AGENT-HARNESS-SESSION-VARS": {
     "hash": "52e9b13",
@@ -2430,6 +2430,32 @@
     "tags": [],
     "source": ".plan/tickets/TASK-add-author-identity-guard-to-commit-merge-paths.md",
     "status": "done"
+  },
+  "TASK-BACKLOG": {
+    "hash": "b158ee7",
+    "git_issue": "b158ee7",
+    "extid": "TASK-BACKLOG",
+    "type": "TASK",
+    "title": "backlog",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-backlog.md",
+    "status": "done"
+  },
+  "TASK-BACKLOG-DIR-REQUIREMENT-SHOULD-BE-OPTIONAL-GIVEN-TICKET-EPIC": {
+    "hash": "3cc437f",
+    "git_issue": "3cc437f",
+    "extid": "TASK-BACKLOG-DIR-REQUIREMENT-SHOULD-BE-OPTIONAL-GIVEN-TICKET-EPIC",
+    "type": "TASK",
+    "title": "backlog dir requirement should be optional given ticket/epic auto-discovery",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "tags": [],
+    "source": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md",
+    "status": "Not Started"
   },
   "TASK-COLOCATION-SWEEP-STRANDED-TESTS-GPG-UNLOCK-SPLIT-TESTKIT": {
     "hash": "e2ad352",

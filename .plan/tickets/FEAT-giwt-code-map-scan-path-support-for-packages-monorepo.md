@@ -3,7 +3,7 @@
 
 # FEAT: giwt code-map: scan-path support for packages/ (monorepo)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ Feature request: extend giwt plan code-map scan paths (currently planDir/tickets
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (module doc)
+**Resolved:** 2026-11-01T05:07:05.225Z

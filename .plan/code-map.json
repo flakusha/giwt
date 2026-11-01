@@ -158,6 +158,10 @@
   "src/commands/backlog.ts": [
     {
       "kind": "ticket",
+      "source": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md"
+    },
+    {
+      "kind": "ticket",
       "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md"
     }
   ],
@@ -1007,6 +1011,16 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md"
+    }
+  ],
+  "src/plan/validate/gates-run.ts": [
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md"
     }
   ],
   "src/report.test.ts": [
@@ -1091,6 +1105,10 @@
     {
       "kind": "ticket",
       "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md"
+    },
+    {
+      "kind": "ticket",
+      "source": ".plan/tickets/TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic.md"
     },
     {
       "kind": "ticket",

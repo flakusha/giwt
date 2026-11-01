@@ -3,7 +3,7 @@
 
 # FEAT: giwt IndexEntry.project: add project field and Project header read (upstream seam)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ Upstream feature request from loop-lore project-metadata spec §10.4(i). Add Ind
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (IndexEntry doc comment)
+**Resolved:** 2026-11-01T05:07:05.043Z

@@ -3,7 +3,7 @@
 
 # FEAT: giwt verify probe: wrap repo verify scripts as a giwt subcommand
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ Cross-repo feature request. Wrap repository verify/probe scripts (currently livi
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated (USAGE help is the doc)
+**Resolved:** 2026-11-01T05:07:04.939Z
