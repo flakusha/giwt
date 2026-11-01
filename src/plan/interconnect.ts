@@ -9,7 +9,7 @@
  * **Related:** links. Implementation lives in ./interconnect/*.
  */
 
-export { buildInterconnect, verifySnapshotStable } from "./interconnect/build";
+export { buildInterconnect } from "./interconnect/build";
 export { runInterconnectGate } from "./interconnect/gate";
 export {
   edgesTouching,
@@ -28,6 +28,7 @@ export {
   writeInterconnectFiles,
 } from "./interconnect/render";
 export { resolveRef } from "./interconnect/resolve";
+export { verifySnapshotStable } from "./interconnect/snapshot";
 export type {
   InterconnectEdge,
   InterconnectFinding,

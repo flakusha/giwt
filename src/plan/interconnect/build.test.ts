@@ -26,8 +26,8 @@ import {
   whoConsumes,
   whoProduces,
 } from "../interconnect";
-import { snapshotInterconnectInputs } from "../interconnect/build";
 import type { ResolutionMaps } from "../interconnect/resolve";
+import { snapshotInterconnectInputs } from "../interconnect/snapshot";
 import type { InterconnectFinding, InterconnectOptions } from "../interconnect/types";
 
 function makeFixture(): { root: string; opts: InterconnectOptions; cleanup: () => void; } {
@@ -236,6 +236,258 @@ describe("interconnect Related dialect", () => {
   });
 });
 
+describe("interconnect artifacts (**Generates:**)", () => {
+  test("declared targets become artifact nodes with generates edges", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        join(fx.opts.ticketsDir, "FEAT-a.md"),
+        ticket("a", { Generates: "dist/bundle.js, .plan/matrix.md, dist/bundle.js" }),
+      );
+      writeFileSync(join(fx.opts.ticketsDir, "FEAT-b.md"), ticket("b", {}));
+      const g = buildInterconnect(fx.opts);
+      const arts = g.nodes.filter((n) => n.kind === "artifact");
+      expect(arts.map((n) => n.id)).toEqual([".plan/matrix.md", "dist/bundle.js"]);
+      for (const a of arts) {
+        expect(a.path).toBe(a.id);
+        expect(a.status).toBe("declared");
+        expect(a.srcRefs).toEqual([]);
+        expect(a.related).toEqual([]);
+      }
+      // Declaration-only: the artifact never has to exist on disk, and a
+      // clean declaration produces no findings.
+      expect(g.findings.filter((f) => f.level === "error")).toEqual([]);
+      expect(g.edges.filter((e) => e.kind === "generates")).toEqual([
+        { from: "FEAT-a", kind: "generates", to: ".plan/matrix.md" },
+        { from: "FEAT-a", kind: "generates", to: "dist/bundle.js" },
+      ]);
+      // Declared-but-absent artifacts stay queryable through the node report.
+      expect(nodeReport(g, "dist/bundle.js")!.node.kind).toBe("artifact");
+      expect(edgesTouching(g, "dist/bundle.js")).toHaveLength(1);
+      // JSON round-trip carries the new node kind, edge kind, and the
+      // sparse `generates` list on the declaring node.
+      const parsed = JSON.parse(renderInterconnectJson(g)) as {
+        version: number;
+        nodes: { id: string; kind: string; generates?: string[]; }[];
+        edges: { kind: string; }[];
+      };
+      expect(parsed.version).toBe(2);
+      expect(parsed.nodes.find((n) => n.id === "FEAT-a")!.generates).toEqual([
+        ".plan/matrix.md",
+        "dist/bundle.js",
+      ]);
+      expect(parsed.nodes.find((n) => n.id === "FEAT-b")!.generates).toBeUndefined();
+      expect(parsed.edges.some((e) => e.kind === "generates")).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("path escapes and plan-node collisions are error findings, never nodes", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        join(fx.opts.ticketsDir, "FEAT-a.md"),
+        ticket("a", { Generates: "../evil.md, /abs/x.md, C:\\win.md, FEAT-b" }),
+      );
+      writeFileSync(join(fx.opts.ticketsDir, "FEAT-b.md"), ticket("b", {}));
+      const g = buildInterconnect(fx.opts);
+      expect(g.nodes.filter((n) => n.kind === "artifact")).toEqual([]);
+      expect(g.edges.some((e) => e.kind === "generates")).toBe(false);
+      const genFindings = g.findings.filter((f) => f.field === "**Generates:**");
+      expect(genFindings).toHaveLength(4);
+      for (const f of genFindings) {
+        expect(f.level).toBe("error");
+        expect(f.file).toBe(".plan/tickets/FEAT-a.md");
+      }
+      expect(genFindings.some((f) => f.message.includes("'../evil.md' escapes"))).toBe(true);
+      expect(genFindings.some((f) => f.message.includes("'/abs/x.md' escapes"))).toBe(true);
+      expect(genFindings.some((f) => f.message.includes("'C:/win.md' escapes"))).toBe(true);
+      expect(
+        genFindings.some((f) => f.message.includes("'FEAT-b' names an existing plan node")),
+      ).toBe(true);
+      // The declaration stays on the record (only escapes are dropped at
+      // parse level); the collision suppresses the artifact node + edge.
+      expect(g.nodes.find((n) => n.id === "FEAT-a")!.generates).toEqual(["FEAT-b"]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("several declarers share one artifact node; epics may declare too", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(
+        join(fx.opts.ticketsDir, "FEAT-a.md"),
+        ticket("a", { Generates: ".plan/interconnect.json" }),
+      );
+      writeFileSync(
+        join(fx.opts.epicsDir, "epic-core.md"),
+        "# EPIC: core\n\n**Status:** In Progress\n**Generates:** .plan/interconnect.json\n\n**Overview:** x\n",
+      );
+      const g = buildInterconnect(fx.opts);
+      expect(g.nodes.filter((n) => n.kind === "artifact")).toHaveLength(1);
+      const gen = g.edges.filter((e) => e.kind === "generates");
+      expect(gen).toHaveLength(2);
+      expect(new Set(gen.map((e) => e.from))).toEqual(new Set(["FEAT-a", "epic-core"]));
+      expect(g.findings.filter((f) => f.level === "error")).toEqual([]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+describe("interconnect matrix-derived siblings", () => {
+  /** Ticket-index fixture; keys are extids, values only the fields
+   * buildMatrix consumes (source/tags/epic) — or null for hand-corrupted
+   * entries. */
+  function writeIndex(
+    fx: ReturnType<typeof makeFixture>,
+    entries: Record<string, { source?: string; tags?: string[]; epic?: string; } | null>,
+  ): void {
+    writeFileSync(join(fx.opts.ticketsDir, "index.json"), JSON.stringify(entries));
+  }
+
+  test("shared tag and epic rows derive sibling edges with provenance", () => {
+    const fx = makeFixture();
+    try {
+      for (const n of ["a", "b", "c", "d"]) {
+        writeFileSync(join(fx.opts.ticketsDir, `FEAT-${n}.md`), ticket(n, {}));
+      }
+      writeIndex(fx, {
+        "FEAT-A": { source: ".plan/tickets/FEAT-a.md", tags: ["x"] },
+        "FEAT-B": { source: ".plan/tickets/FEAT-b.md", tags: ["x"], epic: "e1" },
+        "FEAT-C": { source: ".plan/tickets/FEAT-c.md", tags: ["y"], epic: "e1" },
+        "FEAT-D": { source: ".plan/tickets/FEAT-d.md", tags: ["y"], epic: "e1" },
+      });
+      const g = buildInterconnect(fx.opts);
+      const derived = g.edges.filter((e) => e.derived === true);
+      expect(derived.map((e) => [e.from, e.to, e.via])).toEqual([
+        ["FEAT-a", "FEAT-b", "tag:x"],
+        ["FEAT-b", "FEAT-c", "epic:e1"],
+        ["FEAT-b", "FEAT-d", "epic:e1"],
+        ["FEAT-c", "FEAT-d", "epic:e1; tag:y"],
+      ]);
+      for (const e of derived) expect(e.kind).toBe("sibling");
+      // Pairs without a shared row get nothing.
+      expect(g.edges.some((e) => e.from === "FEAT-a" && e.to === "FEAT-c")).toBe(false);
+      expect(g.edges.some((e) => e.from === "FEAT-a" && e.to === "FEAT-d")).toBe(false);
+      // Query surface: derived siblings answer --siblings like any other.
+      expect(siblingsOf(g, "FEAT-b")!.map((e) => (e.from === "FEAT-b" ? e.to : e.from))).toEqual([
+        "FEAT-a",
+        "FEAT-c",
+        "FEAT-d",
+      ]);
+      expect(g.findings.filter((f) => f.level === "error")).toEqual([]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("declared direction beats derivation and shared-src siblings never duplicate", () => {
+    const fx = makeFixture();
+    try {
+      // a Related-names b; a, b, c share src/shared.ts (a↔c, b↔c src
+      // siblings); every ticket additionally shares tag "shared" with d.
+      writeSharedFixture(fx);
+      writeFileSync(join(fx.opts.ticketsDir, "FEAT-d.md"), ticket("d", {}));
+      writeIndex(fx, {
+        "FEAT-A": {
+          source: ".plan/tickets/FEAT-a.md",
+          tags: ["shared"],
+          epic: "epic-core",
+        },
+        "FEAT-B": { source: ".plan/tickets/FEAT-b.md", tags: ["shared"] },
+        "FEAT-C": { source: ".plan/tickets/FEAT-c.md", tags: ["shared"] },
+        "FEAT-D": { source: ".plan/tickets/FEAT-d.md", tags: ["shared"] },
+      });
+      const g = buildInterconnect(fx.opts);
+      const derived = g.edges.filter((e) => e.derived === true);
+      // Only pairs with no stronger record derive: a-b is Related-directed,
+      // a-c and b-c already sibling via src/shared.ts — d is the new fact.
+      expect(derived.map((e) => [e.from, e.to, e.via])).toEqual([
+        ["FEAT-a", "FEAT-d", "tag:shared"],
+        ["FEAT-b", "FEAT-d", "tag:shared"],
+        ["FEAT-c", "FEAT-d", "tag:shared"],
+      ]);
+      // The declared/ownership edges stay exactly as ticket 3 built them.
+      expect(g.edges.some((e) => e.kind === "consumes" && e.from === "FEAT-a")).toBe(true);
+      expect(
+        g.edges.some((e) => e.kind === "sibling" && e.via === "src/shared.ts" && !e.derived),
+      ).toBe(true);
+      expect(g.edges.filter((e) => e.kind === "owns")).toEqual([
+        { from: "epic-core", kind: "owns", to: "FEAT-a" },
+      ]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("no sibling input leaves the graph at its ticket-3 state", () => {
+    const fx = makeFixture();
+    try {
+      writeSharedFixture(fx);
+      const withoutIndex = buildInterconnect(fx.opts);
+      expect(withoutIndex.edges.some((e) => e.derived === true)).toBe(false);
+      // An index with disjoint rows derives nothing either.
+      writeIndex(fx, {
+        "FEAT-A": { source: ".plan/tickets/FEAT-a.md", tags: ["t1"], epic: "e1" },
+        "FEAT-B": { source: ".plan/tickets/FEAT-b.md", tags: ["t2"], epic: "e2" },
+        "FEAT-C": { source: ".plan/tickets/FEAT-c.md", tags: ["t3"], epic: "e3" },
+      });
+      const disjoint = buildInterconnect(fx.opts);
+      expect(disjoint.edges.some((e) => e.derived === true)).toBe(false);
+      // Synthetic untagged/unbound rows are noise, never sibling facts.
+      writeIndex(fx, {
+        "FEAT-A": { source: ".plan/tickets/FEAT-a.md", tags: [], epic: "" },
+        "FEAT-B": { source: ".plan/tickets/FEAT-b.md", epic: "" },
+      });
+      const synthetic = buildInterconnect(fx.opts);
+      expect(synthetic.edges.some((e) => e.derived === true)).toBe(false);
+      expect(synthetic.edges.some((e) => e.via?.includes("tag:") || e.via?.includes("epic:")))
+        .toBe(false);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("stale and duplicate index entries derive nothing spurious", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.opts.ticketsDir, "FEAT-a.md"), ticket("a", {}));
+      writeIndex(fx, {
+        // Ghost source: names no plan file — dropped, no edge, no finding.
+        "FEAT-GHOST": { source: ".plan/tickets/FEAT-ghost.md", tags: ["t"] },
+        "FEAT-A1": { source: ".plan/tickets/FEAT-a.md", tags: ["t"] },
+        "FEAT-A2": { source: ".plan/tickets/FEAT-a.md", tags: ["t"] },
+      });
+      const g = buildInterconnect(fx.opts);
+      expect(g.edges.some((e) => e.derived === true)).toBe(false);
+      expect(g.edges.some((e) => e.from === e.to)).toBe(false);
+      expect(g.findings.filter((f) => f.level === "error")).toEqual([]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+  test("null-valued index entries degrade to no derived edges, never a throw", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(join(fx.opts.ticketsDir, "FEAT-a.md"), ticket("a", {}));
+      // A hand-corrupted entry must not turn the degraded-index warn into a
+      // links CLI crash: buildMatrix dereferences entry fields.
+      writeIndex(fx, {
+        "FEAT-A": { source: ".plan/tickets/FEAT-a.md", tags: ["t"] },
+        BROKEN: null,
+      });
+      const g = buildInterconnect(fx.opts);
+      expect(g.edges.some((e) => e.derived === true)).toBe(false);
+      expect(g.findings.filter((f) => f.level === "error")).toEqual([]);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
 describe("interconnect determinism", () => {
   test("repeated builds are byte-identical", () => {
     const fx = makeFixture();
@@ -245,7 +497,7 @@ describe("interconnect determinism", () => {
       const b = renderInterconnectJson(buildInterconnect(fx.opts));
       expect(a).toBe(b);
       // Versioned artifact with a trailing newline (byte-stable contract)
-      expect(a).toContain("\"version\": 1");
+      expect(a).toContain("\"version\": 2");
       expect(a.endsWith("\n")).toBe(true);
     } finally {
       fx.cleanup();

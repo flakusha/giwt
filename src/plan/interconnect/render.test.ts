@@ -51,9 +51,12 @@ describe("renderInterconnectMd", () => {
     expect(md).toContain("gen-header");
     expect(md).toContain("## Shared src hubs");
     expect(md).toContain("| `src/one.ts` | `TASK-one`, `TASK-two` |");
-    expect(md).toContain("| `TASK-one` | produces | `src/one.ts` | - |");
-    expect(md).toContain("| `TASK-one` | sibling | `TASK-two` | `src/one.ts` |");
-    expect(md).toContain("edges: produces 1, consumes 0, sibling 1, owns 0, related 1");
+    expect(md).toContain("| `TASK-one` | produces | `src/one.ts` | - | - |");
+    expect(md).toContain("| `TASK-one` | sibling | `TASK-two` | `src/one.ts` | - |");
+    expect(md).toContain("- artifacts: 0");
+    expect(md).toContain(
+      "edges: produces 1, consumes 0, sibling 1, owns 0, related 1, generates 0",
+    );
   });
 
   test("renders the empty-hub and no-edge fallbacks", () => {
@@ -63,6 +66,40 @@ describe("renderInterconnectMd", () => {
     const md = renderInterconnectMd(g, "");
     expect(md).toContain("(no src path is owned by more than one plan node)");
     expect(md).toContain("(no edges derived)");
+  });
+
+  test("renders artifacts, generates edges, and derived provenance", () => {
+    const g = graph();
+    g.nodes.push({
+      id: "dist/one.js",
+      kind: "artifact",
+      path: "dist/one.js",
+      title: "dist/one.js",
+      status: "declared",
+      srcRefs: [],
+      related: [],
+    });
+    g.edges.push({ from: "TASK-one", kind: "generates", to: "dist/one.js" });
+    g.edges.push({
+      from: "TASK-one",
+      kind: "sibling",
+      to: "TASK-two",
+      via: "tag:one",
+      derived: true,
+    });
+    const md = renderInterconnectMd(g, "");
+    expect(md).toContain("- artifacts: 1");
+    expect(md).toContain(
+      "edges: produces 1, consumes 0, sibling 2, owns 0, related 1, generates 1",
+    );
+    expect(md).toContain("- derived edges: 1 (feature-matrix co-membership)");
+    expect(md).toContain("| `TASK-one` | generates | `dist/one.js` | - | - |");
+    expect(md).toContain("| `TASK-one` | sibling | `TASK-two` | `tag:one` | matrix |");
+  });
+
+  test("omits the derived count line when nothing is derived", () => {
+    const md = renderInterconnectMd(graph(), "");
+    expect(md).not.toContain("derived edges:");
   });
 });
 

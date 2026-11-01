@@ -13,11 +13,19 @@
  *   sibling  — co-owners of a shared src path with no Related direction
  *   owns     — epic → ticket (**Epic:** membership)
  *   related  — resolved **Related:** link, independent of src paths
+ *   generates — plan node → declared artifact (path-like id from
+ *              **Generates:**; declaration-only, no disk requirement)
  */
 
-export type InterconnectNodeKind = "ticket" | "epic";
+export type InterconnectNodeKind = "ticket" | "epic" | "artifact";
 
-export type InterconnectEdgeKind = "produces" | "consumes" | "sibling" | "owns" | "related";
+export type InterconnectEdgeKind =
+  | "produces"
+  | "consumes"
+  | "sibling"
+  | "owns"
+  | "related"
+  | "generates";
 
 /** One plan file as a graph node. `path` is repo-relative (forward slashes). */
 export interface InterconnectNode {
@@ -32,6 +40,9 @@ export interface InterconnectNode {
   srcRefs: string[];
   /** Resolved **Related:** target node ids, sorted. */
   related: string[];
+  /** Declared **Generates:** artifact ids (path-like), sorted. Absent when
+   * the node declares none — sparse, like edge `via`. */
+  generates?: string[];
 }
 
 /** One src/ path with the plan nodes that own it. */
@@ -42,13 +53,15 @@ export interface InterconnectSrcNode {
 }
 
 /** One directed/labeled graph edge. `via` is present only for edges that
- * arise from a shared src path (consumes/sibling); `; `-joined when the
- * pair shares several. */
+ * arise from a shared src path or a matrix row (consumes/sibling);
+ * `; `-joined when the pair shares several. `derived` is true only on
+ * matrix-derived sibling edges — declared edges never carry it. */
 export interface InterconnectEdge {
   from: string;
   kind: InterconnectEdgeKind;
   to: string;
   via?: string;
+  derived?: true;
 }
 
 /** A validation finding with the triple the ticket demands: file, field,

@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { canonicalIndexOrder, type IndexEntryLike } from "../index-projection";
-import type { SnapshotFile } from "./build";
+import type { SnapshotFile } from "./snapshot";
 import type { InterconnectFinding } from "./types";
 
 /** Default code-unit sort — byte-stable across machines (localeCompare is not). */
@@ -19,9 +19,15 @@ export function byStr(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Path-shaped nonsense in a **Related:** value — absolute paths and `..`
- * climbs are rejected up front, never resolved or followed. */
+/** Path-shaped nonsense in a plan-declared ref value — absolute paths and
+ * `..` climbs. Shared guard for **Related:** and **Generates:** tokens:
+ * rejected up front, never resolved or followed. */
 const ESCAPE_RE = /^(?:\/|[A-Za-z]:[\\/])|(?:^|[\\/])\.\.?(?:[\\/]|$)/;
+
+/** Whether a declared ref value escapes the plan root. */
+export function escapesPlanRoot(value: string): boolean {
+  return ESCAPE_RE.test(value);
+}
 
 export interface ResolutionMaps {
   /** basename-slug → node rel path. */
@@ -83,7 +89,7 @@ export function resolveRef(
   res: ResolutionMaps,
   findings: InterconnectFinding[],
 ): string | null {
-  if (ESCAPE_RE.test(ref)) {
+  if (escapesPlanRoot(ref)) {
     findings.push({
       level: "error",
       file,

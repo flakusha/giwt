@@ -14,8 +14,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { scratchRoot } from "../../utils/scratch-tmp";
-import type { SnapshotFile } from "./build";
 import { buildResolution, type ResolutionMaps, resolveRef } from "./resolve";
+import type { SnapshotFile } from "./snapshot";
 import type { InterconnectFinding } from "./types";
 
 function snapshot(rels: string[]): SnapshotFile[] {

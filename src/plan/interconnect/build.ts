@@ -3,22 +3,26 @@
 
 /**
  * Interconnect graph derivation. One immutable in-memory snapshot per run
- * (every plan file read exactly once and re-verified before a verdict —
- * TOCTOU guard), then pure derivation: producer edges from code-map
- * ownership, consume/sibling edges from shared src paths directed by
- * **Related:** links, epic ownership edges. Deterministic: plain code-unit
- * sorts everywhere (stable across machines, unlike localeCompare) and
- * deterministic dedupe of edges.
+ * (./snapshot: every plan file read exactly once and re-verified before a
+ * verdict — TOCTOU guard), then pure derivation: producer edges from
+ * code-map ownership, consume/sibling edges from shared src paths directed
+ * by **Related:** links, epic ownership edges, **Generates:** artifact
+ * declarations, and feature-matrix-derived sibling edges (./matrix).
+ * Deterministic: plain code-unit sorts everywhere (stable across machines,
+ * unlike localeCompare) and deterministic dedupe of edges.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { existsSync } from "node:fs";
+import { basename } from "node:path";
 import { parseTicketText } from "../../tickets/sync-parse";
-import type { TicketFile } from "../../tickets/sync-ticket-types";
+import type { IndexEntry, TicketFile } from "../../tickets/sync-ticket-types";
 import { type CodeMap, readMap } from "../code-map";
 import { normalizeEpicRef, relatedRefTokens } from "../metadata-fields";
 import { extractSrcRefs, stripMarkdownCode } from "../src-refs";
+import { collectArtifactNodes, generatesTargets } from "./artifacts";
+import { deriveMatrixSiblingEdges, readIndexEntries } from "./matrix";
 import { buildResolution, byStr, resolveRef } from "./resolve";
+import { type SnapshotFile, snapshotInterconnectInputs } from "./snapshot";
 import type {
   InterconnectEdge,
   InterconnectFinding,
@@ -26,50 +30,6 @@ import type {
   InterconnectNode,
   InterconnectOptions,
 } from "./types";
-
-/** One plan file read exactly once. `text` is the only view the run uses. */
-export interface SnapshotFile {
-  /** Repo-relative path with forward slashes (also the node path). */
-  rel: string;
-  abs: string;
-  text: string;
-}
-
-function listPlanFiles(projectRoot: string, dir: string): SnapshotFile[] {
-  const out: SnapshotFile[] = [];
-  if (!existsSync(dir)) return out;
-  for (const f of readdirSync(dir)) {
-    if (!f.endsWith(".md")) continue;
-    const abs = join(dir, f);
-    const rel = relative(projectRoot, abs).split("\\").join("/");
-    out.push({ rel, abs, text: readFileSync(abs, "utf8") });
-  }
-  return out.sort((a, b) => byStr(a.rel, b.rel));
-}
-
-/**
- * Snapshot every input once: `.plan/tickets/*.md`, `.plan/epics/*.md`. The
- * caller derives everything from this array and calls
- * {@link verifySnapshotStable} before writing/reporting, so a concurrent
- * plan writer produces a loud failure instead of partial output.
- */
-export function snapshotInterconnectInputs(opts: InterconnectOptions): SnapshotFile[] {
-  return [
-    ...listPlanFiles(opts.projectRoot, opts.ticketsDir),
-    ...listPlanFiles(opts.projectRoot, opts.epicsDir),
-  ];
-}
-
-/** Re-read every snapshotted file; throw naming the file on divergence. */
-export function verifySnapshotStable(snapshot: SnapshotFile[]): void {
-  for (const f of snapshot) {
-    if (readFileSync(f.abs, "utf8") !== f.text) {
-      throw new Error(
-        `${f.rel}: changed during interconnect scan — concurrent plan writer; re-run`,
-      );
-    }
-  }
-}
 
 /** src ownership per node id: code-map.json when present (the fresh
  * source), else a direct src-ref extraction from the snapshot prose with a
@@ -125,7 +85,7 @@ export function buildInterconnect(
   const ownership = ownershipByNode(snapshot, opts.codeMapPath, findings);
 
   const parsedByNode = new Map<string, TicketFile | null>();
-  const nodes: InterconnectNode[] = snapshot.map((f): InterconnectNode => {
+  const planNodes: InterconnectNode[] = snapshot.map((f): InterconnectNode => {
     const id = basename(f.rel).replace(/\.md$/, "");
     const tf = parseTicketText(f.text, f.abs, f.rel);
     parsedByNode.set(id, tf);
@@ -135,6 +95,7 @@ export function buildInterconnect(
       const target = resolveRef(f.rel, token, res, findings);
       if (target !== null) related.push(basename(target).replace(/\.md$/, ""));
     }
+    const generates = generatesTargets(f.rel, header, findings);
     return {
       id,
       kind: f.rel.includes("/epics/") ? "epic" : "ticket",
@@ -143,8 +104,14 @@ export function buildInterconnect(
       status: tf?.status ?? "undefined",
       srcRefs: ownership.get(id) ?? [],
       related: [...new Set(related)].sort(byStr),
+      ...(generates.length > 0 ? { generates } : {}),
     };
   }).sort((a, b) => byStr(a.id, b.id));
+  // Declared artifacts join the node set (sorted with plan nodes); their
+  // generates edges come from the same `generates` lists in deriveEdges.
+  const nodes = [...planNodes, ...collectArtifactNodes(planNodes, findings)].sort((a, b) =>
+    byStr(a.id, b.id)
+  );
 
   const ownersBySrc = new Map<string, string[]>();
   for (const n of nodes) {
@@ -157,11 +124,14 @@ export function buildInterconnect(
   const srcNodes = [...ownersBySrc.entries()]
     .map(([path, owners]) => ({ path, owners: owners.sort(byStr) }))
     .sort((a, b) => byStr(a.path, b.path));
+  // Matrix sibling derivation reads the ticket index tolerantly: missing
+  // or unparseable means no derived edges (buildResolution already warned).
+  const indexEntries = readIndexEntries(opts);
 
   return {
     nodes,
     srcNodes,
-    edges: deriveEdges(nodes, parsedByNode, ownersBySrc, findings),
+    edges: deriveEdges(nodes, parsedByNode, ownersBySrc, indexEntries, findings),
     findings: findings.sort((
       a,
       b,
@@ -169,18 +139,28 @@ export function buildInterconnect(
   };
 }
 
-/** Edges: produces (node→src), related, owns (epic membership), and the
- * shared-src consume/sibling pairs. `via` lists are deduped per pair. */
+/** Edges: produces (node→src), related, generates (declared artifacts), owns
+ * (epic membership), and the shared-src consume/sibling pairs. `via` lists
+ * are deduped per pair. Matrix-derived sibling edges (feature-matrix
+ * co-membership, provenance-marked) merge in last. */
 function deriveEdges(
   nodes: InterconnectNode[],
   parsedByNode: Map<string, TicketFile | null>,
   ownersBySrc: Map<string, string[]>,
+  matrixEntries: Record<string, IndexEntry> | null,
   findings: InterconnectFinding[],
 ): InterconnectEdge[] {
   const edges: InterconnectEdge[] = [];
+  // generates targets resolve only to artifact nodes — escape/collision
+  // rejections never entered the node set, so a generates edge can never
+  // point at a plan node or a src path.
+  const artifactIds = new Set(nodes.filter((n) => n.kind === "artifact").map((n) => n.id));
   for (const n of nodes) {
     for (const src of n.srcRefs) edges.push({ from: n.id, kind: "produces", to: src });
     for (const target of n.related) edges.push({ from: n.id, kind: "related", to: target });
+    for (const target of n.generates ?? []) {
+      if (artifactIds.has(target)) edges.push({ from: n.id, kind: "generates", to: target });
+    }
     if (n.kind !== "ticket") continue;
     const epicSlug = normalizeEpicRef(parsedByNode.get(n.id)?.epic ?? "");
     if (epicSlug === null) continue;
@@ -217,7 +197,17 @@ function deriveEdges(
       via: [...via].sort(byStr).join("; "),
     });
   }
-  return edges.sort((a, b) =>
+  // Matrix-derived siblings (feature-matrix co-membership) join last, so a
+  // pair that already has a shared-src sibling record is never duplicated.
+  const srcSiblingPairs = new Set(
+    [...pairVia.keys()]
+      .filter((k) => k.startsWith("sibling|"))
+      .map((k) => k.slice("sibling|".length)),
+  );
+  return [
+    ...edges,
+    ...deriveMatrixSiblingEdges(matrixEntries, nodes, relatedSet, srcSiblingPairs),
+  ].sort((a, b) =>
     byStr(
       `${a.kind}|${a.from}|${a.to}|${a.via ?? ""}`,
       `${b.kind}|${b.from}|${b.to}|${b.via ?? ""}`,
@@ -225,7 +215,9 @@ function deriveEdges(
   );
 }
 
-function pushVia(map: Map<string, string[]>, key: string, src: string): void {
+/** Append `src` to `key`'s via list, deduped — shared via merging for
+ * consumes/sibling edges (build + matrix derivation). */
+export function pushVia(map: Map<string, string[]>, key: string, src: string): void {
   const list = map.get(key) ?? [];
   if (!list.includes(src)) list.push(src);
   map.set(key, list);

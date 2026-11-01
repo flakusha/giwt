@@ -11,17 +11,20 @@
 
 import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildInterconnect, snapshotInterconnectInputs, verifySnapshotStable } from "./build";
+import { buildInterconnect } from "./build";
+import { snapshotInterconnectInputs, verifySnapshotStable } from "./snapshot";
 import type { InterconnectGraph, InterconnectOptions, InterconnectOutputs } from "./types";
 
 /** File names of the generated artifacts, relative to the plan dir. */
 export const INTERCONNECT_JSON = "interconnect.json";
 export const INTERCONNECT_MD = "interconnect.md";
 
-/** Pure JSON render: sorted arrays, fixed key order, trailing newline. */
+/** Pure JSON render: sorted arrays, fixed key order, trailing newline.
+ * Version 2: artifact nodes, **Generates:** edges, matrix-derived sibling
+ * provenance. */
 export function renderInterconnectJson(graph: InterconnectGraph): string {
   const payload = {
-    version: 1,
+    version: 2,
     nodes: graph.nodes,
     srcNodes: graph.srcNodes,
     edges: graph.edges,
@@ -35,23 +38,30 @@ export function renderInterconnectMd(graph: InterconnectGraph, header: string): 
   if (header) lines.push(header.replace(/\n$/, ""), "");
   lines.push("# Plan Interconnect", "");
   lines.push(
-    "Derived producer/consumer/sibling graph over `.plan/` tickets, epics, and the",
-    "src/ paths they own. Regenerate with `giwt plan links --write`; freshness is",
-    "gated by `giwt plan links --check` / `giwt plan validate`. No timestamps —",
-    "output is byte-identical for identical inputs.",
+    "Derived producer/consumer/sibling graph over `.plan/` tickets and epics, the",
+    "src/ paths they own, and the artifacts they declare (**Generates:**). Sibling",
+    "edges derived from feature-matrix co-membership carry `derived` provenance.",
+    "Regenerate with `giwt plan links --write`; freshness is gated by `giwt plan",
+    "links --check` / `giwt plan validate`. No timestamps — output is",
+    "byte-identical for identical inputs.",
     "",
   );
-  const tickets = graph.nodes.filter((n) => n.kind === "ticket").length;
-  const epics = graph.nodes.length - tickets;
   const byKind = (kind: string) => graph.edges.filter((e) => e.kind === kind).length;
+  const count = (kind: string) => graph.nodes.filter((n) => n.kind === kind).length;
   lines.push(
-    `- tickets: ${tickets}`,
-    `- epics: ${epics}`,
+    `- tickets: ${count("ticket")}`,
+    `- epics: ${count("epic")}`,
+    `- artifacts: ${count("artifact")}`,
     `- src paths owned: ${graph.srcNodes.length}`,
     `- edges: produces ${byKind("produces")}, consumes ${byKind("consumes")}, `
-      + `sibling ${byKind("sibling")}, owns ${byKind("owns")}, related ${byKind("related")}`,
+      + `sibling ${byKind("sibling")}, owns ${byKind("owns")}, related ${byKind("related")}, `
+      + `generates ${byKind("generates")}`,
     "",
   );
+  const derived = graph.edges.filter((e) => e.derived === true).length;
+  if (derived > 0) {
+    lines.push(`- derived edges: ${derived} (feature-matrix co-membership)`, "");
+  }
   const hubs = graph.srcNodes.filter((s) => s.owners.length > 1);
   lines.push("## Shared src hubs", "");
   if (hubs.length === 0) lines.push("(no src path is owned by more than one plan node)", "");
@@ -65,11 +75,15 @@ export function renderInterconnectMd(graph: InterconnectGraph, header: string): 
   lines.push("## Edges", "");
   if (graph.edges.length === 0) lines.push("(no edges derived)", "");
   else {
-    lines.push("| from | kind | to | via |", "| --- | --- | --- | --- |");
+    lines.push("| from | kind | to | via | derived |", "| --- | --- | --- | --- | --- |");
     for (const e of graph.edges) {
-      // `-` marks "no explicit link — derived from code-map ownership"; an
-      // empty `|  |` cell trips markdownlint MD060 (compact table style).
-      lines.push(`| \`${e.from}\` | ${e.kind} | \`${e.to}\` | ${e.via ? `\`${e.via}\`` : "-"} |`);
+      // `-` marks "no explicit link — derived from code-map ownership" in
+      // `via` and "declared, not matrix-derived" in `derived` (an empty
+      // `|  |` cell trips markdownlint MD060, compact table style).
+      lines.push(
+        `| \`${e.from}\` | ${e.kind} | \`${e.to}\` | ${e.via ? `\`${e.via}\`` : "-"} `
+          + `| ${e.derived === true ? "matrix" : "-"} |`,
+      );
     }
     lines.push("");
   }
