@@ -114,7 +114,7 @@ export function checkSpdx(planDir: string): Finding[] {
   const findings: Finding[] = [];
   if (!existsSync(planDir)) return findings;
 
-  const mdFiles = collectMdFiles(planDir, "");
+  const mdFiles = collectMdFiles({ projectRoot: planDir, dir: "" });
   for (const f of mdFiles) {
     const raw = readFileSync(f, "utf8");
     if (!raw.includes("SPDX-License-Identifier:")) {

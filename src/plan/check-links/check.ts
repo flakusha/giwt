@@ -141,7 +141,7 @@ export function runLinkCheck(
 ): LinkCheckResult {
   const files = new Set<string>();
   for (const dir of scanDirs) {
-    for (const f of collectMdFiles(projectRoot, dir)) {
+    for (const f of collectMdFiles({ projectRoot, dir })) {
       files.add(f);
     }
   }

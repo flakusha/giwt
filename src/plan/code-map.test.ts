@@ -18,6 +18,7 @@ import {
   collectMdFiles,
   findOwners,
   findStale,
+  packageSources,
   readMap,
   verifyFresh,
   writeMap,
@@ -51,7 +52,7 @@ describe("collectMdFiles", () => {
       writePlan(fx.root, ".plan/tickets", "TASK-foo.md", "# Foo");
       writePlan(fx.root, ".plan/tickets", "BUG-bar.md", "# Bar");
       writePlan(fx.root, ".plan/tickets", "not-md.txt", "text");
-      const files = collectMdFiles(fx.root, ".plan/tickets");
+      const files = collectMdFiles({ projectRoot: fx.root, dir: ".plan/tickets" });
       expect(files).toHaveLength(2);
       expect(files.some((f) => f.endsWith("TASK-foo.md"))).toBe(true);
       expect(files.some((f) => f.endsWith("BUG-bar.md"))).toBe(true);
@@ -63,7 +64,7 @@ describe("collectMdFiles", () => {
   test("handles non-existent directory", () => {
     const fx = makeFixture();
     try {
-      expect(collectMdFiles(fx.root, "nonexistent")).toEqual([]);
+      expect(collectMdFiles({ projectRoot: fx.root, dir: "nonexistent" })).toEqual([]);
     } finally {
       fx.cleanup();
     }
@@ -74,7 +75,7 @@ describe("collectMdFiles", () => {
     try {
       writePlan(fx.root, "docs", "real.md", "# Real");
       writePlan(fx.root, "node_modules", "fake.md", "# Fake");
-      const files = collectMdFiles(fx.root, "docs");
+      const files = collectMdFiles({ projectRoot: fx.root, dir: "docs" });
       expect(files).toHaveLength(1);
       expect(files[0]).toContain("real.md");
     } finally {
@@ -87,7 +88,7 @@ describe("collectMdFiles", () => {
     try {
       writePlan(fx.root, "docs/spec", "a.md", "# A");
       writePlan(fx.root, "docs/spec/sub", "b.md", "# B");
-      const files = collectMdFiles(fx.root, "docs");
+      const files = collectMdFiles({ projectRoot: fx.root, dir: "docs" });
       expect(files).toHaveLength(2);
     } finally {
       fx.cleanup();
@@ -169,6 +170,46 @@ describe("buildMap", () => {
       );
       const map = buildMap(fx.root, [{ dir: ".plan/tickets", kind: "ticket" }]);
       expect(map["src/foo.ts"]).toHaveLength(1);
+    } finally {
+      fx.cleanup();
+    }
+  });
+});
+
+// ── packageSources / monorepo packages/ ────────────────────────
+
+describe("packageSources + packages scan", () => {
+  test("indexes top-level packages, ignores nested, sorted", () => {
+    const fx = makeFixture();
+    try {
+      writePlan(fx.root, "packages/b", "README.md", "b sees src/b.ts");
+      writePlan(fx.root, "packages/b", "package.json", "{\"name\":\"b\"}");
+      writePlan(fx.root, "packages/b/nested", "ignored.md", "nested sees src/nested.ts");
+      writePlan(fx.root, "packages/a", "README.md", "a sees src/a.ts");
+      writePlan(fx.root, "packages/a", "package.json", "{\"name\":\"a\"}");
+      writeFileSync(join(fx.root, "packages", "file.txt"), "not a dir");
+
+      const sources = packageSources(fx.root);
+      expect(sources.map((s) => s.dir)).toEqual(["packages/a", "packages/b"]);
+      expect(sources.every((s) => s.kind === "package" && s.topOnly === true)).toBe(true);
+
+      const map = buildMap(fx.root, sources);
+      expect(map["src/a.ts"]).toBeDefined();
+      expect(map["src/a.ts"]![0]!.kind).toBe("package");
+      expect(map["src/a.ts"]![0]!.source).toBe("packages/a/README.md");
+      expect(map["src/b.ts"]).toBeDefined();
+      expect(map["src/b.ts"]![0]!.source).toBe("packages/b/README.md");
+      // Nested .md below a package dir is ignored (top-level only).
+      expect(map["src/nested.ts"]).toBeUndefined();
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("no packages/ directory yields no sources", () => {
+    const fx = makeFixture();
+    try {
+      expect(packageSources(fx.root)).toEqual([]);
     } finally {
       fx.cleanup();
     }

@@ -6,6 +6,7 @@ import {
   buildMap,
   findOwners,
   findStale,
+  packageSources,
   readMap,
   verifyFresh,
   writeMap,
@@ -53,7 +54,10 @@ export async function runCodeMap(
 
   const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
   const mapPath = join(planDir, "code-map.json");
-  const map = buildMap(config.worktreeRoot, mapSourcesFor(config.settings.paths.planDir));
+  const map = buildMap(config.worktreeRoot, [
+    ...mapSourcesFor(config.settings.paths.planDir),
+    ...packageSources(config.worktreeRoot),
+  ]);
 
   if (hasFind) {
     const queryPath = args[findIdx + 1];

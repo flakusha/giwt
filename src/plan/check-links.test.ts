@@ -281,7 +281,7 @@ describe("collectMdFiles", () => {
     try {
       writePath(fx.root, "docs/a.md", "# A");
       writePath(fx.root, "docs/sub/b.md", "# B");
-      const files = collectMdFiles(fx.root, "docs");
+      const files = collectMdFiles({ projectRoot: fx.root, dir: "docs" });
       expect(files).toHaveLength(2);
     } finally {
       fx.cleanup();
@@ -291,7 +291,7 @@ describe("collectMdFiles", () => {
   test("handles non-existent dir", () => {
     const fx = makeFixture();
     try {
-      expect(collectMdFiles(fx.root, "nonexistent")).toEqual([]);
+      expect(collectMdFiles({ projectRoot: fx.root, dir: "nonexistent" })).toEqual([]);
     } finally {
       fx.cleanup();
     }

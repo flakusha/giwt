@@ -26,6 +26,8 @@ export type CodeMap = Record<string, RefEntry[]>;
 export interface ScanSource {
   dir: string;
   kind: string;
+  /** Only index .md files directly inside dir (no recursion). */
+  topOnly?: boolean;
 }
 
 const SKIP_DIRS = new Set([
@@ -37,8 +39,18 @@ const SKIP_DIRS = new Set([
   ".vitepress",
 ]);
 
-/** Recursively collect *.md files under a directory (handles hidden dirs). */
-export function collectMdFiles(projectRoot: string, dir: string): string[] {
+/** Options for collectMdFiles. */
+export interface CollectMdFilesOptions {
+  projectRoot: string;
+  dir: string;
+  /** Only index .md files directly inside dir (no recursion). */
+  topOnly?: boolean | undefined;
+}
+
+/** Collect *.md files under a directory (recursive unless topOnly). */
+export function collectMdFiles(
+  { projectRoot, dir, topOnly = false }: CollectMdFilesOptions,
+): string[] {
   // Respect absolute inputs: join() would concatenate an absolute dir onto
   // projectRoot (path doubling). Mirrors resolveFromRoot in validate.ts.
   const root = isAbsolute(dir) ? dir : join(projectRoot, dir);
@@ -49,7 +61,7 @@ export function collectMdFiles(projectRoot: string, dir: string): string[] {
       if (SKIP_DIRS.has(entry)) continue;
       const p = join(d, entry);
       if (statSync(p).isDirectory()) {
-        walk(p);
+        if (!topOnly) walk(p);
       } else if (p.endsWith(".md")) {
         out.push(p);
       }
@@ -59,11 +71,24 @@ export function collectMdFiles(projectRoot: string, dir: string): string[] {
   return out;
 }
 
+/**
+ * Scan sources for top-level packages/ directories (monorepo layouts).
+ * One source per direct child directory of packages/, top-level .md only.
+ */
+export function packageSources(projectRoot: string, kind = "package"): ScanSource[] {
+  const pkgRoot = join(projectRoot, "packages");
+  if (!existsSync(pkgRoot)) return [];
+  return readdirSync(pkgRoot, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name))
+    .map((e) => ({ dir: `packages/${e.name}`, kind, topOnly: true }))
+    .sort((a, b) => a.dir.localeCompare(b.dir));
+}
+
 /** Build the reverse code map from plan markdown sources. */
 export function buildMap(projectRoot: string, sources: ScanSource[]): CodeMap {
   const map: CodeMap = {};
-  for (const { dir, kind } of sources) {
-    for (const file of collectMdFiles(projectRoot, dir)) {
+  for (const { dir, kind, topOnly } of sources) {
+    for (const file of collectMdFiles({ projectRoot, dir, topOnly })) {
       const raw = readFileSync(file, "utf8");
       const rel = file.slice(projectRoot.length + 1);
       for (const { path } of extractSrcRefs(raw)) {
