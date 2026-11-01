@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+// size-allow: 300
 /**
  * Feature matrix — deterministic projection of the ticket index.
  *
@@ -8,9 +9,16 @@
  * buckets become columns, cells are counts. The markdown renderer is pure
  * too — no timestamps — so freshness is exact string equality, identical
  * to the epics-doc gate precedent. Freeform statuses land in `other`,
- * never coerced; untagged/unbound tickets surface as visible synthetic
- * rows, never silently dropped. See ticket
+ * never coerced; untagged/unbound/unprojected tickets surface as visible
+ * synthetic rows, never silently dropped. See ticket
  * FEAT-feature-matrix-generation-from-ticket-index.
+ *
+ * FORMAT MARKER: every rendered file carries
+ * `<!-- feature-matrix format: N -->` after the do-not-edit line. N bumps
+ * whenever the renderer's output shape changes (N=2 added the `byProject`
+ * axis). The freshness gate compares bytes, so an older marker simply
+ * mismatches the fresh render and is reported stale — the marker makes that
+ * diagnosis explicit and greppable, not parsed.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -38,8 +46,10 @@ export interface FeatureMatrix {
   total: number;
   byTag: MatrixRow[];
   byEpic: MatrixRow[];
+  byProject: MatrixRow[];
   untagged: number;
   unbound: number;
+  unprojected: number;
 }
 
 /** Normalized status buckets in fixed column order; anything else is `other`. */
@@ -49,6 +59,8 @@ type StatusBucket = (typeof STATUS_COLUMNS)[number];
 
 const UNTAGGED = "(untagged)";
 const UNBOUND = "(unbound)";
+/** Synthetic row for entries with no `**Project:**` (empty/absent project). */
+const UNPROJECTED = "(unprojected)";
 
 function emptyStatuses(): MatrixStatuses {
   return { done: 0, in_progress: 0, open: 0, draft: 0, cancelled: 0, other: 0 };
@@ -93,6 +105,10 @@ export function buildMatrix(entries: Record<string, IndexEntry>): FeatureMatrix 
   const untaggedRow = rowFor(tagRows, UNTAGGED);
   const epicRows = new Map<string, MatrixRow>();
   const unboundRow = rowFor(epicRows, UNBOUND);
+  const projectRows = new Map<string, MatrixRow>();
+  // Unlike UNTAGGED/UNBOUND, the synthetic project row is ALWAYS kept — the
+  // project section renders unconditionally for gate stability.
+  const unprojectedRow = rowFor(projectRows, UNPROJECTED);
   let total = 0;
 
   for (const [extid, entry] of Object.entries(entries)) {
@@ -103,11 +119,15 @@ export function buildMatrix(entries: Record<string, IndexEntry>): FeatureMatrix 
     for (const tag of tags) credit(rowFor(tagRows, tag), extid, bucket);
     const epic = entry.epic ?? "";
     credit(rowFor(epicRows, epic === "" ? UNBOUND : epic), extid, bucket);
+    const project = entry.project ?? "";
+    credit(rowFor(projectRows, project === "" ? UNPROJECTED : project), extid, bucket);
   }
 
-  for (const row of [...tagRows.values(), ...epicRows.values()]) row.tickets.sort();
+  for (const row of [...tagRows.values(), ...epicRows.values(), ...projectRows.values()]) {
+    row.tickets.sort();
+  }
   // Zero-total synthetic rows are noise — only render when untagged/unbound
-  // tickets actually exist.
+  // tickets actually exist. (UNPROJECTED is exempt: always rendered.)
   if (untaggedRow.total === 0) tagRows.delete(UNTAGGED);
   if (unboundRow.total === 0) epicRows.delete(UNBOUND);
 
@@ -115,8 +135,10 @@ export function buildMatrix(entries: Record<string, IndexEntry>): FeatureMatrix 
     total,
     byTag: sortRows(tagRows, UNTAGGED),
     byEpic: sortRows(epicRows, UNBOUND),
+    byProject: sortRows(projectRows, UNPROJECTED),
     untagged: untaggedRow.total,
     unbound: unboundRow.total,
+    unprojected: unprojectedRow.total,
   };
 }
 
@@ -167,10 +189,13 @@ export function generateMatrixMarkdown(
   const lines = [
     ...(opts.header ? [opts.header.replace(/\n$/, ""), ""] : []),
     "<!-- Do not edit manually — regenerate with `giwt plan matrix` -->",
+    // Format marker — see FORMAT MARKER in the module doc (v2 = byProject).
+    "<!-- feature-matrix format: 2 -->",
     "",
     "# Feature matrix",
     "",
-    `Total tickets: **${m.total}** — untagged: **${m.untagged}** — unbound to epic: **${m.unbound}**`,
+    `Total tickets: **${m.total}** — untagged: **${m.untagged}**`
+    + ` — unbound to epic: **${m.unbound}** — unprojected: **${m.unprojected}**`,
     "",
     "## By tag × status",
     "",
@@ -179,6 +204,11 @@ export function generateMatrixMarkdown(
     "## By epic × status",
     "",
     ...statusTable(m.byEpic, "Epic"),
+    "",
+    "## By project × status",
+    "",
+    // Always rendered — deterministic output beats conditional sections.
+    ...statusTable(m.byProject, "Project"),
     "",
     "## Ticket detail",
     "",
@@ -189,6 +219,10 @@ export function generateMatrixMarkdown(
     "### By epic",
     "",
     ...detailList(m.byEpic),
+    "",
+    "### By project",
+    "",
+    ...detailList(m.byProject),
     "",
   ];
   if (opts.cooccurrence) {

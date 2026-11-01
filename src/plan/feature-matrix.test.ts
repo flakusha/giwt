@@ -26,6 +26,7 @@ function entry(overrides: Partial<IndexEntry> & { extid: string; }): IndexEntry 
     label: "feat",
     priority: "medium",
     epic: "",
+    project: "",
     tags: [],
     source: `.plan/tickets/${overrides.extid}.md`,
     status: "open",
@@ -102,14 +103,63 @@ describe("buildMatrix", () => {
   });
 });
 
+describe("buildMatrix byProject", () => {
+  test("groups by project; empty project lands in the (unprojected) synthetic row, last", () => {
+    const m = buildMatrix({
+      "TASK-P": entry({ extid: "TASK-P", project: "loop-lore", status: "open" }),
+      "TASK-Q": entry({ extid: "TASK-Q", project: "loop-lore", status: "done" }),
+      "TASK-R": entry({ extid: "TASK-R", project: "giwt", status: "open" }),
+      "TASK-S": entry({ extid: "TASK-S", status: "open" }),
+    });
+    expect(m.byProject.map((r) => r.key)).toEqual(["giwt", "loop-lore", "(unprojected)"]);
+    const loop = m.byProject.find((r) => r.key === "loop-lore")!;
+    expect(loop.total).toBe(2);
+    expect(loop.tickets).toEqual(["TASK-P", "TASK-Q"]);
+    expect(loop.statuses).toEqual({
+      done: 1,
+      in_progress: 0,
+      open: 1,
+      draft: 0,
+      cancelled: 0,
+      other: 0,
+    });
+    // Synthetic row is ALWAYS last, even after localeCompare sorting.
+    expect(m.byProject[m.byProject.length - 1]!.key).toBe("(unprojected)");
+    expect(m.unprojected).toBe(1);
+  });
+
+  test("the project section renders even with no projects — one synthetic row", () => {
+    const m = buildMatrix({ A: entry({ extid: "A", tags: ["t"], epic: "e" }) });
+    expect(m.byProject.map((r) => r.key)).toEqual(["(unprojected)"]);
+    expect(m.unprojected).toBe(1);
+    const md = generateMatrixMarkdown(m);
+    expect(md).toContain("## By project × status");
+    expect(md).toContain("| (unprojected) | 1 |");
+  });
+
+  test("project rows sort deterministically regardless of index key order", () => {
+    const a = {
+      B: entry({ extid: "B", project: "zeta" }),
+      A: entry({ extid: "A", project: "alpha" }),
+    };
+    const b = { ...a, A: a.A, B: a.B };
+    const flipped = { B: a.B, A: a.A };
+    expect(buildMatrix(a).byProject.map((r) => r.key)).toEqual(
+      buildMatrix(flipped).byProject.map((r) => r.key),
+    );
+    expect(buildMatrix(b).byProject.map((r) => r.key)).toEqual(["alpha", "zeta", "(unprojected)"]);
+  });
+});
+
 describe("generateMatrixMarkdown", () => {
   test("empty index renders canonical bytes with no header by default", () => {
     const expected = [
       "<!-- Do not edit manually — regenerate with `giwt plan matrix` -->",
+      "<!-- feature-matrix format: 2 -->",
       "",
       "# Feature matrix",
       "",
-      "Total tickets: **0** — untagged: **0** — unbound to epic: **0**",
+      "Total tickets: **0** — untagged: **0** — unbound to epic: **0** — unprojected: **0**",
       "",
       "## By tag × status",
       "",
@@ -121,6 +171,13 @@ describe("generateMatrixMarkdown", () => {
       "| Epic | Total | done | in_progress | open | draft | cancelled | other |",
       "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
       "",
+      "## By project × status",
+      "",
+      // Always rendered: empty byProject still shows the synthetic row.
+      "| Project | Total | done | in_progress | open | draft | cancelled | other |",
+      "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+      "| (unprojected) | 0 | 0 | 0 | 0 | 0 | 0 | 0 |",
+      "",
       "## Ticket detail",
       "",
       "### By tag",
@@ -130,6 +187,10 @@ describe("generateMatrixMarkdown", () => {
       "### By epic",
       "",
       "(none)",
+      "",
+      "### By project",
+      "",
+      "- `(unprojected)` (0): ",
       "",
     ].join("\n");
     expect(generateMatrixMarkdown(buildMatrix({}))).toBe(expected);
@@ -305,6 +366,8 @@ describe("plan matrix: machine output flags", () => {
     expect(result.exitCode).toBe(0);
     const lines = result.stdout.trim().split("\n");
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(/^📊 total: 1 · tags: 1 · untagged: \d+ · unbound: \d+$/);
+    expect(lines[0]).toMatch(
+      /^📊 total: 1 · tags: 1 · untagged: \d+ · unbound: \d+ · projects: \d+ · unprojected: \d+$/,
+    );
   });
 });

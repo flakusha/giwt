@@ -68,11 +68,14 @@ export async function runMatrix(args: string[], config: WorktreeConfig): Promise
         const m = record as {
           total: number;
           byTag: Array<{ key: string; total: number; }>;
+          byProject: Array<{ key: string; total: number; }>;
           untagged: number;
           unbound: number;
+          unprojected: number;
         };
         return `📊 total: ${m.total} · tags: ${m.byTag.length}`
-          + ` · untagged: ${m.untagged} · unbound: ${m.unbound}`;
+          + ` · untagged: ${m.untagged} · unbound: ${m.unbound}`
+          + ` · projects: ${m.byProject.length} · unprojected: ${m.unprojected}`;
       },
     }));
     process.exitCode = 0;
