@@ -43,10 +43,10 @@ export function normalizeStatus(raw: string): string {
   if (/\bduplicate([- ]of)?\b/.test(stripped)) return "done";
 
   // Open-class: explicit "open", "deferred", "todo", "research needed",
-  // "follow-up".
+  // "follow-up", "not started".
   if (
     lower === "open" || stripped.startsWith("open")
-    || /\b(deferred|todo|research[- ]needed|follow[- ]up)\b/.test(stripped)
+    || /\b(deferred|todo|research[- ]needed|follow[- ]up|not[- ]started)\b/.test(stripped)
   ) return "open";
 
   if (lower.includes("draft")) return "draft";

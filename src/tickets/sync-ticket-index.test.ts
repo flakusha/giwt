@@ -222,6 +222,19 @@ describe("normalizeStatus", () => {
     test("not-yet-implemented (loop-lore convention)", () => {
       expect(normalizeStatus("not-yet-implemented")).toBe("open");
     });
+
+    test("Not Started variants normalize to open", () => {
+      expect(normalizeStatus("Not Started")).toBe("open");
+      expect(normalizeStatus("⬜ Not Started")).toBe("open");
+      expect(normalizeStatus("NOT STARTED")).toBe("open");
+      expect(normalizeStatus("Not started yet")).toBe("open");
+    });
+
+    test("pass-through guards around the not-started pattern", () => {
+      expect(normalizeStatus("[OK] Not Started — intentional placeholder"))
+        .toBe("[OK] Not Started — intentional placeholder");
+      expect(normalizeStatus("not-a-bug")).toBe("not-a-bug");
+    });
   });
 
   describe("loop-lore freeform pass-through", () => {
