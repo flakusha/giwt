@@ -250,7 +250,7 @@ export async function runFinalize(
       refuseUnsyncedDev({ config, targetBranch, reason: staged.devSync.reason, wtPath, branch });
     }
 
-    // Step 5.5: universal post-merge plan reconciliation. runSync --fix maps
+    // Step 5c: universal post-merge plan reconciliation. runSync --fix maps
     // the closed issues' Done state into the merged .md files and index, the
     // generated plan artifacts are regenerated, and the result lands as a
     // signed in-place commit on the target branch — for every non-
@@ -260,12 +260,12 @@ export async function runFinalize(
     // base.
     if (!alreadyMerged) {
       if (staged?.devSync.synced) {
-        log("info", "Step 5.5: post-merge plan reconciliation...");
+        log("info", "Step 5c: post-merge plan reconciliation...");
         reconcilePlanPostMerge(config, args);
       } else {
         log(
           "warn",
-          `Step 5.5 skipped: dev checkout not synced to ${targetBranch} — re-run 'giwt sync --fix' after syncing manually`,
+          `Step 5c skipped: dev checkout not synced to ${targetBranch} — re-run 'giwt sync --fix' after syncing manually`,
         );
       }
     }

@@ -12,7 +12,7 @@
  *   - `finalize/checks.ts`       — check/test runners + failure reporting
  *   - `finalize/merge.ts`        — squash-message/CLI arg helpers (--onto)
  *   - `finalize/staging.ts`      — Step 5 merge in an ephemeral staging worktree
- *   - `finalize/run.ts`          — runFinalize orchestration (Steps 1–5.5)
+ *   - `finalize/run.ts`          — runFinalize orchestration (Steps 1–5c)
  *   - `finalize/teardown.ts`     — Steps 6/7 worktree + branch teardown
  *
  * Every historically exported name stays importable from this module path.

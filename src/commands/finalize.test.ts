@@ -1145,7 +1145,7 @@ describe("finalize rebase strategy", () => {
     expect(run.output).toContain("has no commits beyond main \u2014 nothing to merge");
     // Nothing merges or reconciles when there is nothing to merge.
     expect(run.output).not.toContain("Step 5a");
-    expect(run.output).not.toContain("Step 5.5");
+    expect(run.output).not.toContain("Step 5c");
     // Teardown is the contract: worktree dir, admin entry, and branch ref go.
     expect(run.output).toContain("Worktree removed");
     expect(run.output).toContain("Branch deleted");
@@ -1175,7 +1175,7 @@ describe("finalize rebase strategy", () => {
       join(gitDir, "giwt-scoped.json"),
       `${JSON.stringify({ tickets: ["FEAT-DEMO"] })}\n`,
     );
-    // Minimal plan state so Step 5.5's runSync --fix has something to stage.
+    // Minimal plan state so Step 5c's runSync --fix has something to stage.
     // Deliberately NOT committed: the file is ignored (global dot-dir
     // ignore), so it does not dirty the dev snapshot for the lazy sync, and
     // reconcilePlanPostMerge's `add -f` stages it as the reconciliation payload.
@@ -1186,7 +1186,7 @@ describe("finalize rebase strategy", () => {
 
     expect(run.exitCode).toBeNull();
     expect(run.output).toContain("Scoped worktree: closing 1 ticket issue(s)...");
-    expect(run.output).toContain("Step 5.5: post-merge plan reconciliation...");
+    expect(run.output).toContain("Step 5c: post-merge plan reconciliation...");
     // The unresolvable extid is tolerated (warn), the reconciliation lands.
     expect(run.output).toContain("could not resolve FEAT-DEMO in the registry");
     expect(git(["log", "-1", "--format=%s"]).trim())
@@ -1194,7 +1194,7 @@ describe("finalize rebase strategy", () => {
     expect(existsSync(wtPath)).toBe(false);
   });
 
-  test("reconciles the plan on a NON-scoped finalize (universal step 5.5)", async () => {
+  test("reconciles the plan on a NON-scoped finalize (universal step 5c)", async () => {
     const wtPath = featureWorktree();
     // Plan drift on main that nobody repaired until now: an orphan ticket
     // file (ignored, so it does not dirty the dev snapshot for the lazy
@@ -1207,7 +1207,10 @@ describe("finalize rebase strategy", () => {
     expect(run.exitCode).toBeNull();
     // No scoped metadata — reconciliation still runs (universal).
     expect(run.output).not.toContain("Scoped worktree: closing");
-    expect(run.output).toContain("Step 5.5: post-merge plan reconciliation...");
+    expect(run.output).toContain("Step 5c: post-merge plan reconciliation...");
+    // Step labels use the integer+lowercase-letter scheme (5a/5b/5c) — no
+    // dotted-decimal labels anywhere in stdout.
+    expect(run.output).not.toMatch(/Step \d+\.\d+/);
     expect(git(["log", "-1", "--format=%s"]).trim())
       .toBe("chore(plan): post-merge reconciliation");
     expect(existsSync(wtPath)).toBe(false);
@@ -1224,7 +1227,7 @@ describe("finalize rebase strategy", () => {
 
     expect(run.exitCode).toBeNull();
     expect(run.output).toContain("already contained");
-    expect(run.output).not.toContain("Step 5.5");
+    expect(run.output).not.toContain("Step 5c");
     // Still on the merge commit — no reconciliation commit was layered on.
     expect(git(["log", "-1", "--format=%s"]).trim()).toBe("feature work");
   });

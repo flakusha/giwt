@@ -11,7 +11,7 @@
  *     header, master copy untouched, first commit landed, marker written
  *   - unknown ticket id refuses BEFORE any git mutation
  *   - empty --tickets csv refuses
- *   - marker round-trip + Step 5.5 reconcile helper (regen + commit skip)
+ *   - marker round-trip + Step 5c reconcile helper (regen + commit skip)
  */
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -225,7 +225,7 @@ describe("scoped worktree creation", () => {
     expect(exits).toEqual([1, 1]);
   });
 
-  test("marker round-trips and Step 5.5 reconcile skips when plan state consistent", async () => {
+  test("marker round-trips and Step 5c reconcile skips when plan state consistent", async () => {
     const cfg = makeRepo("reconcile");
     const exits: number[] = [];
     exitSpy(exits);
@@ -413,7 +413,7 @@ describe("scoped worktree creation", () => {
     expect(errs.join("")).toContain("could not resolve FEAT-DEMO-TICKET");
   });
 
-  test("Step 5.5 reconcile commits when sync --fix lands changes", () => {
+  test("Step 5c reconcile commits when sync --fix lands changes", () => {
     const cfg = makeRepo("reconcile-commit");
     // Index-done ticket whose .md still says Not Started (no registry in the
     // fixture): runSync --fix rewrites the .md to the canonical Done — a real
@@ -464,7 +464,7 @@ describe("scoped worktree creation", () => {
       .not.toContain("STALE");
   });
 
-  test("Step 5.5 code-map rebuild retains docs/spec entries (BUG-finalize-step-5-5)", () => {
+  test("Step 5c code-map rebuild retains docs/spec entries (BUG-finalize-step-5-5)", () => {
     const cfg = makeRepo("reconcile-spec-map");
     // Spec doc referencing a src path: the shared 4-source build maps it
     // under kind "spec"; the old inline 2-source list (tickets+epics only)

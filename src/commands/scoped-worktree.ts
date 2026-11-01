@@ -8,7 +8,7 @@
  * copied into the new worktree with Status rewritten to `In Progress` and an
  * optional `**Scope:**` header line, then committed as the worktree's first
  * commit. Master-side copies stay untouched. Scope metadata persists in the
- * worktree's git dir (`<gitdir>/giwt-scoped.json`) for finalize Step 5.5.
+ * worktree's git dir (`<gitdir>/giwt-scoped.json`) for finalize Step 5c.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -221,7 +221,7 @@ export function applyScopedTickets(
 /**
  * Scoped-worktree pre-merge close: close the ticket issues recorded in the
  * worktree's scope marker on the shared registry BEFORE the merge, so the
- * post-merge Step 5.5 sync pass carries their Done state into the .md files
+ * post-merge Step 5c sync pass carries their Done state into the .md files
  * and the index in one movement. Already-closed issues are tolerated
  * (crash-resume reruns land here twice).
  */

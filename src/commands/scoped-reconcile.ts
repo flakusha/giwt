@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 /**
- * Finalize Step 5.5: post-merge plan reconciliation on the target checkout.
+ * Finalize Step 5c: post-merge plan reconciliation on the target checkout.
  * Split out of scoped-worktree.ts (size budget) — used by `giwt finalize`
  * for EVERY non-alreadyMerged finalize, not only scoped worktrees.
  */
@@ -18,7 +18,7 @@ import { gitSync, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
 import { mapSourcesFor } from "./plan/code-map";
 
-/** -c overrides for the Step 5.5 in-place commit — mirrors finalize's
+/** -c overrides for the Step 5c in-place commit — mirrors finalize's
  * gpgMergeFlags so the reconciliation commit is signed exactly when an
  * agent key is configured (cold-cache repos keep repo-local config). */
 export function scopedSignFlags(agentGpgKeyId: string | undefined): string[] {
@@ -28,7 +28,7 @@ export function scopedSignFlags(agentGpgKeyId: string | undefined): string[] {
 }
 
 /**
- * Finalize Step 5.5: post-merge plan reconciliation on the target checkout
+ * Finalize Step 5c: post-merge plan reconciliation on the target checkout
  * (repoRoot) — for EVERY non-alreadyMerged finalize, not only scoped
  * worktrees (FEAT-universal-post-merge-plan-reconciliation). runSync --fix
  * repairs the merged index/tickets, generated artifacts are regenerated,
@@ -38,7 +38,7 @@ export function scopedSignFlags(agentGpgKeyId: string | undefined): string[] {
 export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): void {
   const planDir = resolve(config.repoRoot, config.settings.paths.planDir);
   if (!existsSync(planDir)) {
-    log("info", "Step 5.5: no plan dir — nothing to reconcile");
+    log("info", "Step 5c: no plan dir — nothing to reconcile");
     return;
   }
   runSync(config.repoRoot, { fix: true, ticketsPath: config.settings.paths.tickets });
@@ -75,8 +75,8 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
       "-m",
       "chore(plan): post-merge reconciliation",
     );
-    log("success", "Step 5.5: plan reconciliation committed");
+    log("success", "Step 5c: plan reconciliation committed");
   } else {
-    log("info", "Step 5.5: plan state already consistent — no commit");
+    log("info", "Step 5c: plan state already consistent — no commit");
   }
 }
