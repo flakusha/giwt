@@ -21,11 +21,10 @@ import type { Finding, TicketSyncFn } from "./types";
 export function checkBacklog(backlogDir: string, indexFiles: string[]): Finding[] {
   const findings: Finding[] = [];
   if (!existsSync(backlogDir)) {
-    findings.push({
-      gate: "backlog",
-      level: "warn",
-      message: `backlog dir not found: ${backlogDir}`,
-    });
+    // Missing .plan/backlog/ is a clean skip: tier files are optional
+    // (tickets+epics carry priority metadata). The skip is silent by
+    // design — Finding.level only supports "error" | "warn", and a warn
+    // would gate every validate run with nothing to fix toward.
     return findings;
   }
   const result = reconcileBacklog(backlogDir, indexFiles);

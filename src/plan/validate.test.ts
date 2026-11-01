@@ -320,7 +320,7 @@ describe("validate / linkage gate", () => {
 // ── backlog gate ────────────────────────────────────────────────
 
 describe("validate / backlog gate", () => {
-  test("warns when backlog dir missing", () => {
+  test("passes cleanly when backlog dir missing (tier files optional)", () => {
     const fx = makeFixture();
     try {
       const result = runValidate({
@@ -340,7 +340,8 @@ describe("validate / backlog gate", () => {
         runSync: () => 0,
       });
       const backlogResult = result.results.find((r) => r.gate === "backlog");
-      expect(backlogResult!.findings.some((f) => f.level === "warn")).toBe(true);
+      expect(backlogResult!.pass).toBe(true);
+      expect(backlogResult!.findings).toEqual([]);
     } finally {
       fx.cleanup();
     }

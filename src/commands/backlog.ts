@@ -8,8 +8,8 @@
  *   sync  Sync .plan/backlog/ index file maps ↔ tier files (--fix, --verbose)
  *
  * Pure I/O lives in src/plan/backlog-sync.ts; this handler owns arg
- * parsing, reporting, and exit codes. The handler throws on a missing
- * backlog dir (main() turns it into a friendly exit 1).
+ * parsing, reporting, and exit codes. A missing backlog dir is a clean
+ * no-op (exit 0) — tier files are optional.
  */
 
 import { existsSync } from "node:fs";
@@ -57,7 +57,10 @@ export async function backlog(
   const indexFiles = [...BACKLOG_INDEX_FILES];
 
   if (!existsSync(backlogDir)) {
-    throw new Error(`${backlogDir}: missing backlog dir — nothing to sync`);
+    // Tier files are optional (tickets+epics carry priority metadata);
+    // a missing backlog dir is a clean no-op, not an error.
+    log("info", `no backlog dir at ${backlogDir} — nothing to sync (tier files optional)`);
+    process.exit(0);
   }
 
   const result = reconcile(backlogDir, indexFiles);
