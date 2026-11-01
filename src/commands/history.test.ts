@@ -724,6 +724,34 @@ describe("history resurrected (command)", () => {
       outSpy.mockRestore();
     }
   });
+
+  test("an unknown resurrected flag refuses", async () => {
+    const { config } = makeRepo();
+    const out = await runExpectExit1(() =>
+      history(["resurrected", "migrations", "--bogus"], config)
+    );
+    expect(out).toContain("unknown flag '--bogus'");
+  });
+
+  test("--emoji renders findings via the severity mapper", async () => {
+    const { root, config } = makeRepo();
+    mkdirSync(join(root, "migrations"), { recursive: true });
+    writeFileSync(join(root, "migrations", "040_a.ts"), "export const x = 1;\n");
+    writeFileSync(join(root, "migrations", "040_b.ts"), "export const y = 2;\n");
+    git(root, ["add", "migrations"]);
+    git(root, ["commit", "-qm", "add migrations"]);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["resurrected", "migrations", "--emoji"], config);
+      const line = outSpy.mock.calls.map((a) => String(a[0])).join("");
+      expect(line).toContain("number-collision");
+      expect(line).toContain("migrations/040_a.ts, migrations/040_b.ts");
+    } finally {
+      outSpy.mockRestore();
+    }
+  });
 });
 
 describe("history weave (command)", () => {
@@ -824,6 +852,104 @@ describe("history weave (command)", () => {
       expect(process.exitCode).toBe(0);
     } finally {
       cap.restore();
+    }
+  });
+
+  test("--baseline=<ref> equals-form is accepted", async () => {
+    const { root, config } = makeRepo();
+    const normal = ["function build() {", "  return 1;", "}"].join("\n");
+    writeFileSync(join(root, "clean.ts"), normal);
+    git(root, ["add", "clean.ts"]);
+    git(root, ["commit", "-qm", "add clean.ts"]);
+
+    const cap = capture();
+    try {
+      await history(["weave", "clean.ts", "--baseline=HEAD"], config);
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--baseline without a value refuses", async () => {
+    const { root, config } = makeRepo();
+    writeFileSync(join(root, "clean.ts"), "ok\n");
+    const out = await runExpectExit1(() => history(["weave", "clean.ts", "--baseline"], config));
+    expect(out).toContain("--baseline requires a ref or file path");
+  });
+
+  test("an unknown weave flag refuses", async () => {
+    const { root, config } = makeRepo();
+    writeFileSync(join(root, "clean.ts"), "ok\n");
+    const out = await runExpectExit1(() => history(["weave", "clean.ts", "--bogus"], config));
+    expect(out).toContain("unknown flag '--bogus'");
+  });
+
+  test("an unreadable target file errors", async () => {
+    const { config } = makeRepo();
+    let thrown: unknown;
+    const cap = capture();
+    try {
+      await history(["weave", "missing.ts"], config);
+    } catch (e) {
+      thrown = e;
+    } finally {
+      cap.restore();
+    }
+    expect((thrown as Error).message).toContain("cannot read file 'missing.ts'");
+  });
+
+  test("a baseline that is neither ref nor file errors", async () => {
+    const { root, config } = makeRepo();
+    writeFileSync(join(root, "clean.ts"), "ok\n");
+    let thrown: unknown;
+    const cap = capture();
+    try {
+      await history(["weave", "clean.ts", "--baseline", "nosuchref"], config);
+    } catch (e) {
+      thrown = e;
+    } finally {
+      cap.restore();
+    }
+    expect((thrown as Error).message).toContain("cannot read baseline 'nosuchref' as ref or file");
+  });
+
+  test("a baseline file path is used when the ref lookup fails", async () => {
+    const { root, config } = makeRepo();
+    const body = ["function build() {", "  return 1;", "}"].join("\n");
+    writeFileSync(join(root, "clean.ts"), body);
+    const baselinePath = join(root, "base.txt");
+    writeFileSync(baselinePath, body);
+
+    const cap = capture();
+    try {
+      await history(["weave", "clean.ts", "--baseline", baselinePath], config);
+      expect(process.exitCode).toBe(0);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("--emoji renders findings via the severity mapper", async () => {
+    const { root, config } = makeRepo();
+    const triplicated = [
+      "function build() {",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  const callback = (e) => e.target;",
+      "  return callback;",
+      "}",
+    ].join("\n");
+    writeFileSync(join(root, "ui.ts"), triplicated);
+
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["weave", "ui.ts", "--emoji"], config);
+      const line = outSpy.mock.calls.map((a) => String(a[0])).join("");
+      expect(line).toContain("repeated-lines: ui.ts");
+    } finally {
+      outSpy.mockRestore();
     }
   });
 });

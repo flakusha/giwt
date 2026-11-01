@@ -1739,6 +1739,55 @@ describe("finalize teardown lifecycle regressions", () => {
     expect(output).not.toContain("branch -d refused");
     expect(output).toContain("Finalized 'feature/vapor'");
   });
+
+  test("an undeletable branch reports the remedy, gripes, and exits 1", () => {
+    const wtPath = featureWorktree("feature/undeletable");
+    // A stale ref lock makes BOTH `branch -d` and the forced `branch -D`
+    // fail while rev-parse still resolves the tip.
+    const gitDir = git(["rev-parse", "--absolute-git-dir"], root).trim();
+    writeFileSync(resolve(gitDir, "refs", "heads", "feature", "undeletable.lock"), "locked\n");
+
+    const chunks: string[] = [];
+    const push = (chunk: unknown): boolean => {
+      chunks.push(String(chunk));
+      return true;
+    };
+    const outSpy = spyOn(process.stdout, "write").mockImplementation(push as never);
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(push as never);
+    let exitCode: number | null = null;
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        exitCode = code ?? 0;
+        throw new Error(`__exit__:${code}`);
+      }) as typeof process.exit,
+    );
+    let error: Error | null = null;
+    try {
+      teardownFinalizedWorktree({
+        branch: "feature/undeletable",
+        wtPath,
+        config,
+        alreadyMerged: false,
+        targetBranch: "main",
+      });
+    } catch (err) {
+      error = err as Error;
+    } finally {
+      outSpy.mockRestore();
+      errSpy.mockRestore();
+      exitSpy.mockRestore();
+      rmSync(resolve(gitDir, "refs", "heads", "feature", "undeletable.lock"), { force: true });
+    }
+    const output = chunks.join("");
+
+    expect(exitCode as number | null).toBe(1);
+    expect(error).not.toBeNull();
+    expect(output).toContain("branch -d refused:");
+    expect(output).toContain("Failed to delete branch 'feature/undeletable':");
+    expect(output).toContain("Delete manually: git branch feature/undeletable ");
+    const ledger = readLedger(config.treeDir, 10);
+    expect(ledger.some((record) => record.msg.includes("failed to delete branch"))).toBe(true);
+  });
 });
 
 describe("merge-phase lock narrowing (FEAT-narrow-finalize-lock-to-merge-steps)", () => {

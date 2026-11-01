@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assertIndexUnedited, verifyIndexStamp, writeIndexStamp } from "../tickets/index-stamp";
@@ -278,5 +278,98 @@ describe("runEpicOwnerPick — apply path", () => {
       { epic: string; }
     >;
     expect(index["TASK-1"]!.epic).toBe("epic-alpha, epic-beta");
+  });
+
+  test("unknown flags print usage and exit 1; --help exits 0", async () => {
+    const dir = makeRepo();
+    for (const [argv, code] of [["--bogus", 1], ["--help", 0]] as const) {
+      const exitSpy = spyOn(process, "exit").mockImplementation(
+        ((c: number) => {
+          throw new Error(`__exit:${c}`);
+        }) as never,
+      );
+      const chunks: string[] = [];
+      const spy = spyOn(process.stdout, "write").mockImplementation(
+        ((chunk: unknown) => {
+          chunks.push(String(chunk));
+          return true;
+        }) as never,
+      );
+      try {
+        await runEpicOwnerPick([argv], rootCases(dir));
+        expect.unreachable("should have exited");
+      } catch (e) {
+        expect((e as Error).message).toBe(`__exit:${code}`);
+      } finally {
+        exitSpy.mockRestore();
+        spy.mockRestore();
+      }
+      expect(chunks.join("")).toContain("Usage: giwt plan epic-owner-pick");
+    }
+  });
+
+  test("a missing ticket index warns and returns without rewriting", async () => {
+    const dir = applyRoot = mkdtempSync(join(tmpdir(), "epic-owner-pick-noindex-"));
+    mkdirSync(join(dir, ".plan"), { recursive: true });
+    const errChunks: string[] = [];
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(
+      ((chunk: unknown) => {
+        errChunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await runEpicOwnerPick([], rootCases(dir));
+      expect(errChunks.join("")).toContain("ticket index not found");
+    } finally {
+      errSpy.mockRestore();
+    }
+    expect(existsSync(join(dir, ".plan", "tickets", "index.json"))).toBe(false);
+  });
+
+  test("remainder cases: ambiguous titles, missing source, headerless md, md/index disagreement", async () => {
+    const dir = applyRoot = mkdtempSync(join(tmpdir(), "epic-owner-pick-remainder-"));
+    mkdirSync(join(dir, ".plan", "epics"), { recursive: true });
+    mkdirSync(join(dir, ".plan", "tickets"), { recursive: true });
+    // Two epics claim the same title: scanEpicTitles reports the ambiguity.
+    writeFileSync(join(dir, ".plan", "epics", "epic-alpha.md"), "# EPIC: Alpha\n");
+    writeFileSync(join(dir, ".plan", "epics", "epic-alpha2.md"), "# EPIC: Alpha\n");
+    // TASK-1: resolvable owner but the source file does not exist.
+    // TASK-2: source exists but has no **Epic:** header.
+    // TASK-3: index and md disagree about the owner.
+    writeFileSync(join(dir, ".plan", "tickets", "t2.md"), "# TASK: two\n");
+    writeFileSync(join(dir, ".plan", "tickets", "t3.md"), "# TASK: three\n\n**Epic:** epic-beta\n");
+    const indexPath = join(dir, ".plan", "tickets", "index.json");
+    writeFileSync(
+      indexPath,
+      JSON.stringify(
+        {
+          "TASK-1": { epic: "epic-alpha, epic-beta", source: ".plan/tickets/missing.md" },
+          "TASK-2": { epic: "epic-alpha, epic-beta", source: ".plan/tickets/t2.md" },
+          "TASK-3": { epic: "epic-alpha, epic-beta", source: ".plan/tickets/t3.md" },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    writeIndexStamp(indexPath);
+
+    const chunks: string[] = [];
+    const spy = spyOn(process.stdout, "write").mockImplementation(
+      ((chunk: unknown) => {
+        chunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await runEpicOwnerPick([], rootCases(dir));
+    } finally {
+      spy.mockRestore();
+    }
+    const out = chunks.join("");
+    expect(out).toContain("ambiguous:");
+    expect(out).toContain("TASK-1: owner epic-alpha but source missing");
+    expect(out).toContain("TASK-2: owner epic-alpha but ticket has no Epic header");
+    expect(out).toContain("TASK-3: index picks epic-alpha but md picks nothing");
   });
 });

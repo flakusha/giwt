@@ -133,4 +133,94 @@ describe("giwt ledger filters", () => {
       cap.restore();
     }
   });
+
+  it("rejects a positional arg with usage + exit 1", async () => {
+    const dir = makeTreeDir();
+    const cap = capture();
+    const errChunks: string[] = [];
+    const origErr = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: unknown) => {
+      errChunks.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    const origExit = process.exit;
+    const codes: (number | undefined)[] = [];
+    process.exit = ((code?: number) => {
+      codes.push(code);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    try {
+      await expect(ledger(["extra"], cfg(dir))).rejects.toThrow("__exit:1");
+      expect(codes).toEqual([1]);
+      expect(errChunks.join("")).toContain("unknown flag 'extra'");
+      expect(errChunks.join("")).toContain("usage: giwt ledger");
+    } finally {
+      process.exit = origExit;
+      process.stderr.write = origErr as typeof process.stderr.write;
+      cap.restore();
+    }
+  });
+
+  it("rejects an unscannable flag with usage + exit 1", async () => {
+    const dir = makeTreeDir();
+    const cap = capture();
+    const errChunks: string[] = [];
+    const origErr = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: unknown) => {
+      errChunks.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    const origExit = process.exit;
+    const codes: (number | undefined)[] = [];
+    process.exit = ((code?: number) => {
+      codes.push(code);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    try {
+      await expect(ledger(["--bogus"], cfg(dir))).rejects.toThrow("__exit:1");
+      expect(codes).toEqual([1]);
+      expect(errChunks.join("")).toContain("usage: giwt ledger");
+    } finally {
+      process.exit = origExit;
+      process.stderr.write = origErr as typeof process.stderr.write;
+      cap.restore();
+    }
+  });
+
+  it("falls back to the default window for a non-numeric --last", async () => {
+    const dir = makeTreeDir();
+    seedLedger(dir);
+    const cap = capture();
+    try {
+      await ledger(["--last", "abc"], cfg(dir));
+      expect(cap.out()).toContain("[#1]");
+      expect(cap.out()).toContain("[#3]");
+    } finally {
+      cap.restore();
+    }
+  });
+
+  it("clamps --last to the requested window", async () => {
+    const dir = makeTreeDir();
+    seedLedger(dir);
+    const cap = capture();
+    try {
+      await ledger(["--last", "2"], cfg(dir));
+      expect(cap.out()).not.toContain("[#1]");
+      expect(cap.out()).toContain("[#3]");
+    } finally {
+      cap.restore();
+    }
+  });
+
+  it("reports an empty ledger in text mode", async () => {
+    const dir = makeTreeDir();
+    const cap = capture();
+    try {
+      await ledger([], cfg(dir));
+      expect(cap.out()).toContain("Agent ledger is empty");
+    } finally {
+      cap.restore();
+    }
+  });
 });

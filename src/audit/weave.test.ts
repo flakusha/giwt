@@ -203,4 +203,28 @@ describe("brace counting primitives", () => {
   it("detects negative depth from a stray closer", () => {
     expect(braceStats("}\nfunction f() {\n").minDepth).toBe(-1);
   });
+
+  it("honors escape sequences inside strings and template literals", () => {
+    const bs = String.fromCharCode(92);
+    const text = [
+      "const s = \"a " + bs + "\" { \";",
+      "const c = 'b " + bs + "' {';",
+      "const t = `x " + bs + "` { " + bs + "` y`;",
+      "function real() { return s.length + c.length + t.length; }",
+    ].join("\n");
+    expect(braceStats(text)).toEqual({ opens: 1, closes: 1, net: 0, minDepth: 0 });
+  });
+
+  it("flags a brace-balance change against the baseline shape", () => {
+    const baseline = "function f() {\n  return 1;\n}\n";
+    const damaged = "function f() {\n  if (a) {\n    if (b) {\n      return 2;\n\n";
+    const findings = scanWeaveDamage({ path: "src/drift.ts", text: damaged, baseline });
+    expect(findings.filter((f) => f.message.includes("balance changed")).length).toBe(1);
+    const balance = findings.find((f) => f.message.includes("balance changed"));
+    expect(balance?.severity).toBe("warning");
+    expect(balance?.evidence?.filter((e) => e.kind === "count").map((e) => e.detail)).toEqual([
+      "baseline 1/1",
+      "current 3/0",
+    ]);
+  });
 });

@@ -8,7 +8,7 @@
  */
 
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { LOCK_FILENAME } from "./abort/helpers";
@@ -176,5 +176,144 @@ describe("giwt lock command", () => {
     } finally {
       delete process.env.GIWT_CHECK_SLOT_DIR;
     }
+  });
+
+  it("rejects an unknown flag with usage + exit 1", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    const errChunks: string[] = [];
+    const origErr = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: unknown) => {
+      errChunks.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    const origExit = process.exit;
+    const codes: (number | undefined)[] = [];
+    process.exit = ((code?: number) => {
+      codes.push(code);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    const cap = capture();
+    try {
+      await expect(lock(["--bogus"], cfg(root))).rejects.toThrow("__exit:1");
+      expect(codes).toEqual([1]);
+      expect(errChunks.join("")).toContain("unknown flag '--bogus'");
+      expect(cap.out()).toContain("Usage: giwt lock");
+    } finally {
+      process.exit = origExit;
+      process.stderr.write = origErr as typeof process.stderr.write;
+      cap.restore();
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+  });
+
+  it("renders the emoji summary line via --emoji", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    try {
+      const cap = capture();
+      try {
+        await lock(["--emoji"], cfg(root));
+        expect(cap.out()).toContain("🔒 finalize free, queue 0");
+      } finally {
+        cap.restore();
+      }
+    } finally {
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+  });
+
+  it("reports a dead holder with the stale-remedy line", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    try {
+      writeFileSync(join(root, LOCK_FILENAME), "2147483000\n");
+      const cap = capture();
+      try {
+        await lock([], cfg(root));
+        const out = cap.out();
+        expect(out).toContain("(dead)");
+        expect(out).toContain("stale: holder is dead");
+        expect(out).toContain(join(root, LOCK_FILENAME));
+        expect(out).not.toContain("recovery: rm -rf");
+      } finally {
+        cap.restore();
+      }
+    } finally {
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+  });
+
+  it("suggests slot recovery when check slots are in use", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    mkdirSync(join(slotDir, "0"), { recursive: true });
+    try {
+      const cap = capture();
+      try {
+        await lock([], cfg(root));
+        const out = cap.out();
+        expect(out).toContain("check-slots: 1/");
+        expect(out).toContain(`recovery: rm -rf ${slotDir}`);
+      } finally {
+        cap.restore();
+      }
+    } finally {
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+  });
+
+  it("treats an unreadable lockfile as held-but-holderless", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    const lockPath = join(root, LOCK_FILENAME);
+    writeFileSync(lockPath, "definitely not a pid\n");
+    try {
+      const cap = capture();
+      try {
+        await lock([], cfg(root));
+        const out = cap.out();
+        expect(out).toContain("finalize: held");
+        expect(out).not.toContain("holder: PID");
+        expect(out).toContain("queue: 0 waiting");
+      } finally {
+        cap.restore();
+      }
+      // A permission-locked lockfile fails the read, not the parse: the
+      // holder is still reported as unknown (held, holderless).
+      chmodSync(lockPath, 0o000);
+      const report = collectLockReport(cfg(root), Date.now());
+      expect(report.finalize).toBe("held");
+      expect(report.holderPid).toBeUndefined();
+      expect(report.holderAlive).toBeUndefined();
+    } finally {
+      chmodSync(lockPath, 0o644);
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+  });
+
+  it("reports queue depth and unreadable-slot fallbacks from the human output", async () => {
+    const { root, slotDir } = fixture();
+    process.env.GIWT_CHECK_SLOT_DIR = slotDir;
+    const lockPath = join(root, LOCK_FILENAME);
+    writeFileSync(lockPath, `${process.pid}\n`);
+    const queueDir = `${lockPath}.queue`;
+    mkdirSync(join(queueDir, "000001-999"), { recursive: true });
+    // In-use slot dir, then drop read permission to exercise the readdir guard.
+    mkdirSync(join(slotDir, "0"), { recursive: true });
+    chmodSync(slotDir, 0o000);
+    let report: Awaited<ReturnType<typeof collectLockReport>>;
+    const cap = capture();
+    try {
+      await lock([], cfg(root));
+      expect(cap.out()).toContain("queue: 1 waiting");
+      report = collectLockReport(cfg(root));
+    } finally {
+      chmodSync(slotDir, 0o755);
+      cap.restore();
+      delete process.env.GIWT_CHECK_SLOT_DIR;
+    }
+    expect(report.checkSlotsUsed).toBe(0);
+    expect(existsSync(queueDir)).toBe(true);
   });
 });

@@ -149,6 +149,15 @@ describe("issues --state", () => {
     expect(cap.out).toContain("no issues found");
   });
 
+  it("--format (space and equals forms) is accepted", async () => {
+    const config = makeConfig();
+    for (const args of [["--format", "oneline"], ["--format=oneline"], ["-f", "oneline"]]) {
+      const cap = await run(args, config);
+      expect(cap.exits).toEqual([]);
+      expect(cap.out).toContain("no issues found");
+    }
+  });
+
   it("unknown flag exits 1 with a usage line", async () => {
     const config = makeConfig();
     const cap = await run(["--bogus"], config);

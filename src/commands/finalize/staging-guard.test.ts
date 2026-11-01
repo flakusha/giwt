@@ -246,4 +246,45 @@ describe("staging guard: rebase strategy (single pre-mutation guard)", () => {
     // must never appear in the main repo's .git (leak invariant).
     expect(existsSync(join(root, ".git", "GIWT_SQUASH_MSG"))).toBe(false);
   });
+
+  it("CAS refusal removes staging, explains, and exits 1", () => {
+    // A stale dev ref lock makes update-ref fail while everything upstream
+    // (rev-parse, staging, rebase) succeeds — the concurrent-mover path.
+    writeFileSync(join(root, ".git", "refs", "heads", "dev.lock"), "locked\n");
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      (() => {
+        throw new Error("__exit__:1");
+      }) as never,
+    );
+    const errChunks: string[] = [];
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(
+      ((chunk: unknown) => {
+        errChunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    const outChunks: string[] = [];
+    const outSpy = spyOn(process.stdout, "write").mockImplementation(
+      ((chunk: unknown) => {
+        outChunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      executeStagingMerge("feature", "rebase", false, config, "dev", false, []);
+      expect.unreachable("should have exited");
+    } catch (e) {
+      expect((e as Error).message).toBe("__exit__:1");
+    } finally {
+      exitSpy.mockRestore();
+      errSpy.mockRestore();
+      outSpy.mockRestore();
+      rmSync(join(root, ".git", "refs", "heads", "dev.lock"), { force: true });
+    }
+    expect(errChunks.join("")).toContain("moved concurrently");
+    expect(errChunks.join("")).toContain("CAS refused, nothing merged");
+    expect(outChunks.join("")).toContain("re-run finalize");
+    // The refusal path removed the staging worktree before exiting.
+    expect(readdirSync(config.treeDir).filter((e) => e.startsWith(".finalize-"))).toEqual([]);
+  });
 });

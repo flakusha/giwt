@@ -88,4 +88,104 @@ describe("runSpdxFix", () => {
     expect(readFileSync(orphan, "utf8")).toBe("# note\n");
     expect(out).toContain("fixed 0 file(s)");
   });
+
+  test("--help prints usage without touching the repo", async () => {
+    setOutputFormat("simple");
+    makeRepo();
+    const out = await capture(() => runSpdxFix(["--help"], config));
+    expect(out).toContain("Usage: giwt spdx-fix [--staged] [files...]");
+    expect(out).toContain("--staged  fix only staged files");
+    expect(readFileSync(join(root, "src", "bare.ts"), "utf8")).toBe("export {};\n");
+  });
+
+  test("missing REUSE.toml exits 1 with an error line", async () => {
+    setOutputFormat("simple");
+    root = mkdtempSync(join(scratchRoot(), "giwt-spdxfix-noreuse-"));
+    config = {
+      repoRoot: root,
+      worktreeRoot: root,
+      treeDir: join(root, "tree"),
+      settings: DEFAULT_SETTINGS,
+    };
+    const errChunks: string[] = [];
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(
+      ((chunk: unknown) => {
+        errChunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      ((code?: number) => {
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never,
+    );
+    try {
+      await expect(runSpdxFix([], config)).rejects.toThrow("__exit:1");
+      expect(errChunks.join("")).toContain("REUSE.toml not found at");
+    } finally {
+      errSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  test("REUSE.toml with no [[annotations]] blocks warns and returns", async () => {
+    setOutputFormat("simple");
+    makeRepo();
+    writeFileSync(join(root, "REUSE.toml"), "# no annotations here\n");
+    const errChunks: string[] = [];
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(
+      ((chunk: unknown) => {
+        errChunks.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await runSpdxFix([], config);
+      expect(errChunks.join("")).toContain("no [[annotations]] blocks");
+      expect(readFileSync(join(root, "src", "bare.ts"), "utf8")).toBe("export {};\n");
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  test("explicit args with no checkable extension report no files to fix", async () => {
+    setOutputFormat("simple");
+    makeRepo();
+    writeFileSync(join(root, "Makefile"), "all:\n  echo hi\n");
+    const out = await capture(() => runSpdxFix(["Makefile"], config));
+    expect(out).toContain("no files to fix");
+  });
+
+  test("--staged fixes only the staged files", async () => {
+    setOutputFormat("simple");
+    makeRepo();
+    const git = (args: string[]) =>
+      Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    git(["init", "-q"]);
+    git(["config", "user.email", "t@example.com"]);
+    git(["config", "user.name", "t"]);
+    git(["add", "REUSE.toml", "src/bare.ts"]);
+    const out = await capture(() => runSpdxFix(["--staged"], config));
+    expect(out).toContain("fixed 1 file(s)");
+    expect(readFileSync(join(root, "src", "bare.ts"), "utf8")).toContain(
+      "SPDX-License-Identifier: AGPL-3.0-or-later",
+    );
+  });
+
+  test("tracked-file discovery fixes every tracked candidate", async () => {
+    setOutputFormat("simple");
+    makeRepo();
+    const git = (args: string[]) =>
+      Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    git(["init", "-q"]);
+    git(["config", "user.email", "t@example.com"]);
+    git(["config", "user.name", "t"]);
+    git(["add", "REUSE.toml", "src/bare.ts"]);
+    git(["commit", "-qm", "seed"]);
+    const out = await capture(() => runSpdxFix([], config));
+    expect(out).toContain("fixed 1 file(s)");
+    expect(readFileSync(join(root, "src", "bare.ts"), "utf8")).toContain(
+      "SPDX-License-Identifier: AGPL-3.0-or-later",
+    );
+  });
 });
