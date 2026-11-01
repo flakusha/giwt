@@ -3,7 +3,9 @@
 
 # FEAT: programmatic API surface for backup and annex seams
 
-**Status:** Done — implemented 2026-10-17 (sha below in git log): index.ts re-exports + `classifyGit` wrapper + trust-boundary note; `src/index.test.ts` covers AC1/AC2/AC6; `bun run check` green (2140 pass, coverage ratchet PASS).
+**Status:** Done
+
+Resolution detail: implemented 2026-10-17 (sha below in git log): index.ts re-exports + `classifyGit` wrapper + trust-boundary note; `src/index.test.ts` covers AC1/AC2/AC6; `bun run check` green (2140 pass, coverage ratchet PASS).
 **Priority:** medium
 **Effort:** Medium
 **Epic:** epic-backup-annex-and-api

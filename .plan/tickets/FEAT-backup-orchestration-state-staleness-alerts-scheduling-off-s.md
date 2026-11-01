@@ -3,7 +3,9 @@
 
 # FEAT: backup orchestration state staleness alerts scheduling off-site mirrors MagicDNS
 
-**Status:** Done — orchestration lane landed on master (commit 3900f68: status/staleness/schedule/remote/discover/annex-status in src/backup/; e2e probe passed 2026-10-17)
+**Status:** Done
+
+Resolution detail: orchestration lane landed on master (commit 3900f68: status/staleness/schedule/remote/discover/annex-status in src/backup/; e2e probe passed 2026-10-17).
 **Priority:** medium
 **Effort:** Large
 **Tags:** backup, orchestration, offsite

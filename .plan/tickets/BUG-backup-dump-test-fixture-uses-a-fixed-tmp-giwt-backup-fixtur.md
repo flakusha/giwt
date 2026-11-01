@@ -3,7 +3,7 @@
 
 # BUG: backup dump test fixture uses a fixed .tmp/giwt-backup-fixture path — parallel runs collide
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Medium
 **Tags:** test-flake
@@ -19,6 +19,7 @@ Signature: expected 'could not acquire backup lock', got ENOENT on the fixed-pat
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-01T07:16:56.212Z

@@ -3,7 +3,9 @@
 
 # FEAT: backup command family L0 dump engine tar-zst listed-incremental sha256 verify GFS rotation
 
-**Status:** Done — L0 dump engine landed on master (commit feat(backup)); verify/rotation/lock/quiesce + tests in src/backup/, orchestration ticket remains open
+**Status:** Done
+
+Resolution detail: L0 dump engine landed on master (commit feat(backup)); verify/rotation/lock/quiesce + tests in src/backup/, orchestration ticket remains open.
 **Priority:** high
 **Effort:** Large
 **Tags:** backup, dump, tar
@@ -16,9 +18,9 @@
 
 Problem: giwt has no backup lane; researched in loop-lore scratchpad (.tmp/investigations/open-items-alignment.md, processing .tmp/open-items/DistributedSync.md) — L0 "plain archive dumps" is the zero-dependency insurance layer (restore needs nothing but tar+zstd).
 
-Scope: `giwt backup dump [targets...]` — tar.zst archives with GNU `--listed-incremental` (.snar chain: weekly full + daily incremental), `-T0` multithreaded compression, sha256 sidecar per archive, `zstd -t` integrity verify, GFS/keep-N rotation (configurable keep counts, default 7 dailies / 4 weeklies / 12 monthlies), off-site targets dir. `giwt backup verify` replays the youngest full+increment chain into a temp dir and asserts table/manifest presence. Transactional runner reuses finalize family DNA: lock (full-jitter retry), atomic temp+rename archive writes, SIGINT/TERM handler with staging cleanup, recoverable via a `--dry-run` preview. Quiesce rule: never tar a live sqlite — snapshot sources via `sqlite3 .backup` (or an upstream checkpointed export, e.g. loop-lore's backup export contract TASK-loop-lore-backup-export-contract-snapshot-producer-assets-ma) into staging first; record failed-to-quiesce DBs as warnings, never silently include torn snapshots.
+Scope: `giwt backup dump [targets...]` — tar.zst archives with GNU `--listed-incremental` (.snar chain: weekly full + daily incremental), `-T0` multithreaded compression, sha256 sidecar per archive, `zstd -t` integrity verify, GFS/keep-N rotation (configurable keep counts, default 7 dailies / 4 weeklies / 12 monthlies), off-site targets dir. `giwt backup verify` replays the youngest full+increment chain into a temp dir and asserts table/manifest presence. Transactional runner reuses finalize family DNA: lock (full-jitter retry), atomic temp+rename archive writes, SIGINT/TERM handler with staging cleanup, recoverable via a `--dry-run` preview. Quiesce rule: never tar a live sqlite — snapshot sources via `sqlite3 .backup` (or an upstream checkpointed export, e.g. loop-lore's backup export contract, loop-lore task `TASK-loop-lore-backup-export-contract-snapshot-producer-assets-manifest`) into staging first; record failed-to-quiesce DBs as warnings, never silently include torn snapshots.
 
-First consumer: loop-lore's export contract publishes checkpointed snapshot + assets manifest; the verify side consumes external archives with row-count assertions (loop-lore TASK-restore-acceptance-external-archives-row-count-table-presenc).
+First consumer: loop-lore's export contract publishes checkpointed snapshot + assets manifest; the verify side consumes external archives with row-count assertions (loop-lore task `TASK-restore-acceptance-external-archives-row-count-table-presence`).
 
 ## Possible Caveats and Issues to Avoid
 
