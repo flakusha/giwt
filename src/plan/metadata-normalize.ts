@@ -41,6 +41,7 @@ export interface NormalizePlanResult {
   epicColonOutside: number;
   indexTagsFilled: number;
   indexEpicsFilled: number;
+  indexProjectsFilled: number;
   /** Worktree guard deferred the index projection — re-run at the main checkout. */
   indexDeferred: boolean;
   danglingEpics: { file: string; value: string; }[];
@@ -112,16 +113,18 @@ export function normalizePlanMetadata(opts: NormalizePlanOptions): NormalizePlan
   const indexPath = join(ticketsDir, "index.json");
   let indexTagsFilled = 0;
   let indexEpicsFilled = 0;
+  let indexProjectsFilled = 0;
   let indexDeferred = false;
   if (existsSync(indexPath)) {
     const index = JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntryLike>;
-    const { next, tagsFilled, epicsFilled } = projectIndex(index, (src) => {
+    const { next, tagsFilled, epicsFilled, projectsFilled } = projectIndex(index, (src) => {
       const abs = join(root, src);
       return existsSync(abs) ? readFileSync(abs, "utf8") : null;
     });
     indexTagsFilled = tagsFilled;
     indexEpicsFilled = epicsFilled;
-    if ((tagsFilled > 0 || epicsFilled > 0) && !dryRun) {
+    indexProjectsFilled = projectsFilled;
+    if ((tagsFilled > 0 || epicsFilled > 0 || projectsFilled > 0) && !dryRun) {
       if (allowIndexWrite) {
         // Sorted, not insertion order, so a key added out of band lands where
         // giwt expects it instead of wherever it was appended.
@@ -143,6 +146,7 @@ export function normalizePlanMetadata(opts: NormalizePlanOptions): NormalizePlan
     epicColonOutside,
     indexTagsFilled,
     indexEpicsFilled,
+    indexProjectsFilled,
     indexDeferred,
     danglingEpics,
     relatedRefsTotal,

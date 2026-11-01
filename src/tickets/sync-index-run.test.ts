@@ -132,6 +132,7 @@ interface TicketSpec {
   status?: string;
   priority?: string;
   epic?: string;
+  project?: string;
   tags?: string;
   /** Explicit `git issue: <hash>` reference appended to the file. */
   issue?: string;
@@ -154,6 +155,7 @@ function writeTicket(
     `**Priority:** ${spec.priority ?? "medium"}`,
   ];
   if (spec.epic) lines.push(`**Epic:** ${spec.epic}`);
+  if (spec.project) lines.push(`**Project:** ${spec.project}`);
   if (spec.tags) lines.push(`**Tags:** ${spec.tags}`);
   lines.push("", spec.body ?? "Fixture body.");
   if (spec.issue) lines.push("", `git issue: ${spec.issue}`);
@@ -169,6 +171,7 @@ function indexEntry(overrides: Partial<IndexEntry>): IndexEntry {
     label: "task",
     priority: "medium",
     epic: "EPIC-1",
+    project: "",
     tags: [],
     source: "",
     ...overrides,
@@ -1276,6 +1279,68 @@ describe("runSync re-reads frontmatter for existing index entries", () => {
       // Idempotent: a second sync is a no-op (no spurious fix lines).
       const again = runCaptured(() => runSync(root, { fix: true }));
       expect(again.out).not.toContain("updated from frontmatter");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("edited Project on an indexed ticket lands in the index on --fix", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      const iA = createIssue(root, "TASK-PROJEDIT: project drift");
+      writeTicket(root, "TASK-PROJEDIT.md", "project drift", {
+        project: "before-project",
+        issue: iA,
+      });
+      writeIndex(root, {
+        "TASK-PROJEDIT": indexEntry({
+          extid: "TASK-PROJEDIT",
+          title: "project drift",
+          hash: iA,
+          project: "before-project",
+          source: ".plan/tickets/TASK-PROJEDIT.md",
+        }),
+      });
+      // Edit the Project line of the ALREADY-INDEXED ticket.
+      writeTicket(root, "TASK-PROJEDIT.md", "project drift", {
+        project: "after-project",
+        issue: iA,
+      });
+      const run = runCaptured(() => runSync(root, { fix: true }));
+      expect(run.exit).toBe(0);
+      expect(run.out).toContain("TASK-PROJEDIT: project updated from frontmatter");
+      expect(readIndex(root)["TASK-PROJEDIT"]?.project).toBe("after-project");
+      // Idempotent second pass.
+      const again = runCaptured(() => runSync(root, { fix: true }));
+      expect(again.out).not.toContain("updated from frontmatter");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a pre-project index entry is backfilled from the .md Project on --fix", () => {
+    const dir = tempDir();
+    try {
+      const root = makeRepo(dir);
+      const iA = createIssue(root, "TASK-PROJBACK: project backfill");
+      writeTicket(root, "TASK-PROJBACK.md", "project backfill", {
+        project: "loop-lore",
+        issue: iA,
+      });
+      // Old-shape entry: written before `project` existed — no project key.
+      writeIndex(root, {
+        "TASK-PROJBACK": indexEntry({
+          extid: "TASK-PROJBACK",
+          title: "project backfill",
+          hash: iA,
+          source: ".plan/tickets/TASK-PROJBACK.md",
+        }),
+      });
+      const run = runCaptured(() => runSync(root, { fix: true }));
+      expect(run.exit).toBe(0);
+      expect(run.out).toContain("TASK-PROJBACK: project updated from frontmatter");
+      expect(readIndex(root)["TASK-PROJBACK"]?.project).toBe("loop-lore");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

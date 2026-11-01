@@ -111,6 +111,51 @@ describe("projectIndex", () => {
     const twice = projectIndex(once, read);
     expect(twice.tagsFilled).toBe(0);
     expect(twice.epicsFilled).toBe(0);
+    expect(twice.projectsFilled).toBe(0);
     expect(twice.next).toEqual(once);
+  });
+
+  test("backfills project from the **Project:** header, counting it", () => {
+    const withProject = {
+      ...index,
+      "BUG-100": { source: ".plan/tickets/BUG-100.md", tags: [], epic: "" },
+    };
+    const projectFiles: Record<string, string> = {
+      ...files,
+      ".plan/tickets/BUG-100.md": "**Status:** Done\n**Project:** loop-lore\n",
+    };
+    const { next, projectsFilled } = projectIndex(withProject, (src) => projectFiles[src] ?? null);
+    expect(next["BUG-100"]).toEqual({
+      source: ".plan/tickets/BUG-100.md",
+      tags: [],
+      epic: "",
+      project: "loop-lore",
+    });
+    expect(projectsFilled).toBe(1);
+  });
+
+  test("project is fill-only-empty — an existing project value is never overwritten", () => {
+    const withProject = {
+      ...index,
+      "BUG-101": {
+        source: ".plan/tickets/BUG-101.md",
+        tags: [],
+        epic: "",
+        project: "giwt-old",
+      },
+    };
+    const projectFiles: Record<string, string> = {
+      ...files,
+      ".plan/tickets/BUG-101.md": "**Project:** loop-lore\n",
+    };
+    const { next, projectsFilled } = projectIndex(withProject, (src) => projectFiles[src] ?? null);
+    expect(next["BUG-101"]!.project).toBe("giwt-old");
+    expect(projectsFilled).toBe(0);
+  });
+
+  test("a .md with no Project line adds no project key — old entry shape kept", () => {
+    const { next, projectsFilled } = projectIndex(index, read);
+    expect(projectsFilled).toBe(0);
+    expect(next["BUG-002"]).toEqual(index["BUG-002"]);
   });
 });

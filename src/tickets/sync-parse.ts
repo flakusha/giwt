@@ -70,6 +70,7 @@ export function parseTicketText(
     const priority = fieldLine(lines, "Priority");
     const upstream = fieldLine(lines, "Upstream");
     const epic = parseEpicField(header);
+    const project = parseProjectField(header);
     const tags = parseTagsField(header);
 
     // Extract type from heading
@@ -105,6 +106,7 @@ export function parseTicketText(
       type,
       priority: priority?.trim() ?? "medium",
       epic,
+      project,
       tags,
       upstream: upstream?.trim() ?? "",
       hash: gitIssueMatch?.[1] ?? null,
@@ -155,6 +157,16 @@ export function parseTagsField(header: string): string[] {
  */
 export function parseEpicField(header: string): string {
   return fieldLine(header.split("\n"), "Epic")?.trim() ?? "";
+}
+
+/**
+ * Project from one header region blob — the single shared parser: the FIRST
+ * line-anchored `**Project:**` match (see {@link fieldLine}), trimmed. Both
+ * colon spellings parse (`**Project:**` canonical, `**Project**:` outside
+ * the bold), mirroring Epic.
+ */
+export function parseProjectField(header: string): string {
+  return fieldLine(header.split("\n"), "Project")?.trim() ?? "";
 }
 
 /**

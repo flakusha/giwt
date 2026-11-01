@@ -20,7 +20,8 @@
 //   `**Tags:**`  canonical — what sync-parse.ts reads
 //   `**Tags**:`  colon outside the bold — hand-written tickets
 //   `**Tags**`   bare, no colon — ditto
-const FIELD_LINE = /^\s*(?:[-*>]\s*)?\*\*(?<name>Tags|Labels|Epic):?\*\*\s*:?\s*(?<value>.*?)\s*$/i;
+const FIELD_LINE =
+  /^\s*(?:[-*>]\s*)?\*\*(?<name>Tags|Labels|Epic|Project):?\*\*\s*:?\s*(?<value>.*?)\s*$/i;
 /** The canonical `**Epic:**` spelling — colon INSIDE the bold, the only form
  * giwt's ticket parser (sync-parse.ts) reads. */
 const EPIC_CANONICAL = /^\s*(?:[-*>]\s*)?\*\*Epic:\*\*/i;
@@ -33,7 +34,7 @@ export interface FieldLine {
   raw: string;
 }
 
-/** Every `**Tags**`/`**Labels**`/`**Epic**` field line in a file, in order. */
+/** Every `**Tags**`/`**Labels**`/`**Epic**`/`**Project**` field line in a file, in order. */
 export function fieldLines(text: string): FieldLine[] {
   const out: FieldLine[] = [];
   for (const [index, line] of text.split("\n").entries()) {
@@ -119,6 +120,11 @@ export function planFile(file: string, text: string, epicSlugs: Set<string>): Fi
       if (!TAG_PLACEHOLDER.test(f.value)) hasTags = true;
       continue;
     }
+    // Project is recognized (it IS in the field grammar above, so the
+    // normalize pass never treats it as noise) but carries NO rewrite and NO
+    // binding check — it names a project, not an epic file; treating it as
+    // Epic here could invent a dangling-epic finding.
+    if (f.name === "Project") continue;
     // Epic: canonicalize the spelling, then check that it resolves.
     const slug = normalizeEpicRef(f.value);
     if (!EPIC_CANONICAL.test(f.raw)) {

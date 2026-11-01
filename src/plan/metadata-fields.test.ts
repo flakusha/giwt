@@ -176,3 +176,34 @@ describe("relatedRefs", () => {
     expect(relatedRefs("**Status:** Done\n", known)).toEqual({ refs: [], dangling: [] });
   });
 });
+
+describe("Project field", () => {
+  test("fieldLines reads both colon spellings of **Project:**", () => {
+    const got = fieldLines(["**Project:** loop-lore", "**Project**: giwt"].join("\n"));
+    expect(got.map((f) => [f.name, f.value])).toEqual([
+      ["Project", "loop-lore"],
+      ["Project", "giwt"],
+    ]);
+  });
+
+  test("planFile never rewrites or flags a Project line — not noise, not Epic", () => {
+    // Even a project value that LOOKS epic-shaped must not leak into the
+    // dangling-epic check.
+    const plan = planFile(FILE, "**Status:** Done\n**Project:** loop-lore\n", SLUGS);
+    expect(plan.rewrites).toEqual([]);
+    expect(plan.dangling).toEqual([]);
+    const epicShaped = planFile(FILE, "**Project:** epic-items\n", SLUGS);
+    expect(epicShaped.rewrites).toEqual([]);
+    expect(epicShaped.dangling).toEqual([]);
+  });
+
+  test("a Project line coexisting with a real Epic line keeps both recognized", () => {
+    const text = "**Epic**: epic-items\n**Project:** loop-lore\n";
+    const plan = planFile(FILE, text, SLUGS);
+    // Only the Epic dialect rewrite applies; the Project line is untouched.
+    expect(plan.rewrites).toHaveLength(1);
+    expect(applyRewrites(text, plan.rewrites)).toBe(
+      "**Epic:** epic-items\n**Project:** loop-lore\n",
+    );
+  });
+});

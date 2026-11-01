@@ -17,6 +17,7 @@ import { scratchRoot } from "../utils/scratch-tmp";
 import {
   parseCaveatsField,
   parseEpicField,
+  parseProjectField,
   parseTagsField,
   parseTicketFile,
   parseTicketText,
@@ -217,6 +218,54 @@ describe("parseTicketFile end-to-end", () => {
       expect(tf!.priority).toBe("high");
       expect(tf!.epic).toBe("EPIC-FILE");
       expect(tf!.tags).toEqual(["one", "two"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Project field parsing", () => {
+  test("parseProjectField reads the canonical **Project:** spelling", () => {
+    expect(parseProjectField("**Project:** loop-lore")).toBe("loop-lore");
+  });
+
+  test("the colon-outside **Project**: spelling parses per the Epic precedent", () => {
+    expect(parseProjectField("**Project**: loop-lore")).toBe("loop-lore");
+    // Bare-bold (no colon) parses too — same fieldLine grammar as Epic.
+    expect(parseProjectField("**Project** loop-lore")).toBe("loop-lore");
+  });
+
+  test("absent Project parses to the same empty default as Epic", () => {
+    expect(parseProjectField("**Status:** Done\n**Tags:** a\n")).toBe("");
+    const tf = parseTicketText("# TASK-NOPROJ: x\n\n**Status:** open\n", "TASK-NOPROJ.md");
+    expect(tf!.project).toBe("");
+    expect(tf!.epic).toBe("");
+  });
+
+  test("body prose 'Project:' beyond the header region is ignored", () => {
+    const lines = [
+      "# TASK-DEEPPROJ: deep prose",
+      "",
+      "**Status:** open",
+      "**Project:** real-project",
+      "",
+    ];
+    while (lines.length < 40) lines.push("filler line so the prose lands past line 30");
+    lines.push("Project: prose-project-not-a-header");
+    const tf = parseTicketText(lines.join("\n"), "TASK-DEEPPROJ.md");
+    expect(tf!.project).toBe("real-project");
+  });
+
+  test("parseTicketFile carries **Project:** into TicketFile.project", () => {
+    const dir = tempDir();
+    try {
+      const path = join(dir, "TASK-PROJ.md");
+      writeFileSync(
+        path,
+        "# TASK: Project fixture\n\n**Status:** open\n**Project:** loop-lore\n",
+      );
+      const tf = parseTicketFile(path, ".plan/tickets/TASK-PROJ.md");
+      expect(tf!.project).toBe("loop-lore");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

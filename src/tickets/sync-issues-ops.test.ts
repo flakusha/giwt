@@ -164,6 +164,7 @@ function indexEntry(overrides: Partial<IndexEntry>): IndexEntry {
     label: "task",
     priority: "medium",
     epic: "EPIC-1",
+    project: "",
     tags: [],
     source: "",
     ...overrides,

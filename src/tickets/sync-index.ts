@@ -212,7 +212,7 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     if (scope && !scope.has(extid)) return false;
     return index[extid]?.status === undefined;
   });
-  // Frontmatter is the source of truth: a Tags/Epic drift between an
+  // Frontmatter is the source of truth: a Tags/Epic/Project drift between an
   // existing index entry and its .md alone must trigger the fix branch
   // (FEAT-sync-re-reads-tags-epic-related), even with no other category.
   const frontmatterDrift = ticketFiles.some((tf) => {
@@ -220,7 +220,9 @@ export function runSync(repoRoot: string, opts: SyncOptions = {}): number {
     if (scope && !scope.has(extid)) return false;
     const entry = index[extid];
     if (!entry) return false;
-    return entry.epic !== tf.epic || JSON.stringify(entry.tags) !== JSON.stringify(tf.tags);
+    return entry.epic !== tf.epic
+      || (entry.project ?? "") !== tf.project
+      || JSON.stringify(entry.tags) !== JSON.stringify(tf.tags);
   });
   if (fixMode && (totalIssues > 0 || advisoryCount > 0 || backfillPending || frontmatterDrift)) {
     // With the issue registry unreadable, every non-commit hash looks like a

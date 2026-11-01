@@ -208,6 +208,7 @@ export function addOrphanFiles(
       label: tf.type.toLowerCase(),
       priority: tf.priority,
       epic: tf.epic,
+      project: tf.project,
       tags: tf.tags,
       source: sourcePath,
       status: normalizeStatus(tf.status),
@@ -223,7 +224,7 @@ export function addOrphanFiles(
  * re-reads-tags-epic-related). Previously only adopted orphans carried
  * frontmatter values; entries already in the index kept stale values
  * forever. `Related` is not a giwt field (no IndexEntry/TicketFile member),
- * so Tags + Epic are the reconcileable set.
+ * so Tags + Epic + Project are the reconcileable set.
  */
 export function refreshFrontmatterFields(
   fixed: Record<string, IndexEntry>,
@@ -245,6 +246,13 @@ export function refreshFrontmatterFields(
     if (JSON.stringify(entry.tags) !== JSON.stringify(tf.tags)) {
       fixed[extid] = { ...(fixed[extid] ?? entry), tags: [...tf.tags] };
       report.fixesApplied.push(`${extid}: tags updated from frontmatter`);
+    }
+    // `?? ""` reads pre-project entries (written before the field existed)
+    // as empty rather than undefined-mismatching every entry — the one
+    // backfill sync does on top of the old index shape.
+    if ((entry.project ?? "") !== tf.project) {
+      fixed[extid] = { ...(fixed[extid] ?? entry), project: tf.project };
+      report.fixesApplied.push(`${extid}: project updated from frontmatter`);
     }
   }
 }

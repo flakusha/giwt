@@ -14,6 +14,7 @@ export interface TicketFile {
   type: string;
   priority: string;
   epic: string;
+  project: string;
   tags: string[];
   upstream: string;
   hash: string | null;
@@ -38,6 +39,8 @@ export interface IndexEntry {
   label: string;
   priority: string;
   epic: string;
+  /** Owning project slug from the `**Project:**` header ("" when absent). */
+  project: string;
   tags: string[];
   source: string;
   git_issue?: string;

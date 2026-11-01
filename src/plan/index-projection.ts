@@ -21,15 +21,17 @@
  * scraped into an entry's tags by a header-window parse are repaired, not
  * preserved forever. The documented retention semantic: a .md with NO Tags
  * line leaves the entry untouched — stale tags are retained, nothing is
- * inferred (a wrong guessed tag is worse than a stale one). Epic stays
- * fill-only-empty — ownership has its own resolver.
+ * inferred (a wrong guessed tag is worse than a stale one). Epic and Project
+ * stay fill-only-empty — epic ownership has its own resolver, and a project
+ * rename is a deliberate author act.
  */
 
-import { parseEpicField, parseTagsField } from "../tickets/sync-parse";
+import { parseEpicField, parseProjectField, parseTagsField } from "../tickets/sync-parse";
 
 export interface IndexEntryLike {
   tags?: string[];
   epic?: string;
+  project?: string;
   source?: string;
 }
 
@@ -62,10 +64,16 @@ export function canonicalIndexOrder(
 export function projectIndex(
   index: Record<string, IndexEntryLike>,
   readFile: (source: string) => string | null,
-): { next: Record<string, IndexEntryLike>; tagsFilled: number; epicsFilled: number; } {
+): {
+  next: Record<string, IndexEntryLike>;
+  tagsFilled: number;
+  epicsFilled: number;
+  projectsFilled: number;
+} {
   const next = { ...index };
   let tagsFilled = 0;
   let epicsFilled = 0;
+  let projectsFilled = 0;
   for (const [extid, entry] of Object.entries(index)) {
     if (!entry.source) continue;
     const text = readFile(entry.source);
@@ -74,6 +82,7 @@ export function projectIndex(
     const header = text.split("\n").slice(0, 30).join("\n");
     const tags = parseTagsField(header);
     const epic = parseEpicField(header);
+    const project = parseProjectField(header);
     const patch: IndexEntryLike = {};
     if (
       tags.length > 0
@@ -86,7 +95,13 @@ export function projectIndex(
       patch.epic = epic;
       epicsFilled++;
     }
-    if (patch.tags || patch.epic) next[extid] = { ...entry, ...patch };
+    if (project && !entry.project) {
+      patch.project = project;
+      projectsFilled++;
+    }
+    if (patch.tags || patch.epic || patch.project) {
+      next[extid] = { ...entry, ...patch };
+    }
   }
-  return { next, tagsFilled, epicsFilled };
+  return { next, tagsFilled, epicsFilled, projectsFilled };
 }
