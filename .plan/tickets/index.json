@@ -982,7 +982,7 @@
     "status": "done"
   },
   "BUG-TAG": {
-    "hash": "pending",
+    "hash": "218c5c5",
     "extid": "BUG-TAG",
     "type": "BUG",
     "title": "--tag",
@@ -992,7 +992,8 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-tag.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "218c5c5"
   },
   "BUG-TAG-PARSER-KEEPS-BRACKET-QUOTE-BACKTICK-ADORNMENTS-PRODUCING": {
     "hash": "b105f44",
@@ -2648,6 +2649,23 @@
     ],
     "source": ".plan/tickets/TASK-plan-validate-reject-case-insensitive-ticket-filename-collis.md",
     "status": "done"
+  },
+  "TASK-PLAN-VALIDATE-RESOLVE-7-RESIDUAL-GATE-ERRORS-AFTER-THE-FEATU": {
+    "hash": "c9cfd4a",
+    "git_issue": "c9cfd4a",
+    "extid": "TASK-PLAN-VALIDATE-RESOLVE-7-RESIDUAL-GATE-ERRORS-AFTER-THE-FEATU",
+    "type": "TASK",
+    "title": "plan validate: resolve 7 residual gate errors after the feature wave",
+    "label": "task",
+    "priority": "low",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "plan",
+      "validate"
+    ],
+    "source": ".plan/tickets/TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu.md",
+    "status": "open"
   },
   "TASK-PLAN-VALIDATE-SCOPE-TICKET-FORMAT-LINK-GATES-TO-THE-DIFF-BAS": {
     "hash": "c5d6516",

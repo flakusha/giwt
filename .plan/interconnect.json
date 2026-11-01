@@ -1939,6 +1939,15 @@
       "related": []
     },
     {
+      "id": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "kind": "ticket",
+      "path": ".plan/tickets/TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu.md",
+      "title": "plan validate: resolve 7 residual gate errors after the feature wave",
+      "status": "open",
+      "srcRefs": [],
+      "related": []
+    },
+    {
       "id": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "kind": "ticket",
       "path": ".plan/tickets/TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas.md",
@@ -7098,6 +7107,13 @@
     {
       "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "src/plan/validate.ts"
     },
@@ -8172,6 +8188,13 @@
     {
       "from": "BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -8419,6 +8442,13 @@
       "from": "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
       "kind": "sibling",
       "to": "FEAT-universal-post-merge-plan-reconciliation",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
       "via": "tag:plan",
       "derived": true
     },
@@ -9566,6 +9596,13 @@
     {
       "from": "BUG-sync-fix-stamps-ticket-done-without-provenance",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "BUG-sync-fix-stamps-ticket-done-without-provenance",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -10251,6 +10288,13 @@
     {
       "from": "FEAT-feature-matrix-generation-from-ticket-index",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-feature-matrix-generation-from-ticket-index",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "src/plan/validate.ts"
     },
@@ -10788,6 +10832,13 @@
     {
       "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -10885,6 +10936,13 @@
     {
       "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-links-derive-and-validate-producers-consumers-siblings",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -10964,6 +11022,13 @@
       "kind": "sibling",
       "to": "FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose",
       "via": "tag:sync; tag:tickets",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
       "derived": true
     },
     {
@@ -11062,6 +11127,13 @@
     {
       "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -11144,6 +11216,13 @@
     {
       "from": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -11209,6 +11288,13 @@
       "kind": "sibling",
       "to": "TASK-giwt-plan-validate-status-vocab-gate",
       "via": "tag:plan-validate",
+      "derived": true
+    },
+    {
+      "from": "FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
       "derived": true
     },
     {
@@ -11376,6 +11462,13 @@
     {
       "from": "FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -11413,6 +11506,13 @@
       "kind": "sibling",
       "to": "TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic",
       "via": "src/plan/validate/content-gates.ts"
+    },
+    {
+      "from": "FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
     },
     {
       "from": "FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-",
@@ -11567,6 +11667,13 @@
     {
       "from": "FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i",
       "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i",
+      "kind": "sibling",
       "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
       "via": "tag:plan",
       "derived": true
@@ -11582,6 +11689,13 @@
       "from": "FEAT-ticket-header-conflict-resolver-in-rebase-loop",
       "kind": "sibling",
       "to": "FEAT-universal-post-merge-plan-reconciliation",
+      "via": "tag:plan",
+      "derived": true
+    },
+    {
+      "from": "FEAT-ticket-header-conflict-resolver-in-rebase-loop",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
       "via": "tag:plan",
       "derived": true
     },
@@ -11611,6 +11725,13 @@
       "kind": "sibling",
       "to": "FIX-referenced-artifacts-must-outlive-the-console",
       "via": "tag:finalize",
+      "derived": true
+    },
+    {
+      "from": "FEAT-universal-post-merge-plan-reconciliation",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "via": "tag:plan",
       "derived": true
     },
     {
@@ -11830,6 +11951,20 @@
       "kind": "sibling",
       "to": "TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice",
       "via": "src/plan/validate.ts"
+    },
+    {
+      "from": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "kind": "sibling",
+      "to": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",
+      "via": "tag:plan; tag:validate",
+      "derived": true
+    },
+    {
+      "from": "TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu",
+      "kind": "sibling",
+      "to": "TASK-shard-tickets-index-or-stop-per-branch-index-commits",
+      "via": "tag:plan",
+      "derived": true
     },
     {
       "from": "TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas",

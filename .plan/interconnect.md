@@ -10,13 +10,13 @@ Regenerate with `giwt plan links --write`; freshness is gated by `giwt plan
 links --check` / `giwt plan validate`. No timestamps — output is
 byte-identical for identical inputs.
 
-- tickets: 181
+- tickets: 182
 - epics: 1
 - artifacts: 0
 - src paths owned: 145
-- edges: produces 283, consumes 4, sibling 1081, owns 4, related 16, generates 0
+- edges: produces 283, consumes 4, sibling 1099, owns 4, related 16, generates 0
 
-- derived edges: 792 (feature-matrix co-membership)
+- derived edges: 810 (feature-matrix co-membership)
 
 ## Shared src hubs
 
@@ -763,6 +763,7 @@ byte-identical for identical inputs.
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `FIX-referenced-artifacts-must-outlive-the-console` | `tag:finalize` | matrix |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/validate.ts` | - |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | `src/plan/validate.ts` | - |
+| `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `src/plan/validate.ts` | - |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `BUG-finalize-step-5-5-rebuilds-code-map-from-2-sources-stripping` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/plan/validate.ts` | - |
@@ -923,6 +924,7 @@ byte-identical for identical inputs.
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `tag:plan` | matrix |
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | `tag:plan` | matrix |
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
+| `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `BUG-normalizestatus-leaves-not-started-entries-in-other-bucket-u` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/tickets/sync-ticket-index.test.ts` | - |
@@ -960,6 +962,7 @@ byte-identical for identical inputs.
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `tag:plan` | matrix |
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | `tag:plan` | matrix |
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
+| `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `BUG-plan-gen-docs-tasks-column-counts-unchecked-checkboxes-not-r` | sibling | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | `src/plan/gen-docs.ts` | - |
@@ -1130,6 +1133,7 @@ byte-identical for identical inputs.
 | `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas` | `tag:sync` | matrix |
 | `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `tag:sync` | matrix |
+| `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `BUG-sync-fix-stamps-ticket-done-without-provenance` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `BUG-sync-fix-statusmismatches-branch-writes-raw-git-state-into-m` | sibling | `FEAT-annex-sync-orchestration-lane-in-giwt-backup` | `tag:sync` | matrix |
@@ -1232,6 +1236,7 @@ byte-identical for identical inputs.
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/validate.ts` | - |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | `src/plan/validate.ts` | - |
+| `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `src/plan/validate.ts` | - |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-feature-matrix-generation-from-ticket-index` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/plan/validate.ts` | - |
@@ -1312,6 +1317,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `tag:plan` | matrix |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | `tag:plan` | matrix |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
+| `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `tag:migration` | matrix |
 | `FEAT-plan-check-links-fix-to-auto-repair-stale-markdown-links-and` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
@@ -1326,6 +1332,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `FEAT-ticket-template-requires-possible-caveats-and-issues-to-avoi` | `tag:validation` | matrix |
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `src/tickets/sync-parse.ts` | - |
+| `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-links-derive-and-validate-producers-consumers-siblings` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | `tag:plan` | matrix |
@@ -1338,6 +1345,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas` | `tag:sync; tag:tickets` | matrix |
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `tag:sync; tag:tickets` | matrix |
+| `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-metadata-subcommand-promote-frontmatter-wins-projection` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | `tag:plan` | matrix |
@@ -1352,6 +1360,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-colocation-sweep-stranded-tests-gpg-unlock-split-testkit` | `src/index.ts` | - |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-expose-file-size-check-via-public-api` | `src/index.ts` | - |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `src/plan/status-vocab.ts` | - |
+| `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `tag:migration` | matrix |
 | `FEAT-plan-normalize-statuses-subcommand-to-normalize-plan-status-` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
@@ -1364,6 +1373,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `tag:plan` | matrix |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | `tag:plan` | matrix |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
+| `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-report-subcommand-promote-loop-lore-report-plan-metadat` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | `tag:plan; tag:tickets` | matrix |
@@ -1374,6 +1384,7 @@ byte-identical for identical inputs.
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas` | `tag:tickets` | matrix |
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `tag:tickets` | matrix |
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `TASK-giwt-plan-validate-status-vocab-gate` | `tag:plan-validate` | matrix |
+| `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-plan-validate-tickets-gate-reuses-orphan-tag-and-orphan-bind` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-programmatic-api-surface-for-backup-and-annex-seams` | sibling | `FEAT-runs-json-diet-default-projection-and-query-filters` | `src/index.ts` | - |
@@ -1398,12 +1409,14 @@ byte-identical for identical inputs.
 | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas` | `tag:sync; tag:tickets` | matrix |
 | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `tag:sync; tag:tickets` | matrix |
+| `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-reject-manual-edits-to-plan-tickets-index-json-with-a-frontm` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `TASK-backlog-dir-requirement-should-be-optional-given-ticket-epic` | `src/plan/validate/content-gates.ts` | - |
+| `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `tag:migration` | matrix |
 | `FEAT-repo-wide-spdx-header-check-covering-every-tracked-file-and-` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
@@ -1427,13 +1440,16 @@ byte-identical for identical inputs.
 | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
 | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `FIX-sync-fix-reports-one-refusal-for-every-registry-failure-clas` | `tag:sync; tag:tickets` | matrix |
 | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `FIX-sync-parse-first-bold-colon-match-mis-parses-when-body-prose` | `tag:sync; tag:tickets` | matrix |
+| `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-sync-re-reads-tags-epic-related-for-entries-already-in-the-i` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | sibling | `FEAT-universal-post-merge-plan-reconciliation` | `tag:plan` | matrix |
+| `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan` | matrix |
 | `FEAT-ticket-header-conflict-resolver-in-rebase-loop` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-universal-post-merge-plan-reconciliation` | sibling | `FIX-add-jitter-to-the-finalize-lock-retry-backoff` | `tag:finalize` | matrix |
 | `FEAT-universal-post-merge-plan-reconciliation` | sibling | `FIX-referenced-artifacts-must-outlive-the-console` | `tag:finalize` | matrix |
+| `FEAT-universal-post-merge-plan-reconciliation` | sibling | `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | `tag:plan` | matrix |
 | `FEAT-universal-post-merge-plan-reconciliation` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:finalize; tag:plan` | matrix |
 | `FEAT-universal-post-merge-plan-reconciliation` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `FEAT-weave-damage-scan-duplicated-and-orphaned-blocks-are-structu` | sibling | `TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-` | `tag:rebase` | matrix |
@@ -1469,6 +1485,8 @@ byte-identical for identical inputs.
 | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `src/plan/validate.ts` | - |
 | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/plan/validate.ts` | - |
 | `TASK-plan-validate-reject-case-insensitive-ticket-filename-collis` | sibling | `TASK-ticket-index-tags-end-to-end-unbound-to-epic-advisory-notice` | `src/plan/validate.ts` | - |
+| `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | sibling | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | `tag:plan; tag:validate` | matrix |
+| `TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | sibling | `TASK-reach-parity-with-the-loop-lore-worktree-fork-so-it-can-be-d` | `src/commands/finalize.ts` | - |
 | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | sibling | `TASK-shard-tickets-index-or-stop-per-branch-index-commits` | `tag:plan` | matrix |
 | `TASK-plan-validate-scope-ticket-format-link-gates-to-the-diff-bas` | sibling | `TASK-ticket-index-sync-spends-3074-subprocess-spawns-on-a-single-` | `src/plan/validate.ts` | - |
