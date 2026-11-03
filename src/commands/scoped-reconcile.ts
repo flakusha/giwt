@@ -14,7 +14,7 @@ import { genMatrix } from "../plan/feature-matrix";
 import { runSync } from "../tickets/sync-index";
 import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
-import { gitSync, isolatedGitEnv } from "../utils/git";
+import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
 import { mapSourcesFor } from "./plan/code-map";
 
@@ -53,7 +53,7 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
   // Stage first: runSync --fix writes to the working tree, so `--cached`
   // only sees the change after the add. A clean stage afterwards means the
   // tree was already consistent (idempotent rerun) — skip the commit.
-  gitSync(config.repoRoot, "add", "-f", config.settings.paths.planDir);
+  stagePlanDir(config.repoRoot, config.settings.paths.planDir);
   const staged = Bun.spawnSync(
     ["git", "-C", config.repoRoot, "diff", "--cached", "--quiet"],
     { env: isolatedGitEnv(), stdout: "pipe", stderr: "pipe" },
@@ -79,4 +79,34 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
   } else {
     log("info", "Step 5c: plan state already consistent — no commit");
   }
+}
+
+/**
+ * Stage the plan dir for the reconciliation commit, minus the paths the
+ * repo ignores. `git add -f` re-adds ignored files, so a repo that retires
+ * generated artifacts from tracking (e.g. `.plan/code-map.json`) would get
+ * them back on every finalize; the ignored paths are excluded with
+ * pathspec magic instead. The repo's .gitignore is the single source of
+ * truth for what stays untracked.
+ */
+export function stagePlanDir(root: string, planDir: string): void {
+  // The user's global excludesFile (dot-dir hygiene, e.g. `.*/`) is
+  // neutralized: `git add -f` always bypassed it, so it must not decide
+  // what stays untracked here.
+  const ignored = gitSyncQuiet(
+    root,
+    "-c",
+    "core.excludesFile=/dev/null",
+    "ls-files",
+    "-z",
+    "--others",
+    "--ignored",
+    "--exclude-standard",
+    "--",
+    planDir,
+  )
+    .split("\0")
+    .filter((path) => path.length > 0);
+  const excludes = ignored.map((path) => `:!${path}`);
+  gitSync(root, "add", "-f", planDir, ...excludes);
 }
