@@ -17,10 +17,11 @@ import { normalize } from "node:path";
 import { mapSourcesFor } from "../../commands/plan/code-map";
 import { writeIndexStamp } from "../../tickets/index-stamp";
 import { log, raw } from "../../utils/output";
+import { repoIgnoredPaths } from "../../utils/repo-ignore";
 import { buildMap, writeMap } from "../code-map";
 import { genMatrix } from "../feature-matrix";
 import { genDocs } from "../gen-docs";
-import { atomicWrite, fromRoot, repoPath, runGit, unmergedPaths } from "./git-io";
+import { atomicWrite, fromRoot, repoPath, runGit, unmergedStages } from "./git-io";
 import { asRecord, mergeIndexRecords } from "./json-merge";
 
 function generatedPaths(root: string, planDir: string, ticketsPath: string): string[] {
@@ -72,10 +73,24 @@ export function resolveGenerated(
   { root, planDir, ticketsPath }: ResolveGeneratedOpts,
 ): string[] {
   const known = new Set(generatedPaths(root, planDir, ticketsPath));
-  const unmerged = unmergedPaths(root);
-  const conflicts = unmerged.filter((path) => known.has(normalize(path).replaceAll("\\", "/")));
-  if (conflicts.length === 0) return [];
-  if (unmerged.some((path) => !known.has(normalize(path).replaceAll("\\", "/")))) {
+  const stages = unmergedStages(root);
+  const unmerged = [...stages.keys()];
+  if (unmerged.length === 0) return [];
+  const normalized = (path: string): string => normalize(path).replaceAll("\\", "/");
+  // A path the repo itself ignores is a retired artifact: the repo dropped
+  // it from tracking on purpose. Its conflict is resolved by dropping it
+  // from the index (the file stays on disk, untracked + ignored) — never by
+  // re-tracking it. Only an artifact the upstream DELETED counts as retired:
+  // while upstream still tracks it, the ignore rule is not a retirement and
+  // the conflict is resolved like any other.
+  const ignored = repoIgnoredPaths(root, unmerged);
+  const retired = new Set(
+    unmerged.filter((path) => ignored.has(path) && !(stages.get(path) ?? []).includes(2)),
+  );
+  const conflicts = unmerged.filter((path) => known.has(normalized(path)) && !retired.has(path));
+  // An unknown unmerged path is not ours to resolve: bail out and leave the
+  // whole conflict set to the human.
+  if (unmerged.some((path) => !known.has(normalized(path)) && !retired.has(path))) {
     return [];
   }
 
@@ -101,16 +116,36 @@ export function resolveGenerated(
   // Non-index artifacts keep the replayed (stage-3) side for now; the
   // deferred regeneration in completeGeneratedReconcile overwrites them with
   // the authoritative projection. A failed checkout (e.g. modify/delete)
-  // must NOT be followed by an add — that would stage conflict markers — so
-  // the path is left unmerged and the rebase fails safely.
+  // must NOT be followed by an add — that would stage conflict markers —
+  // so the path is left unmerged and the rebase fails safely.
   for (const path of conflicts) {
     if (path !== indexPath) {
       if (runGit(root, "checkout", "--theirs", "--", path).exitCode !== 0) continue;
     }
     runGit(root, "add", "-f", "--", path);
   }
+
+  // Retired artifacts: drop them from the index and keep the file on disk
+  // (untracked + ignored). The replayed commit must not contain them — the
+  // repo retired them, so re-tracking them would undo that on purpose.
+  const retiredResolved: string[] = [];
+  for (const path of retired) {
+    const removed = runGit(root, "rm", "--cached", "--", path);
+    if (removed.exitCode !== 0) {
+      // Left unmerged on purpose: the rebase stops and the human settles it.
+      log("warn", `could not retire ${path}: ${removed.stderr.trim()}`);
+      continue;
+    }
+    retiredResolved.push(path);
+  }
   raw(`Resolved ${conflicts.length} generated plan conflict(s).`);
-  return conflicts;
+  if (retiredResolved.length > 0) {
+    log(
+      "info",
+      `Retired ${retiredResolved.length} repo-ignored artifact(s): ${retiredResolved.join(", ")}`,
+    );
+  }
+  return [...conflicts, ...retiredResolved];
 }
 
 /**
@@ -132,10 +167,15 @@ export function completeGeneratedReconcile(
   signFlags: string[] = [],
 ): void {
   regenerate(root, planDir, ticketsPath);
-  for (const path of generatedPaths(root, planDir, ticketsPath)) {
+  const paths = generatedPaths(root, planDir, ticketsPath);
+  // A repo-ignored artifact stays untracked: `git add -f` re-adds ignored
+  // files, which would undo the repo's retirement of them.
+  const ignored = repoIgnoredPaths(root, paths);
+  for (const path of paths) {
     // Artifacts are only regenerated when their sources exist (e.g. no
     // epics dir → no epics-index.md); adding a missing pathspec is fatal.
     if (!existsSync(fromRoot(root, path))) continue;
+    if (ignored.has(path)) continue;
     const added = runGit(root, "add", "-f", "--", path);
     if (added.exitCode !== 0) {
       throw new Error(`reconcile: git add ${path} failed: ${added.stderr.trim()}`);

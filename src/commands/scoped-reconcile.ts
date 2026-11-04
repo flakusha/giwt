@@ -16,6 +16,7 @@ import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
+import { repoIgnoredPaths } from "../utils/repo-ignore";
 import { mapSourcesFor } from "./plan/code-map";
 
 /** -c overrides for the Step 5c in-place commit — mirrors finalize's
@@ -90,23 +91,23 @@ export function reconcilePlanPostMerge(config: WorktreeConfig, args: string[]): 
  * truth for what stays untracked.
  */
 export function stagePlanDir(root: string, planDir: string): void {
-  // The user's global excludesFile (dot-dir hygiene, e.g. `.*/`) is
-  // neutralized: `git add -f` always bypassed it, so it must not decide
-  // what stays untracked here.
-  const ignored = gitSyncQuiet(
+  // Candidates: every untracked file under the plan dir. Which of them stay
+  // untracked is decided by the repo's own .gitignore — repoIgnoredPaths
+  // neutralizes the user's global excludesFile (dot-dir hygiene, e.g. `.*/`)
+  // because `git add -f` always bypassed it, so it must not decide what
+  // stays untracked here.
+  const candidates = gitSyncQuiet(
     root,
     "-c",
     "core.excludesFile=/dev/null",
     "ls-files",
     "-z",
     "--others",
-    "--ignored",
-    "--exclude-standard",
     "--",
     planDir,
   )
     .split("\0")
     .filter((path) => path.length > 0);
-  const excludes = ignored.map((path) => `:!${path}`);
+  const excludes = [...repoIgnoredPaths(root, candidates)].map((path) => `:!${path}`);
   gitSync(root, "add", "-f", planDir, ...excludes);
 }

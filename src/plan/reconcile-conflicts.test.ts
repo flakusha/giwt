@@ -19,6 +19,7 @@ import {
   mergeIndexRecords,
   rebaseWithPlanReconciliation,
 } from "./reconcile-conflicts";
+import { completeGeneratedReconcile } from "./reconcile-conflicts/generated";
 import { mergeTicketHeader } from "./reconcile-conflicts/ticket-headers";
 
 // ── ticket-header rule merge (FEAT-ticket-header-conflict-resolver) ──
@@ -584,5 +585,128 @@ test("no pinned flags keeps the amend unsigned and un-probed", () => {
     expect(existsSync(marker)).toBe(false);
   } finally {
     fixtureValue.cleanup();
+  }
+});
+
+// ── retired artifacts: a path the repo itself ignores ──
+
+/**
+ * Fixture with a conflict on `artifact`:
+ *  - "retire": the repo retires the artifact (`git rm --cached` + a
+ *    .gitignore rule) while the branch — created before the retirement —
+ *    still modifies it → modify/delete conflict on a repo-ignored path.
+ *  - "keep": both sides modify the tracked artifact → a plain conflict on a
+ *    path the repo does not ignore.
+ *
+ * Resource contract: each fixture owns its own mkdtemp checkout under the
+ * scratch root and removes it in cleanup, so tests stay parallel-safe.
+ */
+function artifactConflictFixture(artifact: string, mode: "retire" | "keep"): Fixture {
+  const root = mkdtempSync(join(scratchRoot(), "giwt-plan-artifact-"));
+  const cleanup = (): void => rmSync(root, { recursive: true, force: true });
+  try {
+    git(root, "init", "-q", "-b", "main");
+    git(root, "config", "user.email", "giwt-test@example.com");
+    git(root, "config", "user.name", "giwt test");
+    git(root, "config", "commit.gpgsign", "false");
+    mkdirSync(join(root, ".plan"), { recursive: true });
+    writeFileSync(join(root, artifact), "alpha\n");
+    writeFileSync(join(root, "README.md"), "fixture\n");
+    git(root, "add", "-f", artifact, "README.md");
+    git(root, "commit", "-qm", "base");
+    git(root, "checkout", "-qb", "feature");
+    writeFileSync(join(root, artifact), "bravo\n");
+    git(root, "add", "-f", artifact);
+    git(root, "commit", "-qm", "feature artifact");
+    git(root, "checkout", "-q", "main");
+    if (mode === "retire") {
+      git(root, "rm", "-q", "--cached", artifact);
+      writeFileSync(join(root, ".gitignore"), `${artifact}\n`);
+      git(root, "add", ".gitignore");
+      git(root, "commit", "-qm", "retire artifact");
+    } else {
+      writeFileSync(join(root, artifact), "charlie\n");
+      git(root, "add", "-f", artifact);
+      git(root, "commit", "-qm", "main artifact");
+    }
+    git(root, "checkout", "-q", "feature");
+    return { root, branch: "feature", cleanup };
+  } catch (error) {
+    cleanup();
+    throw error;
+  }
+}
+
+test("resolves a repo-ignored artifact conflict as retired, not re-tracked", () => {
+  const fixtureValue = artifactConflictFixture(".plan/code-map.json", "retire");
+  const { root } = fixtureValue;
+  try {
+    const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+    expect(result.exitCode).toBe(0);
+    expect(result.generatedConflicts).toContain(".plan/code-map.json");
+    // The artifact is not tracked any more ...
+    expect(git(root, "ls-files")).not.toContain(".plan/code-map.json");
+    // ... but the file is still on disk, untracked and ignored.
+    expect(existsSync(join(root, ".plan/code-map.json"))).toBe(true);
+    expect(git(root, "check-ignore", "-q", "--", ".plan/code-map.json")).toBe("");
+    // The rebase completed: nothing left unmerged, no leftover state.
+    expect(git(root, "diff", "--name-only", "--diff-filter=U")).toBe("");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("a repo-ignored path outside the known artifact set does not block the rebase", () => {
+  const fixtureValue = artifactConflictFixture(".plan/interconnect.json", "retire");
+  const { root } = fixtureValue;
+  try {
+    const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+    expect(result.exitCode).toBe(0);
+    expect(result.generatedConflicts).toContain(".plan/interconnect.json");
+    expect(git(root, "ls-files")).not.toContain(".plan/interconnect.json");
+    expect(existsSync(join(root, ".plan/interconnect.json"))).toBe(true);
+    expect(git(root, "diff", "--name-only", "--diff-filter=U")).toBe("");
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("an unknown plan artifact the repo does not ignore still stops the rebase", () => {
+  const fixtureValue = artifactConflictFixture(".plan/interconnect.json", "keep");
+  const { root } = fixtureValue;
+  try {
+    const result = rebaseWithPlanReconciliation(root, "main", ".plan", ".plan/tickets");
+    expect(result.exitCode).not.toBe(0);
+    expect(git(root, "diff", "--name-only", "--diff-filter=U")).toContain(
+      ".plan/interconnect.json",
+    );
+  } finally {
+    fixtureValue.cleanup();
+  }
+});
+
+test("completeGeneratedReconcile leaves a repo-ignored artifact untracked", () => {
+  const root = mkdtempSync(join(scratchRoot(), "giwt-plan-retired-amend-"));
+  const cleanup = (): void => rmSync(root, { recursive: true, force: true });
+  try {
+    git(root, "init", "-q", "-b", "main");
+    git(root, "config", "user.email", "giwt-test@example.com");
+    git(root, "config", "user.name", "giwt test");
+    git(root, "config", "commit.gpgsign", "false");
+    mkdirSync(join(root, ".plan"), { recursive: true });
+    writeFileSync(join(root, ".plan/code-map.json"), "alpha\n");
+    writeFileSync(join(root, ".gitignore"), ".plan/code-map.json\n");
+    writeFileSync(join(root, "README.md"), "fixture\n");
+    git(root, "add", ".gitignore", "README.md");
+    git(root, "commit", "-qm", "base");
+    completeGeneratedReconcile(root, ".plan", ".plan/tickets");
+    // The regenerated artifact stays untracked — `git add -f` would re-track
+    // what the repo retired.
+    expect(git(root, "ls-files")).not.toContain(".plan/code-map.json");
+    expect(existsSync(join(root, ".plan/code-map.json"))).toBe(true);
+    expect(git(root, "status", "--porcelain")).toBe("");
+  } finally {
+    cleanup();
   }
 });

@@ -56,6 +56,30 @@ export function unmergedPaths(root: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Unmerged paths mapped to the index stages git recorded for each.
+ *
+ * Stage 2 is "ours" — during a rebase that is the upstream side. A path
+ * without stage 2 was deleted upstream (modify/delete conflict); a path with
+ * stage 2 still exists upstream.
+ */
+export function unmergedStages(root: string): Map<string, number[]> {
+  const stages = new Map<string, number[]>();
+  // -z: NUL-separated records with raw paths (no pathname quoting), so the
+  // path can be handed to git as-is.
+  for (const record of runGit(root, "ls-files", "-u", "-z").stdout.split("\0")) {
+    const tab = record.indexOf("\t");
+    if (tab < 0) continue;
+    const stage = Number(record.slice(0, tab).split(/\s+/)[2]);
+    const path = record.slice(tab + 1);
+    if (!Number.isInteger(stage)) continue;
+    const recorded = stages.get(path);
+    if (recorded) recorded.push(stage);
+    else stages.set(path, [stage]);
+  }
+  return stages;
+}
+
 export function atomicWrite(path: string, content: string): void {
   const temporary = `${path}.tmp-${process.pid}`;
   writeFileSync(temporary, content);
