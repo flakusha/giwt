@@ -1297,6 +1297,22 @@
     "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md",
     "status": "done"
   },
+  "FEAT-FEAT-INTERCOM-DURABLE-COORDINATION-STORE": {
+    "hash": "pending",
+    "extid": "FEAT-FEAT-INTERCOM-DURABLE-COORDINATION-STORE",
+    "type": "FEAT",
+    "title": "intercom durable coordination store",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "feat",
+      "intercom"
+    ],
+    "source": ".plan/tickets/FEAT-feat-intercom-durable-coordination-store.md",
+    "status": "done"
+  },
   "FEAT-FEAT-JJ-JUJUTSU-VCS-SUPPORT": {
     "hash": "62e0fef",
     "git_issue": "62e0fef",
