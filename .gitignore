@@ -121,6 +121,13 @@ tree/
 .worktree-finalize.lock*
 !.plan
 .plan/tickets/.index-sync.lock
+# Generated plan artifacts — rebuildable from the .plan/ sources, never commit;
+# regenerate with `bun run plan:artifacts` (postinstall runs it on fresh clones).
+.plan/code-map.json
+.plan/epics-index.md
+.plan/feature-matrix.md
+.plan/interconnect.json
+.plan/interconnect.md
 
 # hooks ship with the repo (override the global .*/ ignore)
 !.githooks/

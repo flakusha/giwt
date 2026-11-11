@@ -44,6 +44,32 @@ else
 fi
 echo ""
 
+# ── Step 0.5: regenerate .plan/ artifacts (best-effort, warn-only) ──
+# The five generated artifacts (feature-matrix.md, code-map.json, the
+# interconnect pair, epics-index.md) are untracked — rebuildable via
+# `bun run plan:artifacts` (~0.25s measured 2026-11-11); commits touching
+# .plan/ or src/ can stale them, so refresh before the gate. Regen only
+# writes files and never stages (the artifacts are gitignored; hooks
+# never `git add`). Failure warns and does not block the commit.
+# Stripped env lives in gate-env.sh so the GIT_* half and the agent-harness
+# (OMP_/PI_/ENGRAM_/MNEMO_*) half are defined in exactly one place and cannot
+# drift apart. Sourced, not executed — it only defines GATE_ENV. Sourced here
+# because this step is the first GATE_ENV consumer.
+# shellcheck source=.githooks/gate-env.sh
+. "$HOOK_DIR/gate-env.sh" || exit 1
+echo "--- Step 0.5: plan artifact regen (bun run plan:artifacts) ---"
+STAGED_PLAN=$(git diff --cached --name-only | grep -E '^(\.plan/|src/)' || true)
+if [ -n "$STAGED_PLAN" ]; then
+  if $GATE_ENV bun run plan:artifacts; then
+    green "PASS: plan artifacts regenerated"
+  else
+    yellow "WARN: plan:artifacts failed — artifacts may be stale (non-blocking)"
+  fi
+else
+  yellow "  no staged .plan/ or src/ changes — skipping regen"
+fi
+echo ""
+
 # ── Get staged files (decides IF the gate runs, not WHAT it checks) ──
 STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.tsx?$' || true)
 STAGED_CFG=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(json|toml|md)$' || true)
@@ -60,11 +86,8 @@ echo "Staged files:"
 echo ""
 
 # ── Step 1: Project gate — strict typecheck + full test suite ──
-# Stripped set lives in gate-env.sh so the GIT_* half and the agent-harness
-# (OMP_/PI_/ENGRAM_/MNEMO_*) half are defined in exactly one place and cannot
-# drift apart. Sourced, not executed — it only defines GATE_ENV.
-# shellcheck source=.githooks/gate-env.sh
-. "$HOOK_DIR/gate-env.sh" || exit 1
+# GATE_ENV (stripped env, sourced in Step 0.5) keeps hook-scoped GIT_* and
+# agent-harness vars out of the check subprocesses.
 echo "--- Step 1: bun run check (fmt + lint + knip + jscpd + tsc + tests) ---"
 if $GATE_ENV bun run check; then
   green "PASS: gate (fmt + lint + deadcode + duplication + typecheck + tests)"
