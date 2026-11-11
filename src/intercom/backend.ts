@@ -8,14 +8,10 @@
  */
 
 import { backendJsonl } from "./backend-jsonl";
+import { backendPijul } from "./backend-pijul";
 import { type IntercomBackendImpl } from "./types";
 
 /** Select the event-stream engine by name (jsonl default). */
 export function backendFor(backend: "jsonl" | "pijul"): IntercomBackendImpl {
-  if (backend === "pijul") {
-    // Wired in the dogfood-backend phase; phase 1 ships the jsonl engine
-    // only, and never silently substitutes it for a configured pijul store.
-    throw new Error("[intercom] backend pijul is not wired in this build — set backend = 'jsonl'");
-  }
-  return backendJsonl;
+  return backend === "pijul" ? backendPijul() : backendJsonl;
 }

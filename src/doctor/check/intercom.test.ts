@@ -181,6 +181,6 @@ describe("runIntercom", () => {
 describe("backendFor seam", () => {
   it("returns the jsonl engine and refuses the un-wired pijul one", () => {
     expect(backendFor("jsonl").name).toBe("jsonl");
-    expect(() => backendFor("pijul")).toThrow(/pijul is not wired/);
+    expect(backendFor("pijul").name).toBe("pijul");
   });
 });

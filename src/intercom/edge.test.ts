@@ -62,7 +62,7 @@ describe("planGc edge branches", () => {
     chmodSync(lane, 0o000);
     try {
       const plan = planGc(store, join(root, "state"), RETENTION, NOW);
-      expect(plan.stamped.some((s) => s.lane === "old")).toBe(false);
+      expect(plan.stamped.some((s) => s.name === "LANE-old.md")).toBe(false);
     } finally {
       chmodSync(lane, 0o600);
     }
