@@ -250,4 +250,23 @@ describe("plan status --tickets", () => {
     expect(cap.out).toContain("Plan Status");
     expect(cap.out).toContain("Tickets");
   });
+
+  it("plan status overview surfaces the artifact-init hint on a fresh (artifact-less) plan dir", async () => {
+    const root = makeRoot();
+    const cap = await run([], root);
+    expect(cap.exits).toEqual([]);
+    expect(cap.out).toContain("plan artifacts not initialized");
+    expect(cap.out).toContain("bun run plan:artifacts");
+    expect(cap.out).toContain("Plan Status");
+  });
+
+  it("plan status overview keeps stdout pure under machine-record constraints", async () => {
+    // --tickets --json on an artifact-less dir: no hint line on stdout
+    // (the payload stays exactly the record JSON).
+    const root = makeRoot();
+    const cap = await run(["--tickets", "--json"], root);
+    expect(cap.exits).toEqual([]);
+    expect(cap.out).toBe("[]\n");
+    expect(cap.out).not.toContain("plan artifacts not initialized");
+  });
 });

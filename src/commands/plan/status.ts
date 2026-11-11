@@ -3,6 +3,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { warnMissingPlanArtifacts } from "../../plan/artifact-init";
 import { BACKLOG_INDEX_FILES, reconcile } from "../../plan/backlog-sync";
 import { readMap } from "../../plan/code-map";
 import { resolveStatus } from "../../plan/status-vocab";
@@ -136,6 +137,10 @@ export async function runStatus(
     runStatusTickets(format, ticketsDir, config);
     return;
   }
+
+  // Non-gating hint on the plan overview (human output only — machine
+  // formats keep stdout pure; --tickets is a focused view, no hint there).
+  if (format === "human") warnMissingPlanArtifacts(planDir);
 
   const epicsDir = join(planDir, "epics");
   const backlogDir = join(planDir, "backlog");

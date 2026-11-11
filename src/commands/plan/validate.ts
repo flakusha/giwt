@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { join } from "node:path";
+import { warnMissingPlanArtifacts } from "../../plan/artifact-init";
 import { BACKLOG_INDEX_FILES } from "../../plan/backlog-sync";
 import {
   ALL_GATES,
@@ -91,6 +92,10 @@ export async function runValidateCmd(
   }
 
   const planDir = resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir);
+  // Non-gating freshness hint: the gates already error on missing artifacts —
+  // this surfaces the remedy before the wall of gate errors. Machine
+  // (--json) output stays pure.
+  if (!json) warnMissingPlanArtifacts(planDir);
   const result = runValidate({
     projectRoot: config.worktreeRoot,
     worktreeRoot: config.worktreeRoot,

@@ -9,6 +9,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { warnMissingPlanArtifacts } from "../plan/artifact-init";
 import { buildMap, writeMap } from "../plan/code-map";
 import { genMatrix } from "../plan/feature-matrix";
 import { resolveFromRoot } from "../plan/validate";
@@ -79,6 +80,10 @@ export async function sync(
       return true;
     }) as never;
   }
+  // Non-gating hint before the sync runs; deliberately inside the
+  // machine-format stdout rerouting window so --json/--toml payloads stay
+  // pure (the info line follows the report to stderr).
+  warnMissingPlanArtifacts(resolveFromRoot(config.worktreeRoot, config.settings.paths.planDir));
   let exitCode: number;
   try {
     exitCode = runSync(config.worktreeRoot, {
