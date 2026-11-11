@@ -17,6 +17,9 @@ export type AuditLinearity = "auto" | "require-linear" | "allow-merges";
 /** Policy for giwt's own lifecycle git-config writes ([git] config_writes). */
 export type ConfigWritesMode = "allow" | "refuse";
 
+/** Event-stream storage engine for `giwt intercom` ([intercom] backend). */
+export type IntercomBackend = "jsonl" | "pijul";
+
 export interface GiwtSettings {
   branches: { protected: string[]; root: string; };
   paths: { tree: string; tickets: string; planDir: string; runlog: string; checkReport: string; };
@@ -67,6 +70,12 @@ export interface GiwtSettings {
   };
   status: { aliases: Record<string, string>; };
   plan: { interconnect: boolean; };
+  intercom: {
+    backend: IntercomBackend;
+    fixedArchiveDays: number;
+    laneStaleDays: number;
+    eventKeep: number;
+  };
   git: {
     rtk: string;
     safe: string[];
@@ -118,5 +127,6 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   },
   status: { aliases: {} },
   plan: { interconnect: true },
+  intercom: { backend: "jsonl", fixedArchiveDays: 14, laneStaleDays: 30, eventKeep: 1000 },
   git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin", configWrites: "allow" },
 };

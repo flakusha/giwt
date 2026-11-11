@@ -114,6 +114,11 @@ export async function runDoctorCheck(args: string[], config: WorktreeConfig): Pr
         },
         rootDir: config.settings.scratch.root,
       },
+      intercom: {
+        backend: config.settings.intercom.backend,
+        laneStaleDays: config.settings.intercom.laneStaleDays,
+        worktreeRoot: config.worktreeRoot,
+      },
     },
     config.settings.commands.test,
   );

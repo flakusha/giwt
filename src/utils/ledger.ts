@@ -36,10 +36,14 @@ export {
 } from "./ledger-write";
 export type { LedgerOutcome } from "./ledger-write";
 
-/** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record). */
+/** Commands that skip the generic auto-append (readers; `gripe` composes its own richer record).
+ *  `intercom` is silent at the family level: mutating subcommands (init/claim/done/gc)
+ *  manage run records + ledger lines themselves so claim/done stay ledger-visible while
+ *  init/ls/read/gc record nothing (see src/commands/intercom.ts). */
 export const LEDGER_SILENT_COMMANDS: Record<string, true> = {
   gripe: true,
   help: true,
+  intercom: true,
   ledger: true,
   plan: true,
   runs: true,

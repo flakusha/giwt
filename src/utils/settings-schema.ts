@@ -52,6 +52,12 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
   },
   status: { aliases: "aliases" },
   plan: { interconnect: "interconnect" },
+  intercom: {
+    backend: "backend",
+    fixed_archive_days: "fixedArchiveDays",
+    lane_stale_days: "laneStaleDays",
+    event_keep: "eventKeep",
+  },
   git: {
     rtk: "rtk",
     safe: "safe",
@@ -108,6 +114,12 @@ export const EXPECTED: Record<
   },
   status: { aliases: "map" },
   plan: { interconnect: "boolean" },
+  intercom: {
+    backend: "string",
+    fixedArchiveDays: "number",
+    laneStaleDays: "number",
+    eventKeep: "number",
+  },
   git: {
     rtk: "string",
     safe: "string[]",
@@ -122,6 +134,7 @@ export type TomlValue = string | number | boolean | TomlValue[] | { [k: string]:
 
 const LINEARITY_MODES = ["auto", "require-linear", "allow-merges"];
 const CONFIG_WRITES_MODES = ["allow", "refuse"];
+const INTERCOM_BACKENDS = ["jsonl", "pijul"];
 
 /**
  * Closed-set gates for string enum settings — checkType only sees "string",
@@ -138,6 +151,10 @@ export function checkEnumSettings(settings: GiwtSettings): void {
   const configWrites = settings.git.configWrites as string;
   if (!CONFIG_WRITES_MODES.includes(configWrites)) {
     throw new Error(`[git] config_writes: unknown value "${configWrites}" (want allow | refuse)`);
+  }
+  const backend = settings.intercom.backend as string;
+  if (!INTERCOM_BACKENDS.includes(backend)) {
+    throw new Error(`[intercom] backend: unknown value "${backend}" (want jsonl | pijul)`);
   }
 }
 

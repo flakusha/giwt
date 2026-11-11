@@ -38,6 +38,8 @@ export interface RunOutcome {
   tmp?: string | undefined;
   /** One-line backup summary (dump/verify archives, chain verdicts). */
   backup?: string | undefined;
+  /** One-line intercom summary (init/claim/done/gc). */
+  intercom?: string | undefined;
   /** One-line scratchpad summary (bytes freed by finalize's Step 6a prune). */
   scratch?: string | undefined;
 }

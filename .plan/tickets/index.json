@@ -1297,6 +1297,40 @@
     "source": ".plan/tickets/FEAT-export-a-reusable-cold-cache-gpg-warm-helper-so-consumers-st.md",
     "status": "done"
   },
+  "FEAT-FEAT-JJ-JUJUTSU-VCS-SUPPORT": {
+    "hash": "62e0fef",
+    "git_issue": "62e0fef",
+    "extid": "FEAT-FEAT-JJ-JUJUTSU-VCS-SUPPORT",
+    "type": "FEAT",
+    "title": "FEAT: jj (Jujutsu) VCS support",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "feat",
+      "jj"
+    ],
+    "source": ".plan/tickets/FEAT-feat-jj-jujutsu-vcs-support.md",
+    "status": "open"
+  },
+  "FEAT-FEAT-PIJUL-VCS-SUPPORT": {
+    "hash": "f229639",
+    "git_issue": "f229639",
+    "extid": "FEAT-FEAT-PIJUL-VCS-SUPPORT",
+    "type": "FEAT",
+    "title": "FEAT: pijul VCS support",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "feat",
+      "pijul"
+    ],
+    "source": ".plan/tickets/FEAT-feat-pijul-vcs-support.md",
+    "status": "open"
+  },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
     "hash": "8e9078f",
     "git_issue": "8e9078f",

@@ -47,6 +47,12 @@
  *                            # killed and reported as a timeout
  *   [status.aliases]
  *   "<freeform>" = "<canonical enum status>"  # consumed by plan validate status-vocab gate
+ *   [intercom]               # `giwt intercom` — durable cross-agent coordination store
+ *   backend = "jsonl"        # jsonl | pijul — event-stream engine (pijul is an
+ *                            # opt-in dogfood backend; see src/intercom/)
+ *   fixed_archive_days = 14  # FIXED-* reports older than this gc into archive/
+ *   lane_stale_days = 30     # closed LANE-* claims older than this are stamped stale
+ *   event_keep = 1000        # events.jsonl compacted to its last N lines
  *   [plan]
  *   interconnect = true       # run the .plan/interconnect.{json,md} freshness gate
  *                             # by default in `plan validate` (--gates interconnect

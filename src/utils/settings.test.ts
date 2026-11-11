@@ -474,4 +474,15 @@ describe("loadSettings", () => {
       fx.cleanup();
     }
   });
+
+  test("[intercom] backend outside the enum hard-errors naming the value", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[intercom]\nbackend = "sqlite"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/intercom\] backend: unknown value "sqlite"/);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });

@@ -129,7 +129,15 @@ interface WalkNode {
 /** Depth-first walk collecting every non-symlink entry with recursive byte
  *  sums; returns the total bytes under absDir. Unreadable/missing entries
  *  are skipped, never thrown. A reduce-style min here (instead of
- *  Math.min(...spread)) keeps large scratchpads off the call stack. */
+ *  Math.min(...spread)) keeps large scratchpads off the call stack.
+ *
+ *  The intercom store is never walked: `.tmp/intercom` is a symlink (skipped
+ *  below by the lstat guard) or, on symlink-unsupported hosts, a real dir —
+ *  in either case its contents belong to the coordination store, not the
+ *  scratchpad, and must be neither counted nor pruned (clean invariant,
+ *  DESIGN §4). Only the depth-1 dir at the scratch root is protected. */
+const INTERCOM_DIR = "intercom";
+
 function walk(absDir: string, rel: string, out: WalkNode[]): number {
   let names: string[];
   try {
@@ -141,6 +149,7 @@ function walk(absDir: string, rel: string, out: WalkNode[]): number {
   for (const name of names) {
     const abs = join(absDir, name);
     const childRel = rel === "" ? name : rel + sep + name;
+    if (childRel === INTERCOM_DIR) continue;
     let st;
     try {
       st = lstatSync(abs);

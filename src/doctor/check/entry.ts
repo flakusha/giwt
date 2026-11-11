@@ -6,58 +6,20 @@
  * pool that runs the requested checks in order.
  */
 
-import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_RETENTION } from "../../intercom/types.ts";
 import type { RunRecorder } from "../../utils/runlog.ts";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "../../utils/scratch.ts";
-import { detectProject } from "../detect.ts";
-import { hasTestFiles } from "../leaks.ts";
+import { applicableChecks } from "./applicable.ts";
+import { type IntercomCheckOptions, runIntercom } from "./intercom.ts";
 import { runLint, runTests, runTypecheck } from "./run.ts";
 import { runLeaks, runScratchpad, type ScratchpadCheckOptions } from "./scans.ts";
 import { boundedSpawn, CHECK_TIMEOUT_DEFAULT_MS, defaultSpawn, type SpawnFn } from "./spawn.ts";
 import { runTodo } from "./todo.ts";
 import { runJscpd, runKnip } from "./tools.ts";
 import { CHECK_IDS, type CheckId, type CheckResult, type DoctorCheckReport } from "./types.ts";
-import { readPkg } from "./util.ts";
 
-const CODE_LANGUAGES = [
-  "typescript",
-  "javascript",
-  "python",
-  "go",
-  "rust",
-  "shell",
-] as const;
-
-/**
- * Which checks apply to root. Linter/tool presence comes from
- * detectProject (single source of truth shared with scaffolding);
- * tsconfig + test script are direct FS reads.
- */
-export function applicableChecks(root: string): CheckId[] {
-  const report = detectProject(root);
-  const out: CheckId[] = [];
-  if (report.existing.eslint || report.existing.biome || report.existing.oxlint) {
-    out.push("lint");
-  }
-  try {
-    if (existsSync(join(root, "tsconfig.json"))) out.push("typecheck");
-  } catch {
-    /* ignore */
-  }
-  if (typeof readPkg(root)?.scripts?.["test"] === "string") out.push("tests");
-  if (report.existing.knip) out.push("knip");
-  if (report.existing.jscpd) out.push("jscpd");
-  if (report.languages.some((l) => (CODE_LANGUAGES as readonly string[]).includes(l))) {
-    out.push("todo");
-  }
-  // Pure FS scan of src test files — applies once a scan target exists;
-  // repos without test files would only get a vacuous row.
-  if (hasTestFiles(root)) out.push("leaks");
-  // Pure FS — no tool detection can make it inapplicable.
-  out.push("scratchpad");
-  return out;
-}
+export { applicableChecks } from "./applicable.ts";
 
 /** Default max concurrent checks — bounds peak memory on big projects
  *  (tests, tsc, knip, jscpd each spawn their own heavy toolchain). */
@@ -103,6 +65,10 @@ export interface DoctorCheckOptions {
    *  DEFAULT_SCRATCH_CONFIG / DEFAULT_SCRATCHPAD_THRESHOLDS and rootDir
    *  ".tmp". */
   scratch?: ScratchpadCheckOptions;
+  /** Intercom check inputs (settings-derived). When absent the check uses
+   *  the jsonl backend, the default stale threshold, and `root` as the
+   *  checkout whose link is inspected. */
+  intercom?: IntercomCheckOptions;
 }
 
 /**
@@ -197,6 +163,17 @@ export async function runDoctorChecks(
               opts.scratch?.config ?? DEFAULT_SCRATCH_CONFIG,
               opts.scratch?.thresholds ?? DEFAULT_SCRATCHPAD_THRESHOLDS,
             ),
+        });
+        break;
+      case "intercom":
+        tasks.push({
+          at,
+          run: () =>
+            runIntercom(root, {
+              backend: opts.intercom?.backend ?? "jsonl",
+              laneStaleDays: opts.intercom?.laneStaleDays ?? DEFAULT_RETENTION.laneStaleDays,
+              worktreeRoot: opts.intercom?.worktreeRoot ?? root,
+            }),
         });
         break;
     }

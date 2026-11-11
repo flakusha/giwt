@@ -144,7 +144,7 @@ describe("leaks applicability", () => {
     const root = makeRepo();
     try {
       expect(hasTestFiles(root)).toBe(false);
-      expect(applicableChecks(root)).toEqual(["scratchpad"]);
+      expect(applicableChecks(root)).toEqual(["scratchpad", "intercom"]);
     } finally {
       cleanup(root);
     }

@@ -33,6 +33,7 @@ import { gitPassthrough } from "./commands/git";
 import { runGpgUnlock } from "./commands/gpg-unlock";
 import { gripe } from "./commands/gripe";
 import { history } from "./commands/history";
+import { intercom } from "./commands/intercom";
 import { issues } from "./commands/issues";
 import { ledger } from "./commands/ledger";
 import { listWorktrees } from "./commands/list";
@@ -155,6 +156,11 @@ export const commands: Record<string, CommandHandler> = {
   "issues": {
     description: "List issues",
     run: issues,
+  },
+  "intercom": {
+    description:
+      "Durable inter-agent coordination store: init (store + .tmp/intercom link), claim/done lanes, derived WHO-DOES-WHAT board, event tail, retention gc",
+    run: intercom,
   },
   "ledger": {
     description: "Show recent agent ledger records",

@@ -173,6 +173,7 @@ describe("applicableChecks", () => {
         "jscpd",
         "todo",
         "scratchpad",
+        "intercom",
       ]);
     } finally {
       cleanup(root);
@@ -182,8 +183,8 @@ describe("applicableChecks", () => {
   it("returns only scratchpad for an empty dir", () => {
     const root = makeRepo();
     try {
-      // scratchpad is pure FS — applicable to every repo, empty or not.
-      expect(applicableChecks(root)).toEqual(["scratchpad"]);
+      // scratchpad + intercom are pure FS — applicable to every repo, empty or not.
+      expect(applicableChecks(root)).toEqual(["scratchpad", "intercom"]);
     } finally {
       cleanup(root);
     }
@@ -700,6 +701,28 @@ describe("scratchpad check", () => {
       expect(res.ok).toBe(true);
       expect(res.skipped).toContain("no scratchpad dir at");
       expect(res.findings).toEqual([]);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("empty scratch dir reports no oldest artifact", () => {
+    const root = makeRepo();
+    try {
+      mkdirSync(join(root, ".tmp"), { recursive: true });
+      const res = runScratchpad(join(root, ".tmp"), DEFAULT_SCRATCH_CONFIG, TINY);
+      expect(res.ok).toBe(true);
+      expect(res.notes?.some((n) => n.includes("oldest artifact: none"))).toBe(true);
+    } finally {
+      cleanup(root);
+    }
+  });
+
+  it("lint check on a repo with no linter config reports not applicable", async () => {
+    const root = makeRepo();
+    try {
+      const report = await runDoctorChecks(root, { checks: ["lint"], jobs: 1 });
+      expect(report.checks[0]?.skipped).toContain("not applicable");
     } finally {
       cleanup(root);
     }
