@@ -8,7 +8,7 @@
  * (sync-fixes.ts).
  */
 
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
@@ -183,8 +183,16 @@ export function closeStaleOpenIssues(
 ): void {
   for (const m of report.staleOpenGitIssues) {
     try {
-      execSync(
-        `git issue state ${m.gitIssueHash} --close -m 'Auto-closed: ticket ${m.extid} marked done in index.json'`,
+      execFileSync(
+        "git",
+        [
+          "issue",
+          "state",
+          m.gitIssueHash,
+          "--close",
+          "-m",
+          `Auto-closed: ticket ${m.extid} marked done in index.json`,
+        ],
         { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv() },
       );
       report.fixesApplied.push(`${m.extid}: closed git issue ${m.gitIssueHash}`);

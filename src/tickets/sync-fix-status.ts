@@ -8,7 +8,7 @@
  * `applyFixes` (sync-fixes.ts).
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { isolatedGitEnv } from "../utils/git";
 import { appendRegistryDoneProvenance } from "./sync-md";
@@ -71,7 +71,7 @@ export function fixStatusMismatches(
       if (tf) {
         try {
           const text = readFileSync(tf.path, "utf8").replace(
-            /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
+            /^(\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
             `$1${vocabStatusTarget(mismatch.gitStatus)}`,
           );
           writeFileSync(tf.path, text);
@@ -109,8 +109,16 @@ export function fixIndexStatusStale(
     );
     if (cur.git_issue && gitIssues.get(cur.git_issue)?.status === "open") {
       try {
-        execSync(
-          `git issue state ${cur.git_issue} --close -m 'Auto-closed: appended .md marker marks ${m.extid} done'`,
+        execFileSync(
+          "git",
+          [
+            "issue",
+            "state",
+            cur.git_issue,
+            "--close",
+            "-m",
+            `Auto-closed: appended .md marker marks ${m.extid} done`,
+          ],
           { timeout: 10_000, cwd: repoRoot, env: isolatedGitEnv() },
         );
         report.fixesApplied.push(`${m.extid}: closed git issue ${cur.git_issue}`);
@@ -142,7 +150,7 @@ export function fixMdStatusStale(
       let text = readFileSync(tf.path, "utf8");
       const target = vocabStatusTarget(ms.indexStatus);
       text = text.replace(
-        /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
+        /^(\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
         `$1${target}`,
       );
       writeFileSync(tf.path, text);
