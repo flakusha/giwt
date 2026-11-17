@@ -22,7 +22,7 @@ import { join } from "node:path";
 
 import type { WorktreeConfig } from "../utils/config";
 import { DEFAULT_SETTINGS } from "../utils/settings";
-import { show } from "./show";
+import { parseIssueShow, show } from "./show";
 
 const tempRoots: string[] = [];
 
@@ -129,7 +129,7 @@ describe("show", () => {
 
     const cap = await run([fx.extid, "--json"], config);
     const rec = JSON.parse(cap.out) as Record<string, unknown>;
-    expect(rec).toEqual({
+    expect(rec).toMatchObject({
       extid: "TASK-json",
       hash: fx.hash,
       state: "open",
@@ -137,6 +137,8 @@ describe("show", () => {
       priority: "high",
       body: "json body",
     });
+    expect(typeof rec.author).toBe("string");
+    expect(typeof rec.created).toBe("string");
   });
 
   it("--toml round-trips through Bun.TOML.parse", async () => {
@@ -180,6 +182,17 @@ describe("show", () => {
     expect(cap.err).toContain("usage: show");
   });
 
+  it("warns once and keeps the chosen format when multiple output flags are given", async () => {
+    const config = makeConfig();
+    const fx = createExtidIssue(config.repoRoot, "TASK-flags", "flags title", "b");
+
+    const cap = await run([fx.extid, "--json", "--toml"], config);
+    expect(cap.exits).toEqual([]);
+    expect((cap.err.match(/multiple output flags given/g) ?? []).length).toBe(1);
+    expect(cap.err).toContain("--json");
+    expect((JSON.parse(cap.out) as { extid: string; }).extid).toBe(fx.extid);
+  });
+
   // TASK-show-state-resolve-plan-tickets-filename-slugs: the resolver must
   // accept every ID form an agent sees on disk — uppercase extid, lowercase
   // filename slug, slug.md, and hex hash.
@@ -204,6 +217,88 @@ describe("show", () => {
       const cap = await run(["BUG-suffix-check.md", "--json"], config);
       const rec = JSON.parse(cap.out) as { extid: string; };
       expect(rec.extid).toBe("BUG-suffix-check");
+    });
+
+    it("prefers an exact extid over a prefix-colliding substring match", async () => {
+      const config = makeConfig();
+      const alpha = createExtidIssue(config.repoRoot, "TASK-alpha", "alpha title", "b");
+      // git-issue sorts by creation second; make the longer prefix sort first
+      // so the old first-substring-match bug would capture both lookups.
+      Bun.sleepSync(1100);
+      const alphabet = createExtidIssue(config.repoRoot, "TASK-alphabet", "alphabet title", "b");
+
+      for (
+        const [input, expected] of [[alphabet.extid, alphabet.hash], [
+          alpha.extid,
+          alpha.hash,
+        ]] as const
+      ) {
+        const cap = await run([input, "--json"], config);
+        expect(cap.exits).toEqual([]);
+        expect((JSON.parse(cap.out) as { hash: string; }).hash).toBe(expected);
+      }
+    });
+  });
+});
+
+describe("parseIssueShow", () => {
+  it("parses hyphenated and spaced states but rejects invalid hashes", () => {
+    const withState = (state: string) =>
+      [
+        `Issue 0123456 [${state}]`,
+        "============================================================",
+        "Title:   TASK-dup: duplicate issue",
+        "",
+        "body",
+      ].join("\n");
+    expect(parseIssueShow(withState("duplicate-of-TASK-zzz"))?.state).toBe("duplicate-of-TASK-zzz");
+    expect(parseIssueShow(withState("Not Started"))?.state).toBe("Not Started");
+    expect(parseIssueShow("Issue nothex [open]\n====\nTitle: x\n")).toBeNull();
+  });
+
+  it("keeps thematic breaks in the body and cuts only at Updates", () => {
+    const output = [
+      "Issue 0123456 [open]",
+      "============================================================",
+      "Title:   TASK-break: body with a break",
+      "",
+      "first paragraph",
+      "----------",
+      "second paragraph",
+      "",
+      "------------------------------------------------------------",
+      "Updates (1):",
+      "  someone: state changed",
+    ].join("\n");
+    expect(parseIssueShow(output)?.body).toBe("first paragraph\n----------\nsecond paragraph");
+  });
+
+  it("parses every optional header field", () => {
+    const output = [
+      "Issue 0123456 [open]",
+      "============================================================",
+      "Title:   TASK-fields: all the fields",
+      "Author:  tester <tester@localhost>",
+      "Created: 2026-01-02 03:04:05 +0000",
+      "Labels:  bug, docs",
+      "Assignee: alice",
+      "Priority: high",
+      "Milestone: v1",
+      "",
+      "body",
+    ].join("\n");
+    expect(parseIssueShow(output)).toEqual({
+      extid: "TASK-fields",
+      hash: "0123456",
+      state: "open",
+      title: "TASK-fields: all the fields",
+      labels: ["bug", "docs"],
+      priority: "high",
+      author: "tester <tester@localhost>",
+      created: "2026-01-02 03:04:05 +0000",
+      assignee: "alice",
+      milestone: "v1",
+      body: "body",
     });
   });
 });

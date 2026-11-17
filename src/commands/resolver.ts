@@ -63,18 +63,24 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
   }
 
   const lines = gitSync(repoRoot, "issue", "ls", "--all").split("\n");
+  const needle = stripped.toLowerCase();
+  let fallback: ResolvedIssue | null = null;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
     const match = trimmed.match(/([0-9a-f]{7,40})\s+/);
     const hash = match?.[1];
-    if (hash && trimmed.toLowerCase().includes(stripped.toLowerCase())) {
-      return { hash, raw: trimmed };
-    }
+    if (!hash) continue;
+    const resolved = { hash, raw: trimmed };
+    // Exact extid wins over substring: a TASK-alpha line sorted ahead of
+    // TASK-alphabet must not capture the latter's lookups.
+    const title = trimmed.slice(match[0].length).replace(/^\[[^\]]*\]\s*/, "");
+    if (extractExtid(title)?.toLowerCase() === needle) return resolved;
+    fallback ??= trimmed.toLowerCase().includes(needle) ? resolved : null;
   }
 
-  return null;
+  return fallback;
 }
 
 /**

@@ -21,6 +21,10 @@ export interface ShowRecord {
   title: string;
   labels?: string[];
   priority?: string;
+  author?: string;
+  created?: string;
+  assignee?: string;
+  milestone?: string;
   body?: string;
 }
 
@@ -44,7 +48,7 @@ export interface ShowRecord {
  */
 export function parseIssueShow(output: string): ShowRecord | null {
   const lines = output.split("\n");
-  const head = lines[0]?.match(/^Issue\s+([0-9a-f]{7,40})\s+\[(\w+)\]\s*$/);
+  const head = lines[0]?.match(/^Issue\s+([0-9a-f]{7,40})\s+\[([^\]]+)\]\s*$/);
   if (!head) return null;
   const hash = head[1]!;
   const state = head[2]!;
@@ -52,6 +56,10 @@ export function parseIssueShow(output: string): ShowRecord | null {
   let title = "";
   let labels: string[] | undefined;
   let priority: string | undefined;
+  let author: string | undefined;
+  let created: string | undefined;
+  let assignee: string | undefined;
+  let milestone: string | undefined;
   let i = 1;
   for (; i < lines.length; i++) {
     const line = lines[i]!;
@@ -63,16 +71,21 @@ export function parseIssueShow(output: string): ShowRecord | null {
     if (key === "Title") title = value;
     else if (key === "Labels") labels = value.split(",").map((s) => s.trim()).filter(Boolean);
     else if (key === "Priority") priority = value;
+    else if (key === "Author") author = value;
+    else if (key === "Created") created = value;
+    else if (key === "Assignee") assignee = value;
+    else if (key === "Milestone") milestone = value;
   }
 
   if (title === "") return null;
 
-  // Body: skip the blank line after the header, stop at the Updates
-  // separator (a line of dashes), trim trailing blank lines.
+  // Body: skip the blank line after the header, stop at the real Updates
+  // separator (dashes immediately followed by `Updates (N):`) so thematic
+  // breaks inside the body survive; trim trailing blank lines.
   const bodyLines: string[] = [];
   for (i = i + 1; i < lines.length; i++) {
     const line = lines[i]!;
-    if (/^-{10,}$/.test(line.trim())) break;
+    if (/^-{10,}$/.test(line.trim()) && /^Updates \(\d+\):/.test(lines[i + 1]?.trim() ?? "")) break;
     bodyLines.push(line);
   }
   while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1]!.trim() === "") bodyLines.pop();
@@ -85,6 +98,10 @@ export function parseIssueShow(output: string): ShowRecord | null {
     title,
     ...(labels !== undefined ? { labels } : {}),
     ...(priority !== undefined ? { priority } : {}),
+    ...(author !== undefined ? { author } : {}),
+    ...(created !== undefined ? { created } : {}),
+    ...(assignee !== undefined ? { assignee } : {}),
+    ...(milestone !== undefined ? { milestone } : {}),
     ...(body !== "" ? { body } : {}),
   };
 }
@@ -100,6 +117,9 @@ function emojiLine(record: unknown): string {
 
 export async function show(args: string[], config: WorktreeConfig): Promise<void> {
   const { format, rest } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
   const id = rest[0];
   if (!id) {
     log("error", "issue ID required");
