@@ -607,6 +607,23 @@
     "source": ".plan/tickets/BUG-issues-all-still-hides-closed-issues-and-has-no-machine-form.md",
     "status": "open"
   },
+  "BUG-ISSUES-COUNTS-CONTINUATION-LINES-AND-RESOLVER-MATCHES-TITLE-": {
+    "hash": "adbdc42",
+    "git_issue": "adbdc42",
+    "extid": "BUG-ISSUES-COUNTS-CONTINUATION-LINES-AND-RESOLVER-MATCHES-TITLE-",
+    "type": "BUG",
+    "title": "issues counts continuation lines and resolver matches title prose",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "issues",
+      "resolver"
+    ],
+    "source": ".plan/tickets/BUG-issues-counts-continuation-lines-and-resolver-matches-title-.md",
+    "status": "open"
+  },
   "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS": {
     "hash": "afe3bf9",
     "extid": "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS",
@@ -1021,6 +1038,23 @@
     "status": "done",
     "git_issue": "a250526"
   },
+  "BUG-SYNC-DISCARDS-CORRUPT-INDEX-AND-NARROW-EXTID-PARSING": {
+    "hash": "60e057a",
+    "git_issue": "60e057a",
+    "extid": "BUG-SYNC-DISCARDS-CORRUPT-INDEX-AND-NARROW-EXTID-PARSING",
+    "type": "BUG",
+    "title": "sync discards corrupt index and narrow extid parsing",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "sync",
+      "registry"
+    ],
+    "source": ".plan/tickets/BUG-sync-discards-corrupt-index-and-narrow-extid-parsing.md",
+    "status": "open"
+  },
   "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
     "hash": "adccccd",
     "git_issue": "adccccd",
@@ -1099,6 +1133,23 @@
     "source": ".plan/tickets/BUG-sync-index-shadows-imported-raw-oxlint-no-shadow.md",
     "status": "done"
   },
+  "BUG-SYNC-REWRITES-UNBOUNDED-STATUS-LINES-AND-APPENDISSUEREF-DROP": {
+    "hash": "dfb9642",
+    "git_issue": "dfb9642",
+    "extid": "BUG-SYNC-REWRITES-UNBOUNDED-STATUS-LINES-AND-APPENDISSUEREF-DROP",
+    "type": "BUG",
+    "title": "sync rewrites unbounded status lines and appendIssueRef drops separator",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "sync",
+      "md"
+    ],
+    "source": ".plan/tickets/BUG-sync-rewrites-unbounded-status-lines-and-appendissueref-drop.md",
+    "status": "open"
+  },
   "BUG-TAG": {
     "hash": "218c5c5",
     "extid": "BUG-TAG",
@@ -1125,6 +1176,23 @@
     "tags": [],
     "source": ".plan/tickets/BUG-tag-parser-keeps-bracket-quote-backtick-adornments-producing.md",
     "status": "done"
+  },
+  "BUG-TICKET-CLOSE-HALF-CLOSES-AND-LOOKUP-PREFERS-COMMIT-HASH": {
+    "hash": "3b37b4a",
+    "git_issue": "3b37b4a",
+    "extid": "BUG-TICKET-CLOSE-HALF-CLOSES-AND-LOOKUP-PREFERS-COMMIT-HASH",
+    "type": "BUG",
+    "title": "ticket close half-closes and lookup prefers commit hash",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "ticket",
+      "close"
+    ],
+    "source": ".plan/tickets/BUG-ticket-close-half-closes-and-lookup-prefers-commit-hash.md",
+    "status": "open"
   },
   "BUG-TICKET-CREATE-AND-SYNC-FIX-IMPORT-EMIT-LINT-DEFECTIVE-DUPLIC": {
     "hash": "800aa4e",
@@ -3021,6 +3089,23 @@
     ],
     "source": ".plan/tickets/TASK-rebase-must-run-from-the-repo-root-with-no-in-worktree-path-.md",
     "status": "done"
+  },
+  "TASK-SEARCH-OUTPUT-SHOWS-RELATED-TICKET-FILE": {
+    "hash": "d769dff",
+    "git_issue": "d769dff",
+    "extid": "TASK-SEARCH-OUTPUT-SHOWS-RELATED-TICKET-FILE",
+    "type": "TASK",
+    "title": "search output shows related ticket file",
+    "label": "task",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "search",
+      "output"
+    ],
+    "source": ".plan/tickets/TASK-search-output-shows-related-ticket-file.md",
+    "status": "open"
   },
   "TASK-SHARD-TICKETS-INDEX-OR-STOP-PER-BRANCH-INDEX-COMMITS": {
     "hash": "461e906",
