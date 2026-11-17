@@ -111,7 +111,7 @@ function emojiLine(record: unknown): string {
   const style = statusStyle(rec.state);
   // git-issue titles conventionally embed the extid prefix (`EXTID: prose`);
   // drop it so the emoji line does not print the id twice.
-  const title = rec.extid !== undefined ? rec.title.replace(`${rec.extid}: `, "") : rec.title;
+  const title = rec.extid !== null ? rec.title.replace(`${rec.extid}: `, "") : rec.title;
   return `${style.glyph} ${rec.extid ?? rec.hash} ${title}`;
 }
 

@@ -102,7 +102,7 @@ describe("gi passthrough", () => {
     // The usage line verified against git-issue 1.3.3 plus the close remedy:
     expect(msg).toContain(
       "usage: git issue <command> [<args>] with command: "
-        + "create ls show comment edit state import export sync merge fsck init version",
+        + "create ls show comment edit state import export sync search merge fsck init version",
     );
     expect(msg).toContain("giwt gi state <issue-id> --close");
   });

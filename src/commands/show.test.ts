@@ -168,6 +168,24 @@ describe("show", () => {
     expect(capDone.out).toBe(`✅ ${done.extid} done emoji\n`);
   });
 
+  // BUG-show-emoji-null-extid-mangles-title: extid is null for foreign
+  // issues, but an `!== undefined` check let `replace("null: ", "")` eat a
+  // literal `null: ` out of the title.
+  it("--emoji keeps `null: ` in a title when the issue has no extid", async () => {
+    const config = makeConfig();
+    const out = execFileSync(
+      "git",
+      ["-C", config.repoRoot, "issue", "create", "null: packet loss", "-m", "b"],
+      { encoding: "utf8" },
+    );
+    const hash = out.match(/[0-9a-f]{7,40}/)?.[0];
+    if (!hash) throw new Error(`could not extract issue hash from: ${out}`);
+
+    const cap = await run([hash, "--emoji"], config);
+    expect(cap.exits).toEqual([]);
+    expect(cap.out).toBe(`○ ${hash} null: packet loss\n`);
+  });
+
   it("unknown extid exits 1 and names the id", async () => {
     const config = makeConfig();
     const cap = await run(["TASK-nowhere"], config);

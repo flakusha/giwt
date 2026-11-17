@@ -10,11 +10,40 @@
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { scanHeaderStatusLines } from "../plan/status-vocab";
 import { isolatedGitEnv } from "../utils/git";
 import { appendRegistryDoneProvenance } from "./sync-md";
 import { normalizeStatus } from "./sync-normalize";
 import { vocabStatusTarget } from "./sync-parse";
 import type { GitIssue, IndexEntry, SyncReport, TicketFile } from "./sync-ticket-types";
+
+// Prefix half of status-vocab's STATUS_LINE_PARTS_RE — locating the value
+// span with it lets a rewrite replace only that span and keep every
+// decoration byte (list/quote prefix, bold markers, suffix) verbatim.
+const STATUS_PREFIX_RE = /^\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*/i;
+
+/** Rewrite every header-region Status line to `target`, leaving the rest of
+ * the file untouched: the first 30 lines only, fenced blocks skipped — the
+ * exact region scanHeaderStatusLines/parseTicketFile read. Every header line
+ * is rewritten (appended done-marker convention: any done-class line closes
+ * the ticket), and only the value span changes. */
+function rewriteHeaderStatusLines(tfPath: string, target: string): void {
+  const lines = readFileSync(tfPath, "utf8").split("\n");
+  for (const { line, value } of scanHeaderStatusLines(tfPath)) {
+    const current = lines[line];
+    if (current === undefined) continue;
+    const prefix = STATUS_PREFIX_RE.exec(current);
+    if (prefix === null) continue;
+    const start = prefix[0].length;
+    // scanHeaderStatusLines may leave a value's opening `**` inside its
+    // value span; keep it as decoration instead of dropping it.
+    const bold = /^\*\*/.exec(value)?.[0] ?? "";
+    lines[line] = `${current.slice(0, start)}${bold}${target}${
+      current.slice(start + value.length)
+    }`;
+  }
+  writeFileSync(tfPath, lines.join("\n"));
+}
 
 /** Backfill ticket `status` from the on-disk .md (Status: <state>) into
  * index entries that have none. Existing index entries are NEVER
@@ -70,11 +99,7 @@ export function fixStatusMismatches(
       const tf = fileByExtid.get(mismatch.extid);
       if (tf) {
         try {
-          const text = readFileSync(tf.path, "utf8").replace(
-            /^(\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
-            `$1${vocabStatusTarget(mismatch.gitStatus)}`,
-          );
-          writeFileSync(tf.path, text);
+          rewriteHeaderStatusLines(tf.path, vocabStatusTarget(mismatch.gitStatus));
           // Same provenance contract as the mdStatusStale writer below:
           // a .md flipped to Done from registry state carries the close
           // evidence, never a bare Done.
@@ -147,13 +172,8 @@ export function fixMdStatusStale(
     const tf = fileByExtid.get(ms.extid);
     if (!tf) continue;
     try {
-      let text = readFileSync(tf.path, "utf8");
       const target = vocabStatusTarget(ms.indexStatus);
-      text = text.replace(
-        /^(\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/gim,
-        `$1${target}`,
-      );
-      writeFileSync(tf.path, text);
+      rewriteHeaderStatusLines(tf.path, target);
       report.fixesApplied.push(
         `${ms.extid}: .md status ${ms.mdStatus} → ${target}`,
       );

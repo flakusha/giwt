@@ -29,6 +29,26 @@ export interface GitIssueRead {
  *  process-start latency. */
 const ISSUE_LS_TIMEOUT_MS = 60_000;
 
+/** Ticket extid prefixes recognized across the sync pipeline and `giwt ticket`.
+ *  The scanner/parser/reconciler use TASK…IMPROVE; `create.ts` VALID_TYPES
+ *  adds IDEA. Keep the union here so a git issue's title extid is never read
+ *  as foreign just because its prefix lives in one set but not the other. */
+export const TICKET_EXTID_PREFIXES = [
+  "TASK",
+  "FEAT",
+  "BUG",
+  "FIX",
+  "EPIC",
+  "SOL",
+  "INFRA",
+  "TEST",
+  "PERF",
+  "WIRE",
+  "IMPROVE",
+  "IDEA",
+] as const;
+const EXTID_RE = new RegExp(`^(${TICKET_EXTID_PREFIXES.join("|")})-[a-z0-9-]+`, "i");
+
 export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): GitIssueRead {
   const timeoutMs = issueLsTimeoutMs ?? ISSUE_LS_TIMEOUT_MS;
   const issues = new Map<string, GitIssue>();
@@ -46,16 +66,24 @@ export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): Gi
     });
 
     for (const line of output.trim().split("\n")) {
-      const m = line.match(/^([0-9a-f]{7,40})\s+(open|closed|done)\s+(.*)/);
+      // `git issue state --state <value>` accepts arbitrary states, so the
+      // second oneline field is not limited to open/closed/done. Only the two
+      // terminal states are meaningful; everything else stays open, so a
+      // custom state can never make the issue vanish from the registry (and
+      // get silently regenerated out of index.json by --fix).
+      const m = line.match(/^([0-9a-f]{7,40})\s+(\S+)\s+(.*)/);
       if (m === null || m[1] === undefined || m[2] === undefined || m[3] === undefined) continue;
 
       const hash = m[1].slice(0, 7);
-      const status = m[2] as "open" | "closed" | "done";
+      const rawState = m[2].toLowerCase();
+      const status: GitIssue["status"] = rawState === "closed" || rawState === "done"
+        ? rawState
+        : "open";
       const title = m[3];
 
       // Extract extid from title (e.g. "TASK-006: Some title" → "TASK-006",
       // "TASK-chat-message-search: ..." → "TASK-CHAT-MESSAGE-SEARCH")
-      const extidMatch = title.match(/^(TASK|FEAT|BUG|FIX|EPIC|SOL|INFRA)-[a-z0-9-]+/i);
+      const extidMatch = title.match(EXTID_RE);
       const extid = extidMatch?.[0]?.toUpperCase() ?? null;
       // Extid chars are constrained to [A-Z0-9-] here, so it is safe to
       // use as a path segment downstream (import-back filenames).
@@ -175,8 +203,11 @@ export function logFixRefusal(
 export function readIndex(indexPath: string): Record<string, IndexEntry> {
   if (!existsSync(indexPath)) return {};
   try {
-    return JSON.parse(readFileSync(indexPath, "utf8"));
-  } catch {
-    return {};
+    return JSON.parse(readFileSync(indexPath, "utf8")) as Record<string, IndexEntry>;
+  } catch (error) {
+    // A corrupt index must fail loudly: degrading to {} lets --fix rebuild
+    // index.json from .md files and silently drop phantom entries. Mirrors
+    // commands/ticket/lookup.ts so every index reader reports the same way.
+    throw new Error(`${indexPath}: invalid JSON (${(error as Error).message})`, { cause: error });
   }
 }

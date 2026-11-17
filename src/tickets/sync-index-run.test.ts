@@ -331,7 +331,7 @@ describe("runSync report and refusal paths", () => {
     }
   });
 
-  test("corrupt index.json is treated as empty and re-reported", () => {
+  test("corrupt index.json fails closed instead of being regenerated", () => {
     const dir = tempDir();
     try {
       const root = join(dir, "root");
@@ -339,10 +339,8 @@ describe("runSync report and refusal paths", () => {
       mkdirSync(join(root, ".plan/tickets"), { recursive: true });
       writeFileSync(join(root, ".plan/tickets/index.json"), "not json{{");
 
-      const { exit, out } = runCaptured(() => runSync(root, {}));
-      expect(exit).toBe(1);
-      expect(out).toContain("Index entries:     0");
-      expect(out).toContain("Orphan files (.md not in index): 1");
+      expect(() => runSync(root, {})).toThrow(/invalid JSON/);
+      expect(indexBytes(root)).toBe("not json{{");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

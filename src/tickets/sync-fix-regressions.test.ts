@@ -144,3 +144,75 @@ test("auto-close passes the extid message as one argv element, never through a s
     else process.env.SHIM_LOG = oldLog;
   }
 });
+
+/** Header with multiple Status lines (bold value, appended done-marker), a
+ * fenced reproduction example, and a Status past the 30-line header the
+ * parser never reads. */
+function wideTicketText(): string {
+  const lines = [
+    "# BUG: demo",
+    "",
+    "**Status:** Not Started",
+    "> **Status**: duplicate-of-OLD",
+    "**Status:** **In Progress**",
+    "",
+    "```md",
+    "**Status:** In Progress",
+    "```",
+  ];
+  while (lines.length < 31) lines.push("filler");
+  lines.push("**Status:** In Progress", "body");
+  return lines.join("\n");
+}
+
+test("md-status fixer rewrites only parsed header Status lines", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-status-bounds-md-"));
+  temps.push(dir);
+  const path = join(dir, "ticket.md");
+  writeFileSync(path, wideTicketText());
+  const report = emptyReport();
+  report.mdStatusStale.push({
+    extid: "TASK-DECORATED",
+    mdStatus: "Not Started",
+    indexStatus: "done",
+    source: path,
+  });
+  fixMdStatusStale(
+    { "TASK-DECORATED": entry() },
+    report,
+    new Map([["TASK-DECORATED", ticketFile(path, "Not Started")]]),
+    dir,
+  );
+  const out = readFileSync(path, "utf8");
+  expect(out).toContain("**Status:** Done\n");
+  expect(out).toContain("> **Status**: Done\n");
+  expect(out).toContain("**Status:** **Done**\n");
+  // fenced example and the line past the header are outside the parser region
+  expect(out).toContain("```md\n**Status:** In Progress\n```");
+  expect(out).toContain("filler\n**Status:** In Progress\nbody");
+});
+
+test("git-status fixer rewrites only parsed header Status lines", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-status-bounds-git-"));
+  temps.push(dir);
+  const path = join(dir, "ticket.md");
+  writeFileSync(path, wideTicketText());
+  const report = emptyReport();
+  report.statusMismatches.push({
+    extid: "TASK-DECORATED",
+    indexStatus: "open",
+    gitStatus: "done",
+  });
+  fixStatusMismatches(
+    { "TASK-DECORATED": entry() },
+    report,
+    new Map([["TASK-DECORATED", ticketFile(path, "Not Started")]]),
+    dir,
+  );
+  const out = readFileSync(path, "utf8");
+  expect(out).toContain("**Status:** Done\n");
+  expect(out).toContain("> **Status**: Done\n");
+  expect(out).toContain("**Status:** **Done**\n");
+  expect(out).toContain("```md\n**Status:** In Progress\n```");
+  expect(out).toContain("filler\n**Status:** In Progress\nbody");
+});

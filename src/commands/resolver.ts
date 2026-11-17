@@ -77,7 +77,10 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
     // TASK-alphabet must not capture the latter's lookups.
     const title = trimmed.slice(match[0].length).replace(/^\[[^\]]*\]\s*/, "");
     if (extractExtid(title)?.toLowerCase() === needle) return resolved;
-    fallback ??= trimmed.toLowerCase().includes(needle) ? resolved : null;
+    // Fallback for truncated extids (kebab() caps slugs at 60 chars) only:
+    // match the title's leading extid token, never prose mentioning the id.
+    const token = title.toLowerCase().match(/^[a-z]+-[a-z0-9-]+/)?.[0];
+    if (token !== undefined && token.startsWith(needle)) fallback ??= resolved;
   }
 
   return fallback;

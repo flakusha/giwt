@@ -392,6 +392,34 @@ describe("scoped worktree creation", () => {
     expect(resolveExtid(cfg.repoRoot, "TASK-never-filed-anywhere")).toBeNull();
   });
 
+  test("resolveExtid ignores prose-only mentions of an extid", () => {
+    const cfg = makeRepo("resolver-prose");
+    const created = git(
+      cfg.repoRoot,
+      "issue",
+      "create",
+      "TASK-real: mention TASK-ghost in the prose",
+      "-m",
+      "body",
+    );
+    const hash = created.match(/[0-9a-f]{7,40}/)?.[0] ?? "";
+    expect(hash).not.toBe("");
+    expect(resolveExtid(cfg.repoRoot, "TASK-ghost")).toBeNull();
+    expect(resolveExtid(cfg.repoRoot, "TASK-real")?.hash).toBe(hash);
+  });
+
+  test("resolveExtid keeps truncated-extid fallback anchored to the title token", () => {
+    const cfg = makeRepo("resolver-trunc");
+    const extid = `TASK-${"a".repeat(70)}`;
+    const created = git(cfg.repoRoot, "issue", "create", `${extid}: long slug`, "-m", "body");
+    const hash = created.match(/[0-9a-f]{7,40}/)?.[0] ?? "";
+    expect(hash).not.toBe("");
+    // Slugs are capped at 60 chars; a shorter pasted form still resolves
+    // against the full leading extid token, while the exact path stays first.
+    expect(resolveExtid(cfg.repoRoot, extid.slice(0, 60))?.hash).toBe(hash);
+    expect(resolveExtid(cfg.repoRoot, extid)?.hash).toBe(hash);
+  });
+
   test("closeScopedIssues tolerates a failing registry", () => {
     const cfg = makeRepo("close");
     const logs: string[] = [];

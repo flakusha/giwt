@@ -67,7 +67,7 @@ export function appendIssueRef(mdPath: string, hash: string): void {
   if (/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i.test(text)) {
     text = text.replace(/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i, `git issue: ${hash}`);
   } else {
-    text = text.replace(/(\n---\n|$)/, `\n\ngit issue: ${hash}\n`);
+    text = text.replace(/(\n---\n|$)/, `\n\ngit issue: ${hash}\n$1`);
   }
   writeFileSync(mdPath, text);
 }

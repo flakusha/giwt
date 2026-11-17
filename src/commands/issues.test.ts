@@ -253,3 +253,70 @@ describe("issues --state", () => {
     expect(JSON.parse(cap.out)).toHaveLength(1);
   });
 });
+
+describe("issues --format and record counting", () => {
+  it("counts issue records, not full-format continuation lines", async () => {
+    const config = makeConfig();
+    const h1 = createIssue(config.repoRoot, "TASK-first: with priority");
+    const h2 = createIssue(config.repoRoot, "TASK-second: with priority");
+    // Every issue carries a detail line so the CLI's set -e quirk cannot
+    // exit 1 on a trailing detail-less row; the count is what is under test.
+    for (const hash of [h1, h2]) {
+      execFileSync("git", ["-C", config.repoRoot, "issue", "edit", hash, "--priority", "medium"]);
+    }
+
+    for (const args of [["--format", "full"], ["--all", "--format", "full"]]) {
+      const cap = await run(args, config);
+      expect(cap.exits).toEqual([]);
+      expect(cap.out).toContain("issues (2):");
+      expect(cap.out).toContain("priority:medium");
+      expect(cap.out).toContain(h1);
+      expect(cap.out).toContain(h2);
+    }
+  });
+
+  it("rejects an unknown --format with a usage error", async () => {
+    const config = makeConfig();
+    for (const args of [["--format", "bogus"], ["--format=bogus"], ["-f", "bogus"]]) {
+      const cap = await run(args, config);
+      expect(cap.exits).toEqual([1]);
+      expect(cap.err).toContain("invalid --format");
+      expect(cap.err).toContain("expected short|full|oneline");
+      expect(cap.err).toContain("usage: giwt issues");
+    }
+  });
+
+  it("surfaces the underlying command failure detail", async () => {
+    const config = makeConfig();
+    const cap = capture();
+    let thrown: unknown;
+    try {
+      await issues(["--format", "oneline"], {
+        ...config,
+        repoRoot: join(config.repoRoot, "does-not-exist"),
+      });
+    } catch (error) {
+      thrown = error;
+    } finally {
+      cap.restore();
+    }
+    expect(thrown).toBeInstanceOf(Error);
+    const message = (thrown as Error).message;
+    expect(message).toContain("No such file or directory");
+
+    // The known empty-stderr case still gets an actionable remedy.
+    const capFull = capture();
+    let fullThrown: unknown;
+    try {
+      await issues(["--format", "full"], {
+        ...config,
+        repoRoot: join(config.repoRoot, "does-not-exist"),
+      });
+    } catch (error) {
+      fullThrown = error;
+    } finally {
+      capFull.restore();
+    }
+    expect((fullThrown as Error).message).toContain("try --all or --format oneline");
+  });
+});

@@ -14,7 +14,7 @@ import { raw } from "../utils/output";
  * FIX-gi-passthrough-contract).
  */
 const GIT_ISSUE_COMMANDS =
-  "create ls show comment edit state import export sync merge fsck init version";
+  "create ls show comment edit state import export sync search merge fsck init version";
 
 export async function gi(args: string[], config: WorktreeConfig): Promise<void> {
   const forwarded = ["git", "issue", ...args].join(" ");
