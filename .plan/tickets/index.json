@@ -1347,6 +1347,24 @@
     "source": ".plan/tickets/FEAT-feat-pijul-vcs-support.md",
     "status": "open"
   },
+  "FEAT-FEAT-VCS-BACKEND-SEAM-AND-BACKEND-SETTING": {
+    "hash": "0a1c942",
+    "extid": "FEAT-FEAT-VCS-BACKEND-SEAM-AND-BACKEND-SETTING",
+    "type": "FEAT",
+    "title": "vcs backend seam and backend setting",
+    "label": "feat",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "feat",
+      "vcs",
+      "seam"
+    ],
+    "source": ".plan/tickets/FEAT-feat-vcs-backend-seam-and-backend-setting.md",
+    "status": "open",
+    "git_issue": "0a1c942"
+  },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
     "hash": "8e9078f",
     "git_issue": "8e9078f",
@@ -1538,6 +1556,40 @@
     "source": ".plan/tickets/FEAT-giwt-interconnect-interconnectnodekind-artifact-generates-ed.md",
     "status": "done"
   },
+  "FEAT-GIWT-JJ-PASSTHROUGH-POLICY-GATE-PHASE-1": {
+    "hash": "b031f4d",
+    "git_issue": "b031f4d",
+    "extid": "FEAT-GIWT-JJ-PASSTHROUGH-POLICY-GATE-PHASE-1",
+    "type": "FEAT",
+    "title": "giwt jj passthrough policy gate (phase 1)",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj",
+      "passthrough"
+    ],
+    "source": ".plan/tickets/FEAT-giwt-jj-passthrough-policy-gate-phase-1.md",
+    "status": "open"
+  },
+  "FEAT-GIWT-PIJUL-PASSTHROUGH-POLICY-GATE-PHASE-1": {
+    "hash": "f2f85c9",
+    "git_issue": "f2f85c9",
+    "extid": "FEAT-GIWT-PIJUL-PASSTHROUGH-POLICY-GATE-PHASE-1",
+    "type": "FEAT",
+    "title": "giwt pijul passthrough policy gate (phase 1)",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "pijul",
+      "passthrough"
+    ],
+    "source": ".plan/tickets/FEAT-giwt-pijul-passthrough-policy-gate-phase-1.md",
+    "status": "open"
+  },
   "FEAT-GIWT-VERIFY-PROBE-WRAP-REPO-VERIFY-SCRIPTS-AS-A-GIWT-SUBCOMM": {
     "hash": "b05a044",
     "git_issue": "b05a044",
@@ -1567,6 +1619,38 @@
     ],
     "source": ".plan/tickets/FEAT-isolatedgitenv-also-strips-agent-harness-session-vars.md",
     "status": "done"
+  },
+  "FEAT-JJ-AUDIT-BACKUP-AND-VERSION-POLICY": {
+    "hash": "de88831",
+    "git_issue": "de88831",
+    "extid": "FEAT-JJ-AUDIT-BACKUP-AND-VERSION-POLICY",
+    "type": "FEAT",
+    "title": "jj audit backup and version policy",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj"
+    ],
+    "source": ".plan/tickets/FEAT-jj-audit-backup-and-version-policy.md",
+    "status": "open"
+  },
+  "FEAT-JJ-WORKSPACE-SIGNING-FINALIZE-INTEGRATION": {
+    "hash": "47972d2",
+    "git_issue": "47972d2",
+    "extid": "FEAT-JJ-WORKSPACE-SIGNING-FINALIZE-INTEGRATION",
+    "type": "FEAT",
+    "title": "jj workspace signing finalize integration",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj"
+    ],
+    "source": ".plan/tickets/FEAT-jj-workspace-signing-finalize-integration.md",
+    "status": "open"
   },
   "FEAT-LEDGER-CORE-CANONICAL-MODULE": {
     "hash": "4a5b9ba",
@@ -1682,6 +1766,38 @@
     ],
     "source": ".plan/tickets/FEAT-one-line-outcome-contract-for-direct-cli-calls.md",
     "status": "done"
+  },
+  "FEAT-PIJUL-CHANNEL-RECORD-CONFLICT-INTEGRATION": {
+    "hash": "8d67c89",
+    "git_issue": "8d67c89",
+    "extid": "FEAT-PIJUL-CHANNEL-RECORD-CONFLICT-INTEGRATION",
+    "type": "FEAT",
+    "title": "pijul channel record conflict integration",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "pijul"
+    ],
+    "source": ".plan/tickets/FEAT-pijul-channel-record-conflict-integration.md",
+    "status": "open"
+  },
+  "FEAT-PIJUL-TICKET-SUBSTRATE-AND-BACKUP-CONSISTENCY": {
+    "hash": "6d2e789",
+    "git_issue": "6d2e789",
+    "extid": "FEAT-PIJUL-TICKET-SUBSTRATE-AND-BACKUP-CONSISTENCY",
+    "type": "FEAT",
+    "title": "pijul ticket substrate and backup consistency",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "pijul"
+    ],
+    "source": ".plan/tickets/FEAT-pijul-ticket-substrate-and-backup-consistency.md",
+    "status": "open"
   },
   "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND": {
     "hash": "00787da",
