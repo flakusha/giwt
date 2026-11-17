@@ -35,11 +35,13 @@ import { gripe } from "./commands/gripe";
 import { history } from "./commands/history";
 import { intercom } from "./commands/intercom";
 import { issues } from "./commands/issues";
+import { jjPassthrough } from "./commands/jj";
 import { ledger } from "./commands/ledger";
 import { listWorktrees } from "./commands/list";
 import { lock } from "./commands/lock";
 import { merge } from "./commands/merge";
 import { execute as newBranchCmd } from "./commands/new-branch";
+import { pijulPassthrough } from "./commands/pijul";
 import { plan } from "./commands/plan";
 import { execute as prsCmd } from "./commands/prs";
 import { rebase } from "./commands/rebase";
@@ -139,6 +141,15 @@ export const commands: Record<string, CommandHandler> = {
     description:
       "Safety-gated git passthrough (harness reroutes raw git here): allowlist + destructive/gpg guard, run-record capture, rtk compact output",
     run: gitPassthrough,
+  },
+  "jj": {
+    description:
+      "Safety-gated jj (Jujutsu) passthrough: RO/RW/BLOCK policy gate, run-record capture",
+    run: jjPassthrough,
+  },
+  "pijul": {
+    description: "Safety-gated pijul passthrough: RO/RW/BLOCK policy gate, run-record capture",
+    run: pijulPassthrough,
   },
   "gpg-unlock": {
     description: "Warm/verify the GPG agent passphrase cache for agent commits",

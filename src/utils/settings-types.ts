@@ -84,6 +84,8 @@ export interface GiwtSettings {
     classify: string;
     configWrites: ConfigWritesMode;
   };
+  jj: { safe: string[]; allow: string[]; deny: string[]; };
+  pijul: { safe: string[]; allow: string[]; deny: string[]; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -129,4 +131,6 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   plan: { interconnect: true },
   intercom: { backend: "jsonl", fixedArchiveDays: 14, laneStaleDays: 30, eventKeep: 1000 },
   git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin", configWrites: "allow" },
+  jj: { safe: [], allow: [], deny: [] },
+  pijul: { safe: [], allow: [], deny: [] },
 };

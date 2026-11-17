@@ -283,3 +283,8 @@ export type { AnnexCounts } from "./backup/annex-status";
 // Git-invocation classifier: options-object wrapper + verdict types.
 export { classifyGit } from "./git/policy";
 export type { ClassifyGitArgs, ClassifyOptions, GitPolicyLists, GitVerdict } from "./git/policy";
+// Jujutsu/pijul invocation classifiers (parallel policy gates to the git one).
+export { classifyJj } from "./jj/policy";
+export type { JjPolicyLists, JjVerdict } from "./jj/policy";
+export { classifyPijul } from "./pijul/policy";
+export type { PijulPolicyLists, PijulVerdict } from "./pijul/policy";

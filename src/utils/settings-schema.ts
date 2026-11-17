@@ -66,6 +66,8 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     classify: "classify",
     config_writes: "configWrites",
   },
+  jj: { safe: "safe", allow: "allow", deny: "deny" },
+  pijul: { safe: "safe", allow: "allow", deny: "deny" },
 };
 
 export const EXPECTED: Record<
@@ -128,6 +130,8 @@ export const EXPECTED: Record<
     classify: "string",
     configWrites: "string",
   },
+  jj: { safe: "string[]", allow: "string[]", deny: "string[]" },
+  pijul: { safe: "string[]", allow: "string[]", deny: "string[]" },
 };
 
 export type TomlValue = string | number | boolean | TomlValue[] | { [k: string]: TomlValue; };
