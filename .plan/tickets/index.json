@@ -576,6 +576,20 @@
     "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
     "status": "done"
   },
+  "BUG-ISSUES-ALL-STILL-HIDES-CLOSED-ISSUES-AND-HAS-NO-MACHINE-FORM": {
+    "hash": "d98f5da",
+    "git_issue": "d98f5da",
+    "extid": "BUG-ISSUES-ALL-STILL-HIDES-CLOSED-ISSUES-AND-HAS-NO-MACHINE-FORM",
+    "type": "BUG",
+    "title": "issues --all still hides closed issues and has no machine formats",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-issues-all-still-hides-closed-issues-and-has-no-machine-form.md",
+    "status": "open"
+  },
   "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS": {
     "hash": "afe3bf9",
     "extid": "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS",
@@ -609,6 +623,20 @@
     ],
     "source": ".plan/tickets/BUG-linked-worktree-sync-defers-canonical-index-write-but-sync-a.md",
     "status": "done"
+  },
+  "BUG-LIST-EMOJI-FABRICATES-SYNC-STATE-WHEN-AHEAD-BEHIND-ARE-UNKNO": {
+    "hash": "21d594e",
+    "git_issue": "21d594e",
+    "extid": "BUG-LIST-EMOJI-FABRICATES-SYNC-STATE-WHEN-AHEAD-BEHIND-ARE-UNKNO",
+    "type": "BUG",
+    "title": "list --emoji fabricates sync state when ahead/behind are unknown",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-list-emoji-fabricates-sync-state-when-ahead-behind-are-unkno.md",
+    "status": "open"
   },
   "BUG-NORMALIZESTATUS-LEAVES-NOT-STARTED-ENTRIES-IN-OTHER-BUCKET-U": {
     "hash": "f92b0ca",
@@ -855,6 +883,20 @@
     "source": ".plan/tickets/BUG-resolvediffbase-returns-merge-base-instead-of-the-requested-.md",
     "status": "done"
   },
+  "BUG-RESOLVER-SUBSTRING-MATCH-RESOLVES-THE-WRONG-TICKET-FOR-EXTID": {
+    "hash": "061ad39",
+    "git_issue": "061ad39",
+    "extid": "BUG-RESOLVER-SUBSTRING-MATCH-RESOLVES-THE-WRONG-TICKET-FOR-EXTID",
+    "type": "BUG",
+    "title": "resolver substring match resolves the wrong ticket for extid prefixes",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-resolver-substring-match-resolves-the-wrong-ticket-for-extid.md",
+    "status": "open"
+  },
   "BUG-SCOPED-MARKER-PATH-IS-CWD-RELATIVE-SO-WORKTREE-SCOPE-WRITES-": {
     "hash": "89ae729",
     "git_issue": "89ae729",
@@ -870,6 +912,34 @@
     ],
     "source": ".plan/tickets/BUG-scoped-marker-path-is-cwd-relative-so-worktree-scope-writes-.md",
     "status": "done"
+  },
+  "BUG-SHOW-SEARCH-DROP-ISSUES-WITH-HYPHENATED-OR-SPACED-STATES": {
+    "hash": "f020924",
+    "git_issue": "f020924",
+    "extid": "BUG-SHOW-SEARCH-DROP-ISSUES-WITH-HYPHENATED-OR-SPACED-STATES",
+    "type": "BUG",
+    "title": "show/search drop issues with hyphenated or spaced states",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-show-search-drop-issues-with-hyphenated-or-spaced-states.md",
+    "status": "open"
+  },
+  "BUG-SHOW-TRUNCATES-BODIES-AT-THEMATIC-BREAKS-AND-DROPS-HEADER-FI": {
+    "hash": "401d242",
+    "git_issue": "401d242",
+    "extid": "BUG-SHOW-TRUNCATES-BODIES-AT-THEMATIC-BREAKS-AND-DROPS-HEADER-FI",
+    "type": "BUG",
+    "title": "show truncates bodies at thematic breaks and drops header fields",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-show-truncates-bodies-at-thematic-breaks-and-drops-header-fi.md",
+    "status": "open"
   },
   "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
     "hash": "4e5f505",
