@@ -17,9 +17,11 @@ import { scratchRoot } from "../utils/scratch-tmp";
 
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { writeIndexStamp } from "../tickets/index-stamp";
+import type { IndexEntry } from "../tickets/sync-ticket";
 import type { WorktreeConfig } from "../utils/config";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { parseIssueSearch, search } from "./search";
@@ -39,6 +41,17 @@ function makeConfig(): WorktreeConfig {
   execFileSync("git", ["-C", root, "config", "user.email", "giwt-test@localhost"]);
   execFileSync("git", ["-C", root, "config", "user.name", "giwt test"]);
   return { repoRoot: root, worktreeRoot: root, treeDir: root, settings: DEFAULT_SETTINGS };
+}
+
+function writeIndex(
+  config: WorktreeConfig,
+  entries: Record<string, IndexEntry>,
+): void {
+  const dir = join(config.repoRoot, config.settings.paths.tickets);
+  mkdirSync(dir, { recursive: true });
+  const indexPath = join(dir, "index.json");
+  writeFileSync(indexPath, JSON.stringify(entries, null, 2));
+  writeIndexStamp(indexPath);
 }
 
 function createExtidIssue(root: string, extid: string, title: string): string {
@@ -151,6 +164,38 @@ describe("search", () => {
     for (const line of lines) {
       expect(line.startsWith("○ TASK-")).toBe(true);
     }
+  });
+
+  it("shows the related ticket file from the index in every output format", async () => {
+    const config = makeConfig();
+    const hash = createExtidIssue(config.repoRoot, "TASK-file", "findable file");
+    writeIndex(config, {
+      "TASK-FILE": {
+        hash,
+        git_issue: hash,
+        extid: "TASK-FILE",
+        type: "TASK",
+        title: "TASK-file: findable file",
+        label: "task",
+        priority: "medium",
+        epic: "",
+        project: "",
+        tags: [],
+        source: ".plan/tickets/task-file.md",
+        status: "open",
+      },
+    });
+
+    const human = await run(["findable"], config);
+    expect(human.out).toContain(".plan/tickets/task-file.md");
+
+    const json = await run(["findable", "--json"], config);
+    expect((JSON.parse(json.out) as Array<{ file?: string; }>)[0]?.file).toBe(
+      ".plan/tickets/task-file.md",
+    );
+
+    const emoji = await run(["findable", "--emoji"], config);
+    expect(emoji.out).toContain("task-file.md");
   });
 
   it("empty result set: human notice, machine formats emit empty output", async () => {

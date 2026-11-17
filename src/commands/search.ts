@@ -4,21 +4,25 @@
 /**
  * `giwt search <pattern>` — pattern semantics unchanged (forwarded to
  * `git issue search`), output redesigned: one compact line per hit
- * (hash + status badge + title). --json/--toml/--emoji emit machine
- * formats via src/utils/emit.ts.
+ * (hash + status badge + title + related ticket file when indexed).
+ * --json/--toml/--emoji emit machine formats via src/utils/emit.ts.
  */
 
+import { basename } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
 import { parseOutFlags, renderRecords } from "../utils/emit";
 import { gitSync } from "../utils/git";
 import { colorize, log, raw } from "../utils/output";
 import { extractExtid, type StatusStyle, statusStyle } from "./resolver";
+import { readTicketIndex } from "./ticket/lookup";
 
 export interface SearchHit {
   hash: string;
   state: string;
   title: string;
   extid: string | null;
+  /** Repo-relative ticket path from the index, when one resolves. */
+  file?: string;
 }
 
 // `git issue search` emits `<hash> [<state>] <title>`; `git issue ls
@@ -43,18 +47,41 @@ export function parseIssueSearch(output: string): SearchHit[] {
   return hits;
 }
 
+/** Map extids and issue hashes to the indexed ticket .md path. A missing,
+ * corrupt, or hand-edited index is advisory here: search is read-only and
+ * must still return its issue hits, just without file links. */
+function loadTicketFiles(config: WorktreeConfig): Map<string, string> {
+  const files = new Map<string, string>();
+  let index: ReturnType<typeof readTicketIndex>;
+  try {
+    index = readTicketIndex(config.worktreeRoot, config.settings.paths.tickets);
+  } catch (error) {
+    log("warn", `could not read ticket index — file links omitted (${(error as Error).message})`);
+    return files;
+  }
+  for (const entry of Object.values(index)) {
+    if (!entry.source) continue;
+    if (entry.extid) files.set(entry.extid.toUpperCase(), entry.source);
+    if (entry.hash) files.set(entry.hash.toLowerCase(), entry.source);
+    if (entry.git_issue) files.set(entry.git_issue.toLowerCase(), entry.source);
+  }
+  return files;
+}
+
 export function emojiLine(record: unknown): string {
   const hit = record as SearchHit;
   const style = statusStyle(hit.state);
   // Titles conventionally embed the extid prefix (`EXTID: prose`); drop it
   // so the emoji line does not print the id twice.
   const title = hit.extid !== null ? hit.title.replace(`${hit.extid}: `, "") : hit.title;
-  return `${style.glyph} ${hit.extid ?? hit.hash} ${title}`;
+  const file = hit.file ? ` · ${basename(hit.file)}` : "";
+  return `${style.glyph} ${hit.extid ?? hit.hash} ${title}${file}`;
 }
 
 function hitLine(hit: SearchHit): string {
   const style: StatusStyle = statusStyle(hit.state);
-  return `${hit.hash}  ${colorize(`[${style.name}]`, style.color)}  ${hit.title}`;
+  const file = hit.file ? `  →  ${hit.file}` : "";
+  return `${hit.hash}  ${colorize(`[${style.name}]`, style.color)}  ${hit.title}${file}`;
 }
 
 export async function search(args: string[], config: WorktreeConfig): Promise<void> {
@@ -72,7 +99,12 @@ export async function search(args: string[], config: WorktreeConfig): Promise<vo
 
   const repoRoot = config.repoRoot;
   const output = gitSync(repoRoot, "issue", "search", pattern);
-  const hits = parseIssueSearch(output);
+  const files = loadTicketFiles(config);
+  const hits = parseIssueSearch(output).map((hit) => {
+    const file = (hit.extid ? files.get(hit.extid.toUpperCase()) : undefined)
+      ?? files.get(hit.hash.toLowerCase());
+    return file ? { ...hit, file } : hit;
+  });
 
   if (format === "json" || format === "toml" || format === "emoji") {
     raw(renderRecords(hits, format, { emoji: emojiLine }));
