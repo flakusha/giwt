@@ -5,8 +5,9 @@
  * Branches command - list branches with status
  */
 
-import { getBranches, getStatus, getWorktrees, isProtected } from "../utils/git";
+import { isProtected } from "../utils/git";
 import { colorize, raw, section } from "../utils/output";
+import { resolveVcsBackend } from "../vcs/registry";
 
 export async function execute(
   _args: string[],
@@ -16,12 +17,13 @@ export async function execute(
 
   section("Branches");
 
-  const branches = await getBranches(repoRoot, config.settings.branches.protected);
-  const worktrees = await getWorktrees(repoRoot);
-  const worktreeBranches = new Set(worktrees.map(wt => wt.branch.replace("refs/heads/", "")));
+  const backend = resolveVcsBackend(config.settings);
+  const branches = await backend.listBranches(repoRoot);
+  const worktrees = await backend.listWorkspaces(repoRoot);
+  const worktreeBranches = new Set(worktrees.map(wt => wt.branch));
 
   for (const branch of branches) {
-    const status = await getStatus(repoRoot, branch.name);
+    const status = await backend.status(repoRoot, branch.name);
     const inWorktree = worktreeBranches.has(branch.name);
     const prefix = branch.current ? "*" : " ";
 
