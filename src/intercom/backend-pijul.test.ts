@@ -8,8 +8,9 @@
  */
 
 import { beforeEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { isolatedGitEnv } from "../utils/git";
 import { scratchRoot } from "../utils/scratch-tmp";
 import {
   backendPijul,
@@ -208,39 +209,116 @@ describe("pijul version parsing", () => {
 });
 
 const hasPijul = existsSync("/usr/bin/pijul") || existsSync("/usr/local/bin/pijul");
-const itReal = hasPijul ? it : it.skip;
+const hasSignTools = Bun.which("ssh-agent") !== null && Bun.which("ssh-keygen") !== null;
+const itReal = hasPijul && hasSignTools ? it : it.skip;
 
 describe("pijul real-binary integration", () => {
-  const oldRoots: string[] = [];
+  // Resource contract: every test owns its scratch dir, ssh-agent socket,
+  // ephemeral ed25519 key and XDG_CONFIG_HOME; liveSigning().dispose() in a
+  // finally block kills the agent and removes the dir. No ambient identity.
+  function liveSigning() {
+    const scratch = mkdtempSync(join(scratchRoot(), "giwt-pijul-live-"));
+    let agentPid = 0;
+    const dispose = () => {
+      // Remove before killing: ssh-agent can recreate its socket path during
+      // SIGTERM shutdown, which left the fixture dir behind.
+      rmSync(scratch, { recursive: true, force: true });
+      if (agentPid > 0) {
+        try {
+          process.kill(agentPid, "SIGTERM");
+        } catch {
+          // already exited
+        }
+      }
+    };
+    try {
+      const sock = join(scratch, "agent.sock");
+      const started = Bun.spawnSync(["ssh-agent", "-a", sock], { stdout: "pipe", stderr: "pipe" });
+      if (started.exitCode !== 0) throw new Error(`ssh-agent: ${started.stderr.toString().trim()}`);
+      agentPid = Number(/SSH_AGENT_PID=(\d+)/.exec(started.stdout.toString())?.[1] ?? 0);
+      const key = join(scratch, "key");
+      const keygen = Bun.spawnSync(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key], {
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      if (keygen.exitCode !== 0) throw new Error(`ssh-keygen: ${keygen.stderr.toString().trim()}`);
+      const env = {
+        ...isolatedGitEnv(),
+        SSH_AUTH_SOCK: sock,
+        XDG_CONFIG_HOME: join(scratch, "config"),
+      };
+      const add = Bun.spawnSync(["ssh-add", key], { env, stdout: "pipe", stderr: "pipe" });
+      if (add.exitCode !== 0) throw new Error(`ssh-add: ${add.stderr.toString().trim()}`);
+      const identity = Bun.spawnSync(
+        [
+          "pijul",
+          "identity",
+          "new",
+          "--no-link",
+          "--display-name",
+          "test",
+          "--email",
+          "test@example.invalid",
+          "live",
+        ],
+        { env, stdout: "pipe", stderr: "pipe" },
+      );
+      if (identity.exitCode !== 0) {
+        throw new Error(`pijul identity new: ${identity.stderr.toString().trim()}`);
+      }
+      return { env, store: join(scratch, "store"), dispose };
+    } catch (error) {
+      dispose();
+      throw error;
+    }
+  }
+
+  const liveBackend = (env: Record<string, string>) =>
+    backendPijul({
+      spawn: (cmd, cwd) => {
+        const out = Bun.spawnSync(cmd, { cwd, env, stdout: "pipe", stderr: "pipe" });
+        return {
+          stdout: out.stdout.toString(),
+          stderr: out.stderr.toString(),
+          exitCode: out.exitCode ?? 1,
+        };
+      },
+    });
 
   itReal("init/append/read round-trip in a scratch state root", () => {
-    const store = mkdtempSync(join(scratchRoot(), "giwt-pijul-live-"));
-    oldRoots.push(store);
-    const backend = backendPijul();
-    backend.initStore(store);
-    expect(existsSync(join(store, "pijul", ".pijul"))).toBe(true);
-    backend.appendEvent(store, {
-      actor: "live",
-      type: "claim",
-      lane: "live-lane",
-      refs: [],
-      body: "probe",
-    });
-    const read = backend.readEvents(store);
-    expect(read.events.map((e) => e.lane)).toContain("live-lane");
+    const live = liveSigning();
+    try {
+      const backend = liveBackend(live.env);
+      backend.initStore(live.store);
+      expect(existsSync(join(live.store, "pijul", ".pijul"))).toBe(true);
+      backend.appendEvent(live.store, {
+        actor: "live",
+        type: "claim",
+        lane: "live-lane",
+        refs: [],
+        body: "probe",
+      });
+      const read = backend.readEvents(live.store);
+      expect(read.events.map((e) => e.lane)).toContain("live-lane");
+    } finally {
+      live.dispose();
+    }
   });
 
   itReal("retire unrecords dropped events and re-records survivors", () => {
-    const store = mkdtempSync(join(scratchRoot(), "giwt-pijul-live-"));
-    oldRoots.push(store);
-    const backend = backendPijul();
-    backend.initStore(store);
-    for (const lane of ["one", "two", "three"]) {
-      backend.appendEvent(store, { actor: "live", type: "claim", lane, refs: [], body: "" });
+    const live = liveSigning();
+    try {
+      const backend = liveBackend(live.env);
+      backend.initStore(live.store);
+      for (const lane of ["one", "two", "three"]) {
+        backend.appendEvent(live.store, { actor: "live", type: "claim", lane, refs: [], body: "" });
+      }
+      const dropped = backend.retireEvents(live.store, 2);
+      expect(dropped).toBe(1);
+      const read = backend.readEvents(live.store);
+      expect(read.events.map((e) => e.lane).sort()).toEqual(["three", "two"]);
+    } finally {
+      live.dispose();
     }
-    const dropped = backend.retireEvents(store, 2);
-    expect(dropped).toBe(1);
-    const read = backend.readEvents(store);
-    expect(read.events.map((e) => e.lane).sort()).toEqual(["three", "two"]);
   });
 });
