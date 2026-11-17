@@ -638,6 +638,20 @@
     "source": ".plan/tickets/BUG-list-emoji-fabricates-sync-state-when-ahead-behind-are-unkno.md",
     "status": "open"
   },
+  "BUG-MISSING-GIT-ISSUE-SUBCOMMAND-IS-REPORTED-AS-A-CORRUPT-REGIST": {
+    "hash": "c84149a",
+    "git_issue": "c84149a",
+    "extid": "BUG-MISSING-GIT-ISSUE-SUBCOMMAND-IS-REPORTED-AS-A-CORRUPT-REGIST",
+    "type": "BUG",
+    "title": "missing git-issue subcommand is reported as a corrupt registry",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "",
+    "project": "",
+    "tags": [],
+    "source": ".plan/tickets/BUG-missing-git-issue-subcommand-is-reported-as-a-corrupt-regist.md",
+    "status": "open"
+  },
   "BUG-NORMALIZESTATUS-LEAVES-NOT-STARTED-ENTRIES-IN-OTHER-BUCKET-U": {
     "hash": "f92b0ca",
     "git_issue": "f92b0ca",
