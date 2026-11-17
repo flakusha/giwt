@@ -26,7 +26,7 @@ async function listRecords(
     const rec: Record<string, unknown> = {
       branch,
       path: wt.path,
-      head: wt.HEAD.slice(0, 8),
+      head: /^0+$/.test(wt.HEAD) ? null : wt.HEAD.slice(0, 8),
     };
     if (stale.dirMissing || stale.refMissing) {
       rec.stale = [
@@ -59,7 +59,12 @@ export async function listWorktrees(
   const worktrees = await getWorktrees(repoRoot!);
 
   if (format !== "human") {
-    raw(renderRecords(await listRecords(repoRoot!, worktrees), format, {
+    const records = await listRecords(repoRoot!, worktrees);
+    // TOML has no null; omit an unborn HEAD rather than crashing stringify.
+    if (format === "toml") {
+      for (const rec of records) if (rec.head === null) delete rec.head;
+    }
+    raw(renderRecords(records, format, {
       emoji: (record) => {
         const rec = record as {
           branch: string;
@@ -69,8 +74,10 @@ export async function listWorktrees(
         };
         const sync = rec.stale
           ? ` ⚠️ ${rec.stale}`
+          : typeof rec.ahead !== "number" || typeof rec.behind !== "number"
+          ? " ❓ sync unknown"
           : rec.ahead || rec.behind
-          ? ` ↑${rec.ahead ?? 0} ↓${rec.behind ?? 0}`
+          ? ` ↑${rec.ahead} ↓${rec.behind}`
           : " ✅";
         return `📁 ${rec.branch}${sync}`;
       },

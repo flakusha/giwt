@@ -18,6 +18,7 @@ import { listWorktrees } from "./list";
 let root: string;
 let treeDir: string;
 let config: WorktreeConfig;
+const extraRoots: string[] = [];
 
 /** Run git in the fixture repo (or a given dir); throw on failure. */
 function git(args: string[], cwd: string = root): string {
@@ -65,7 +66,16 @@ function commitAll(message: string, cwd: string = root): void {
   git(["commit", "-qm", message], cwd);
 }
 
+/** Fresh repo with no commits: git reports an all-zero HEAD for its worktree. */
+function unbornConfig(): WorktreeConfig {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-list-unborn-"));
+  extraRoots.push(dir);
+  git(["init", "-q", "-b", "main"], dir);
+  return { repoRoot: dir, worktreeRoot: dir, treeDir: dir, settings: DEFAULT_SETTINGS };
+}
+
 beforeEach(() => {
+  extraRoots.length = 0;
   setLogLevel("info");
   setOutputFormat("simple");
   root = mkdtempSync(join(scratchRoot(), "giwt-list-test-"));
@@ -81,6 +91,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const extra of extraRoots) rmSync(extra, { recursive: true, force: true });
   rmSync(root, { recursive: true, force: true });
 });
 
@@ -126,6 +137,20 @@ describe("list: sync labels", () => {
     const out = cap.lines();
     expect(out).toContain("ahead 1");
     expect(out).toContain("behind 1");
+  });
+
+  test("--emoji marks unknown sync explicitly instead of ✅", async () => {
+    addWorktree("orphan-emoji");
+    git(["update-ref", "-d", "refs/heads/main"]);
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--emoji"], config);
+    } finally {
+      cap.restore();
+    }
+    const out = cap.lines();
+    expect(out).not.toContain("✅");
+    expect(out).toContain("orphan-emoji ❓ sync unknown");
   });
 });
 
@@ -177,6 +202,47 @@ describe("list: machine output flags", () => {
     expect(lines).toHaveLength(2);
     expect(lines.every((l) => l.startsWith("📁"))).toBe(true);
     expect(cap.lines()).toContain("feat-emoji");
+  });
+
+  test("--json emits null HEAD for an unborn worktree", async () => {
+    const unborn = unbornConfig();
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--json"], unborn);
+    } finally {
+      cap.restore();
+    }
+    const records = JSON.parse(cap.lines()) as Array<{ branch: string; head: string | null; }>;
+    expect(records).toHaveLength(1);
+    expect(records[0]?.head).toBeNull();
+  });
+
+  test("--toml omits an unrepresentable null HEAD", async () => {
+    const unborn = unbornConfig();
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--toml"], unborn);
+    } finally {
+      cap.restore();
+    }
+    const parsed = Bun.TOML.parse(cap.lines()) as {
+      items: Array<{ branch: string; head?: string; }>;
+    };
+    expect(parsed.items).toHaveLength(1);
+    expect(parsed.items[0]?.head).toBeUndefined();
+    expect(cap.lines()).not.toContain("00000000");
+  });
+
+  test("--emoji never prints an all-zero HEAD", async () => {
+    const unborn = unbornConfig();
+    const cap = captureOutput();
+    try {
+      await listWorktrees(["--emoji"], unborn);
+    } finally {
+      cap.restore();
+    }
+    expect(cap.lines()).toContain("📁 main");
+    expect(cap.lines()).not.toContain("00000000");
   });
 });
 
