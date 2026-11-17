@@ -54,8 +54,9 @@ export function closeTicketFile(file: string, note: string, now: Date = new Date
 /** `giwt ticket close <extid...> [--note "text"]` — close one or many
  * tickets end to end: resolve each id through the invoking checkout's
  * ticket index, rewrite the .md (status, boxes, Resolved line), and close
- * its git issue in the shared registry. All ids resolve before anything
- * mutates, so a typo cannot half-close a batch. */
+ * its git issue in the shared registry. All ids and files resolve, and
+ * every issue closes, before any .md is rewritten: a failing registry close
+ * cannot leave a ticket marked Done with its issue still open. */
 export async function closeTickets(args: string[], config: WorktreeConfig): Promise<void> {
   const { format, rest } = parseOutFlags(args);
   const ids: string[] = [];
@@ -89,31 +90,34 @@ export async function closeTickets(args: string[], config: WorktreeConfig): Prom
         `${id}: no ticket index entry in ${resolve(planRoot, ticketsPath, "index.json")}`,
       );
     }
-    return hit;
+    if (!hit.entry.source) throw new Error(`${hit.extid}: index entry has no source path`);
+    const file = resolve(planRoot, hit.entry.source);
+    if (!existsSync(file)) throw new Error(`${hit.entry.source}: ticket file missing`);
+    return { ...hit, file };
   });
 
-  const records: CloseRecord[] = [];
-  for (const { extid, entry } of resolved) {
-    if (!entry.source) throw new Error(`${extid}: index entry has no source path`);
-    const file = resolve(planRoot, entry.source);
-    if (!existsSync(file)) throw new Error(`${entry.source}: ticket file missing`);
-
-    closeTicketFile(file, note);
-
-    const hash = issueHashFor(config.repoRoot, entry);
-    if (hash) {
-      gitSync(
-        config.repoRoot,
-        "issue",
-        "state",
-        hash,
-        "--close",
-        ...(note ? ["-m", note] : []),
-      );
-    } else {
+  const closePlan = resolved.map((hit) => ({
+    ...hit,
+    hash: issueHashFor(config.repoRoot, hit.entry),
+  }));
+  for (const { extid, hash } of closePlan) {
+    if (!hash) {
       log("warn", `${extid}: no git issue found — closed the .md only`);
+      continue;
     }
+    gitSync(
+      config.repoRoot,
+      "issue",
+      "state",
+      hash,
+      "--close",
+      ...(note ? ["-m", note] : []),
+    );
+  }
 
+  const records: CloseRecord[] = [];
+  for (const { extid, entry, file, hash } of closePlan) {
+    closeTicketFile(file, note);
     records.push({
       extid,
       file: entry.source,

@@ -65,13 +65,13 @@ export function lookupTicket(
   return null;
 }
 
-/** Git-issue hash for an index entry: the entry's own hash when it looks
- * real (not the `pending` placeholder), else a registry walk by extid.
- * resolveExtid passes non-extid input through verbatim — only trust the
- * result when it is hex. */
+/** Git-issue hash for an index entry: the explicit `git_issue` link wins
+ * (legacy `hash` may carry a shipped commit hash, which is not an issue id),
+ * then a real `hash`, then a registry walk by extid. resolveExtid passes
+ * non-extid input through verbatim — only trust the result when it is hex. */
 export function issueHashFor(repoRoot: string, entry: IndexEntry): string | null {
-  if (ISSUE_HASH_RE.test(entry.hash ?? "")) return entry.hash;
   if (ISSUE_HASH_RE.test(entry.git_issue ?? "")) return entry.git_issue!;
+  if (ISSUE_HASH_RE.test(entry.hash ?? "")) return entry.hash;
   const resolved = resolveExtid(repoRoot, entry.extid ?? "");
   return resolved && ISSUE_HASH_RE.test(resolved.hash) ? resolved.hash : null;
 }
