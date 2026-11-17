@@ -21,7 +21,9 @@ import { scratchRoot } from "../utils/scratch-tmp";
  * Strip LLM Co-Authored-By trailers from -m/--message values (and -F
  * message files on commit); real co-authors are kept verbatim. The
  * commit-message hygiene gate (literal \n/\t, subject width) is validated
- * on the same values — a violation blocks the whole invocation.
+ * once on git's combined message: -m values are joined with a blank line,
+ * so only the first line of the first value is the subject. A long body in
+ * a later -m must not be measured as the subject.
  */
 export async function applyTrailerPolicy(
   args: readonly string[],
@@ -41,13 +43,13 @@ export async function applyTrailerPolicy(
   let stripped = 0;
   let kept = 0;
   let violation: string | null = null;
-  const filterText = (text: string): string | null => {
+  const messageParts: string[] = [];
+  const filterText = (text: string): string => {
     const filtered = filterCoAuthorTrailers(text, allowed);
     stripped += filtered.stripped.length;
     kept += filtered.kept.length;
-    const reason = validateCommitMessageText(filtered.message);
-    if (reason !== null && violation === null) violation = reason;
-    return filtered.stripped.length > 0 ? filtered.message : null;
+    messageParts.push(filtered.message);
+    return filtered.message;
   };
   for (let i = 0; i < out.length; i++) {
     const tok = out[i]!;
@@ -55,12 +57,13 @@ export async function applyTrailerPolicy(
       const value = out[i + 1];
       if (value !== undefined) {
         const replacement = filterText(value);
-        if (replacement !== null) out[i + 1] = replacement;
+        if (replacement !== value) out[i + 1] = replacement;
       }
     } else if ((tok.startsWith("-m") && tok.length > 2) || tok.startsWith("--message=")) {
       const prefix = tok.startsWith("--message=") ? "--message=" : "-m";
-      const replacement = filterText(tok.slice(prefix.length));
-      if (replacement !== null) out[i] = prefix + replacement;
+      const original = tok.slice(prefix.length);
+      const replacement = filterText(original);
+      if (replacement !== original) out[i] = prefix + replacement;
     } else if (subcommand === "commit" && (tok === "-F" || tok === "--file")) {
       const path = out[i + 1];
       if (path !== undefined) {
@@ -74,6 +77,9 @@ export async function applyTrailerPolicy(
         out[i] = tok.startsWith("--file=") ? `--file=${replacement}` : `-F${replacement}`;
       }
     }
+  }
+  if (messageParts.length > 0) {
+    violation = validateCommitMessageText(messageParts.join("\n\n"));
   }
   if (stripped > 0) {
     log("warn", `stripped ${stripped} LLM Co-Authored-By trailer(s) (${kept} kept)`);
@@ -100,7 +106,7 @@ export function removeTempFiles(tempFiles: readonly string[]): void {
  */
 async function filterMessageFile(
   path: string,
-  filterText: (text: string) => string | null,
+  filterText: (text: string) => string,
   rec: RunRecorder | null,
   tempFiles: string[],
 ): Promise<string | null> {
@@ -111,7 +117,6 @@ async function filterMessageFile(
     return null; // unreadable — let git surface the real error
   }
   const replacement = filterText(content);
-  if (replacement === null) return null;
   const newPath = rec !== null
     ? rec.capturePath("commit-msg-filtered.txt")
     : join(scratchRoot(), `giwt-git-msg-${process.pid}-${Date.now()}`);

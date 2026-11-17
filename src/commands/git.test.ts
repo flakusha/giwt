@@ -210,6 +210,29 @@ describe("giwt git passthrough", () => {
     expect(errChunks.join("")).toContain("max 72");
   });
 
+  test("long body in a later -m is not measured as the subject", async () => {
+    writeFileSync(join(root, "b.txt"), "b\n");
+    git(root, "add", "b.txt");
+    const body = `detail ${"x".repeat(400)}\nsecond paragraph`;
+    await gitPassthrough(
+      ["commit", "-m", "feat: short subject", "-m", body],
+      settingsWith({ rtk: "off" }),
+    );
+    expect(process.exitCode).toBe(0);
+    const message = git(root, "log", "-1", "--format=%B");
+    expect(message).toContain("feat: short subject");
+    expect(message).toContain("second paragraph");
+  });
+
+  test("over-wide subject in the first -m is still blocked with a body -m", async () => {
+    await gitPassthrough(
+      ["commit", "-m", `feat: ${"x".repeat(80)}`, "-m", "body"],
+      settingsWith({ rtk: "off" }),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(errChunks.join("")).toContain("max 72");
+  });
+
   test("run record captures full output and the git:<sub> event", async () => {
     const rec = beginRun(config, "git", ["status"], null, "main");
     try {
