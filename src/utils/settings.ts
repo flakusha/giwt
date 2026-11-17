@@ -53,6 +53,10 @@
  *   fixed_archive_days = 14  # FIXED-* reports older than this gc into archive/
  *   lane_stale_days = 30     # closed LANE-* claims older than this are stamped stale
  *   event_keep = 1000        # events.jsonl compacted to its last N lines
+ *   [vcs]                    # VCS backend for the seam (src/vcs/)
+ *   backend = "git"          # git|jj|pijul — jj/pijul are registered but
+ *                            # refuse until their backends land; never
+ *                            # falls back to git
  *   [plan]
  *   interconnect = true       # run the .plan/interconnect.{json,md} freshness gate
  *                             # by default in `plan validate` (--gates interconnect

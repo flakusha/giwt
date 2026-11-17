@@ -8,6 +8,7 @@
  * existing `from "./settings"` import keeps working.
  */
 
+import { type VcsBackendName } from "../vcs/types";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "./scratch";
 import { DEFAULT_TMP_OPTIONS } from "./tmpscan";
 
@@ -86,6 +87,7 @@ export interface GiwtSettings {
   };
   jj: { safe: string[]; allow: string[]; deny: string[]; };
   pijul: { safe: string[]; allow: string[]; deny: string[]; };
+  vcs: { backend: VcsBackendName; };
 }
 
 export const DEFAULT_SETTINGS: GiwtSettings = {
@@ -133,4 +135,5 @@ export const DEFAULT_SETTINGS: GiwtSettings = {
   git: { rtk: "auto", safe: [], allow: [], deny: [], classify: "builtin", configWrites: "allow" },
   jj: { safe: [], allow: [], deny: [] },
   pijul: { safe: [], allow: [], deny: [] },
+  vcs: { backend: "git" },
 };

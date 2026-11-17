@@ -6,6 +6,7 @@
  * split out of settings.ts for size. Re-exported from settings.ts.
  */
 
+import { VCS_BACKENDS, vcsBackendRefusal } from "../vcs/types";
 import { type GiwtSettings } from "./settings";
 
 /** snake_case TOML keys → camelCase settings keys, per section. */
@@ -66,6 +67,7 @@ export const SCHEMA: Record<keyof GiwtSettings, Record<string, string>> = {
     classify: "classify",
     config_writes: "configWrites",
   },
+  vcs: { backend: "backend" },
   jj: { safe: "safe", allow: "allow", deny: "deny" },
   pijul: { safe: "safe", allow: "allow", deny: "deny" },
 };
@@ -130,6 +132,7 @@ export const EXPECTED: Record<
     classify: "string",
     configWrites: "string",
   },
+  vcs: { backend: "string" },
   jj: { safe: "string[]", allow: "string[]", deny: "string[]" },
   pijul: { safe: "string[]", allow: "string[]", deny: "string[]" },
 };
@@ -160,6 +163,11 @@ export function checkEnumSettings(settings: GiwtSettings): void {
   if (!INTERCOM_BACKENDS.includes(backend)) {
     throw new Error(`[intercom] backend: unknown value "${backend}" (want jsonl | pijul)`);
   }
+  const vcsBackend = settings.vcs.backend as string;
+  if (!(VCS_BACKENDS as readonly string[]).includes(vcsBackend)) {
+    throw new Error(`[vcs] backend: unknown value "${vcsBackend}" (want git | jj | pijul)`);
+  }
+  if (vcsBackend === "pijul") throw new Error(vcsBackendRefusal("pijul"));
 }
 
 export function checkType(

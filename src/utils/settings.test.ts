@@ -85,6 +85,41 @@ describe("loadSettings", () => {
     }
   });
 
+  test("[vcs] backend defaults to git", () => {
+    const fx = makeFixture();
+    try {
+      const s = loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath });
+      expect(s.vcs).toEqual({ backend: "git" });
+      writeFileSync(fx.localPath, `[vcs]\nbackend = "jj"\n`);
+      expect(loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }).vcs)
+        .toEqual({ backend: "jj" });
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[vcs] unknown backend hard-errors", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[vcs]\nbackend = "hg"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/\[vcs\] backend: unknown value "hg" \(want git \| jj \| pijul\)/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("[vcs] pijul refuses at load before any command runs", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[vcs]\nbackend = "pijul"\n`);
+      expect(() => loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }))
+        .toThrow(/\[vcs\] backend = "git"/);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("commands.diff_base defaults to true and parses false from local config", () => {
     const fx = makeFixture();
     try {
