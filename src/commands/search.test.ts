@@ -22,7 +22,7 @@ import { join } from "node:path";
 
 import type { WorktreeConfig } from "../utils/config";
 import { DEFAULT_SETTINGS } from "../utils/settings";
-import { search } from "./search";
+import { parseIssueSearch, search } from "./search";
 
 const tempRoots: string[] = [];
 
@@ -174,5 +174,24 @@ describe("search", () => {
     const cap = await run([], config);
     expect(cap.exits).toEqual([1]);
     expect(cap.err).toContain("usage: search");
+  });
+
+  it("parser keeps hyphenated and spaced states, plus unbracketed oneline states", () => {
+    const hits = parseIssueSearch([
+      "aaaaaaa [duplicate-of-TASK-zzz] TASK-a: duplicate hit",
+      "       1:TASK-a: duplicate hit",
+      "bbbbbbb [Not Started] TASK-b: spaced state hit",
+      "ccccccc open TASK-c: unbracketed oneline hit",
+    ].join("\n"));
+    expect(hits.map((h) => h.state)).toEqual(["duplicate-of-TASK-zzz", "Not Started", "open"]);
+    expect(hits.map((h) => h.extid)).toEqual(["TASK-a", "TASK-b", "TASK-c"]);
+  });
+
+  it("warns once when multiple output flags are given", async () => {
+    const config = makeConfig();
+    createExtidIssue(config.repoRoot, "TASK-flags", "findable flags");
+    const cap = await run(["findable", "--json", "--toml"], config);
+    expect(cap.err).toContain("multiple output flags given — using --json");
+    expect(JSON.parse(cap.out)).toHaveLength(1);
   });
 });

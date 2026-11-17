@@ -21,26 +21,29 @@ export interface SearchHit {
   extid: string | null;
 }
 
-const HIT_LINE_RE = /^([0-9a-f]{7,40})\s+\[(\w+)\]\s+(.*)$/;
+// `git issue search` emits `<hash> [<state>] <title>`; `git issue ls
+// --format oneline` omits the brackets. Both shapes share this parser.
+const HIT_LINE_RE = /^([0-9a-f]{7,40})\s+(?:\[([^\]]+)\]|(\S+))\s+(.*)$/;
 
 /**
- * Parse `git issue search <pattern>` output (verified schema): one hit
- * line per matching issue — `<hash> [<state>] <title>` — followed by
- * `<line>:<text>` match-context lines, which are dropped. Returns only
- * the structured hits, in output order.
+ * Parse `git issue search <pattern>` (or `git issue ls --format oneline`)
+ * output: one hit line per issue — `<hash> [<state>] <title>` — plus
+ * optional `<line>:<text>` match-context lines, which are dropped.
+ * States may contain hyphens (and, in synthetic output, spaces).
  */
 export function parseIssueSearch(output: string): SearchHit[] {
   const hits: SearchHit[] = [];
   for (const line of output.split("\n")) {
     const m = line.match(HIT_LINE_RE);
     if (!m) continue;
-    const title = m[3]!;
-    hits.push({ hash: m[1]!, state: m[2]!, title, extid: extractExtid(title) });
+    const state = m[2] ?? m[3]!;
+    const title = m[4]!;
+    hits.push({ hash: m[1]!, state, title, extid: extractExtid(title) });
   }
   return hits;
 }
 
-function emojiLine(record: unknown): string {
+export function emojiLine(record: unknown): string {
   const hit = record as SearchHit;
   const style = statusStyle(hit.state);
   // Titles conventionally embed the extid prefix (`EXTID: prose`); drop it
@@ -56,6 +59,9 @@ function hitLine(hit: SearchHit): string {
 
 export async function search(args: string[], config: WorktreeConfig): Promise<void> {
   const { format, rest } = parseOutFlags(args);
+  if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
+    log("warn", `multiple output flags given — using --${format}`);
+  }
   const pattern = rest[0];
 
   if (!pattern) {

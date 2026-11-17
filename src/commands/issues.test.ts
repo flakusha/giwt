@@ -206,4 +206,50 @@ describe("issues --state", () => {
     const hidden = allTitles.filter((title) => !shownTitles.includes(title));
     expect(hidden.length).toBe(2);
   }, 30000);
+
+  it("--all/-a forwards to git issue ls and reveals closed issues", async () => {
+    const config = makeConfig();
+    const openHash = createIssue(config.repoRoot, "TASK-open all probe");
+    const closedHash = createIssue(config.repoRoot, "TASK-closed all probe");
+    closeIssue(config.repoRoot, closedHash);
+    for (const args of [["--all"], ["-a"]]) {
+      const cap = await run(args, config);
+      expect(cap.exits).toEqual([]);
+      expect(cap.out).toContain("issues (2):");
+      expect(cap.out).toContain(openHash);
+      expect(cap.out).toContain(closedHash);
+    }
+  });
+
+  it("machine formats emit parseable records", async () => {
+    const config = makeConfig();
+    const hash = createIssue(config.repoRoot, "TASK-machine: probe");
+    createIssue(config.repoRoot, "plain title without extid");
+
+    const json = await run(["--json"], config);
+    const records = JSON.parse(json.out) as Array<Record<string, unknown>>;
+    expect(records.find((r) => r.hash === hash)).toEqual({
+      hash,
+      state: "open",
+      title: "TASK-machine: probe",
+      extid: "TASK-machine",
+    });
+
+    const toml = await run(["--toml"], config);
+    const parsed = Bun.TOML.parse(toml.out) as { items: Array<Record<string, unknown>>; };
+    expect(parsed.items.length).toBe(2);
+    expect(parsed.items.find((r) => r.hash === hash)?.state).toBe("open");
+
+    const emoji = await run(["--emoji"], config);
+    expect(emoji.out.split("\n").filter((l) => l !== "")).toHaveLength(2);
+    expect(emoji.out).toContain("○ TASK-machine");
+  });
+
+  it("warns once when multiple output flags are given", async () => {
+    const config = makeConfig();
+    createIssue(config.repoRoot, "TASK-flags probe");
+    const cap = await run(["--json", "--emoji"], config);
+    expect(cap.err).toContain("multiple output flags given — using --json");
+    expect(JSON.parse(cap.out)).toHaveLength(1);
+  });
 });
