@@ -3,7 +3,7 @@
 
 # FEAT: vcs backend seam and backend setting
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** feat, vcs, seam
@@ -74,23 +74,24 @@ the ~134 legacy git call sites running on git behind the user's back.
 
 **Acceptance Criteria:**
 
-- [ ] `src/vcs/` exposes the `VcsBackend` interface with the five ops
+- [x] `src/vcs/` exposes the `VcsBackend` interface with the five ops
       (branches, workspaces, status, diff, commit); no `head` field
-- [ ] A backend registry resolves the `[vcs] backend` setting (`git` | `jj` | `pijul`)
-      to a backend instance; the setting is added to `GiwtSettings`,
+- [x] A backend registry resolves `git` to the git backend and explicitly refuses
+      the unimplemented `jj`/`pijul` values (no silent fallback; their backends land
+      in their own tickets); the setting is added to `GiwtSettings`,
       `DEFAULT_SETTINGS` and `SCHEMA`/`EXPECTED` (unknown values hard-error,
       unknown keys still warn-and-ignore)
-- [ ] `git` behaviour is **byte-identical** for the adopted command: a fixture-repo
+- [x] `git` behaviour is **byte-identical** for the adopted command: a fixture-repo
       test asserts the `giwt branches` output is unchanged before/after the swap
-- [ ] `backend = "pijul"` refuses at **settings load** with an actionable message
+- [x] `backend = "pijul"` refuses at **settings load** with an actionable message
       (names the setting and the remedy); no giwt command runs on git under that
       setting - a test asserts the refusal happens before any git call
-- [ ] The adopted command (`giwt branches`) resolves its backend through the registry
+- [x] The adopted command (`giwt branches`) resolves its backend through the registry
       - the test asserts the registry, not a direct helper call
-- [ ] The repo's own gates pass: `bun run check` (fmt, oxlint, markdownlint,
+- [x] The repo's own gates pass: `bun run check` (fmt, oxlint, markdownlint,
       shellcheck, **knip** dead-code, **jscpd** duplication, **file size**,
       `tsc --noEmit`, **coverage ratchet**); every new file carries the SPDX header
-- [ ] The seam's write ops stay **raw VCS primitives**; giwt's identity/GPG policy
+- [x] The seam's write ops stay **raw VCS primitives**; giwt's identity/GPG policy
       remains in the command layer (no signing/identity logic moved into `src/vcs/`)
 
 **Scope boundary (explicitly OUT of this ticket):**

@@ -1548,7 +1548,7 @@
       "seam"
     ],
     "source": ".plan/tickets/FEAT-feat-vcs-backend-seam-and-backend-setting.md",
-    "status": "open",
+    "status": "done",
     "git_issue": "0a1c942"
   },
   "FEAT-FEATURE-MATRIX-GENERATION-FROM-TICKET-INDEX": {
