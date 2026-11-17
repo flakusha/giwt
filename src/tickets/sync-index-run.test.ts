@@ -435,6 +435,39 @@ describe("runSync report and refusal paths", () => {
     }
   });
 
+  test("--fix blames a missing git-issue CLI when the subcommand is absent", () => {
+    const dir = tempDir();
+    const shimDir = join(dir, "bin");
+    mkdirSync(shimDir, { recursive: true });
+    // git is present; only its `issue` subcommand is missing (exit 1, not 127).
+    const realGit = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+    const shim = join(shimDir, "git");
+    writeFileSync(
+      shim,
+      "#!/bin/sh\nif [ \"$1\" = \"issue\" ]; then echo \"git: 'issue' is not a git command. See 'git --help'.\" >&2; exit 1; fi\n"
+        + `exec "${realGit}" "$@"\n`,
+    );
+    chmodSync(shim, 0o755);
+    const prevPath = process.env.PATH;
+    process.env.PATH = `${shimDir}:${prevPath}`;
+    try {
+      const root = join(dir, "root");
+      writeTicket(root, "TASK-NO-ISSUE-CLI.md", "no issue cli", { epic: "EPIC-1" });
+
+      const { exit, out } = runCaptured(() => runSync(root, { fix: true }));
+
+      expect(exit).toBe(1);
+      expect(out).toContain("git-issue CLI not found");
+      expect(out).toContain("git-issue CLI not found — refusing to --fix.");
+      expect(out).toContain("install git-issue");
+      expect(out).not.toContain("inspect the store");
+      expect(out).not.toContain("git executable not found");
+    } finally {
+      process.env.PATH = prevPath;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("--fix blames a failing CLI, not a missing tool, when ls exits nonzero", () => {
     const dir = tempDir();
     const shimDir = join(dir, "bin");

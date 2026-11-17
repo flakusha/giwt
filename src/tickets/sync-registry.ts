@@ -17,8 +17,9 @@ export interface GitIssueRead {
    *  differ per class (scan header + --fix refusal below):
    *  - "timeout": CLI present, registry walk exceeded the ceiling.
    *  - "missing": git absent — command-not-found (127) or spawn ENOENT.
+   *  - "missing-issue-cli": git is present but the git-issue subcommand is not installed.
    *  - "failed": the CLI ran but exited nonzero — corrupt store, bad args. */
-  reason?: "timeout" | "missing" | "failed";
+  reason?: "timeout" | "missing" | "missing-issue-cli" | "failed";
   /** Short failure detail for "failed" (exit status + stderr tail). */
   detail?: string;
 }
@@ -83,10 +84,20 @@ export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): Gi
     if (err.code === "ENOENT" || err.status === 127) {
       return { issues, available: false, reason: "missing" };
     }
-    const status = err.status ?? (typeof err.code === "number" ? err.code : null);
-    const stderrTail = typeof err.stderr === "string" || Buffer.isBuffer(err.stderr)
-      ? err.stderr.toString("utf8").trim().split("\n").pop() ?? ""
+    const stderrText = typeof err.stderr === "string" || Buffer.isBuffer(err.stderr)
+      ? err.stderr.toString("utf8")
       : "";
+    // git exits 1 (not 127) when the `git issue` subcommand is uninstalled.
+    if (/git:\s+'issue'\s+is not a git command/.test(stderrText)) {
+      return {
+        issues,
+        available: false,
+        reason: "missing-issue-cli",
+        detail: "git-issue CLI not found",
+      };
+    }
+    const status = err.status ?? (typeof err.code === "number" ? err.code : null);
+    const stderrTail = stderrText.trim().split("\n").pop() ?? "";
     const detail = stderrTail.slice(0, 160);
     return {
       issues,
@@ -123,6 +134,16 @@ export function logFixRefusal(
       "error",
       String(
         "  The CLI is present but the registry is too large to list in time; fix mode cannot distinguish stale hashes without it.",
+      ).replace(/\n$/, ""),
+    );
+    return;
+  }
+  if (reason === "missing-issue-cli") {
+    log("error", String(`git-issue CLI not found — refusing to --fix.`).replace(/\n$/, ""));
+    log(
+      "error",
+      String(
+        "  Fix mode reconciles against the git-issue registry; install git-issue (the `git issue` subcommand) and re-run.",
       ).replace(/\n$/, ""),
     );
     return;
