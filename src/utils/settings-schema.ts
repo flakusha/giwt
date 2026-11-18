@@ -6,7 +6,7 @@
  * split out of settings.ts for size. Re-exported from settings.ts.
  */
 
-import { VCS_BACKENDS, vcsBackendRefusal } from "../vcs/types";
+import { VCS_BACKENDS, VCS_UNIMPLEMENTED_BACKENDS, vcsBackendRefusal } from "../vcs/types";
 import { type GiwtSettings } from "./settings";
 
 /** snake_case TOML keys → camelCase settings keys, per section. */
@@ -167,7 +167,9 @@ export function checkEnumSettings(settings: GiwtSettings): void {
   if (!(VCS_BACKENDS as readonly string[]).includes(vcsBackend)) {
     throw new Error(`[vcs] backend: unknown value "${vcsBackend}" (want git | jj | pijul)`);
   }
-  if (vcsBackend === "pijul") throw new Error(vcsBackendRefusal("pijul"));
+  if ((VCS_UNIMPLEMENTED_BACKENDS as readonly string[]).includes(vcsBackend)) {
+    throw new Error(vcsBackendRefusal(vcsBackend));
+  }
 }
 
 export function checkType(

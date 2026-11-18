@@ -10,6 +10,10 @@
 export const VCS_BACKENDS = ["git", "jj", "pijul"] as const;
 export type VcsBackendName = (typeof VCS_BACKENDS)[number];
 
+/** Registered but not implemented yet. Settings load refuses these so no
+ * legacy git call site can run behind the user's back. */
+export const VCS_UNIMPLEMENTED_BACKENDS: readonly VcsBackendName[] = ["jj", "pijul"];
+
 /** A branch (git) or bookmark (jj). */
 export interface VcsBranch {
   name: string;
@@ -46,12 +50,19 @@ export interface VcsBackend {
   listBranches(root: string): Promise<VcsBranch[]>;
   listWorkspaces(root: string): Promise<VcsWorkspace[]>;
   status(root: string, branch: string): Promise<VcsStatus>;
+  /** Changed paths in the working tree vs. `ref` (not branch vs. base). */
   diff(root: string, branch: string): Promise<string[]>;
   commit(options: VcsCommitOptions): Promise<VcsCommitResult>;
 }
 
+const BACKEND_TICKETS: Record<string, string> = {
+  jj: "FEAT-feat-jj-jujutsu-vcs-support.md",
+  pijul: "FEAT-feat-pijul-vcs-support.md",
+};
+
 /** Shared refusal for a registered but unimplemented backend. */
 export function vcsBackendRefusal(name: string): string {
-  return `vcs backend '${name}' is not implemented yet - see .tmp/research/${name}/ `
+  const ticket = BACKEND_TICKETS[name] ?? "FEAT-feat-vcs-backend-seam-and-backend-setting.md";
+  return `vcs backend '${name}' is not implemented yet - see .plan/tickets/${ticket} `
     + `(set [vcs] backend = "git" in giwt.toml)`;
 }
