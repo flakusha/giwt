@@ -22,15 +22,18 @@ Implement the `pijul` backend behind the landed VCS seam (`src/vcs/{types,regist
 - Pijul-specific primitives are mandatory: clone-dir-per-agent for `createWorkspace`, `pijul record` instead of commit, ahead/behind recomputed from change-hash sets, commutation instead of rebase, conflicts as first-class changes, inherent sshsig signing (no GPG).
 - Version policy: pin the installed beta exactly and hard-refuse mismatches (protocol/signature format broke between betas); doctor reports the resolved version. Deployment expects a user-provisioned SSH identity/agent with a remedy on failure.
 
+**Landed 2026-11-18:** `src/vcs/pijul.ts` + stubbed argv tests, settings/registry wiring, exact-beta doctor pin, and the ticket-substrate guard. Remaining commutation/finalize, conflict resolution, skip ledger, and history-detector work stays in the two pijul follow-up tickets.
+
 **Acceptance Criteria:**
 
-- [ ] `PijulBackend` implements the seam ops with pijul primitives; `createWorkspace`/`removeWorkspace` provision and remove a per-agent clone dir with no shared WC and no channel switch.
-- [ ] Settings load accepts `backend = "pijul"` only once the backend lands; before landing the refusal is unchanged. Never a git fallback — a test asserts no git argv runs in pijul mode.
-- [ ] The unsupported ticket substrate is an explicit refusal plus documentation; no side git repo is created.
-- [ ] `status` recomputes ahead/behind from change-hash sets; `commit` maps to `pijul record`; immutable change hashes mean no rebase/skip-ledger rewrite.
-- [ ] Missing pijul on PATH or a version mismatch produces a clear error with the identity/agent remedy and never runs git.
-- [ ] `.pijul/pristine` is excluded from hot backups with a loud warning; a doctor `pijul` check reports backend/version.
-- [ ] Identity/GPG policy stays in the command layer; inherent sshsig signing is documented as a deviation.
-- [ ] `bun run check` passes; every new file carries an SPDX header.
+- [x] `PijulBackend` implements the seam ops with pijul primitives; `createWorkspace`/`removeWorkspace` provision and remove a marker-tagged per-agent clone dir with no shared WC and no channel switch.
+- [x] Settings load accepts `backend = "pijul"`; `resolveVcsBackend` returns the pijul backend; no git fallback — a test asserts no git argv runs in pijul mode.
+- [x] The unsupported ticket substrate is an explicit refusal (`giwt ticket`/`giwt sync` guard) plus documentation; no side git repo is created.
+- [x] `status` recomputes ahead/behind from change-hash sets; `commit` maps to `pijul record`.
+- [ ] Immutable change hashes mean no rebase/skip-ledger rewrite — skip-ledger/history-detector adaptation stays in FEAT-pijul-ticket-substrate-and-backup-consistency.md.
+- [x] Missing pijul on PATH or a version mismatch produces a clear error with the identity/agent remedy and never runs git.
+- [x] `.pijul/pristine` is excluded from hot backups with a loud warning; the doctor `pijul` check pins the exact beta.
+- [x] Identity/GPG policy stays in the command layer; inherent sshsig signing is documented as a deviation.
+- [x] `bun run check` passes; every new file carries an SPDX header.
 
 **Not in this ticket:** finalize/rebase/abort rewrite, `giwt pijul` passthrough table, git-interop bridge.

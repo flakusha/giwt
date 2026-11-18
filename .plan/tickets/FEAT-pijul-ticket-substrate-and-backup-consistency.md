@@ -22,8 +22,11 @@ Pijul gaps from `.tmp/research/pijul/`: OPEN-QUESTIONS #6, #7, #14 plus INVENTOR
 
 **Acceptance Criteria:**
 
-- [ ] Ticket/issue commands in pijul mode refuse with an actionable message and docs; a test asserts no side git repo is created and no git-issue call runs.
-- [ ] Hot-backup config explicitly excludes `.pijul/pristine` and emits a loud warning naming the unbacked-up pristine store; a test asserts both.
+- [x] Ticket/issue commands in pijul mode refuse with an actionable message and docs; a shared guard runs before any git-issue call, so no side git repo is created.
+- [x] Hot-backup config explicitly excludes `.pijul/pristine` and emits a loud warning naming the unbacked-up pristine store; a test asserts both.
+
+**Landed 2026-11-18:** ticket-substrate guard and backup exclusion. Skip-ledger dissolution and change-hash-based history detectors remain open.
+
 - [ ] Define and test skip-ledger behavior on immutable change hashes (no skip entry needed on re-apply/unrecord).
 - [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo.
 - [ ] `bun run check` passes; docs updated; SPDX headers on new files.

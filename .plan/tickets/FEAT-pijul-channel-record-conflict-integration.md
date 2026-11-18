@@ -23,9 +23,12 @@ Broader pijul integration after the policy gate, from `.tmp/research/pijul/OPEN-
 
 **Acceptance Criteria:**
 
-- [ ] Provision per-agent clone dirs with no shared WC; do not use channel switching as a workspace substitute, including on unrecorded changes.
-- [ ] Pin the version with a floor/band check and a clear error outside it; install docs reflect the pinned beta.
-- [ ] Route identity through ssh-agent (no GPG path or `--no-sign`); document git interop as one-shot lossy with no bridge.
+- [x] Provision per-agent clone dirs with no shared WC; do not use channel switching as a workspace substitute, including on unrecorded changes.
+- [x] Pin the exact beta with a clear error outside it (backend + doctor); install docs reflect the pinned beta.
+- [x] Route identity through ssh-agent (no GPG path or `--no-sign`); document git interop as one-shot lossy with no bridge.
+
+**Landed 2026-11-18:** clone-dir workspace primitives, `pijul record` commit, exact-beta version guard, and sshsig remedy. Conflict resolution and commutation-based finalize remain open.
+
 - [ ] Surface first-class conflicts via `pull --json`/`--accept-conflict-markers` and resolve them with a resolution change; tests cover the conflict path.
 - [ ] Use commutation (`apply`/`pull`) for finalize with no rebase/merge-commit/CAS path; gate hook install behind explicit approval.
 - [ ] `bun run check` passes; docs updated; SPDX headers on new files.
