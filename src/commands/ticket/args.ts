@@ -14,6 +14,7 @@ const FLAG_TOKENS: Record<string, true> = {
   "--tag": true,
   "-u": true,
   "--upstream": true,
+  "--body": true,
 };
 
 export interface TicketFlags {
@@ -78,7 +79,9 @@ export interface ParsedTicketArgs {
  * swallowing its value token; `--` ends flag parsing (everything after is
  * positional); unknown `-`-prefixed tokens are positionals, so a
  * dash-leading body keeps working; extra positionals are ignored, matching
- * the old args.slice(3) scan. */
+ * the old args.slice(3) scan. `--body <text>` supplies the body explicitly
+ * and wins over the positional (previously `--body` fell into the positional
+ * slot and its text was silently dropped as an extra positional). */
 export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
   const flags: TicketFlags = {
     labels: [],
@@ -89,6 +92,7 @@ export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
     upstream: "",
   };
   const positionals: string[] = [];
+  let bodyFlag: string | undefined;
   for (let i = 0; i < tail.length; i++) {
     const token = tail[i];
     if (token === undefined) break;
@@ -96,7 +100,13 @@ export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
       positionals.push(...tail.slice(i + 1));
       break;
     }
-    if (FLAG_TOKENS[token] === true) {
+    if (token === "--body") {
+      const value = tail[i + 1];
+      if (value !== undefined) {
+        i++;
+        bodyFlag = value;
+      }
+    } else if (FLAG_TOKENS[token] === true) {
       const value = tail[i + 1];
       if (value !== undefined) i++;
       applyFlag(flags, token, value);
@@ -104,5 +114,5 @@ export function parseTicketArgs(tail: string[]): ParsedTicketArgs {
       positionals.push(token);
     }
   }
-  return { flags, body: positionals[0] ?? "" };
+  return { flags, body: bodyFlag ?? positionals[0] ?? "" };
 }

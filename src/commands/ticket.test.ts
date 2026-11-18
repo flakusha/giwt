@@ -470,6 +470,26 @@ describe("parseTicketArgs — flags anywhere in the tail", () => {
     const { body } = parseTicketArgs(["--effort", "Small"]);
     expect(body).toBe("");
   });
+
+  it("--body supplies the body explicitly (the swallowed --body repro)", () => {
+    const { body } = parseTicketArgs([
+      "--body",
+      "**Summary:** real multi-line body text",
+    ]);
+    expect(body).toBe("**Summary:** real multi-line body text");
+  });
+
+  it("--body wins over a positional body and works anywhere in the tail", () => {
+    const before = parseTicketArgs(["--body", "explicit", "positional"]); // --body first
+    expect(before.body).toBe("explicit");
+    const after = parseTicketArgs(["positional", "--body", "explicit"]); // --body after
+    expect(after.body).toBe("explicit");
+  });
+
+  it("--body without a value falls back to the positional", () => {
+    const { body } = parseTicketArgs(["positional", "--body"]);
+    expect(body).toBe("positional");
+  });
 });
 
 describe("readTicketIndex — missing index degrades", () => {
