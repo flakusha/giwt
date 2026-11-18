@@ -16,7 +16,8 @@ Introduce a `VcsBackend` seam, a backend registry, and a `[vcs] backend` setting
 the VCS-specific argv lives behind one interface instead of scattered git calls.
 
 - `git` stays the default and byte-identical in behaviour.
-- `pijul` is registered but REFUSES at settings load - never a silent git fallback.
+- `jj` and `pijul` are registered but REFUSE at settings load until their backends
+  land - never a silent git fallback.
 - The seam is a VCS primitive layer: giwt's own policy (identity guard, GPG signing,
   ledger outcome lines, hook install) stays in the command layer.
 
@@ -67,25 +68,26 @@ export interface VcsBackend {
 }
 ```
 
-`[vcs] backend` values: `git` (default) | `jj` | `pijul`. `pijul` is a known value
-(so it is not an unknown-key warning) but refuses at settings load with an actionable
-message naming the remedy - a registered-but-unimplemented backend must never leave
-the ~134 legacy git call sites running on git behind the user's back.
+`[vcs] backend` values: `git` (default) | `jj` | `pijul`. `jj` and `pijul` are known
+values (so they are not unknown-key warnings) but refuse at settings load with an
+actionable message naming the remedy - a registered-but-unimplemented backend must
+never leave the ~134 legacy git call sites running on git behind the user's back.
 
 **Acceptance Criteria:**
 
 - [x] `src/vcs/` exposes the `VcsBackend` interface with the five ops
       (branches, workspaces, status, diff, commit); no `head` field
-- [x] A backend registry resolves `git` to the git backend and explicitly refuses
-      the unimplemented `jj`/`pijul` values (no silent fallback; their backends land
-      in their own tickets); the setting is added to `GiwtSettings`,
-      `DEFAULT_SETTINGS` and `SCHEMA`/`EXPECTED` (unknown values hard-error,
-      unknown keys still warn-and-ignore)
+- [x] `git` is resolved to the git backend through the registry; the unimplemented
+      `jj`/`pijul` values are known enums but refuse at settings load, so no legacy
+      git call site can run behind them (their backends land in their own tickets);
+      the setting is added to `GiwtSettings`, `DEFAULT_SETTINGS` and
+      `SCHEMA`/`EXPECTED` (unknown values hard-error, unknown keys still warn-ignore)
 - [x] `git` behaviour is **byte-identical** for the adopted command: a fixture-repo
       test asserts the `giwt branches` output is unchanged before/after the swap
-- [x] `backend = "pijul"` refuses at **settings load** with an actionable message
-      (names the setting and the remedy); no giwt command runs on git under that
-      setting - a test asserts the refusal happens before any git call
+- [x] `backend = "jj"` and `backend = "pijul"` refuse at **settings load** with an
+      actionable message (names the setting, the tracked ticket and the remedy); no
+      giwt command does work under either setting - a test asserts the refusal in
+      `loadSettings` (repo-root discovery still needs one git call before config load)
 - [x] The adopted command (`giwt branches`) resolves its backend through the registry
       - the test asserts the registry, not a direct helper call
 - [x] The repo's own gates pass: `bun run check` (fmt, oxlint, markdownlint,
@@ -100,7 +102,7 @@ the ~134 legacy git call sites running on git behind the user's back.
   (one command at a time, read-only first). This ticket lands the seam, the
   registry, the setting, and the first read-only adoption.
 - The jj backend implementation (lands in `FEAT-feat-jj-jujutsu-vcs-support.md`).
-- The pijul backend implementation (`FEAT-feat-pijul-vcs-support.md`); this ticket
-  only registers `pijul` and makes it refuse.
+- The jj/pijul backend implementations (their own FEAT tickets); this ticket only
+  registers both names and makes settings load refuse them.
 
 git issue: 0a1c942
