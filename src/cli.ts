@@ -29,7 +29,7 @@ import { type CommandHandler, commands } from "./cli-registry";
 import { USAGE } from "./cli-usage";
 import { isNoColor } from "./utils/colors";
 import { loadConfig } from "./utils/config";
-import { assertNotInWorktree, gitSyncQuiet } from "./utils/git";
+import { assertNotInWorktree } from "./utils/git";
 import {
   appendLedger,
   extractSayArgs,
@@ -38,6 +38,7 @@ import {
 } from "./utils/ledger";
 import { log, raw, setColorMode, setOutputFormat } from "./utils/output";
 import { beginRun } from "./utils/runlog";
+import { evidenceBranch } from "./vcs/jj-bookmark";
 
 /**
  * One Optique subcommand per registered handler. The handler rides along
@@ -162,7 +163,10 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   // evidence records. Never derived from args — a positional can be a
   // subcommand (`doctor check`) or absent (`sync`); "" on detached HEAD.
   // Silent commands record neither, so they skip the git call entirely.
-  const branch = silent ? "" : gitSyncQuiet(config.worktreeRoot, "branch", "--show-current");
+  // jj has no current git branch: record the pinned bookmark instead.
+  const branch = silent
+    ? ""
+    : await evidenceBranch({ root: config.worktreeRoot, backend: config.settings.vcs.backend });
   // Run record first: the location is announced BEFORE the command runs,
   // and every later step can attach captures/events to it.
   const runRec = silent ? null : beginRun(config, cmdName, cleanArgs, said, branch);

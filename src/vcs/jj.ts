@@ -7,6 +7,8 @@
  * fail closed with an actionable refusal on every distinct root.
  */
 
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { type VcsBackend, vcsBackendRemedy, type VcsBranch, type VcsWorkspace } from "./types";
 
 /** Result of one jj CLI invocation. */
@@ -109,6 +111,21 @@ export function makeJjBackend(spawn: JjSpawn): VcsBackend {
   const count = (cwd: string, revset: string): number =>
     run(["log", "-r", revset, "--no-graph", "-T", COUNT_TEMPLATE], cwd).length;
 
+  /** jj prints workspace roots relative to the repo; callers may pass absolute paths. */
+  const workspaceNameByPath = (root: string, path: string): string | undefined => {
+    const listing = run(["workspace", "list", "--no-pager", "-T", WORKSPACE_TEMPLATE], root);
+    for (const line of listing.split("\n")) {
+      const [name, entryPath] = line.split("|");
+      if (
+        name !== undefined && entryPath !== undefined
+        && resolve(root, entryPath) === resolve(root, path)
+      ) {
+        return name;
+      }
+    }
+    return undefined;
+  };
+
   return {
     name: "jj",
 
@@ -167,24 +184,35 @@ export function makeJjBackend(spawn: JjSpawn): VcsBackend {
       const cmd = ["workspace", "add", path, "--name", branch];
       if (base !== undefined) cmd.push("--revision", base);
       run(cmd, root);
-      run(["bookmark", "create", branch], root);
+      // Pin the bookmark on the child workspace's own `@`; creating it at the
+      // root's `@` would leave the new workspace unpinned.
+      run(["bookmark", "create", branch, "-r", `${branch}@`], root);
     },
 
     async removeWorkspace({ root, path }) {
       await guard(root);
-      const listing = run(["workspace", "list", "--no-pager", "-T", WORKSPACE_TEMPLATE], root);
-      let name: string | undefined;
-      for (const line of listing.split("\n")) {
-        const [entry, entryPath] = line.split("|");
-        if (entry !== undefined && entryPath === path) {
-          name = entry;
-          break;
-        }
-      }
+      const name = workspaceNameByPath(root, path);
       if (name === undefined) {
         throw new Error(`no jj workspace found at '${path}'. ${vcsBackendRemedy("jj")}`);
       }
       run(["workspace", "forget", name], root);
+    },
+
+    async renameWorkspace({ root, path, name }) {
+      await guard(root);
+      const current = workspaceNameByPath(root, path);
+      if (current === undefined) {
+        throw new Error(`no jj workspace found at '${path}'. ${vcsBackendRemedy("jj")}`);
+      }
+      if (!existsSync(resolve(root, path))) {
+        throw new Error(
+          `jj workspace '${current}' checkout is missing at '${path}' — run `
+            + `'jj workspace forget ${current}' to drop it; no git worktree fallback runs. `
+            + vcsBackendRemedy("jj"),
+        );
+      }
+      // jj 0.46 renames the workspace addressed by -R (the current one by default).
+      run(["-R", path, "workspace", "rename", name], root);
     },
   };
 }

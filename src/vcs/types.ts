@@ -58,6 +58,13 @@ export interface VcsRemoveWorkspaceOptions {
   path: string;
 }
 
+export interface VcsRenameWorkspaceOptions {
+  root: string;
+  path: string;
+  /** New jj workspace name; giwt pins the same-named bookmark to its `@`. */
+  name: string;
+}
+
 /** The surface every VCS backend implements. No `head`: jj cannot fill it. */
 export interface VcsBackend {
   readonly name: VcsBackendName;
@@ -69,6 +76,7 @@ export interface VcsBackend {
   commit(options: VcsCommitOptions): Promise<VcsCommitResult>;
   createWorkspace(options: VcsCreateWorkspaceOptions): Promise<void>;
   removeWorkspace(options: VcsRemoveWorkspaceOptions): Promise<void>;
+  renameWorkspace(options: VcsRenameWorkspaceOptions): Promise<void>;
 }
 
 /** VCS-internal state that must never enter a hot backup archive. */

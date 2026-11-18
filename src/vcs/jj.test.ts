@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { gitBackend } from "./git";
 import {
   BOOKMARK_TEMPLATE,
   COUNT_TEMPLATE,
@@ -14,6 +15,7 @@ import {
   makeJjBackend,
   WORKSPACE_TEMPLATE,
 } from "./jj";
+import { pijulBackend } from "./pijul";
 
 const ROOT = "/repo";
 type Reply = JjResult | string;
@@ -185,7 +187,7 @@ describe("jjBackend (stubbed argv)", () => {
     expect(cwds.every((cwd) => cwd === ROOT)).toBe(true);
   });
 
-  test("createWorkspace adds a named workspace, with and without a base revision", async () => {
+  test("createWorkspace adds a pinned named workspace, with and without a base revision", async () => {
     const plain = stub(g({}));
     await makeJjBackend(plain.spawn).createWorkspace({
       root: ROOT,
@@ -195,7 +197,7 @@ describe("jjBackend (stubbed argv)", () => {
     expectArgv(plain.calls, [
       ...GUARD_ARGV,
       ["jj", "workspace", "add", "/repo/wt", "--name", "feature"],
-      ["jj", "bookmark", "create", "feature"],
+      ["jj", "bookmark", "create", "feature", "-r", "feature@"],
     ]);
 
     const based = stub(g({}));
@@ -208,7 +210,7 @@ describe("jjBackend (stubbed argv)", () => {
     expectArgv(based.calls, [
       ...GUARD_ARGV,
       ["jj", "workspace", "add", "/repo/wt", "--name", "feature", "--revision", "main"],
-      ["jj", "bookmark", "create", "feature"],
+      ["jj", "bookmark", "create", "feature", "-r", "feature@"],
     ]);
   });
 
@@ -232,6 +234,60 @@ describe("jjBackend (stubbed argv)", () => {
     expect(
       makeJjBackend(spawn).removeWorkspace({ root: ROOT, path: "/nope" }),
     ).rejects.toThrow(".plan/tickets/FEAT-feat-jj-jujutsu-vcs-support.md");
+  });
+
+  test("renameWorkspace renames the workspace addressed by -R, never via git", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "giwt-jj-rename-"));
+    const child = join(dir, "child");
+    mkdirSync(child);
+    try {
+      const { spawn, calls, cwds } = stub(g({
+        [`jj workspace list --no-pager -T ${WORKSPACE_TEMPLATE}`]:
+          `default|${dir}\nchild|${child}\n`,
+      }));
+      await makeJjBackend(spawn).renameWorkspace({ root: dir, path: child, name: "renamed" });
+      expectArgv(calls, [
+        ...GUARD_ARGV,
+        ["jj", "workspace", "list", "--no-pager", "-T", WORKSPACE_TEMPLATE],
+        ["jj", "-R", child, "workspace", "rename", "renamed"],
+      ]);
+      expect(cwds.every((cwd) => cwd === dir)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("renameWorkspace refuses a missing checkout with a forget hint, no git fallback", async () => {
+    const { spawn, calls } = stub(g({
+      [`jj workspace list --no-pager -T ${WORKSPACE_TEMPLATE}`]:
+        "default|/repo\nstale|/repo/gone\n",
+    }));
+    await expect(
+      makeJjBackend(spawn).renameWorkspace({ root: ROOT, path: "/repo/gone", name: "new" }),
+    ).rejects.toThrow("jj workspace forget stale");
+    expect(calls.every((cmd) => cmd[0] === "jj")).toBe(true);
+    expect(calls.some((cmd) => cmd.includes("worktree"))).toBe(false);
+    expect(calls.some((cmd) => cmd[2] === "rename")).toBe(false);
+  });
+
+  test("git and pijul backends refuse renameWorkspace rather than silently succeeding", async () => {
+    for (const backend of [gitBackend, pijulBackend]) {
+      await expect(backend.renameWorkspace({ root: ROOT, path: "/repo/wt", name: "x" }))
+        .rejects.toThrow("no rename");
+    }
+  });
+
+  test("child workspace creation pins its bookmark and keeps jj 0.46 colocation", async () => {
+    const { spawn, calls } = stub(g({}));
+    await makeJjBackend(spawn).createWorkspace({
+      root: ROOT,
+      path: "/repo/child",
+      branch: "feature",
+    });
+    const add = calls.find((cmd) => cmd[1] === "workspace" && cmd[2] === "add");
+    expect(add).toBeDefined();
+    expect(add).not.toContain("--no-colocate");
+    expect(calls).toContainEqual(["jj", "bookmark", "create", "feature", "-r", "feature@"]);
   });
 });
 
@@ -351,6 +407,39 @@ realTest("real jj binary parses bookmarks and workspaces in a colocated repo", a
     expect(Number.isInteger(status.ahead)).toBe(true);
     expect(typeof status.clean).toBe("boolean");
     expect(Array.isArray(await backend.diff(dir, "testbook"))).toBe(true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+realTest("jj 0.46 child workspace stays colocated and carries its pinned bookmark", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "giwt-jj-child-"));
+  const config = join(dir, "jjconfig.toml");
+  writeFileSync(config, "[user]\nname = \"Probe\"\nemail = \"probe@example.com\"\n");
+  const env = { ...process.env, JJ_CONFIG: config };
+  try {
+    const init = Bun.spawnSync(["jj", "git", "init", "--colocate"], {
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
+      env,
+    });
+    expect(init.exitCode).toBe(0);
+    const spawn: JjSpawn = (cmd, cwd) => {
+      const proc = Bun.spawnSync(cmd, { cwd, stdout: "pipe", stderr: "pipe", env });
+      return {
+        stdout: proc.stdout.toString(),
+        stderr: proc.stderr.toString(),
+        exitCode: proc.exitCode ?? 1,
+      };
+    };
+    const child = join(dir, "child");
+    await makeJjBackend(spawn).createWorkspace({ root: dir, path: child, branch: "feature" });
+    expect(existsSync(resolve(child, ".git"))).toBe(true);
+    const pinned = spawn(["jj", "log", "-r", "feature@", "--no-graph", "-T", "bookmarks"], child);
+    expect(pinned.stdout).toContain("feature");
+    const coloc = spawn(["jj", "git", "colocation", "status"], child);
+    expect(coloc.stdout).toContain("is currently colocated with Git.");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

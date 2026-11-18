@@ -44,4 +44,10 @@ export const gitBackend: VcsBackend = {
   async removeWorkspace({ root, path }) {
     gitSync(root, "worktree", "remove", path);
   },
+
+  async renameWorkspace() {
+    throw new Error(
+      "git worktrees have no rename — use 'git worktree remove' then 'git worktree add'",
+    );
+  },
 };

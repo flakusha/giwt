@@ -238,6 +238,12 @@ export function makePijulBackend(spawn: PijulSpawn): VcsBackend {
       }
       rmSync(path, { recursive: true, force: true });
     },
+
+    async renameWorkspace() {
+      throw new Error(
+        "pijul clones have no rename — recreate the clone (giwt workspace remove/create)",
+      );
+    },
   };
 }
 
