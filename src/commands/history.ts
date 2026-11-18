@@ -35,6 +35,7 @@ import { gitSyncQuiet } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { skipLedgerApplicable } from "../vcs/guard";
 import { runResurrected, runWeave } from "./history-detectors";
+import { runJjAudit } from "./history-jj-audit";
 import { runPijulAudit } from "./history-pijul-audit";
 
 const REASON_LABELS: Record<FindingReason, string> = {
@@ -127,6 +128,10 @@ async function runAudit(rest: string[], config: WorktreeConfig, format: OutForma
   if (branch === undefined) {
     branch = gitSyncQuiet(config.worktreeRoot, "branch", "--show-current").trim();
     if (branch === "") usageError("no branch given and HEAD is detached");
+  }
+  if (config.settings.vcs.backend === "jj") {
+    runJjAudit({ branch, onto: target, config, format });
+    return;
   }
   const report = auditHistory({
     root: config.repoRoot,

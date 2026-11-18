@@ -953,3 +953,123 @@ describe("history weave (command)", () => {
     }
   });
 });
+
+/** Answer jj log with one stable change ID for every resolved commit id; git
+ * calls pass through to the real binary. */
+function stubJjChangeIds() {
+  const real = Bun.spawnSync;
+  const calls: string[][] = [];
+  Bun.spawnSync = ((cmd: string[], opts: Parameters<typeof Bun.spawnSync>[1]) => {
+    if (cmd[0] !== "jj") return real(cmd, opts);
+    calls.push([...cmd]);
+    const revset = String(cmd[cmd.indexOf("-r") + 1] ?? "");
+    const shas = [...revset.matchAll(/commit_id\(([0-9a-f]+)\)/g)].map((m) => m[1]!);
+    const body = shas.map((sha) => `${sha}\x1fCHANGE-STABLE`).join("\n");
+    return {
+      stdout: Buffer.from(body === "" ? "" : `${body}\n`),
+      stderr: Buffer.from(""),
+      exitCode: 0,
+      success: true,
+      signal: null,
+    } as unknown as ReturnType<typeof Bun.spawnSync>;
+  }) as typeof Bun.spawnSync;
+  return {
+    calls,
+    restore: () => {
+      Bun.spawnSync = real;
+    },
+  };
+}
+
+function jjConfigFor(config: WorktreeConfig): WorktreeConfig {
+  return {
+    ...config,
+    settings: { ...config.settings, vcs: { ...config.settings.vcs, backend: "jj" } },
+  };
+}
+
+describe("history audit backend dispatch", () => {
+  test("git mode never spawns jj and keeps its report shape", async () => {
+    const { root, config } = makeRepo();
+    makeSuspicious(root);
+    const real = Bun.spawnSync;
+    const jjCalls: string[][] = [];
+    Bun.spawnSync = ((cmd: string[], opts: Parameters<typeof Bun.spawnSync>[1]) => {
+      if (cmd[0] === "jj") {
+        jjCalls.push([...cmd]);
+        throw new Error("jj spawned in git-only mode");
+      }
+      return real(cmd, opts);
+    }) as typeof Bun.spawnSync;
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], config);
+      const out = cap.collect();
+      expect(out).toContain("History audit: feature vs target");
+      expect(out).not.toContain("[change ");
+      expect(jjCalls).toEqual([]);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      Bun.spawnSync = real;
+      cap.restore();
+    }
+  });
+
+  test("jj mode annotates findings with change IDs via a stubbed jj spawn", async () => {
+    const { root, config } = makeRepo();
+    makeSuspicious(root);
+    const jj = stubJjChangeIds();
+    const jjConfig = jjConfigFor(config);
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], jjConfig);
+      const out = cap.collect();
+      expect(out).toContain("Jj history audit (colocated): feature vs target");
+      expect(out).toContain("[change CHANGE-STABLE]");
+      expect(out).toContain("duplicate-change-id");
+      expect(jj.calls.length).toBeGreaterThan(0);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      jj.restore();
+      cap.restore();
+    }
+  });
+
+  test("jj mode --emoji renders one warning line with the finding count", async () => {
+    const { root, config } = makeRepo();
+    makeSuspicious(root);
+    const jj = stubJjChangeIds();
+    const outSpy = spyOn(process.stdout, "write");
+    outSpy.mockImplementation(() => true);
+    try {
+      await history(["audit", "feature", "--emoji"], jjConfigFor(config));
+      const line = outSpy.mock.calls.map((a) => String(a[0])).join("").trim();
+      expect(line).toMatch(/^⚠️ target\.\.feature: \d+ finding\(s\)$/);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      outSpy.mockRestore();
+      jj.restore();
+    }
+  });
+
+  test("jj mode human output shows the truncation notice when capped", async () => {
+    const { root, config } = makeRepo();
+    makeSuspicious(root);
+    const jj = stubJjChangeIds();
+    const capped = jjConfigFor(config);
+    capped.settings = {
+      ...capped.settings,
+      audit: { ...DEFAULT_SETTINGS.audit, maxFindings: 2 },
+    };
+    const cap = capture();
+    try {
+      await history(["audit", "feature"], capped);
+      const out = cap.collect();
+      expect(out).toContain("more findings not shown (raise [audit] max_findings)");
+      expect(process.exitCode).toBe(1);
+    } finally {
+      cap.restore();
+      jj.restore();
+    }
+  });
+});
