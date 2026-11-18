@@ -28,6 +28,9 @@ Key decisions (operator-resolved):
   through it (guarded by tests).
 - gc dry-run default; doctor `intercom` check is read-only.
 - `[intercom] backend = "jsonl" | "pijul"`: jsonl is the complete production
+
+git issue: ff9cdc4
+
   backend; pijul is an opt-in dogfood backend (version floor 1.0.0-beta.24,
   explicit -m records, unrecord-based retirement with an explicit
   event-to-change-id map).

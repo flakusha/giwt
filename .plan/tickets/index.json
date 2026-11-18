@@ -491,6 +491,23 @@
     "source": ".plan/tickets/BUG-gettrackedfiles-default-git-runner-throws-on-every-invocatio.md",
     "status": "done"
   },
+  "BUG-GIT-SHIM-MEASURED-M-M-COMBINED-MESSAGE-AS-SUBJECT-TRIPPING-T": {
+    "hash": "a8e22d7",
+    "git_issue": "a8e22d7",
+    "extid": "BUG-GIT-SHIM-MEASURED-M-M-COMBINED-MESSAGE-AS-SUBJECT-TRIPPING-T",
+    "type": "BUG",
+    "title": "git shim measured -m/-m combined message as subject, tripping the 72-char gate",
+    "label": "bug",
+    "priority": "Medium",
+    "epic": "epic-vcs-backends.md",
+    "project": "",
+    "tags": [
+      "git-passthrough",
+      "commit-message"
+    ],
+    "source": ".plan/tickets/BUG-git-shim-measured-m-m-combined-message-as-subject-tripping-t.md",
+    "status": "done"
+  },
   "BUG-GIWT-LIFECYCLE-CONFIG-WRITES-INVISIBLE-TO-OMP-GUARD": {
     "hash": "8cb1cfe",
     "git_issue": "8cb1cfe",
@@ -1516,7 +1533,7 @@
     "status": "done"
   },
   "FEAT-FEAT-INTERCOM-DURABLE-COORDINATION-STORE": {
-    "hash": "pending",
+    "hash": "ff9cdc4",
     "extid": "FEAT-FEAT-INTERCOM-DURABLE-COORDINATION-STORE",
     "type": "FEAT",
     "title": "intercom durable coordination store",
@@ -1529,7 +1546,8 @@
       "intercom"
     ],
     "source": ".plan/tickets/FEAT-feat-intercom-durable-coordination-store.md",
-    "status": "done"
+    "status": "done",
+    "git_issue": "ff9cdc4"
   },
   "FEAT-FEAT-JJ-JUJUTSU-VCS-SUPPORT": {
     "hash": "62e0fef",
