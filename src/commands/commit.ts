@@ -53,7 +53,7 @@ export async function commit(
     log("error", `commit message rejected: ${validation.reason}`);
     log(
       "error",
-      "usage: giwt commit [-F <file>|--message-file <file>] \"<type>(scope): <description>\"",
+      "usage: giwt commit -m \"<type>(scope): <description>\" | -F <file> | --message-file <file>",
     );
     log("error", "example: worktree commit -F - <<< \"fix(worktree): handle empty stdin\"");
     process.exit(1);

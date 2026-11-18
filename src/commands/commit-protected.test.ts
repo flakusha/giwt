@@ -182,6 +182,18 @@ describe("commit/commit-wt: on-protected direct commit", () => {
     expect(out).toContain("commit message rejected");
   });
 
+  test("accepts a git-style -m message", async () => {
+    const restore = installSigningStub();
+    const cap = captureOutput();
+    try {
+      await commit(["--on-protected", "-m", "fix(x): direct"], credConfig());
+      expect(cap.lines()).toContain("fix(x): direct");
+    } finally {
+      restore();
+      cap.restore();
+    }
+  });
+
   test("reports missing agent name/email", async () => {
     const halfCreds: WorktreeConfig = {
       repoRoot: config.repoRoot,

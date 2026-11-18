@@ -10,11 +10,17 @@ import { scratchRoot } from "./scratch-tmp";
  *   - `-F -` reads stdin (errors on empty stdin instead of yielding "").
  *   - `-F <missing>` exits 1 with a clear message.
  *   - `-F` with no value exits 1.
+ *   - `-m`/`--message` reads inline text (repeated flags, `-F` precedence).
  *   - Plain positional args yield `rest` and `message: null`.
  *   - Empty piped stdin with no `-F` errors instead of yielding "".
  *   - Validator accepts `feat:`, `fix(scope):`, `chore!:`, rejects
  *     uppercase, trailing period, missing colon, blank lines, no space
  *     after colon, subject > 72 chars.
+ *
+ * Resource contract (parallel-safe): each test owns a fresh mkdtemp dir
+ * allocated in beforeEach and removed in afterEach; stdin TTY/text and
+ * process.exit stubs are restored in afterEach/finally. No fixed paths,
+ * no cross-test state, no ordering dependence.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -132,6 +138,49 @@ describe("extractMessageInput", () => {
     const r = await extractMessageInput([]);
     expect(r.message).toBe("fix: from pipe\n");
     expect(r.rest).toEqual([]);
+  });
+
+  it("reads git-style -m/--message forms", async () => {
+    const short = await extractMessageInput(["-m", "fix(x): direct", "leftover"]);
+    expect(short.message).toBe("fix(x): direct");
+    expect(short.rest).toEqual(["leftover"]);
+    const long = await extractMessageInput(["--message", "fix: spaced"]);
+    expect(long.message).toBe("fix: spaced");
+    const equals = await extractMessageInput(["--message=fix: attached"]);
+    expect(equals.message).toBe("fix: attached");
+    const attached = await extractMessageInput(["-mfix: attached"]);
+    expect(attached.message).toBe("fix: attached");
+  });
+
+  it("joins repeated -m flags with a blank line", async () => {
+    const r = await extractMessageInput(["-m", "feat: subject", "-m", "body line"]);
+    expect(r.message).toBe("feat: subject\n\nbody line");
+  });
+
+  it("prefers -F over -m, and -m over piped stdin", async () => {
+    const f = join(tmp, "msg.txt");
+    writeFileSync(f, "fix: from file");
+    expect((await extractMessageInput(["-m", "fix: inline", "-F", f])).message).toBe(
+      "fix: from file",
+    );
+    Object.defineProperty(process.stdin, "isTTY", { value: false, writable: true });
+    Bun.stdin.text = (() => Promise.resolve("fix: from pipe\n")) as typeof Bun.stdin.text;
+    expect((await extractMessageInput(["-m", "fix: inline"])).message).toBe("fix: inline");
+  });
+
+  it("errors when -m has no value", async () => {
+    const origExit = process.exit;
+    const calls: number[] = [];
+    process.exit = ((code: number) => {
+      calls.push(code);
+      throw new Error(`__exit:${code}`);
+    }) as never;
+    try {
+      await expect(extractMessageInput(["-m"])).rejects.toThrow("__exit:1");
+      expect(calls).toEqual([1]);
+    } finally {
+      process.exit = origExit;
+    }
   });
 });
 

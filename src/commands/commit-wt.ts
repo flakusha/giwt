@@ -45,7 +45,10 @@ export async function commitWt(
 
   if (!branch) {
     log("error", "branch required");
-    log("error", "usage: giwt commit-wt <branch> [-F <file>|--message-file <file>] \"<message>\"");
+    log(
+      "error",
+      "usage: giwt commit-wt <branch> -m \"<message>\" | -F <file> | --message-file <file>",
+    );
     process.exit(1);
   }
 

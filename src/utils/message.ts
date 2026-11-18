@@ -4,34 +4,37 @@
 /**
  * Commit-message input extraction shared by `commit` and `commit-wt`.
  *
- * Supports `-F <path>` / `--message-file <path>` (use `-` for stdin) and
- * piped stdin, so multi-line messages reach `git commit -m` without
- * shell-argument mangling. Positional args are returned with the message
- * flags removed so callers keep their own positional parsing.
+ * Supports `-m <msg>` / `--message <msg>` / `--message=<msg>` (git-style),
+ * `-F <path>` / `--message-file <path>` (use `-` for stdin), and piped stdin,
+ * so multi-line messages reach `git commit -m` without shell-argument
+ * mangling. Positional args are returned with the message flags removed so
+ * callers keep their own positional parsing.
  */
 
 import { log } from "./output";
 
 export interface MessageInput {
-  /** Positional args with `-F`/`--message-file` and its value removed. */
+  /** Positional args with message flags and their values removed. */
   rest: string[];
-  /** Message from `-F`/stdin, or null when no message input was given. */
+  /** Message from `-m`/`-F`/stdin, or null when no message input was given. */
   message: string | null;
 }
 
 /**
- * Scan `args` for message-file input.
+ * Scan `args` for message input.
  *
  * Resolution order: explicit `-F <path>` / `--message-file <path>` (path `-`
- * reads stdin); otherwise, when no positional args remain and stdin is a
- * pipe, stdin is consumed as the message. Errors and exits on a missing or
- * unreadable message file.
+ * reads stdin) wins over `-m`/`--message` (repeated flags join with a blank
+ * line, as git does); otherwise, when no positional args remain and stdin is
+ * a pipe, stdin is consumed as the message. Errors and exits on a missing
+ * flag value or unreadable message file.
  *
  * @param args - raw command arguments
  * @returns remaining positional args and the resolved message (or null)
  */
 export async function extractMessageInput(args: string[]): Promise<MessageInput> {
   const rest: string[] = [];
+  const inlineMessages: string[] = [];
   let filePath: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
@@ -44,6 +47,17 @@ export async function extractMessageInput(args: string[]): Promise<MessageInput>
         process.exit(1);
       }
       filePath = value;
+    } else if (arg === "-m" || arg === "--message") {
+      const value = args[++i];
+      if (value === undefined) {
+        log("error", `${arg} requires a message`);
+        process.exit(1);
+      }
+      inlineMessages.push(value);
+    } else if (arg.startsWith("--message=")) {
+      inlineMessages.push(arg.slice("--message=".length));
+    } else if (arg.startsWith("-m") && arg.length > 2) {
+      inlineMessages.push(arg.slice(2));
     } else {
       rest.push(arg);
     }
@@ -69,6 +83,10 @@ export async function extractMessageInput(args: string[]): Promise<MessageInput>
       process.exit(1);
     }
     return { message: fileText, rest };
+  }
+
+  if (inlineMessages.length > 0) {
+    return { message: inlineMessages.join("\n\n"), rest };
   }
 
   if (rest.length === 0 && !process.stdin.isTTY) {
