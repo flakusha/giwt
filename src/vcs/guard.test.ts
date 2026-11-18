@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_SETTINGS, type GiwtSettings } from "../utils/settings";
-import { assertGitMutationAllowed } from "./guard";
+import { assertGitMutationAllowed, assertTicketSubstrateAllowed } from "./guard";
 
 const settingsFor = (backend: GiwtSettings["vcs"]["backend"]): GiwtSettings => ({
   ...DEFAULT_SETTINGS,
@@ -28,6 +28,27 @@ describe("assertGitMutationAllowed", () => {
       expect(message).toContain("giwt commit");
       expect(message).toContain("use the native backend commands (giwt jj / giwt pijul)");
       expect(message).toContain("[vcs] backend = \"git\"");
+    });
+  }
+});
+
+describe("assertTicketSubstrateAllowed", () => {
+  test("git backend is a no-op", () => {
+    expect(() => assertTicketSubstrateAllowed({ settings: settingsFor("git"), where: "giwt sync" }))
+      .not.toThrow();
+  });
+
+  for (const backend of ["jj", "pijul"] as const) {
+    test(`${backend} refuses before any git-issue call`, () => {
+      let message = "";
+      try {
+        assertTicketSubstrateAllowed({ settings: settingsFor(backend), where: "giwt sync" });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toContain("giwt sync");
+      expect(message).toContain("no side git repo is created");
+      expect(message).toContain(`[vcs] backend = "${backend}"`);
     });
   }
 });

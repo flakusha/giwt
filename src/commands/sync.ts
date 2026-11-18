@@ -18,12 +18,14 @@ import { type WorktreeConfig } from "../utils/config";
 import { parseOutFlags, renderRecords } from "../utils/emit";
 import { log, outcomeLine, raw, setOutputFormat } from "../utils/output";
 import { activeRun } from "../utils/runlog";
+import { assertTicketSubstrateAllowed } from "../vcs/guard";
 import { mapSourcesFor } from "./plan";
 
 export async function sync(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  assertTicketSubstrateAllowed({ settings: config.settings, where: "giwt sync" });
   const { format, rest } = parseOutFlags(args);
   if (args.filter((a) => a === "--json" || a === "--toml" || a === "--emoji").length > 1) {
     log("warn", `multiple output flags given — using --${format}`);

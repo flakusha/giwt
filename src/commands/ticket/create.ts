@@ -7,6 +7,7 @@ import type { WorktreeConfig } from "../../utils/config";
 import { getWorktreeRoot, gitSync } from "../../utils/git";
 import { log, raw } from "../../utils/output";
 import { generatedHeader } from "../../utils/reuse-toml";
+import { assertTicketSubstrateAllowed } from "../../vcs/guard";
 import { parseTicketArgs, type TicketFlags } from "./args";
 import { closeTickets } from "./close";
 import { copyTickets } from "./copy";
@@ -58,6 +59,7 @@ export function stripTypePrefix(type: string, title: string): string {
 }
 
 export async function ticket(args: string[], config: WorktreeConfig): Promise<void> {
+  assertTicketSubstrateAllowed({ settings: config.settings, where: "giwt ticket" });
   // Subactions share the `ticket` command; none collide with VALID_TYPES.
   if (args[0] === "close") return closeTickets(args.slice(1), config);
   if (args[0] === "copy") return copyTickets(args.slice(1), config);

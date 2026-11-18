@@ -28,3 +28,20 @@ export function assertGitMutationAllowed({
   if (backend === "git") return;
   throw new Error(gitMutationRefusal(backend, where));
 }
+
+/** Ticket/issue substrate is git-only: no side git repo, no silent .plan-only sync. */
+export function assertTicketSubstrateAllowed({
+  settings,
+  where,
+}: {
+  settings: GiwtSettings;
+  where: string;
+}): void {
+  const backend = settings.vcs.backend;
+  if (backend === "git") return;
+  throw new Error(
+    `${where}: the ticket issue substrate is unavailable with [vcs] backend = "${backend}" — `
+      + `git-issue has no ${backend} equivalent; no side git repo is created; `
+      + `set [vcs] backend = "git" in giwt.toml to use tickets/issues`,
+  );
+}
