@@ -28,6 +28,8 @@ export interface CommitInfo {
   parents: string[];
   /** Stable patch-id, or null when the commit has no diff (empty). */
   patchId: string | null;
+  /** Durable jj change ID when annotated by a jj change-id lookup. */
+  changeId?: string;
 }
 
 /** Run git in `root`; throws with stderr when the exit is unexpected. */

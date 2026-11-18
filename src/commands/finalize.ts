@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
+// size-allow: 300
 
 /**
  * `giwt finalize` public shell.
@@ -14,6 +15,8 @@
  *   - `finalize/staging.ts`      — Step 5 merge in an ephemeral staging worktree
  *   - `finalize/run.ts`          — runFinalize orchestration (Steps 1–5c)
  *   - `finalize/teardown.ts`     — Steps 6/7 worktree + branch teardown
+ *   - `finalize/jj.ts`           — jj op-log finalize (revert on gate failure)
+ *   - `finalize/pijul.ts`        — pijul commutation finalize (no rebase/CAS)
  *
  * Every historically exported name stays importable from this module path.
  */
@@ -24,15 +27,21 @@ import { branchToPath, findWorktree, type WorktreeConfig } from "../utils/config
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { appendGripe } from "../utils/ledger";
 import { log, raw } from "../utils/output";
+import { activeRun } from "../utils/runlog";
 import { assertGitMutationAllowed } from "../vcs/guard";
-import { installFailureGripe } from "./finalize/checks";
-import { checkDevMergeable } from "./finalize/gates";
+import { defaultJjSpawn } from "../vcs/jj";
+import { defaultPijulSpawn } from "../vcs/pijul";
+import { installFailureGripe, runCheck, runTests } from "./finalize/checks";
+import { checkDevMergeable, holdCheckFanoutSlot } from "./finalize/gates";
+import { finalizeWithJjOpLog } from "./finalize/jj";
 import { acquireFinalizeLock } from "./finalize/lock";
 import { parseFinalizeArgs } from "./finalize/merge";
+import { finalizeWithPijulCommutation } from "./finalize/pijul";
 import { rejectLegacyDryRun, runFinalize } from "./finalize/run";
 import {
   installSignalHandlers,
   publishActiveLockRelease,
+  releaseActiveCheckSlot,
   releaseActiveStagingTeardown,
   uninstallSignalHandlers,
 } from "./finalize/state";
@@ -51,9 +60,6 @@ export async function finalize(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
-  // Err-closed before any git probe, lock, gate or staging mutation: jj/pijul
-  // own their op logs; a git-style finalize would bypass them.
-  assertGitMutationAllowed({ settings: config.settings, where: "finalize" });
   // Reject the legacy --dry-run BEFORE parsing: as a positional it became the
   // branch and the operator got `no worktree found for branch '--dry-run'`
   // instead of the remedy (runFinalize's copy of this guard sits past every
@@ -94,6 +100,16 @@ export async function finalize(
     );
     process.exit(1);
   }
+
+  // Native backends own their mutation history: dispatch before any git
+  // probe, lock or staging work. Git mode keeps its historical path below.
+  if (config.settings.vcs.backend === "jj" || config.settings.vcs.backend === "pijul") {
+    await runNativeFinalize({ branch, parsed, config });
+    return;
+  }
+  // Err-closed before any git probe, lock, gate or staging mutation: an
+  // unregistered backend cannot fall through to the git finalize path.
+  assertGitMutationAllowed({ settings: config.settings, where: "finalize" });
 
   // Resolve directory name to branch name
   const dirName = branchToPath(branch);
@@ -207,4 +223,76 @@ export async function finalize(
     appendGripe(config.treeDir, branch, `finalize ${branch} failed: ${reason}`);
     throw error;
   }
+}
+
+/** Native-backend finalize: gates run through giwt's bounded pool first. */
+async function runNativeFinalize({
+  branch,
+  parsed,
+  config,
+}: {
+  branch: string;
+  parsed: ReturnType<typeof parseFinalizeArgs>;
+  config: WorktreeConfig;
+}): Promise<void> {
+  const nativeWt = findWorktree(branch, config);
+  if (!nativeWt) {
+    log("error", `no worktree found for branch '${branch}'`);
+    process.exit(1);
+  }
+  const target = parsed.onto || config.settings.branches.root;
+  const runGates = (): void => {
+    const checkArgs: string[] = [];
+    if (parsed.gatesFilter) checkArgs.push("--gates", parsed.gatesFilter);
+    else if (parsed.skipGatesFilter) checkArgs.push("--skip-gates", parsed.skipGatesFilter);
+    if (parsed.jobs) checkArgs.push("--jobs", parsed.jobs);
+    if (!existsSync(resolve(nativeWt, "bun.lock"))) {
+      log("warn", "Skipped gates: no bun.lock found");
+      return;
+    }
+    // giwt's bounded check pool is the gate substrate (never `jj run`).
+    // runCheckGateStep is git-only (merge-base), so hold the same slot here
+    // and pass the target ref directly as the diff base.
+    holdCheckFanoutSlot(config);
+    try {
+      const rec = activeRun();
+      if (
+        !runCheck({
+          wtPath: nativeWt,
+          diffBase: target,
+          extraCheckArgs: checkArgs,
+          config,
+          ...(rec !== null
+            ? {
+              capturePath: rec.capturePath("check.log"),
+              reportCapturePath: rec.capturePath("check-report.json"),
+            }
+            : {}),
+        })
+      ) {
+        throw new Error("checks failed");
+      }
+    } finally {
+      releaseActiveCheckSlot();
+    }
+    if (!runTests(nativeWt, config, activeRun()?.capturePath("test.log"))) {
+      throw new Error("tests failed");
+    }
+  };
+  const summary = config.settings.vcs.backend === "jj"
+    ? await finalizeWithJjOpLog({
+      root: config.repoRoot,
+      branch,
+      ontop: target,
+      spawn: defaultJjSpawn,
+      runGates,
+    })
+    : await finalizeWithPijulCommutation({
+      // pijul changes are recorded in the agent clone, not the shared repo.
+      root: nativeWt,
+      branch,
+      spawn: defaultPijulSpawn,
+      runGates,
+    });
+  log("success", `${summary.backend} finalize complete for '${branch}'`);
 }

@@ -36,4 +36,6 @@ Implement the `pijul` backend behind the landed VCS seam (`src/vcs/{types,regist
 - [x] Identity/GPG policy stays in the command layer; inherent sshsig signing is documented as a deviation.
 - [x] `bun run check` passes; every new file carries an SPDX header.
 
+**Landed 2026-11-18 (phase 2):** `pull --json` conflict surfacing via `pijul/conflicts.ts`, commutation-based native finalize, non-overridable `hooks approve` block, skip-ledger dissolution and change-hash history audit. Full gate passes. Remaining: pijul-native resurrected detector, finalize/rebase/abort rewrite beyond the gated native path, git-interop bridge.
+
 **Not in this ticket:** finalize/rebase/abort rewrite, `giwt pijul` passthrough table, git-interop bridge.

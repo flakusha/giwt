@@ -34,4 +34,6 @@ Implement the `jj` backend behind the landed VCS seam (`src/vcs/{types,registry,
 - [ ] `.jj/` is excluded from hot backups with a loud warning; a doctor `jj` check reports backend/version/colocation.
 - [ ] `bun run check` passes; every new file carries an SPDX header.
 
+**Landed 2026-11-18 (phase 2):** git-mutation guards across abort/worktree-bootstrap/cleanup, change-ID skip ledger, native op-log finalize, command-level Co-Authored-By strip, denied `signing.*` config overrides, doctor stale-workspace check. Full gate passes. Remaining acceptance items above (seam ops, workspace lifecycle, colocation guard, `.jj/` backup exclusion) still need completion.
+
 **Not in this ticket:** finalize/rebase/abort op-log rewrite, jj signing translation, skip-ledger re-key, remotes, tags, non-colocated repos.

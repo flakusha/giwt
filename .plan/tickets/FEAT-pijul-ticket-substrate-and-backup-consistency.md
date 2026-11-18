@@ -25,10 +25,10 @@ Pijul gaps from `.tmp/research/pijul/`: OPEN-QUESTIONS #6, #7, #14 plus INVENTOR
 - [x] Ticket/issue commands in pijul mode refuse with an actionable message and docs; a shared guard runs before any git-issue call, so no side git repo is created.
 - [x] Hot-backup config explicitly excludes `.pijul/pristine` and emits a loud warning naming the unbacked-up pristine store; a test asserts both.
 
-**Landed 2026-11-18:** ticket-substrate guard and backup exclusion. Skip-ledger dissolution and change-hash-based history detectors remain open.
+**Landed 2026-11-18:** ticket-substrate guard and backup exclusion. Later the same day: `skipLedgerApplicable` makes `rebase`/`history skips` explicitly refuse or no-op under pijul (immutable change hashes need no skip entry); `history/pijul-audit.ts` audits duplicate intrinsic change hashes across channels and reports git-only detectors as inapplicable. `resurrected` still needs a pijul-native tracked-blob provider; `weave` works on file paths without a git baseline ref.
 
-- [ ] Define and test skip-ledger behavior on immutable change hashes (no skip entry needed on re-apply/unrecord).
-- [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo.
-- [ ] `bun run check` passes; docs updated; SPDX headers on new files.
+- [x] Define and test skip-ledger behavior on immutable change hashes (no skip entry needed on re-apply/unrecord).
+- [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo. (partial: change-hash audit and weave-on-files landed; resurrected needs a non-git tracked-blob provider)
+- [x] `bun run check` passes; docs updated; SPDX headers on new files.
 
 **Not in this ticket:** pijul native command integration, git-interop bridge.

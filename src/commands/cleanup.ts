@@ -5,11 +5,13 @@ import { existsSync, readdirSync, rmSync } from "fs";
 import { resolve } from "path";
 import { getWorktrees, gitSync, isolatedGitEnv } from "../utils/git";
 import { colorize, log, raw } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 
 export async function execute(
   _args: string[],
   config: Awaited<ReturnType<typeof import("../index").loadConfig>>,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt cleanup" });
   if (!existsSync(config.treeDir)) {
     log("info", "no tree/ directory — nothing to clean");
     return;

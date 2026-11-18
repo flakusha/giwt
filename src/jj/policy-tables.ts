@@ -158,6 +158,8 @@ export const JJ_GLOBAL_OPTIONS: Readonly<Record<string, "value" | "bool">> = {
 export const JJ_DENY_CONFIG_KEYS: readonly string[] = [
   "signing.behavior",
   "signing.backend",
+  "signing.key",
+  "signing.keys",
   "revset-aliases.",
   "git.private-commits",
   "git.abandon-unreachable-commits",

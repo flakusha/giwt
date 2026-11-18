@@ -27,10 +27,10 @@ Broader pijul integration after the policy gate, from `.tmp/research/pijul/OPEN-
 - [x] Pin the exact beta with a clear error outside it (backend + doctor); install docs reflect the pinned beta.
 - [x] Route identity through ssh-agent (no GPG path or `--no-sign`); document git interop as one-shot lossy with no bridge.
 
-**Landed 2026-11-18:** clone-dir workspace primitives, `pijul record` commit, exact-beta version guard, and sshsig remedy. Conflict resolution and commutation-based finalize remain open.
+**Landed 2026-11-18:** clone-dir workspace primitives, `pijul record` commit, exact-beta version guard, and sshsig remedy. Later the same day: `pijul/conflicts.ts` surfaces `pull --json` conflict payloads into the run record (`pijul-conflicts.json`) and markers as line text; resolution is a normal `pijul record -m` (markers edited out first), while `record --accept-conflict-markers` stays BLOCKED. `finalize/pijul.ts` applies only new recorded changes by commutation (no rebase/merge/CAS) with gate-first rollback semantics. `pijul hooks approve` is a non-overridable built-in BLOCK.
 
-- [ ] Surface first-class conflicts via `pull --json`/`--accept-conflict-markers` and resolve them with a resolution change; tests cover the conflict path.
-- [ ] Use commutation (`apply`/`pull`) for finalize with no rebase/merge-commit/CAS path; gate hook install behind explicit approval.
-- [ ] `bun run check` passes; docs updated; SPDX headers on new files.
+- [x] Surface first-class conflicts via `pull --json`/`--accept-conflict-markers` and resolve them with a resolution change; tests cover the conflict path.
+- [x] Use commutation (`apply`/`pull`) for finalize with no rebase/merge-commit/CAS path; gate hook install behind explicit approval.
+- [x] `bun run check` passes; docs updated; SPDX headers on new files.
 
 **Not in this ticket:** ticket substrate and backup exclusion, skip-ledger semantics.

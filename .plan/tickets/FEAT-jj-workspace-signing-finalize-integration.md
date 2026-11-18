@@ -25,9 +25,9 @@ Broader jj integration after the policy gate, from `.tmp/research/jj/OPEN-QUESTI
 
 - [ ] Implement and test the workspace add/rename/forget/remove lifecycle and stale-WC policy on a colocated repo; direct git mutation is refused.
 - [ ] Enforce the bookmark convention in branch listing and the ledger branch field; cover workspace pinning and 0.46+ child colocation with tests.
-- [ ] Test signing identity mapping and bypass-key refusals; cover the Co-Authored-By strip and `jj fix` gating without relying on hooks.
-- [ ] Finalize/abort uses jj op-log undo/revert with tests for partial failure and rollback; giwt's bounded gate pool remains the gate substrate.
-- [ ] Add and test a doctor dev-sync analog.
-- [ ] `bun run check` passes; docs updated; SPDX headers on new files.
+- [ ] Test signing identity mapping and bypass-key refusals; cover the Co-Authored-By strip and `jj fix` gating without relying on hooks. (partial: `signing.*` config overrides and `jj fix` are denied, command messages get the trailer strip; identity mapping remains)
+- [x] Finalize/abort uses jj op-log undo/revert with tests for partial failure and rollback; giwt's bounded gate pool remains the gate substrate. (`finalize/jj.ts` snapshots an op, runs git-free bounded check gates, reverts on gate failure; abort/worktree-bootstrap/cleanup now refuse non-git backends before git stash surgery)
+- [x] Add and test a doctor dev-sync analog (`jj-stale-workspace` finding from `jj workspace list`).
+- [x] `bun run check` passes; docs updated; SPDX headers on new files.
 
 **Not in this ticket:** skip-ledger re-key, backup exclusion mechanics, pijul work.

@@ -45,3 +45,8 @@ export function assertTicketSubstrateAllowed({
       + `set [vcs] backend = "git" in giwt.toml to use tickets/issues`,
   );
 }
+
+/** Immutable change hashes need no skip ledger; git rewrites do. */
+export function skipLedgerApplicable({ settings }: { settings: GiwtSettings; }): boolean {
+  return settings.vcs.backend !== "pijul";
+}

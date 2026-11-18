@@ -103,3 +103,38 @@ describe("classifyPijulInvocation", () => {
     expect(classifyPijul({ args: ["status"] }).verdict).toBe("pass");
   });
 });
+
+describe("classifyPijulInvocation — hook approval built-in block", () => {
+  const lists = { safe: ["hooks"], allow: ["hooks", "hooks approve"], deny: [] };
+
+  test("allow and safe lists cannot lift the hook-approval built-in block", () => {
+    for (
+      const a of [
+        ["hooks", "approve"],
+        ["--", "hooks", "approve"],
+        ["hooks", "--channel", "x", "approve"],
+        ["hooks", "approve", "--channel", "x"],
+      ]
+    ) {
+      const verdict = classifyPijulInvocation(a, lists);
+      expect(verdict.verdict, a.join(" ")).toBe("block");
+      expect(verdict.reason, a.join(" ")).toContain("built-in block");
+      expect(verdict.reason, a.join(" ")).toContain("[pijul] allow cannot lift it");
+      expect(verdict.reason, a.join(" ")).toContain("hooks show");
+    }
+    expect(classifyPijul({ args: ["hooks", "approve"], lists }).verdict).toBe("block");
+    expect(
+      classifyPijulInvocation(["hooks", "approve"], {
+        safe: [],
+        allow: ["hooks approve"],
+        deny: [],
+      }).verdict,
+    ).toBe("block");
+  });
+
+  test("normal RO ops still pass while hook approval is blocked", () => {
+    expect(classifyPijulInvocation(["hooks", "show"], lists).verdict).toBe("pass");
+    expect(classifyPijulInvocation(["status"], lists).verdict).toBe("pass");
+    expect(v(["hooks", "approve"])).toBe("block");
+  });
+});

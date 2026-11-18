@@ -26,7 +26,7 @@ export const WORKSPACE_TEMPLATE = "name ++ \"|\" ++ root ++ \"\\n\"";
 export const COUNT_TEMPLATE = "\"x\"";
 const COLOCATED = /is currently colocated with Git\./;
 
-const defaultJjSpawn: JjSpawn = (cmd, cwd) => {
+export const defaultJjSpawn: JjSpawn = (cmd, cwd) => {
   try {
     const proc = Bun.spawnSync(cmd, {
       cwd,

@@ -8,11 +8,14 @@
  * or (for jj) the repo is not colocated with git.
  */
 
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   meetsVersionFloor,
   parsePijulVersion,
   type PijulVersion,
 } from "../../intercom/backend-pijul.ts";
+import { WORKSPACE_TEMPLATE } from "../../vcs/jj.ts";
 import { PIJUL_PINNED_VERSION } from "../../vcs/pijul.ts";
 import type { VcsBackendName } from "../../vcs/types.ts";
 import type { SpawnFn } from "./spawn.ts";
@@ -35,6 +38,36 @@ function show(v: PijulVersion): string {
 
 function finding(rule: string, message: string): CheckFinding {
   return { file: "giwt.toml", line: 0, rule, message, severity: "error", kind: "task" };
+}
+
+/** Read-only dev-sync sweep: `jj workspace list -T` prints name|path; report
+ *  entries whose checkout directory has disappeared (no mutation). */
+async function staleWorkspaceFinding(
+  spawn: SpawnFn,
+  root: string,
+): Promise<CheckFinding | null> {
+  const listing = await probe(
+    spawn,
+    ["jj", "workspace", "list", "--no-pager", "-T", WORKSPACE_TEMPLATE],
+    root,
+  );
+  if (listing === null) return null;
+  const stale: string[] = [];
+  for (const line of listing.split("\n")) {
+    const sep = line.indexOf("|");
+    if (sep < 0) continue;
+    const name = line.slice(0, sep).trim();
+    const path = line.slice(sep + 1).trim();
+    if (name === "" || path === "" || existsSync(resolve(root, path))) continue;
+    stale.push(`${name} (${path})`);
+  }
+  if (stale.length === 0) return null;
+  return finding(
+    "jj-stale-workspace",
+    `jj workspace(s) missing on disk: ${
+      stale.join(", ")
+    } — run 'jj workspace forget <name>' to drop stale entries`,
+  );
 }
 
 export interface VcsCheckOptions {
@@ -104,6 +137,8 @@ export async function runVcsCheck(
         ),
       );
     }
+    const stale = await staleWorkspaceFinding(opts.spawn, opts.root);
+    if (stale !== null) findings.push(stale);
   } else {
     const version = parsePijulVersion(versionOut);
     notes.push(`pijul version pinned to ${PIJUL_PINNED_VERSION}`);

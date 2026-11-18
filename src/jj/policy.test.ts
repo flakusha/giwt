@@ -59,6 +59,8 @@ describe("classifyJjInvocation", () => {
         "user.email",
         "signing.behavior",
         "signing.backend",
+        "signing.key",
+        "signing.keys",
         "revset-aliases.immutable_heads()",
         "fix.tools.x.command",
         "merge-tools.x",
@@ -68,6 +70,8 @@ describe("classifyJjInvocation", () => {
       expect(v(["--config", `${k}=evil`, "status"]), k).toBe("block");
     }
     expect(v(["--config=user.name=evil", "status"])).toBe("block");
+    expect(v(["-c", "signing.key=evil", "status"])).toBe("block");
+    expect(v(["-c", "signing.keys=evil", "commit"])).toBe("block");
     expect(v(["status", "--config-file", "/tmp/x"])).toBe("block");
     expect(v(["--config-file=/tmp/x", "status"])).toBe("block");
   });

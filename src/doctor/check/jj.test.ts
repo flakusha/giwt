@@ -4,6 +4,9 @@
 /** Version floor / colocation / binary-presence probes for VCS doctor checks. */
 
 import { describe, expect, test } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { scratchRoot } from "../../utils/scratch-tmp";
 import { PIJUL_PINNED_VERSION } from "../../vcs/pijul.ts";
 import { runDoctorChecks } from "./entry.ts";
 import { JJ_VERSION_FLOOR, parseJjVersion, runVcsCheck } from "./jj.ts";
@@ -69,6 +72,29 @@ describe("VCS doctor checks", () => {
     );
     expect(result.ok).toBe(false);
     expect(result.findings[0]?.rule).toBe("jj-binary");
+  });
+
+  test("jj flags workspaces whose on-disk checkout is gone (read-only)", async () => {
+    const root = mkdtempSync(join(scratchRoot(), "giwt-jj-doctor-"));
+    const live = join(root, "live");
+    const gone = join(root, "gone");
+    mkdirSync(live);
+    try {
+      const spawn: Reply = (cmd) =>
+        cmd[1] === "--version"
+          ? ok("jj 0.46.0\n")
+          : cmd[1] === "workspace"
+          ? ok(`default|${root}\nlive|${live}\ngone|${gone}\n`)
+          : ok("The repo is currently colocated with Git.\n");
+      const result = await runVcsCheck("jj", { ...jjOpts(spawn), root });
+      const stale = result.findings.filter((f) => f.rule === "jj-stale-workspace");
+      expect(stale).toHaveLength(1);
+      expect(stale[0]?.message).toContain("gone");
+      expect(stale[0]?.message).not.toContain("live");
+      expect(existsSync(gone)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("pijul pins the exact beta", async () => {

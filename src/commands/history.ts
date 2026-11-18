@@ -33,7 +33,9 @@ import type { WorktreeConfig } from "../utils/config";
 import { type OutFormat, parseOutFlags, renderRecords } from "../utils/emit";
 import { gitSyncQuiet } from "../utils/git";
 import { log, raw } from "../utils/output";
+import { skipLedgerApplicable } from "../vcs/guard";
 import { runResurrected, runWeave } from "./history-detectors";
+import { runPijulAudit } from "./history-pijul-audit";
 
 const REASON_LABELS: Record<FindingReason, string> = {
   "duplicate-patch-id": "patch-id already in target history",
@@ -116,11 +118,16 @@ async function runAudit(rest: string[], config: WorktreeConfig, format: OutForma
       usageError(`unexpected argument '${arg}'`);
     }
   }
+  const target = onto ?? config.settings.branches.root;
+  if (config.settings.vcs.backend === "pijul") {
+    if (branch === undefined) usageError("pijul audit requires an explicit channel name");
+    runPijulAudit({ branch, onto, config, format });
+    return;
+  }
   if (branch === undefined) {
     branch = gitSyncQuiet(config.worktreeRoot, "branch", "--show-current").trim();
     if (branch === "") usageError("no branch given and HEAD is detached");
   }
-  const target = onto ?? config.settings.branches.root;
   const report = auditHistory({
     root: config.repoRoot,
     branch,
@@ -163,6 +170,10 @@ function verdictRecord(verdict: SkipVerdict): Record<string, unknown> {
 }
 
 async function runSkips(rest: string[], config: WorktreeConfig, format: OutFormat): Promise<void> {
+  if (!skipLedgerApplicable({ settings: config.settings })) {
+    log("info", "pijul has immutable change hashes — no rebase skip ledger applies");
+    return;
+  }
   let vs: string | undefined;
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i]!;

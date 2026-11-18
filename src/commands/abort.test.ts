@@ -448,3 +448,25 @@ describe("abort failure branches", () => {
     expect(out).toContain("could not remove lockfile");
   });
 });
+
+describe("abort backend guard", () => {
+  test("non-git backend refuses before any git probe or mutation", async () => {
+    root = mkdtempSync(join(scratchRoot(), "giwt-abort-guard-"));
+    temps.push(root);
+    const cfg: WorktreeConfig = {
+      repoRoot: root,
+      worktreeRoot: root,
+      treeDir: root,
+      settings: { ...DEFAULT_SETTINGS, vcs: { backend: "jj" } },
+    };
+    let message = "";
+    try {
+      await abort([], cfg);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain("giwt abort");
+    expect(message).toContain("[vcs] backend = \"jj\"");
+    expect(readdirSync(root)).toEqual([]);
+  });
+});

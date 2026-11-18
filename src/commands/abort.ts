@@ -50,6 +50,7 @@ import { resolve } from "path";
 import { type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { log, outcomeLine, raw, section } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 import {
   DEV_IN_PROGRESS_HEADS,
   FINALIZE_STASH_PREFIX,
@@ -81,6 +82,7 @@ export async function abort(
   _args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt abort" });
   section("Finalize abort (manual recovery)");
   const dryRun = _args.includes("--dry-run");
   if (dryRun) log("warn", "DRY RUN: no mutations will be performed");

@@ -100,7 +100,10 @@ export function classifyPijulInvocation(
 
   const blockKey = longestKey(PIJUL_BLOCK, sub, subArgs);
   if (blockKey !== undefined) {
-    return block(`pijul ${blockKey} is destructive/unrecoverable and always blocked`, sub);
+    const reason = blockKey === "hooks approve"
+      ? "pijul hooks approve is blocked by the giwt built-in block policy; [pijul] allow cannot lift it — use `pijul hooks show` to inspect hooks and approve manually with explicit approval"
+      : `pijul ${blockKey} is blocked by the giwt built-in block policy (destructive/unrecoverable); [pijul] allow cannot lift it`;
+    return block(reason, sub);
   }
 
   if (sub === "record" || sub === "squash") {

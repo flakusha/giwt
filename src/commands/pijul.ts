@@ -8,6 +8,7 @@
  */
 
 import { writeFileSync } from "node:fs";
+import { hasUnresolvedConflicts, parsePullConflicts } from "../pijul/conflicts";
 import { classifyPijulInvocation } from "../pijul/policy";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
@@ -47,6 +48,7 @@ export async function pijulPassthrough(args: string[], config: WorktreeConfig): 
   const err = proc.stderr.toString();
 
   captureOutput(rec, exit, out, err);
+  surfacePullConflicts({ rec, out });
   rec?.event(
     `pijul:${verdict.subcommand}`,
     exit === 0 ? "ok" : "fail",
@@ -64,5 +66,28 @@ function captureOutput(rec: RunRecorder | null, exit: number, out: string, err: 
       rec.capturePath("pijul-output.txt"),
       `# exit=${exit}\n# pijul stdout\n${out}# pijul stderr\n${err}`,
     );
+  } catch { /* best-effort evidence */ }
+}
+
+export interface SurfacePullConflictsArgs {
+  rec: Pick<RunRecorder, "event" | "capturePath"> | null;
+  out: string;
+  /** Injectable so tests need no filesystem; defaults to writeFileSync. */
+  write?: (path: string, data: string) => void;
+}
+
+/** Surface first-class pull conflicts (or raw conflict markers) on the run record. */
+export function surfacePullConflicts(
+  { rec, out, write = writeFileSync }: SurfacePullConflictsArgs,
+): void {
+  if (rec === null || !hasUnresolvedConflicts(out)) return;
+  const conflicts = parsePullConflicts(out);
+  const detail = conflicts.slice(0, 3).map((c) => `${c.path} (${c.kind})`).join(", ");
+  const summary = conflicts.length === 0
+    ? "conflict markers in output"
+    : `conflicts=${conflicts.length}: ${detail}`;
+  rec.event("pijul:conflicts", "fail", summary);
+  try {
+    write(rec.capturePath("pijul-conflicts.json"), out);
   } catch { /* best-effort evidence */ }
 }

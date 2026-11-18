@@ -22,6 +22,8 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import type { WorktreeConfig } from "../utils/config";
+import { skipLedgerApplicable } from "../vcs/guard";
+import { type JjHistorySpawn, tryJjChangeIds } from "./jj-history";
 import { type CommitInfo, historyGit, targetPatchIds } from "./patch-ids";
 
 export type SkipReason = "duplicate" | "empty" | "unexplained";
@@ -35,6 +37,8 @@ export interface SkipRecord {
   /** Branch head BEFORE the rebase — recovery pointer to the originals. */
   preHead: string;
   sha: string;
+  /** Durable jj change ID (jj backend); commit ids churn on rewrite. */
+  changeId?: string;
   subject: string;
   patchId: string | null;
   reason: { detected: SkipReason; note?: string; };
@@ -136,27 +140,40 @@ export function recordRebaseSkips(
     pre: CommitInfo[];
     post: CommitInfo[];
     note?: string;
+    changeIds?: ReadonlyMap<string, string>;
+    jjSpawn?: JjHistorySpawn;
   },
 ): SkipRecord[] {
+  if (!skipLedgerApplicable({ settings: opts.config.settings })) return [];
   const dropped = diffSkips({
     pre: opts.pre,
     post: opts.post,
     targetPids: targetPatchIds(opts.config.repoRoot, opts.target),
   });
   if (dropped.length === 0) return [];
+  const jjOpts = opts.jjSpawn !== undefined ? { spawn: opts.jjSpawn } : {};
+  const droppedShas = dropped.map((drop) => drop.sha);
+  const changeIds = opts.changeIds
+    ?? (opts.config.settings.vcs.backend === "jj"
+      ? tryJjChangeIds({ root: opts.config.repoRoot, shas: droppedShas, ...jjOpts })
+      : undefined);
   const ts = new Date().toISOString();
-  const records = dropped.map((drop) => ({
-    v: 1 as const,
-    ts,
-    branch: opts.branch,
-    onto: opts.target,
-    preHead: opts.preHead,
-    sha: drop.sha,
-    subject: drop.subject,
-    patchId: drop.patchId,
-    reason: { detected: drop.reason, ...(opts.note !== undefined ? { note: opts.note } : {}) },
-    ...(drop.twins !== undefined ? { twins: drop.twins } : {}),
-  }));
+  const records = dropped.map((drop) => {
+    const changeId = changeIds?.get(drop.sha);
+    return {
+      v: 1 as const,
+      ts,
+      branch: opts.branch,
+      onto: opts.target,
+      preHead: opts.preHead,
+      sha: drop.sha,
+      ...(changeId !== undefined ? { changeId } : {}),
+      subject: drop.subject,
+      patchId: drop.patchId,
+      reason: { detected: drop.reason, ...(opts.note !== undefined ? { note: opts.note } : {}) },
+      ...(drop.twins !== undefined ? { twins: drop.twins } : {}),
+    };
+  });
   appendSkips(skipsPath(opts.config), records);
   return records;
 }
@@ -164,6 +181,8 @@ export function recordRebaseSkips(
 /** Comparison-mode verdict for one ledger record. */
 export interface SkipVerdict {
   record: SkipRecord;
+  /** Stable identity for reports: jj change ID when known, else git sha. */
+  identity: string;
   justified: boolean;
   /** Verified twin in the compared ref (duplicates). */
   twin?: string;
@@ -178,38 +197,63 @@ export interface SkipVerdict {
  * Anything else is flagged as probable real-work loss.
  */
 export function verifySkips(
-  opts: { root: string; records: SkipRecord[]; vs: string; },
+  opts: {
+    root: string;
+    records: SkipRecord[];
+    vs: string;
+    changeIds?: ReadonlyMap<string, string>;
+    jjSpawn?: JjHistorySpawn;
+  },
 ): SkipVerdict[] {
+  const changeIds = opts.changeIds
+    ?? (opts.records.some((r) => r.changeId !== undefined)
+      ? tryJjChangeIds({ root: opts.root, ...(opts.jjSpawn ? { spawn: opts.jjSpawn } : {}) })
+      : undefined);
+  const byChange = new Map<string, string>();
+  if (changeIds !== undefined) {
+    for (const [sha, change] of changeIds) byChange.set(change, sha);
+  }
   const vsPids = targetPatchIds(opts.root, opts.vs);
   return opts.records.map((record) => {
+    const currentSha = record.changeId !== undefined
+      ? byChange.get(record.changeId) ?? record.sha
+      : record.sha;
+    const identity = record.changeId ?? record.sha;
     if (record.patchId !== null) {
       const twins = vsPids.get(record.patchId);
       if (twins !== undefined && twins[0] !== undefined) {
-        return { record, justified: true, twin: twins[0] };
+        return { record, identity, justified: true, twin: twins[0] };
       }
       return {
         record,
+        identity,
         justified: false,
         problem: `patch-id ${record.patchId} not found in '${opts.vs}' — probable real-work loss`,
       };
     }
-    // Empty skip: justification is the emptiness itself, re-checked
-    // against the original object (reachable via the recorded preHead).
+    // Empty skip: justification is re-checked against the current object —
+    // the recorded sha after a jj rewrite is only a recovery pointer.
     const exists = historyGit({
       root: opts.root,
-      args: ["cat-file", "-e", `${record.sha}^{commit}`],
+      args: ["cat-file", "-e", `${currentSha}^{commit}`],
       okCodes: [128],
     }).code === 0;
     if (!exists) {
-      return { record, justified: false, problem: `commit ${record.sha} is gone — unverifiable` };
+      return {
+        record,
+        identity,
+        justified: false,
+        problem: `commit ${identity} is gone — unverifiable`,
+      };
     }
     const diff =
-      historyGit({ root: opts.root, args: ["diff-tree", "--root", "-p", "-r", record.sha] }).out;
-    if (diff.trim() === "") return { record, justified: true };
+      historyGit({ root: opts.root, args: ["diff-tree", "--root", "-p", "-r", currentSha] }).out;
+    if (diff.trim() === "") return { record, identity, justified: true };
     return {
       record,
+      identity,
       justified: false,
-      problem: `commit ${record.sha} is not empty — drop was wrong`,
+      problem: `commit ${identity} is not empty — drop was wrong`,
     };
   });
 }

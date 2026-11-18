@@ -74,7 +74,7 @@ export function runCheckGateStep(
  * the semaphore shapes contention across giwt instances, it never blocks or
  * refuses a finalize.
  */
-function holdCheckFanoutSlot(config: WorktreeConfig): void {
+export function holdCheckFanoutSlot(config: WorktreeConfig): void {
   const budgetMb = config.settings.doctor.memoryBudgetMb;
   const availableMemMb = budgetMb > 0 ? budgetMb : Math.floor(freemem() / 2 ** 20);
   const slot = acquireCheckSlot({ dir: checkSlotDir(), availableMemMb });

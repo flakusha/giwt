@@ -55,18 +55,19 @@ export const PIJUL_RW: Record<string, true> = {
   "identity edit": true,
   "identity repair": true,
   "identity prove": true,
-  "hooks approve": true,
   "hooks revoke": true,
   "git import": true,
 };
 
-/** Always refused: destructive history/worktree ops, credentials, helpers. */
+/** Always refused: destructive history/worktree ops, credentials, helpers, hook approval. */
 export const PIJUL_BLOCK: Record<string, true> = {
   reset: true,
   "unrecord --reset": true,
   "record --accept-conflict-markers": true,
   "channel delete": true,
   "identity remove": true,
+  // Hook install needs explicit human approval outside giwt; allow cannot lift this.
+  "hooks approve": true,
   client: true,
   debug: true,
 };

@@ -9,6 +9,7 @@ import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { log, outcomeLine, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
+import { assertGitMutationAllowed } from "../vcs/guard";
 import { scopedSignFlags } from "./scoped-reconcile";
 
 /** One-line summary of strict-superset auto-resolutions, if any occurred. */
@@ -56,6 +57,7 @@ export async function rebase(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt rebase" });
   const { autostash, skipNote, positionals } = parseRebaseFlags(args);
 
   const [branch, onto] = positionals;

@@ -12,6 +12,7 @@ import { gitConfigSet } from "../utils/config-writes";
 import { gitSyncQuiet, isolatedGitEnv, isProtected } from "../utils/git";
 import { linkNodeModules } from "../utils/modules";
 import { log, raw } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 
 /** Protected-branch refusal shared by the create/new-branch pre-flights:
  *  must run before any git mutation and before the callers' own
@@ -45,6 +46,7 @@ export interface BootstrapOptions {
 export async function bootstrapWorktree(
   { config, wtPath, branch, base, hooksReason }: BootstrapOptions,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt worktree bootstrap" });
   // Ensure tree dir
   mkdirSync(config.treeDir, { recursive: true });
 

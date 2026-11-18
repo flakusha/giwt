@@ -8,14 +8,21 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { type WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { DEFAULT_SETTINGS } from "../utils/settings";
-import { batchPatchIds, walkRange } from "./patch-ids";
-import { diffSkips, readSkips, type SkipRecord, skipsPath, verifySkips } from "./skips";
+import { batchPatchIds, type CommitInfo, walkRange } from "./patch-ids";
+import {
+  diffSkips,
+  readSkips,
+  recordRebaseSkips,
+  type SkipRecord,
+  skipsPath,
+  verifySkips,
+} from "./skips";
 
 const temps: string[] = [];
 
@@ -235,5 +242,114 @@ describe("verifySkips comparison mode", () => {
     });
     expect(verdicts[0]!.justified).toBe(false);
     expect(verdicts[0]!.problem).toContain("is not empty");
+  });
+
+  test("pijul backend writes no skip entry and never touches git", () => {
+    const root = mkdtempSync(join(scratchRoot(), "giwt-skips-pijul-"));
+    temps.push(root);
+    const config: WorktreeConfig = {
+      repoRoot: root,
+      worktreeRoot: root,
+      treeDir: join(root, "tree"),
+      settings: { ...DEFAULT_SETTINGS, vcs: { backend: "pijul" } },
+    };
+    expect(recordRebaseSkips({
+      config,
+      branch: "feature",
+      target: "main",
+      preHead: "0".repeat(40),
+      pre: [],
+      post: [],
+    })).toEqual([]);
+    expect(existsSync(skipsPath(config))).toBe(false);
+  });
+});
+
+describe("jj change-id re-keying", () => {
+  const CHANGE = "changeone";
+  const OLD_SHA = "1".repeat(40);
+
+  function jjConfig(root: string): WorktreeConfig {
+    return {
+      repoRoot: root,
+      worktreeRoot: root,
+      treeDir: join(root, "tree"),
+      settings: { ...DEFAULT_SETTINGS, vcs: { backend: "jj" } },
+    };
+  }
+
+  function preDrop(): CommitInfo {
+    return { sha: OLD_SHA, subject: "skipped work", parents: [], patchId: null };
+  }
+
+  test("jj mode resolves change ids through the injected jj seam and persists them", () => {
+    const { root } = makeRepo();
+    const config = jjConfig(root);
+    let revset = "";
+    const written = recordRebaseSkips({
+      config,
+      branch: "feature",
+      target: "main",
+      preHead: OLD_SHA,
+      pre: [preDrop()],
+      post: [],
+      jjSpawn: (cmd) => {
+        revset = cmd[3] ?? "";
+        return { stdout: `${OLD_SHA}\x1f${CHANGE}\n`, stderr: "", exitCode: 0 };
+      },
+    });
+    expect(revset).toContain(`commit_id(${OLD_SHA})`);
+    expect(written[0]!.changeId).toBe(CHANGE);
+    expect(readSkips(config)[0]!.changeId).toBe(CHANGE);
+  });
+
+  test("git-mode records carry no change id", () => {
+    const { config } = makeRepo();
+    const written = recordRebaseSkips({
+      config,
+      branch: "feature",
+      target: "main",
+      preHead: OLD_SHA,
+      pre: [preDrop()],
+      post: [],
+    });
+    expect(written[0]!.changeId).toBeUndefined();
+    expect(readSkips(config)[0]!.changeId).toBeUndefined();
+  });
+
+  test("a rewrite to a new commit id verifies and reports the durable change id", () => {
+    const { root } = makeRepo();
+    const config = jjConfig(root);
+    const written = recordRebaseSkips({
+      config,
+      branch: "feature",
+      target: "main",
+      preHead: OLD_SHA,
+      pre: [preDrop()],
+      post: [],
+      changeIds: new Map([[OLD_SHA, CHANGE]]),
+    });
+    expect(written[0]!.changeId).toBe(CHANGE);
+    const records = readSkips(config);
+    expect(records[0]!.sha).toBe(OLD_SHA);
+    expect(records[0]!.changeId).toBe(CHANGE);
+
+    // The original commit id is gone; the same change now sits on S2.
+    git(root, ["commit", "-q", "--allow-empty", "-m", "skipped work"]);
+    const newSha = git(root, ["rev-parse", "HEAD"]).trim();
+
+    const stale = verifySkips({ root, records, vs: "main", changeIds: new Map() });
+    expect(stale[0]!.justified).toBe(false);
+    expect(stale[0]!.problem).toContain("gone");
+
+    const rekeyed = verifySkips({
+      root,
+      records,
+      vs: "main",
+      changeIds: new Map([[newSha, CHANGE]]),
+    });
+    expect(rekeyed[0]!.justified).toBe(true);
+    expect(rekeyed[0]!.identity).toBe(CHANGE);
+    expect(rekeyed[0]!.record.changeId).toBe(CHANGE);
   });
 });

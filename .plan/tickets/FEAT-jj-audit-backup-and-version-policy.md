@@ -24,8 +24,8 @@ Remaining jj integration from `.tmp/research/jj/OPEN-QUESTIONS.md`: #4 version f
 
 - [ ] Audit/history detectors work on a colocated jj repo using change IDs + evolog or colocated git plumbing; tests cover resurrected/rewrite/weave cases.
 - [ ] Hot-backup config explicitly excludes `.jj/` and emits a loud warning naming the unbacked-up op log; a test asserts the exclusion and the warning.
-- [ ] The skip ledger uses change IDs as keys with a test proving re-key-on-change-ID; ledger entries include jj verb outcome summaries.
+- [x] The skip ledger uses change IDs as keys with a test proving re-key-on-change-ID (`history/jj-history.ts`, explicit `commit_id(...)` revset for hidden rewritten commits); ledger entries include jj verb outcome summaries.
 - [ ] Version floor 0.46 is enforced with a clear error below it; the pinned installer path and churn policy are documented.
-- [ ] `bun run check` passes; docs updated; SPDX headers on new files.
+- [x] `bun run check` passes; docs updated; SPDX headers on new files.
 
 **Not in this ticket:** non-colocated repos, finalize/abort op-log rewrite.

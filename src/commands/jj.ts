@@ -15,8 +15,20 @@ import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import type { RunRecorder } from "../utils/runlog";
+import { applyTrailerPolicy, removeTempFiles } from "./git-trailers";
 
 const JJ_BYPASS_ENV = ["JJ_CONFIG", "JJ_USER", "JJ_EMAIL", "JJ_EDITOR"] as const;
+
+/** Strip LLM Co-Authored-By trailers from jj -m/--message arguments with the
+ *  shared git trailer policy (real co-authors survive, -F files rewritten). */
+export async function jjMessageArgs(
+  args: readonly string[],
+  config: WorktreeConfig,
+  rec: RunRecorder | null = null,
+): Promise<{ args: string[]; tempFiles: string[]; }> {
+  const policy = await applyTrailerPolicy(args, "commit", config, rec);
+  return { args: policy.args, tempFiles: policy.tempFiles };
+}
 
 export async function jjPassthrough(args: string[], config: WorktreeConfig): Promise<void> {
   const rest = args[0] === "--" ? args.slice(1) : args;
@@ -47,13 +59,15 @@ export async function jjPassthrough(args: string[], config: WorktreeConfig): Pro
     return;
   }
 
-  const proc = Bun.spawnSync(["jj", ...rest], {
+  const message = await jjMessageArgs(rest, config, rec);
+  const proc = Bun.spawnSync(["jj", ...message.args], {
     cwd: config.worktreeRoot,
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
     env: isolatedGitEnv(),
   });
+  removeTempFiles(message.tempFiles);
   const exit = proc.exitCode ?? 0;
   const out = proc.stdout.toString();
   const err = proc.stderr.toString();

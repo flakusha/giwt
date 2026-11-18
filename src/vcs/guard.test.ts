@@ -3,7 +3,11 @@
 
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_SETTINGS, type GiwtSettings } from "../utils/settings";
-import { assertGitMutationAllowed, assertTicketSubstrateAllowed } from "./guard";
+import {
+  assertGitMutationAllowed,
+  assertTicketSubstrateAllowed,
+  skipLedgerApplicable,
+} from "./guard";
 
 const settingsFor = (backend: GiwtSettings["vcs"]["backend"]): GiwtSettings => ({
   ...DEFAULT_SETTINGS,
@@ -51,4 +55,15 @@ describe("assertTicketSubstrateAllowed", () => {
       expect(message).toContain(`[vcs] backend = "${backend}"`);
     });
   }
+});
+
+describe("skipLedgerApplicable", () => {
+  test("git and jj backends keep the rebase skip ledger", () => {
+    expect(skipLedgerApplicable({ settings: settingsFor("git") })).toBe(true);
+    expect(skipLedgerApplicable({ settings: settingsFor("jj") })).toBe(true);
+  });
+
+  test("pijul change hashes dissolve the skip ledger", () => {
+    expect(skipLedgerApplicable({ settings: settingsFor("pijul") })).toBe(false);
+  });
 });
