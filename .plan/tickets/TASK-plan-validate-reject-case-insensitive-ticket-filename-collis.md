@@ -8,8 +8,6 @@
 **Effort:** Small
 **Tags:** naming, drift
 
-**Summary:**
-
 **Summary:** `giwt plan validate` has no gate rejecting two ticket files whose names differ only by letter case. On loop-lore this silently broke the entire VitePress docs build.
 
 **Context:** In a consuming repo (loop-lore, 2026-09-27) thirteen `.plan/tickets/*.md` files existed in UPPERCASE alongside their indexed lowercase originals, all added by one commit. Only the lowercase file was referenced by `index.json`, so the uppercase copies were unindexed leftovers. VitePress names each page's SSR chunk from its path, so a case-only filename collision yields two chunks differing solely by case; Vite renames one to `<name>2.md.js` while the page-to-chunk map still expects the original, and the dynamic import in `renderPage` throws `ERR_MODULE_NOT_FOUND`. The build died before the `buildEnd` hook, so `vp-icons.css` and `hashmap.json` were never written, every rendered page 404'd on the stylesheet link VitePress core emits, and the docs browser e2e failed wholesale. Which colliding page surfaced varied per run, so the crash looked unrelated to any recent change.

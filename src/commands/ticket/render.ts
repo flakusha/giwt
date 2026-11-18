@@ -62,7 +62,15 @@ export function renderTicketFile(
   ) {
     content += `**Caveats:** ${CAVEATS_CHECKLIST}\n`;
   }
-  content += `\n**Summary:**\n\n${cleanBody || "No description provided."}\n\n`;
+  // The body itself is always appended; only the **Summary:** marker is
+  // conditional — same hasSection suppression as Context/Acceptance Criteria
+  // below, so a body carrying its own **Summary:** section does not gain a
+  // second (empty) marker next to it.
+  if (hasSection(body, "Summary")) {
+    content += `\n${cleanBody}\n\n`;
+  } else {
+    content += `\n**Summary:**\n\n${cleanBody || "No description provided."}\n\n`;
+  }
   // A field present in the user body suppresses its placeholder — no
   // duplicated (empty) sections. Detection mirrors the format gate's marker
   // regex exactly, so "present" means what `plan validate` would count.

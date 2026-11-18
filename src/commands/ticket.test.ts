@@ -230,6 +230,14 @@ describe("renderTicketFile — body fields suppress their placeholders", () => {
       expect(content).toMatch(new RegExp(`\\*\\*${section}:\\*\\*`, "i"));
     }
   });
+
+  it("suppresses the seeded **Summary:** marker when the body carries its own, keeping exactly one", () => {
+    const body = "**Summary:**\n\nAuthor-written summary prose.";
+    const content = renderTicketFile({ type: "BUG", title: "t", flags: FLAGS, body });
+    expect(content.match(/\*\*Summary:\*\*/g)?.length).toBe(1); // the body's, not a copy
+    expect(content).toContain("Author-written summary prose."); // body still rendered
+    expect(content).not.toContain("No description provided.");
+  });
 });
 
 describe("renderTicketFile — Upstream header line", () => {
