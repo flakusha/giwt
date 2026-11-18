@@ -53,10 +53,12 @@ export function closeTicketFile(file: string, note: string, now: Date = new Date
 
 /** `giwt ticket close <extid...> [--note "text"]` — close one or many
  * tickets end to end: resolve each id through the invoking checkout's
- * ticket index, rewrite the .md (status, boxes, Resolved line), and close
- * its git issue in the shared registry. All ids and files resolve, and
- * every issue closes, before any .md is rewritten: a failing registry close
- * cannot leave a ticket marked Done with its issue still open. */
+ * ticket index, close its git issue in the shared registry, then rewrite
+ * the .md (status, boxes, Resolved line). All ids and files resolve before
+ * any mutation. Each issue close is attempted independently: only tickets
+ * whose issue closed (or that have no issue) get their .md rewritten, so a
+ * successful close is never left stale when a sibling ticket fails. Every
+ * failure is collected and surfaced at the end (non-zero exit). */
 export async function closeTickets(args: string[], config: WorktreeConfig): Promise<void> {
   const { format, rest } = parseOutFlags(args);
   const ids: string[] = [];
@@ -100,23 +102,41 @@ export async function closeTickets(args: string[], config: WorktreeConfig): Prom
     ...hit,
     hash: issueHashFor(config.repoRoot, hit.entry),
   }));
-  for (const { extid, hash } of closePlan) {
-    if (!hash) {
-      log("warn", `${extid}: no git issue found — closed the .md only`);
+
+  // Attempt each registry close independently: one failure must not strand
+  // the .md of an issue we already closed. Track successful hits by identity
+  // so duplicate ids cannot collide, and collect every failure for the end.
+  const closed = new Set<(typeof closePlan)[number]>();
+  const failures: string[] = [];
+  for (const hit of closePlan) {
+    if (!hit.hash) {
+      log("warn", `${hit.extid}: no git issue found — closed the .md only`);
+      closed.add(hit);
       continue;
     }
-    gitSync(
-      config.repoRoot,
-      "issue",
-      "state",
-      hash,
-      "--close",
-      ...(note ? ["-m", note] : []),
-    );
+    try {
+      gitSync(
+        config.repoRoot,
+        "issue",
+        "state",
+        hit.hash,
+        "--close",
+        ...(note ? ["-m", note] : []),
+      );
+      closed.add(hit);
+    } catch (error) {
+      failures.push(
+        `${hit.extid} (issue ${hit.hash}): ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   const records: CloseRecord[] = [];
-  for (const { extid, entry, file, hash } of closePlan) {
+  for (const hit of closePlan) {
+    if (!closed.has(hit)) continue;
+    const { extid, entry, file, hash } = hit;
     closeTicketFile(file, note);
     records.push({
       extid,
@@ -128,9 +148,15 @@ export async function closeTickets(args: string[], config: WorktreeConfig): Prom
 
   if (format === "json" || format === "toml" || format === "emoji") {
     raw(renderRecords(records, format, { emoji: closeEmoji }));
-    return;
+  } else {
+    for (const rec of records) {
+      raw(`✅ ${rec.extid} ${rec.file} → ${rec.status}${rec.issue ? ` (issue ${rec.issue})` : ""}`);
+    }
   }
-  for (const rec of records) {
-    raw(`✅ ${rec.extid} ${rec.file} → ${rec.status}${rec.issue ? ` (issue ${rec.issue})` : ""}`);
+
+  if (failures.length > 0) {
+    throw new Error(
+      `${failures.length} ticket issue close(s) failed:\n  ${failures.join("\n  ")}`,
+    );
   }
 }

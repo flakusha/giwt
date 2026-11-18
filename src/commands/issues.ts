@@ -3,7 +3,7 @@
 
 import type { WorktreeConfig } from "../utils/config";
 import { parseOutFlags, renderRecords } from "../utils/emit";
-import { gitSync } from "../utils/git";
+import { isolatedGitEnv } from "../utils/git";
 import { log, raw } from "../utils/output";
 import { emojiLine, parseIssueSearch } from "./search";
 
@@ -93,17 +93,31 @@ function issueLs(
   if (showAll) gitArgs.push("--all");
   // git-issue only accepts the space form: `--state=all` is an unknown option.
   if (state !== undefined) gitArgs.push("--state", state);
-  try {
-    return gitSync(repoRoot, ...gitArgs);
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    // gitSync surfaces git-issue's stderr in `detail`; when the CLI exits with
-    // none, the generic failure still needs an actionable remedy.
-    const hint = format === "full"
-      ? "\ngit-issue can exit 1 with no stderr for --format full; try --all or --format oneline"
-      : "";
-    throw new Error(`${detail || `git ${gitArgs.join(" ")} failed`}${hint}`, { cause: error });
+
+  const result = Bun.spawnSync(["git", "-C", repoRoot, ...gitArgs], {
+    stdout: "pipe",
+    stderr: "pipe",
+    env: isolatedGitEnv(),
+  });
+  const stdout = result.stdout.toString().trim();
+  if (result.exitCode === 0) return stdout;
+
+  // git-issue can exit non-zero *after* writing a usable listing (notably
+  // `--format full`). Keep that listing instead of discarding it.
+  const stderr = result.stderr.toString().trim();
+  if (stdout !== "") {
+    // The upstream quirk exits 1 with *empty* stderr, so a non-empty stderr
+    // alongside stdout is a real failure riding on a partial listing: keep
+    // the listing but do not swallow the error.
+    if (stderr !== "") log("warn", `git issue ls exited ${result.exitCode}: ${stderr}`);
+    return stdout;
   }
+
+  const detail = stderr || `git ${gitArgs.join(" ")} failed (exit ${result.exitCode})`;
+  const remedy = format === "oneline"
+    ? "git issue ls produced no output — check the --state value"
+    : "git issue ls produced no output — retry with --format oneline, or check the --state value";
+  throw new Error(`${detail}\n${remedy}`);
 }
 
 function renderHumanIssues(output: string, showAll: boolean): void {

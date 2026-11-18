@@ -3,7 +3,7 @@
 
 # BUG: decorated Status lines are detected but never rewritten by sync fixers
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** sync, status
@@ -11,7 +11,7 @@
 
 **Summary:**
 
-No description provided.
+`scanHeaderStatusLines` returns the leading `**` of a value-bolded line (`**Status:** **In Progress**`) as part of the value, so `resolveStatus` calls it invalid and `rewriteStatusLine` returns null. The sync fixer handles the same line correctly. Strip balanced value bold before classification and preserve it when rewriting; keep duplicate-of-* markers valid and never rewritten, and leave fenced-block/header bounds unchanged.
 
 **Context:**
 
@@ -19,6 +19,7 @@ No description provided.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

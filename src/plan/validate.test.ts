@@ -1899,6 +1899,32 @@ describe("validate / status-vocab gate", () => {
       action: "invalid",
     });
   });
+
+  test("decorated canonical status is fixable and --fix drops the stray bold", () => {
+    const fx = makeFixture();
+    try {
+      writeStatusTicket(fx, "TASK-decorated.md", ["**Status:** **In Progress**"]);
+      const before = vocabGate(runValidate(statusOpts(fx)));
+      expect(before.pass).toBe(false);
+      expect(before.findings.map((f) => f.message)).toEqual([
+        "TASK-decorated.md: status \"**In Progress\" is not in the vocabulary "
+        + "(Not Started, In Progress, Blocked, Done, Wontfix, Postponed)",
+      ]);
+
+      const fixed = runValidate(statusOpts(fx, { fix: true }));
+      expect(vocabGate(fixed).pass).toBe(true);
+      expect(fixed.fixedCount).toBe(1);
+      expect(readFileSync(join(fx.ticketsDir, "TASK-decorated.md"), "utf8")).toBe(
+        "# TASK-decorated.md\n\n**Status:** In Progress\n",
+      );
+
+      // Re-check green and a second --fix is a no-op.
+      expect(vocabGate(runValidate(statusOpts(fx, {}))).pass).toBe(true);
+      expect(runValidate(statusOpts(fx, { fix: true })).fixedCount).toBe(0);
+    } finally {
+      fx.cleanup();
+    }
+  });
 });
 
 // ── diffBase scoping ────────────────────────────────────────────

@@ -60,14 +60,31 @@ export function appendRegistryDoneProvenance(
 
 /**
  * Point a ticket .md's `git issue:` reference at `hash` — replacing an
- * existing reference line or appending one past the header region.
+ * existing reference line, inserting one before the `---` separator, or
+ * (no separator) just past the 30-line header region so the reference
+ * stays metadata instead of trailing at EOF. Files shorter than the
+ * header region get the reference appended at EOF.
  */
 export function appendIssueRef(mdPath: string, hash: string): void {
   let text = readFileSync(mdPath, "utf8");
   if (/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i.test(text)) {
     text = text.replace(/(?:git.?issue|issue):\s*[0-9a-f]{7,}/i, `git issue: ${hash}`);
-  } else {
+  } else if (/\n---\n/.test(text)) {
     text = text.replace(/(\n---\n|$)/, `\n\ngit issue: ${hash}\n$1`);
+  } else {
+    // No `---` separator: keep the reference in the metadata region instead
+    // of trailing at EOF, where it reads as body prose. The header region is
+    // the first 30 lines (the region the parser reads) — the reference goes
+    // just past it, so it stays metadata and the body tail follows it.
+    const lines = text.split("\n");
+    const contentCount = lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+    if (contentCount > 30) {
+      // Blank line above and below — same shape as the separator branch.
+      lines.splice(30, 0, "", `git issue: ${hash}`, "");
+      text = lines.join("\n");
+    } else {
+      text = text.replace(/(\n---\n|$)/, `\n\ngit issue: ${hash}\n$1`);
+    }
   }
   writeFileSync(mdPath, text);
 }

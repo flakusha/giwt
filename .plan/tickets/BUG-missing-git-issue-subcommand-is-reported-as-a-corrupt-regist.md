@@ -3,7 +3,7 @@
 
 # BUG: missing git-issue subcommand is reported as a corrupt registry
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ When git-issue is uninstalled, 'git issue ls --all' exits 1 with stderr "git: 'i
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

@@ -165,7 +165,7 @@
       "status"
     ],
     "source": ".plan/tickets/BUG-decorated-status-lines-are-detected-but-never-rewritten-by-s.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-DELETE-STASH-DANCE-AFTER-STAGING-MERGE-LANDS": {
     "hash": "9a794bc",
@@ -621,7 +621,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-issues-all-still-hides-closed-issues-and-has-no-machine-form.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-ISSUES-COUNTS-CONTINUATION-LINES-AND-RESOLVER-MATCHES-TITLE-": {
     "hash": "adbdc42",
@@ -638,7 +638,23 @@
       "resolver"
     ],
     "source": ".plan/tickets/BUG-issues-counts-continuation-lines-and-resolver-matches-title-.md",
-    "status": "open"
+    "status": "done"
+  },
+  "BUG-ISSUES-FORMAT-FULL-DISCARDS-LISTING-ON-NONZERO-EXIT": {
+    "hash": "b627090",
+    "git_issue": "b627090",
+    "extid": "BUG-ISSUES-FORMAT-FULL-DISCARDS-LISTING-ON-NONZERO-EXIT",
+    "type": "BUG",
+    "title": "issues --format full discards listing on nonzero exit",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "issues"
+    ],
+    "source": ".plan/tickets/BUG-issues-format-full-discards-listing-on-nonzero-exit.md",
+    "status": "done"
   },
   "BUG-LEDGER-APPEND-RACE-DROPS-RECORDS-UNDER-CONCURRENT-AGENTS": {
     "hash": "afe3bf9",
@@ -686,7 +702,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-list-emoji-fabricates-sync-state-when-ahead-behind-are-unkno.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-MISSING-GIT-ISSUE-SUBCOMMAND-IS-REPORTED-AS-A-CORRUPT-REGIST": {
     "hash": "c84149a",
@@ -700,7 +716,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-missing-git-issue-subcommand-is-reported-as-a-corrupt-regist.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-NORMALIZESTATUS-LEAVES-NOT-STARTED-ENTRIES-IN-OTHER-BUCKET-U": {
     "hash": "f92b0ca",
@@ -959,7 +975,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-resolver-substring-match-resolves-the-wrong-ticket-for-extid.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-SCOPED-MARKER-PATH-IS-CWD-RELATIVE-SO-WORKTREE-SCOPE-WRITES-": {
     "hash": "89ae729",
@@ -992,7 +1008,7 @@
       "security"
     ],
     "source": ".plan/tickets/BUG-shell-injection-via-extid-in-auto-close-git-issue-messages.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-SHOW-SEARCH-DROP-ISSUES-WITH-HYPHENATED-OR-SPACED-STATES": {
     "hash": "f020924",
@@ -1006,7 +1022,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-show-search-drop-issues-with-hyphenated-or-spaced-states.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-SHOW-TRUNCATES-BODIES-AT-THEMATIC-BREAKS-AND-DROPS-HEADER-FI": {
     "hash": "401d242",
@@ -1020,7 +1036,7 @@
     "project": "",
     "tags": [],
     "source": ".plan/tickets/BUG-show-truncates-bodies-at-thematic-breaks-and-drops-header-fi.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-SQUASH-COMMIT-FAILURE-STRANDS-STAGED-CHANGES-IN-DEV": {
     "hash": "4e5f505",
@@ -1069,7 +1085,7 @@
       "registry"
     ],
     "source": ".plan/tickets/BUG-sync-discards-corrupt-index-and-narrow-extid-parsing.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-SYNC-FIX-LEAVES-FEATURE-MATRIX-AND-CODE-MAP-STALE": {
     "hash": "adccccd",
@@ -1164,7 +1180,7 @@
       "md"
     ],
     "source": ".plan/tickets/BUG-sync-rewrites-unbounded-status-lines-and-appendissueref-drop.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-TAG": {
     "hash": "218c5c5",
@@ -1208,7 +1224,7 @@
       "close"
     ],
     "source": ".plan/tickets/BUG-ticket-close-half-closes-and-lookup-prefers-commit-hash.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-TICKET-CREATE-AND-SYNC-FIX-IMPORT-EMIT-LINT-DEFECTIVE-DUPLIC": {
     "hash": "800aa4e",
@@ -3097,7 +3113,7 @@
       "validate"
     ],
     "source": ".plan/tickets/TASK-plan-validate-resolve-7-residual-gate-errors-after-the-featu.md",
-    "status": "open"
+    "status": "done"
   },
   "TASK-PLAN-VALIDATE-SCOPE-TICKET-FORMAT-LINK-GATES-TO-THE-DIFF-BAS": {
     "hash": "c5d6516",
@@ -3185,7 +3201,7 @@
       "output"
     ],
     "source": ".plan/tickets/TASK-search-output-shows-related-ticket-file.md",
-    "status": "open"
+    "status": "done"
   },
   "TASK-SHARD-TICKETS-INDEX-OR-STOP-PER-BRANCH-INDEX-COMMITS": {
     "hash": "461e906",

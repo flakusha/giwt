@@ -3,7 +3,7 @@
 
 # BUG: sync rewrites unbounded status lines and appendIssueRef drops separator
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** sync, md
@@ -11,7 +11,7 @@
 
 **Summary:**
 
-No description provided.
+The header status fixer used to rewrite lines outside the 30-line metadata region and `appendIssueRef` consumed the `---` separator; both are constrained now. Residual: `rewriteHeaderStatusLines` rewrites every header Status line, clobbering appended `duplicate-of-*` done markers to `Done` even though the plan gate preserves them; skip duplicate-class values. Without a `---`, the issue ref is appended at EOF past the body rather than past the header region; anchor it at the header boundary and keep the separator-preserving path.
 
 **Context:**
 
@@ -19,6 +19,7 @@ No description provided.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 giwt Contributors
 
+import { parseTicketExtid } from "../tickets/sync-registry";
 import { gitSync } from "../utils/git";
+
+/** kebab() in commands/ticket/create.ts caps the title slug at 60 chars. A
+ *  pasted needle shorter than that is a different id, never a truncation. */
+const SLUG_CAP = 60;
 
 export interface ResolvedIssue {
   hash: string;
@@ -9,13 +14,13 @@ export interface ResolvedIssue {
 }
 
 /**
- * Extract the extid from a git-issue title: `ticket` creates issues titled
- * `<EXTID>: <prose title>`, so "TASK-demo: fix the thing" → "TASK-demo".
- * Returns null for foreign issues without an extid prefix.
+ * Extract the extid from a git-issue title using the shared sync grammar.
+ * Accepts both `<EXTID>: <prose>` (ticket creation) and bare registry titles;
+ * returns null for foreign issues without a recognized extid prefix. The
+ * matched text keeps the title's casing so callers can strip it verbatim.
  */
 export function extractExtid(title: string): string | null {
-  const m = title.match(/^([A-Za-z]+-[A-Za-z0-9-]+):\s/);
-  return m?.[1] ?? null;
+  return parseTicketExtid(title);
 }
 
 export interface StatusStyle {
@@ -64,7 +69,10 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
 
   const lines = gitSync(repoRoot, "issue", "ls", "--all").split("\n");
   const needle = stripped.toLowerCase();
-  let fallback: ResolvedIssue | null = null;
+  // Only a needle at the kebab() slug cap can be a truncated extid; shorter
+  // needles are distinct ids, so TASK-alpha cannot resolve to TASK-alphabet.
+  const mayBeTruncated = needle.length >= SLUG_CAP;
+  const candidates = new Map<string, ResolvedIssue>();
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -76,14 +84,17 @@ export function resolveExtid(repoRoot: string, input: string): ResolvedIssue | n
     // Exact extid wins over substring: a TASK-alpha line sorted ahead of
     // TASK-alphabet must not capture the latter's lookups.
     const title = trimmed.slice(match[0].length).replace(/^\[[^\]]*\]\s*/, "");
-    if (extractExtid(title)?.toLowerCase() === needle) return resolved;
-    // Fallback for truncated extids (kebab() caps slugs at 60 chars) only:
-    // match the title's leading extid token, never prose mentioning the id.
-    const token = title.toLowerCase().match(/^[a-z]+-[a-z0-9-]+/)?.[0];
-    if (token !== undefined && token.startsWith(needle)) fallback ??= resolved;
+    const extid = extractExtid(title)?.toLowerCase();
+    if (extid === needle) return resolved;
+    // Fallback for truncated slugs only: match the title's leading extid
+    // token, never prose mentioning the id. Collect every candidate so a
+    // prefix shared by two issues stays ambiguous instead of picking one.
+    if (mayBeTruncated && extid !== undefined && extid.startsWith(needle)) {
+      candidates.set(extid, resolved);
+    }
   }
 
-  return fallback;
+  return candidates.size === 1 ? [...candidates.values()][0]! : null;
 }
 
 /**

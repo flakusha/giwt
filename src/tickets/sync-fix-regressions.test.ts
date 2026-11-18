@@ -185,11 +185,70 @@ test("md-status fixer rewrites only parsed header Status lines", () => {
   );
   const out = readFileSync(path, "utf8");
   expect(out).toContain("**Status:** Done\n");
-  expect(out).toContain("> **Status**: Done\n");
+  // a duplicate-class Status line is a done marker — never clobbered to Done
+  expect(out).toContain("> **Status**: duplicate-of-OLD\n");
   expect(out).toContain("**Status:** **Done**\n");
   // fenced example and the line past the header are outside the parser region
   expect(out).toContain("```md\n**Status:** In Progress\n```");
   expect(out).toContain("filler\n**Status:** In Progress\nbody");
+});
+
+test("duplicate-class Status lines survive the rewrite in every decoration", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-status-duplicate-"));
+  temps.push(dir);
+  const path = join(dir, "ticket.md");
+  writeFileSync(
+    path,
+    [
+      "# BUG: demo",
+      "",
+      "**Status:** Not Started",
+      "> **Status**: duplicate-of-OLD",
+      "- **Status:** duplicate",
+      "**Status:** ✅ duplicate-of-OTHER",
+      "**Status:** **duplicate-of-BOLD**",
+    ].join("\n") + "\n",
+  );
+  const report = emptyReport();
+  report.mdStatusStale.push({
+    extid: "TASK-DECORATED",
+    mdStatus: "Not Started",
+    indexStatus: "done",
+    source: path,
+  });
+  fixMdStatusStale(
+    { "TASK-DECORATED": entry() },
+    report,
+    new Map([["TASK-DECORATED", ticketFile(path, "Not Started")]]),
+    dir,
+  );
+  const out = readFileSync(path, "utf8");
+  expect(out).toContain("**Status:** Done\n");
+  expect(out).toContain("> **Status**: duplicate-of-OLD\n");
+  expect(out).toContain("- **Status:** duplicate\n");
+  expect(out).toContain("**Status:** ✅ duplicate-of-OTHER\n");
+  expect(out).toContain("**Status:** **duplicate-of-BOLD**\n");
+});
+
+test("a non-duplicate value containing the word is still rewritten", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-status-duplicate-word-"));
+  temps.push(dir);
+  const path = join(dir, "ticket.md");
+  writeFileSync(path, "# BUG: demo\n\n**Status:** Not Started\n");
+  const report = emptyReport();
+  report.mdStatusStale.push({
+    extid: "TASK-DECORATED",
+    mdStatus: "Not Started",
+    indexStatus: "done",
+    source: path,
+  });
+  fixMdStatusStale(
+    { "TASK-DECORATED": entry() },
+    report,
+    new Map([["TASK-DECORATED", ticketFile(path, "Not Started")]]),
+    dir,
+  );
+  expect(readFileSync(path, "utf8")).toContain("**Status:** Done\n");
 });
 
 test("git-status fixer rewrites only parsed header Status lines", () => {
@@ -211,7 +270,8 @@ test("git-status fixer rewrites only parsed header Status lines", () => {
   );
   const out = readFileSync(path, "utf8");
   expect(out).toContain("**Status:** Done\n");
-  expect(out).toContain("> **Status**: Done\n");
+  // a duplicate-class Status line is a done marker — never clobbered to Done
+  expect(out).toContain("> **Status**: duplicate-of-OLD\n");
   expect(out).toContain("**Status:** **Done**\n");
   expect(out).toContain("```md\n**Status:** In Progress\n```");
   expect(out).toContain("filler\n**Status:** In Progress\nbody");

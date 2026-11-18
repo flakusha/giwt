@@ -22,16 +22,44 @@ import type { GitIssue, IndexEntry, SyncReport, TicketFile } from "./sync-ticket
 // decoration byte (list/quote prefix, bold markers, suffix) verbatim.
 const STATUS_PREFIX_RE = /^\s*(?:[-*>]\s*)?(?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*/i;
 
+/** `duplicate`-class values are the reconciliation done-marker convention
+ * (mirrors status-vocab's DUPLICATE_RE): a `duplicate-of-<extid>` header
+ * line is a done marker, not a status to rewrite — rewriting it to `Done`
+ * would destroy the duplicate pointer. */
+const DUPLICATE_VALUE_RE = /\bduplicate([- ]of)?\b/i;
+
+/** True when a header Status value is a duplicate-class done marker
+ * (bare `duplicate` or `duplicate-of-*`).
+ *
+ * Both conditions matter:
+ *  - the word-boundary form matches normalizeStatus's done-class rule for
+ *    the duplicate class (the SAME rule that decides whether the file
+ *    counts as done), and
+ *  - normalizeStatus must agree the value is done: it checks the
+ *    negative/partial branches FIRST, so `not-yet-implemented duplicate`
+ *    classifies as open and `partial duplicate` as in_progress. Skipping
+ *    such a line would leave the file non-done and make the md-drift
+ *    fixer re-fire on every run — never converging. */
+function isDuplicateStatusValue(value: string): boolean {
+  const bare = value.trim();
+  if (!DUPLICATE_VALUE_RE.test(bare)) return false;
+  return normalizeStatus(bare) === "done";
+}
+
 /** Rewrite every header-region Status line to `target`, leaving the rest of
  * the file untouched: the first 30 lines only, fenced blocks skipped — the
  * exact region scanHeaderStatusLines/parseTicketFile read. Every header line
  * is rewritten (appended done-marker convention: any done-class line closes
- * the ticket), and only the value span changes. */
+ * the ticket), and only the value span changes. Duplicate-class Status lines
+ * are skipped — they are done markers, not statuses to rewrite. */
 function rewriteHeaderStatusLines(tfPath: string, target: string): void {
   const lines = readFileSync(tfPath, "utf8").split("\n");
   for (const { line, value } of scanHeaderStatusLines(tfPath)) {
     const current = lines[line];
     if (current === undefined) continue;
+    // A duplicate-class Status line is a done-marker, not a status — never
+    // clobber it to the target status.
+    if (isDuplicateStatusValue(value)) continue;
     const prefix = STATUS_PREFIX_RE.exec(current);
     if (prefix === null) continue;
     const start = prefix[0].length;
@@ -161,7 +189,9 @@ export function fixIndexStatusStale(
  * here, but the vocabulary mapping stays explicit so a raw mirror value
  * can never leak into a .md and re-break `plan validate`'s status-vocab
  * gate. Rewriting every line (not just the first) keeps an appended
- * line from re-diverging the any-done aggregate on the next scan. */
+ * line from re-diverging the any-done aggregate on the next scan.
+ * Duplicate-class lines are the one exception — they are done markers,
+ * not statuses, and rewriting them destroys the duplicate pointer. */
 export function fixMdStatusStale(
   fixed: Record<string, IndexEntry>,
   report: SyncReport,

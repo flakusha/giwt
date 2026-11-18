@@ -17,7 +17,7 @@ import { scratchRoot } from "../utils/scratch-tmp";
 
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { WorktreeConfig } from "../utils/config";
@@ -100,6 +100,51 @@ async function run(args: string[], config: WorktreeConfig): Promise<Captured> {
   return cap;
 }
 
+/**
+ * Install a PATH shim named `git` that forwards every call to the real git
+ * except `issue ls --format full`, which it answers with a listing on stdout
+ * and a non-zero exit — the upstream git-issue quirk tracked as
+ * BUG-issues-format-full-discards-listing-on-nonzero-exit.
+ */
+function installGitShim(stderrText = ""): { restore(): void; } {
+  const root = mkdtempSync(join(scratchRoot(), "giwt-git-shim-"));
+  tempRoots.push(root);
+  const binDir = join(root, "bin");
+  mkdirSync(binDir);
+  const realGit = Bun.which("git")!;
+  const shim = join(binDir, "git");
+  const listing = [
+    "deadbee [open] TASK-shim: listing survives a non-zero exit",
+    "       priority:medium",
+    "",
+  ].join("\n");
+  writeFileSync(
+    shim,
+    [
+      `#!${process.execPath}`,
+      `import { writeSync } from "node:fs";`,
+      `const args = process.argv.slice(2);`,
+      `const i = args.indexOf("issue");`,
+      `const fi = args.indexOf("--format");`,
+      `if (i >= 0 && args[i + 1] === "ls" && fi >= 0 && args[fi + 1] === "full") {`,
+      `  writeSync(1, ${JSON.stringify(listing)});`,
+      `  if (${JSON.stringify(stderrText)}) writeSync(2, ${JSON.stringify(stderrText)} + "\\n");`,
+      `  process.exit(1);`,
+      `}`,
+      `const r = Bun.spawnSync([${JSON.stringify(realGit)}, ...args], { stdio: "inherit" });`,
+      `process.exit(r.exitCode);`,
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  const origPath = process.env.PATH;
+  process.env.PATH = `${binDir}${origPath ? `:${origPath}` : ""}`;
+  return {
+    restore(): void {
+      process.env.PATH = origPath;
+    },
+  };
+}
 describe("issues --state", () => {
   it("defaults to open-only", async () => {
     const config = makeConfig();
@@ -317,6 +362,77 @@ describe("issues --format and record counting", () => {
     } finally {
       capFull.restore();
     }
-    expect((fullThrown as Error).message).toContain("try --all or --format oneline");
+    expect((fullThrown as Error).message).toContain("retry with --format oneline");
+  });
+});
+
+describe("issues --format full with a non-zero git exit", () => {
+  it("keeps the listing git wrote before exiting non-zero", async () => {
+    const config = makeConfig();
+    const shim = installGitShim();
+    try {
+      const human = await run(["--format", "full"], config);
+      expect(human.exits).toEqual([]);
+      expect(human.out).toContain("issues (1):");
+      expect(human.out).toContain("deadbee");
+      expect(human.out).toContain("TASK-shim: listing survives a non-zero exit");
+
+      const json = await run(["--format", "full", "--json"], config);
+      expect(json.exits).toEqual([]);
+      expect(JSON.parse(json.out)).toEqual([
+        {
+          hash: "deadbee",
+          state: "open",
+          title: "TASK-shim: listing survives a non-zero exit",
+          extid: "TASK-shim",
+        },
+      ]);
+    } finally {
+      shim.restore();
+    }
+  });
+});
+
+describe("issues --format full with a non-zero git exit", () => {
+  it("keeps the listing git wrote before exiting non-zero", async () => {
+    const config = makeConfig();
+    const shim = installGitShim();
+    try {
+      const human = await run(["--format", "full"], config);
+      expect(human.exits).toEqual([]);
+      expect(human.out).toContain("issues (1):");
+      expect(human.out).toContain("deadbee");
+      expect(human.out).toContain("TASK-shim: listing survives a non-zero exit");
+      // The upstream quirk exits with an empty stderr — nothing to warn about.
+      expect(human.err).not.toContain("git issue ls exited");
+
+      const json = await run(["--format", "full", "--json"], config);
+      expect(json.exits).toEqual([]);
+      expect(JSON.parse(json.out)).toEqual([
+        {
+          hash: "deadbee",
+          state: "open",
+          title: "TASK-shim: listing survives a non-zero exit",
+          extid: "TASK-shim",
+        },
+      ]);
+    } finally {
+      shim.restore();
+    }
+  });
+
+  it("warns when a non-zero exit also reports an error on stderr", async () => {
+    const config = makeConfig();
+    const shim = installGitShim("fatal: registry is corrupt");
+    try {
+      const cap = await run(["--format", "full"], config);
+      // The listing is still shown, but the real failure is not swallowed.
+      expect(cap.exits).toEqual([]);
+      expect(cap.out).toContain("deadbee");
+      expect(cap.err).toContain("git issue ls exited 1");
+      expect(cap.err).toContain("fatal: registry is corrupt");
+    } finally {
+      shim.restore();
+    }
   });
 });

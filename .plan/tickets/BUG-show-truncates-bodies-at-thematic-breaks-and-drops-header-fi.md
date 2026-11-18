@@ -3,7 +3,7 @@
 
 # BUG: show truncates bodies at thematic breaks and drops header fields
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Caveats:** TOCTOU, security, authorization, parallelism, lock/unlock lifecycle, partial failure, rollback, stale state, data races, idempotency, observability
@@ -18,6 +18,7 @@ show.ts:70-79 stops the body at any line of 10+ dashes, so a markdown thematic b
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

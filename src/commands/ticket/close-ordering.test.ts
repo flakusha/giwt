@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorktreeConfig } from "../../utils/config";
 import { scratchRoot } from "../../utils/scratch-tmp";
@@ -69,5 +69,82 @@ describe.skipIf(Bun.which("git-issue") === null)("ticket close ordering", () => 
     const md = readFileSync(join(repo, rel), "utf8");
     expect(md).toContain("**Status:** In Progress");
     expect(md).not.toContain("**Resolved:**");
+  });
+
+  it("rewrites only the successfully closed .md when a later issue close fails", async () => {
+    const dir = mkdtempSync(join(scratchRoot(), "giwt-close-partial-"));
+    temps.push(dir);
+    const repo = join(dir, "proj");
+    mkdirSync(repo);
+    git(repo, "init", "-q", "-b", "main");
+    git(repo, "config", "user.email", "giwt-test@localhost");
+    git(repo, "config", "user.name", "giwt test");
+
+    const okRel = ".plan/tickets/TASK-close-ok.md";
+    const badRel = ".plan/tickets/TASK-close-bad.md";
+    const okHash = "1111111";
+    const badHash = "2222222";
+    mkdirSync(join(repo, ".plan", "tickets"), { recursive: true });
+    writeFileSync(join(repo, okRel), "# TASK: close ok\n\n**Status:** In Progress\n\nbody\n");
+    writeFileSync(join(repo, badRel), "# TASK: close bad\n\n**Status:** In Progress\n\nbody\n");
+
+    const entry = (extid: string, title: string, source: string, gitIssue: string) => ({
+      hash: "pending",
+      git_issue: gitIssue,
+      extid,
+      type: "TASK",
+      title,
+      label: "task",
+      priority: "medium",
+      epic: "",
+      project: "",
+      tags: [],
+      source,
+      status: "open",
+    });
+    const index = {
+      "TASK-CLOSE-OK": entry("TASK-CLOSE-OK", "close ok", okRel, okHash),
+      "TASK-CLOSE-BAD": entry("TASK-CLOSE-BAD", "close bad", badRel, badHash),
+    };
+    writeFileSync(
+      join(repo, ".plan", "tickets", "index.json"),
+      `${JSON.stringify(index, null, 2)}\n`,
+    );
+
+    // PATH shim: exit 1 for the second ticket's hash, success otherwise.
+    // Hashes are explicit in the index, so closeTickets' only git call is the
+    // issue-state close — no real git-issue registry is needed.
+    const bin = join(dir, "bin");
+    mkdirSync(bin);
+    const shim = join(bin, "git");
+    writeFileSync(
+      shim,
+      `#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = "${badHash}" ]; then exit 1; fi\ndone\nexit 0\n`,
+    );
+    chmodSync(shim, 0o755);
+
+    const config: WorktreeConfig = {
+      repoRoot: repo,
+      worktreeRoot: repo,
+      treeDir: repo,
+      settings: DEFAULT_SETTINGS,
+    };
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${bin}:${oldPath ?? ""}`;
+    try {
+      await expect(closeTickets(["TASK-CLOSE-OK", "TASK-CLOSE-BAD"], config))
+        .rejects.toThrow();
+    } finally {
+      if (oldPath === undefined) delete process.env.PATH;
+      else process.env.PATH = oldPath;
+    }
+
+    const okMd = readFileSync(join(repo, okRel), "utf8");
+    expect(okMd).toContain("**Status:** Done");
+    expect(okMd).toContain("**Resolved:**");
+
+    const badMd = readFileSync(join(repo, badRel), "utf8");
+    expect(badMd).toContain("**Status:** In Progress");
+    expect(badMd).not.toContain("**Resolved:**");
   });
 });

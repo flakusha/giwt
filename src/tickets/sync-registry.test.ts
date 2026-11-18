@@ -14,19 +14,19 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { join } from "node:path";
 import { scratchRoot } from "../utils/scratch-tmp";
 import { runSync } from "./sync-index";
-import { readGitIssues, readIndex } from "./sync-registry";
+import { parseTicketExtid, readGitIssues, readIndex } from "./sync-registry";
 
 const temps: string[] = [];
 afterEach(() => {
   while (temps.length > 0) rmSync(temps.pop()!, { recursive: true, force: true });
 });
 
-/** Run `body` with `git` resolving to a shim that prints exactly `lines`. */
-function withIssueLines(lines: string[], body: () => void): void {
+/** Run `body` with `git` resolving to a shim executing `script`. */
+function withGitShim(script: string, body: () => void): void {
   const dir = mkdtempSync(join(scratchRoot(), "giwt-registry-shim-"));
   temps.push(dir);
   const shim = join(dir, "git");
-  writeFileSync(shim, `#!/bin/sh\ncat <<'GIWT_EOF'\n${lines.join("\n")}\nGIWT_EOF\n`);
+  writeFileSync(shim, `#!/bin/sh\n${script}\n`);
   chmodSync(shim, 0o755);
   const oldPath = process.env.PATH;
   process.env.PATH = oldPath === undefined ? dir : `${dir}:${oldPath}`;
@@ -36,6 +36,11 @@ function withIssueLines(lines: string[], body: () => void): void {
     if (oldPath === undefined) delete process.env.PATH;
     else process.env.PATH = oldPath;
   }
+}
+
+/** Run `body` with `git` resolving to a shim that prints exactly `lines`. */
+function withIssueLines(lines: string[], body: () => void): void {
+  withGitShim(`cat <<'GIWT_EOF'\n${lines.join("\n")}\nGIWT_EOF`, body);
 }
 
 test("readGitIssues retains custom issue states and classifies them as open", () => {
@@ -59,12 +64,76 @@ test("readGitIssues retains custom issue states and classifies them as open", ()
       ]);
       expect(issues.get("aaaaaaa")?.status).toBe("open");
       expect(issues.get("bbbbbbb")?.status).toBe("closed");
+
       expect(issues.get("ccccccc")?.status).toBe("done");
       // Custom states (set via `git issue state --state …`) must not vanish.
       expect(issues.get("ddddddd")?.status).toBe("open");
       expect(issues.get("eeeeeee")?.status).toBe("open");
     },
   );
+});
+
+test("parseTicketExtid accepts both title forms case-insensitively", () => {
+  expect(parseTicketExtid("TASK-demo: colon form")).toBe("TASK-demo");
+  expect(parseTicketExtid("BUG-bare registry form")).toBe("BUG-bare");
+  expect(parseTicketExtid("feat-lower: lower-case prefix")).toBe("feat-lower");
+  expect(parseTicketExtid("no extid prefix here")).toBeNull();
+  expect(parseTicketExtid("null: packet loss")).toBeNull();
+});
+
+test("readGitIssues parses colonless and lower-case titles into extids", () => {
+  withIssueLines(
+    [
+      "aaaaaaa open TASK-006 bare registry title",
+      "bbbbbbb open feat-lower: lower-case title",
+      "ccccccc open null: packet loss",
+    ],
+    () => {
+      const { issues, available } = readGitIssues(scratchRoot(), 1000);
+      expect(available).toBe(true);
+      expect(issues.get("aaaaaaa")?.extid).toBe("TASK-006");
+      expect(issues.get("bbbbbbb")?.extid).toBe("FEAT-LOWER");
+      expect(issues.get("ccccccc")?.extid).toBeNull();
+    },
+  );
+});
+
+test("readGitIssues classifies a missing git binary as missing", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-registry-empty-path-"));
+  temps.push(dir);
+  const oldPath = process.env.PATH;
+  process.env.PATH = dir;
+  try {
+    const result = readGitIssues(scratchRoot(), 1000);
+    expect(result.available).toBe(false);
+    expect(result.reason).toBe("missing");
+  } finally {
+    if (oldPath === undefined) delete process.env.PATH;
+    else process.env.PATH = oldPath;
+  }
+});
+
+test("readGitIssues classifies an uninstalled git-issue subcommand", () => {
+  withGitShim("echo \"git: 'issue' is not a git command. See 'git --help'.\" >&2; exit 1", () => {
+    const result = readGitIssues(scratchRoot(), 1000);
+    expect(result.available).toBe(false);
+    expect(result.reason).toBe("missing-issue-cli");
+  });
+});
+
+test("readGitIssues reports exit detail for a failed listing", () => {
+  withGitShim("echo 'registry corrupt' >&2; exit 1", () => {
+    const result = readGitIssues(scratchRoot(), 1000);
+    expect(result.available).toBe(false);
+    expect(result.reason).toBe("failed");
+    expect(result.detail).toContain("exit 1");
+    expect(result.detail).toContain("registry corrupt");
+  });
+  withGitShim("exit 1", () => {
+    const result = readGitIssues(scratchRoot(), 1000);
+    expect(result.reason).toBe("failed");
+    expect(result.detail).toBe("exit 1");
+  });
 });
 
 test("readGitIssues parses extids from the scanner and ticket-creation prefix sets", () => {

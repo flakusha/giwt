@@ -256,6 +256,53 @@ describe("show", () => {
         expect((JSON.parse(cap.out) as { hash: string; }).hash).toBe(expected);
       }
     });
+
+    it("does not resolve a short missing extid to a longer registered one", async () => {
+      const config = makeConfig();
+      createExtidIssue(config.repoRoot, "TASK-alphabet", "alphabet title", "b");
+
+      const cap = await run(["TASK-alpha", "--json"], config);
+      expect(cap.exits).toEqual([1]);
+      expect(cap.err).toContain("TASK-alpha");
+    });
+
+    it("resolves a truncated slug only when one longer extid matches", async () => {
+      const config = makeConfig();
+      const extid = "TASK-" + "a".repeat(70);
+      const fx = createExtidIssue(config.repoRoot, extid, "long slug", "b");
+
+      const cap = await run([extid.slice(0, 60), "--json"], config);
+      expect(cap.exits).toEqual([]);
+      expect((JSON.parse(cap.out) as { hash: string; }).hash).toBe(fx.hash);
+    });
+
+    it("leaves a truncated prefix ambiguous when two extids share it", async () => {
+      const config = makeConfig();
+      const prefix = "TASK-" + "a".repeat(55); // 60 chars — the slug cap
+      createExtidIssue(config.repoRoot, prefix + "beta", "beta title", "b");
+      createExtidIssue(config.repoRoot, prefix + "gamma", "gamma title", "b");
+
+      const cap = await run([prefix, "--json"], config);
+      expect(cap.exits).toEqual([1]);
+      expect(cap.err).toContain(prefix);
+    });
+
+    it("resolves a bare registry title, case-insensitively", async () => {
+      const config = makeConfig();
+      const out = execFileSync(
+        "git",
+        ["-C", config.repoRoot, "issue", "create", "TASK-bare registry title", "-m", "b"],
+        { encoding: "utf8" },
+      );
+      const hash = out.match(/[0-9a-f]{7,40}/)?.[0];
+      if (!hash) throw new Error(`could not extract issue hash from: ${out}`);
+
+      for (const form of ["TASK-bare", "task-bare"]) {
+        const cap = await run([form, "--json"], config);
+        expect(cap.exits).toEqual([]);
+        expect((JSON.parse(cap.out) as { hash: string; }).hash).toBe(hash);
+      }
+    });
   });
 });
 

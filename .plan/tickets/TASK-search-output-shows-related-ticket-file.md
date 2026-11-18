@@ -3,7 +3,7 @@
 
 # TASK: search output shows related ticket file
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** search, output
@@ -11,7 +11,7 @@
 
 **Summary:**
 
-No description provided.
+`giwt search` results only named the issue/extid, so an agent had to look up the plan file separately. `search.ts` now maps extid/hash/git_issue to the indexed ticket path, exposes `SearchHit.file`, and renders it in human and machine output; add a regression asserting `--json` carries the `.plan/tickets/…md` path.
 
 **Context:**
 
@@ -19,6 +19,7 @@ No description provided.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

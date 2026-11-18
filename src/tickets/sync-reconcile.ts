@@ -10,7 +10,7 @@
  * repo root and tickets dir so tests can point it at fixture directories.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { isolatedGitEnv } from "../utils/git";
@@ -35,7 +35,12 @@ import type { GitIssue, IndexEntry, SyncReport, TicketFile } from "./sync-ticket
 export function gitObjectExists(ref: string): boolean {
   if (!/^[0-9a-f]{7,40}$/.test(ref)) return false;
   try {
-    execSync(`git cat-file -e ${ref}^{commit} 2>/dev/null`, { timeout: 5_000 });
+    // The hex guard makes `ref` inert; `^{commit}` rides in one argv element.
+    // stdio ignore replaces the old `2>/dev/null` without a shell redirect.
+    execFileSync("git", ["cat-file", "-e", `${ref}^{commit}`], {
+      timeout: 5_000,
+      stdio: "ignore",
+    });
     return true;
   } catch {
     return false;

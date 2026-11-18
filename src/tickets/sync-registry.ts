@@ -3,7 +3,7 @@
 
 // ── Read git issues / index.json ──────────────────────────────
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { isolatedGitEnv } from "../utils/git";
 import { log } from "../utils/output";
@@ -49,6 +49,17 @@ export const TICKET_EXTID_PREFIXES = [
 ] as const;
 const EXTID_RE = new RegExp(`^(${TICKET_EXTID_PREFIXES.join("|")})-[a-z0-9-]+`, "i");
 
+/**
+ * The single extid grammar for the sync pipeline and ticket lookups. Matches
+ * a leading extid in both issue-title forms — `TASK-006: title` (ticket
+ * creation) and `TASK-006 title` (registry-indexed, no colon) — case-
+ * insensitively, returning the matched text verbatim. Null for foreign
+ * titles that do not start with a recognized ticket prefix.
+ */
+export function parseTicketExtid(title: string): string | null {
+  return title.match(EXTID_RE)?.[0] ?? null;
+}
+
 export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): GitIssueRead {
   const timeoutMs = issueLsTimeoutMs ?? ISSUE_LS_TIMEOUT_MS;
   const issues = new Map<string, GitIssue>();
@@ -56,7 +67,7 @@ export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): Gi
   try {
     // stderr is piped (not inherited, not /dev/null) so the failure path
     // can quote it in the "failed" remedy while successful runs drop it.
-    const output = execSync("git issue ls --all --format oneline", {
+    const output = execFileSync("git", ["issue", "ls", "--all", "--format", "oneline"], {
       encoding: "utf8",
       timeout: timeoutMs,
       cwd: issuesRoot,
@@ -83,8 +94,7 @@ export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): Gi
 
       // Extract extid from title (e.g. "TASK-006: Some title" → "TASK-006",
       // "TASK-chat-message-search: ..." → "TASK-CHAT-MESSAGE-SEARCH")
-      const extidMatch = title.match(EXTID_RE);
-      const extid = extidMatch?.[0]?.toUpperCase() ?? null;
+      const extid = parseTicketExtid(title)?.toUpperCase() ?? null;
       // Extid chars are constrained to [A-Z0-9-] here, so it is safe to
       // use as a path segment downstream (import-back filenames).
 
@@ -92,9 +102,9 @@ export function readGitIssues(issuesRoot: string, issueLsTimeoutMs?: number): Gi
     }
   } catch (e) {
     // Classify so messages and remedies can name the actual failure:
-    // - timeout: execSync kills the child with SIGTERM (Node sets killed=true;
+    // - timeout: execFileSync kills the child with SIGTERM (Node sets killed=true;
     //   Bun leaves killed unset and reports signal=SIGTERM + status=null).
-    // - missing: the shell could not find git (exit 127) or spawn ENOENT.
+    // - missing: git could not be spawned (ENOENT, or exit 127 on old runtimes).
     // - failed: the CLI ran and exited nonzero (corrupt store, bad args).
     // Previously every class reported "git issue CLI unavailable", so --fix
     // blamed a missing tool on repos whose registry was merely slow or

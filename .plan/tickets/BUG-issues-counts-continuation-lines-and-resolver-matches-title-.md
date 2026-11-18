@@ -3,7 +3,7 @@
 
 # BUG: issues counts continuation lines and resolver matches title prose
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** issues, resolver
@@ -11,7 +11,7 @@
 
 **Summary:**
 
-No description provided.
+`git issue ls --format full` indents detail/continuation lines, so a line-based counter inflated `issues (N)` and a resolver using substring matching could match a title's prose. `issues.ts` now counts `parseIssueSearch` hits (with the same cap predicate) and `resolver.ts` requires exact extid equality before a leading-token fallback. Add/fill regression coverage for indented detail lines and prefix-collision lookups.
 
 **Context:**
 
@@ -19,6 +19,7 @@ No description provided.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

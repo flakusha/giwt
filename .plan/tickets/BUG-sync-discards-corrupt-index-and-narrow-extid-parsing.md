@@ -3,7 +3,7 @@
 
 # BUG: sync discards corrupt index and narrow extid parsing
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** sync, registry
@@ -11,7 +11,7 @@
 
 **Summary:**
 
-No description provided.
+`readIndex` used to degrade a corrupt `index.json` to `{}`, letting `--fix` rebuild it from .md files and silently drop phantom entries; it now throws with the path and cause, matching `ticket/lookup.ts`. Residual: two extid grammars disagree — resolver.ts `extractExtid()` requires `<EXTID>:` while sync-registry.ts indexes titles matching `^(TASK|FEAT|…)-[a-z0-9-]+` without the colon. Export one shared parser from the registry and consume it in the resolver so registry-visible issues are addressable.
 
 **Context:**
 
@@ -19,6 +19,7 @@ No description provided.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-18T06:08:56.260Z closed after residual patches and index sync

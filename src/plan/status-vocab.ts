@@ -97,6 +97,20 @@ export function resolveStatus(
   raw: string,
   aliases: Record<string, string>,
 ): StatusResolution {
+  // scanHeaderStatusLines leaves a value's opening `**` in the value span
+  // and its closing `**` in the line suffix. Treat that pair as decoration:
+  // classify the undecorated core, then flag the decorated form "fixable" so
+  // --fix can drop the stray bold. duplicate-of-* stays valid and untouched.
+  const bold = /^\*\*([\s\S]*?)(?:\*\*)?$/.exec(raw);
+  if (bold !== null) {
+    const undecorated = bold[1] ?? "";
+    const inner = resolveStatus(undecorated, aliases);
+    if (inner.action === "invalid") return { value: raw, action: "invalid" };
+    if (DUPLICATE_RE.test(undecorated.toLowerCase().replace(LEADING_EMOJI_RE, "").trim())) {
+      return { value: raw, action: "valid" };
+    }
+    return { value: inner.value, action: "fixable" };
+  }
   const stripped = raw.toLowerCase().replace(LEADING_EMOJI_RE, "").trim();
 
   if (DUPLICATE_RE.test(stripped)) return { value: raw, action: "valid" };
@@ -192,7 +206,12 @@ export function rewriteStatusLine(
   if (!m) return null;
   const prefix = m[1] ?? "";
   const raw = (m[2] ?? "").trim();
-  const suffix = m[3] ?? "";
+  let suffix = m[3] ?? "";
+  if (raw.startsWith("**")) {
+    // The value's opening `**` was stripped for classification; drop the
+    // matching closing `**` from the suffix so --fix leaves no stray trailing bold.
+    suffix = suffix.replace("**", "");
+  }
   const { value, action } = resolveStatus(raw, aliases);
   if (action !== "fixable") return null;
   return { line: `${prefix}${value}${suffix}`, raw, canonical: value };

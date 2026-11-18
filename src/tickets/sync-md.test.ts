@@ -25,6 +25,24 @@ test("appendIssueRef inserts before the --- separator without consuming it", () 
   );
 });
 
+test("appendIssueRef inserts past the 30-line header when there is no separator", () => {
+  const dir = mkdtempSync(join(scratchRoot(), "giwt-issue-ref-long-"));
+  temps.push(dir);
+  const path = join(dir, "ticket.md");
+  const lines = ["# TASK: demo", "", "**Status:** Done"];
+  while (lines.length < 32) lines.push("header filler");
+  lines.push("body start", "body tail");
+  writeFileSync(path, `${lines.join("\n")}\n`);
+
+  appendIssueRef(path, "abc1234");
+
+  const out = readFileSync(path, "utf8").split("\n");
+  const refLine = out.findIndex((l) => l.startsWith("git issue: abc1234"));
+  expect(refLine).toBeGreaterThan(29);
+  expect(out.indexOf("body start")).toBeGreaterThan(refLine);
+  expect(out.indexOf("body tail")).toBeGreaterThan(refLine);
+});
+
 test("appendIssueRef replaces an existing reference in place", () => {
   const dir = mkdtempSync(join(scratchRoot(), "giwt-issue-ref-existing-"));
   temps.push(dir);
