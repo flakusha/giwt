@@ -3,7 +3,7 @@
 
 # TASK: document jj installer path and version churn policy
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** low
 **Effort:** Small
 **Tags:** jj
@@ -16,8 +16,8 @@ The jj 0.46 version floor is enforced in code (`src/vcs/jj.ts`, `src/doctor/chec
 
 **Acceptance Criteria:**
 
-- [ ] Document the pinned jj installer path/artifact for this workstation and the reason for pinning it.
-- [ ] Document the jj 0.46 floor plus the monthly-breaking-release churn and upgrade policy; link from AGENTS.md.
+- [x] Document the pinned jj installer path/artifact for this workstation and the reason for pinning it.
+- [x] Document the jj 0.46 floor plus the monthly-breaking-release churn and upgrade policy; link from AGENTS.md.
 
 **Context:**
 Documentation only; the code guard already lands. Keep AGENTS.md as the canonical pointer rather than adding a second install guide.

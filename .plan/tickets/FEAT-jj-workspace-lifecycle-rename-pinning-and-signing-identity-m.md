@@ -3,7 +3,7 @@
 
 # FEAT: jj workspace lifecycle rename pinning and signing identity mapping
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** jj
@@ -16,9 +16,9 @@ Close the remaining criteria of the jj workspace/signing follow-up that phase 2 
 
 **Acceptance Criteria:**
 
-- [ ] Implement and test jj workspace rename plus stale-worktree policy on a colocated repo; direct git mutation stays refused.
-- [ ] Enforce the bookmark convention in branch listing and the ledger branch field, with tests for workspace pinning and jj 0.46+ child colocation.
-- [ ] Map jj `[signing]` identity from giwt identity config and test bypass-key refusals; keep the wrapper-level Co-Authored-By strip and `jj fix` denial covered.
+- [x] Implement and test jj workspace rename plus stale-worktree policy on a colocated repo; direct git mutation stays refused. (`VcsBackend.renameWorkspace`, JjBackend real rename, git/pijul explicit refusals)
+- [x] Enforce the bookmark convention in branch listing and the ledger branch field, with tests for workspace pinning and jj 0.46+ child colocation. (`src/vcs/jj-bookmark.ts`, `src/cli.ts` uses `evidenceBranch`)
+- [x] Map jj `[signing]` identity from giwt identity config and test bypass-key refusals; keep the wrapper-level Co-Authored-By strip and `jj fix` denial covered. (`src/commands/jj-signing.ts`, `sign.ts`)
 
 **Context:**
 Colocation is a hard prerequisite and jj owns the op log; no git worktree fallback or direct git mutation is acceptable in jj mode. Signing is `[signing]` config, not git config, and there are no hooks to enforce the trailer strip.

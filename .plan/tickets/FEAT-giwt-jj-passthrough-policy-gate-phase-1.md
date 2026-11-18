@@ -3,7 +3,7 @@
 
 # FEAT: giwt jj passthrough policy gate (phase 1)
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** small
 **Tags:** jj, passthrough
@@ -19,6 +19,6 @@ Phase-1 jj support derived from the audited dossier at .tmp/research/jj/ (NOTES,
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated

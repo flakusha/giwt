@@ -3,7 +3,7 @@
 
 # FEAT: pijul native resurrected tracked blob provider
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Medium
 **Tags:** pijul
@@ -16,9 +16,9 @@ The generic resurrected detector (`src/audit/resurrected.ts`) works on git track
 
 **Acceptance Criteria:**
 
-- [ ] Add a pijul tracked-blob/path provider and wire the resurrected detector to it under `backend = "pijul"`.
-- [ ] Test duplicate-number and content-twin findings in a pijul repo; no git spawn in pijul mode.
-- [ ] Document the source of truth (change hashes plus tracked file content) and any known ceiling of the heuristic.
+- [x] Add a pijul tracked-blob/path provider and wire the resurrected detector to it under `backend = "pijul"`. (`src/history/pijul-resurrected.ts`, injectable seams in `src/audit/{resurrected,twins}.ts`)
+- [x] Test duplicate-number and content-twin findings in a pijul repo; no git spawn in pijul mode. (injected `pijul list` stub + temp files)
+- [x] Document the source of truth (change hashes plus tracked file content) and any known ceiling of the heuristic. (module header + `ponytail:` ceiling comment)
 
 **Context:**
 No git fallback is allowed under `backend = "pijul"`; the detector must use pijul state and filesystem content only. Existing duplicate-number/content-twin semantics from the git detector define expected findings.

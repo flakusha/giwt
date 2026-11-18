@@ -75,6 +75,12 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 - **Strict TS** (`tsconfig.json`, `noEmit`): `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. Prefer real narrowing over `!`; for optional props from possibly-undefined values use conditional spread (`...(x !== undefined ? { prop: x } : {})`); never pass `cwd: undefined` in spawn option literals — omit the key.
 - **Public exports**: add to `src/index.ts` deliberately; everything there is a compatibility promise.
 
+## jj toolchain policy
+
+- Workstation binary: `/usr/bin/jj` (jj 0.46.0). For a pinned install use the **x86_64-unknown-linux-musl** release asset (`jj-v0.46.0-x86_64-unknown-linux-musl.tar.gz`, single static binary ~11.2 MiB), verify the checksum from the release, and keep that exact version. Gentoo GURU `dev-vcs/jj` is allowed only when it resolves to the same pinned version — its cadence can lag the monthly release train, so never float to `latest`.
+- jj releases monthly with breaking changes (deprecate → remove over 2–3 releases). giwt's floor is **0.46** (child-workspace `--colocate`); `src/vcs/jj.ts` and `src/doctor/check/jj.ts` enforce it. Upgrade policy: bump the floor only after re-running the policy-table audit against the new CLI (`jj help` for every verb) and updating `src/jj/policy-tables.ts` + its tests. Doctor must never auto-upgrade jj.
+- Research source: `.tmp/research/jj/` (`NOTES.md` §8, `raw/` captures). Ticket: `.plan/tickets/TASK-document-jj-installer-path-and-version-churn-policy.md`.
+
 ## Important Files
 
 - `src/cli.ts` — dispatch + exit codes; `src/cli-registry.ts` registry; `src/cli-usage.ts` USAGE help table.
@@ -88,6 +94,10 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 - `package.json` — `bin.giwt → src/cli.ts`; `scripts`: `test`, `check`, `fmt`, `lint`, `lint:md`, `lint:sh`, `size`, `giwt`, `build:bin`, `plan:code-map`, `plan:matrix`, `plan:docs`, `plan:links`, `plan:artifacts`, `postinstall` (= `plan:artifacts` regen).
 - `dprint.json`, `.oxlintrc.json`, `.markdownlint-cli2.yaml` — formatter/linter configs; all enforced via `bun run check`.
 - `tsconfig.json` — strict, noEmit; `bunx tsc --noEmit` must stay clean.
+
+## GPG cache scope
+
+`giwt gpg-unlock` only verifies and re-arms the passphrase cache of the **current process's** gpg-agent; its success line names the agent socket and TTL. `assertGpgUnlocked()` self-heals a cold cache from `GIT_GPG_PASSPHRASE`/`~/.gpg-passphrase` (or a TTY pinentry) but never prompts headlessly. A different `GNUPGHOME` selects a different gpg-agent socket, so no giwt process can warm another agent's cache — align the environment instead. Never log or persist the passphrase.
 
 ## Runtime/Tooling Preferences
 

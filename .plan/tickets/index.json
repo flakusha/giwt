@@ -593,6 +593,22 @@
     "source": ".plan/tickets/BUG-giwt-ticket-generates-a-status-the-status-vocab-gate-then-re.md",
     "status": "done"
   },
+  "BUG-GPG-UNLOCK-WARMUP-SUCCESS-IS-NOT-VERIFIABLE-ACROSS-AGENTS": {
+    "hash": "1ee9865",
+    "git_issue": "1ee9865",
+    "extid": "BUG-GPG-UNLOCK-WARMUP-SUCCESS-IS-NOT-VERIFIABLE-ACROSS-AGENTS",
+    "type": "BUG",
+    "title": "gpg-unlock warmup success is not verifiable across agents",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "gpg"
+    ],
+    "source": ".plan/tickets/BUG-gpg-unlock-warmup-success-is-not-verifiable-across-agents.md",
+    "status": "done"
+  },
   "BUG-ISSUES-ALL-STILL-HIDES-CLOSED-ISSUES-AND-HAS-NO-MACHINE-FORM": {
     "hash": "d98f5da",
     "git_issue": "d98f5da",
@@ -1757,7 +1773,7 @@
       "passthrough"
     ],
     "source": ".plan/tickets/FEAT-giwt-jj-passthrough-policy-gate-phase-1.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-PIJUL-PASSTHROUGH-POLICY-GATE-PHASE-1": {
     "hash": "f2f85c9",
@@ -1774,7 +1790,7 @@
       "passthrough"
     ],
     "source": ".plan/tickets/FEAT-giwt-pijul-passthrough-policy-gate-phase-1.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-GIWT-VERIFY-PROBE-WRAP-REPO-VERIFY-SCRIPTS-AS-A-GIWT-SUBCOMM": {
     "hash": "b05a044",
@@ -1820,7 +1836,7 @@
       "jj"
     ],
     "source": ".plan/tickets/FEAT-jj-audit-backup-and-version-policy.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-JJ-COLOCATED-HISTORY-DETECTORS-ON-CHANGE-IDS-AND-EVOLOG": {
     "hash": "aea91fb",
@@ -1836,7 +1852,7 @@
       "jj"
     ],
     "source": ".plan/tickets/FEAT-jj-colocated-history-detectors-on-change-ids-and-evolog.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-JJ-WORKSPACE-LIFECYCLE-RENAME-PINNING-AND-SIGNING-IDENTITY-M": {
     "hash": "bffa06f",
@@ -1852,7 +1868,7 @@
       "jj"
     ],
     "source": ".plan/tickets/FEAT-jj-workspace-lifecycle-rename-pinning-and-signing-identity-m.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-JJ-WORKSPACE-SIGNING-FINALIZE-INTEGRATION": {
     "hash": "47972d2",
@@ -1868,7 +1884,7 @@
       "jj"
     ],
     "source": ".plan/tickets/FEAT-jj-workspace-signing-finalize-integration.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-LEDGER-CORE-CANONICAL-MODULE": {
     "hash": "4a5b9ba",
@@ -2015,7 +2031,7 @@
       "pijul"
     ],
     "source": ".plan/tickets/FEAT-pijul-native-resurrected-tracked-blob-provider.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-PIJUL-TICKET-SUBSTRATE-AND-BACKUP-CONSISTENCY": {
     "hash": "6d2e789",
@@ -2031,7 +2047,7 @@
       "pijul"
     ],
     "source": ".plan/tickets/FEAT-pijul-ticket-substrate-and-backup-consistency.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-PLAN-CHECK-LINKS-FIX-TO-AUTO-REPAIR-STALE-MARKDOWN-LINKS-AND": {
     "hash": "00787da",
@@ -2948,7 +2964,7 @@
       "jj"
     ],
     "source": ".plan/tickets/TASK-document-jj-installer-path-and-version-churn-policy.md",
-    "status": "open"
+    "status": "done"
   },
   "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API": {
     "hash": "ac01204",
