@@ -3,8 +3,10 @@
 
 import type { WorktreeConfig } from "../../utils/config";
 import { log } from "../../utils/output";
+import { assertGitMutationAllowed } from "../../vcs/guard";
 
 export function gpgMergeFlags(config: WorktreeConfig): string[] {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt finalize merge" });
   if (!config.agentGpgKeyId) return [];
   const gpgCheck = Bun.spawnSync(
     ["gpg", "--list-secret-keys", config.agentGpgKeyId],

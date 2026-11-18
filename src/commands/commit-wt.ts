@@ -15,11 +15,13 @@ import { assertGpgUnlocked } from "../utils/gpg";
 import { appendCommitOutcome } from "../utils/ledger";
 import { extractMessageInput, validateMessage } from "../utils/message";
 import { log, outcomeLine, raw } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 
 export async function commitWt(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt commit-wt" });
   const onProtected = args.includes("--on-protected");
   const noVerify = args.includes("--no-verify");
 

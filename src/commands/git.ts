@@ -14,13 +14,14 @@
 import { writeFileSync } from "node:fs";
 import { classifyGitInvocation } from "../git/policy";
 import { destructiveAnnexAllows } from "../git/policy-annex";
-import { RTK_DISPLAY_SUBCOMMANDS } from "../git/policy-tables";
+import { RO_SUBCOMMANDS, RTK_DISPLAY_SUBCOMMANDS } from "../git/policy-tables";
 import { ALLOW_AUTHOR_OVERRIDE_FLAG, assertGitAuthorIdentity } from "../utils/author-guard";
 import type { WorktreeConfig } from "../utils/config";
 import { isolatedGitEnv } from "../utils/git";
 import { log, raw, warnOnce } from "../utils/output";
 import { activeRun } from "../utils/runlog";
 import type { RunRecorder } from "../utils/runlog";
+import { gitMutationRefusal } from "../vcs/guard";
 import { applyTrailerPolicy, removeTempFiles } from "./git-trailers";
 
 /** Subcommands whose successful run creates or rewrites commits — these go
@@ -81,6 +82,20 @@ export async function gitPassthrough(args: string[], config: WorktreeConfig): Pr
     log("error", `git blocked: ${verdict.reason}`);
     raw(`  refused: git ${rest.join(" ")}`);
     rec?.event(`git:${verdict.subcommand || "unknown"}`, "blocked", verdict.reason);
+    process.exitCode = 1;
+    return;
+  }
+  // Non-git backend: git stays available for reads (git-issue/audit) but
+  // every mutating subcommand must go through the native backend commands.
+  // classifyGitInvocation's RO table (+ [git] safe) defines the read set;
+  // RW/predicate-driven subcommands are refused here, blocks above.
+  const backend = config.settings.vcs.backend;
+  const readOnlyGit = RO_SUBCOMMANDS[verdict.subcommand] === true
+    || settings.safe.includes(verdict.subcommand);
+  if (backend !== "git" && !readOnlyGit) {
+    log("error", gitMutationRefusal(backend, `giwt git ${verdict.subcommand}`));
+    raw(`  refused: git ${rest.join(" ")}`);
+    rec?.event(`git:${verdict.subcommand || "unknown"}`, "blocked", "non-git backend git mutation");
     process.exitCode = 1;
     return;
   }

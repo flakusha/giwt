@@ -7,11 +7,13 @@ import { branchToPath } from "../utils/config";
 import { gitConfigSet } from "../utils/config-writes";
 import { assertGpgUnlocked } from "../utils/gpg";
 import { log } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 
 export async function execute(
   args: string[],
   config: Awaited<ReturnType<typeof import("../index").loadConfig>>,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt sign" });
   const branch = args[0];
   if (!branch) {
     log("error", "branch name required");

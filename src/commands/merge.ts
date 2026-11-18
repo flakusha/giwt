@@ -6,6 +6,7 @@ import { findWorktree, type WorktreeConfig } from "../utils/config";
 import { gitSync, gitSyncQuiet, isolatedGitEnv } from "../utils/git";
 import { assertAgentGpgUnlocked } from "../utils/gpg";
 import { log, raw } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 
 function gpgMergeFlags(config: WorktreeConfig): string[] {
   if (!config.agentGpgKeyId) return [];
@@ -26,6 +27,7 @@ export async function merge(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  assertGitMutationAllowed({ settings: config.settings, where: "giwt merge" });
   const [branch, source] = args.filter((a) => a !== "--allow-author-override");
 
   if (!branch || !source) {

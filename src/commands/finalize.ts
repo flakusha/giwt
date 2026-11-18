@@ -24,6 +24,7 @@ import { branchToPath, findWorktree, type WorktreeConfig } from "../utils/config
 import { gitSync, isolatedGitEnv, isProtected } from "../utils/git";
 import { appendGripe } from "../utils/ledger";
 import { log, raw } from "../utils/output";
+import { assertGitMutationAllowed } from "../vcs/guard";
 import { installFailureGripe } from "./finalize/checks";
 import { checkDevMergeable } from "./finalize/gates";
 import { acquireFinalizeLock } from "./finalize/lock";
@@ -50,6 +51,9 @@ export async function finalize(
   args: string[],
   config: WorktreeConfig,
 ): Promise<void> {
+  // Err-closed before any git probe, lock, gate or staging mutation: jj/pijul
+  // own their op logs; a git-style finalize would bypass them.
+  assertGitMutationAllowed({ settings: config.settings, where: "finalize" });
   // Reject the legacy --dry-run BEFORE parsing: as a positional it became the
   // branch and the operator got `no worktree found for branch '--dry-run'`
   // instead of the remedy (runFinalize's copy of this guard sits past every

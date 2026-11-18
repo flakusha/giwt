@@ -80,6 +80,38 @@ describe("giwt git passthrough", () => {
       settings: { ...DEFAULT_SETTINGS, git: { ...DEFAULT_SETTINGS.git, ...gitOverride } },
     }) as unknown as WorktreeConfig;
 
+  const backendWith = (backend: GiwtSettings["vcs"]["backend"]): WorktreeConfig =>
+    ({
+      ...config,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        git: { ...DEFAULT_SETTINGS.git, rtk: "off" },
+        vcs: { backend },
+      },
+    }) as unknown as WorktreeConfig;
+
+  test("non-git backend refuses git mutations without spawning git", async () => {
+    const spawn = spyOn(Bun, "spawnSync").mockImplementation(
+      (() => {
+        throw new Error("git must not be spawned");
+      }) as never,
+    );
+    try {
+      await gitPassthrough(["commit", "-m", "nope"], backendWith("jj"));
+      expect(process.exitCode).toBe(1);
+      expect(spawn).not.toHaveBeenCalled();
+      expect(errChunks.join("")).toContain("giwt jj / giwt pijul");
+    } finally {
+      spawn.mockRestore();
+    }
+  });
+
+  test("non-git backend still allows read-only git", async () => {
+    await gitPassthrough(["status"], backendWith("pijul"));
+    expect(process.exitCode).toBe(0);
+    expect(outChunks.join("")).toContain("On branch main");
+  });
+
   test("read-only command passes through with git's output", async () => {
     await gitPassthrough(["status"], settingsWith({ rtk: "off" }));
     expect(process.exitCode).toBe(0);
