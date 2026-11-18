@@ -3,7 +3,7 @@
 
 # FEAT: pijul ticket substrate and backup consistency
 
-**Status:** Not Started
+**Status:** In Progress
 **Priority:** medium
 **Effort:** medium
 **Tags:** pijul
@@ -11,14 +11,21 @@
 
 **Summary:**
 
-Pijul integration gaps from the audited research: OPEN-QUESTIONS #7 (git-issue has no pijul substrate — side git repo, .plan-only tickets, or defer ticket sync), #14 (.pijul/pristine is an mmap'd Sanakirja DB; no consistent hot-backup dump — quiesce, stop-the-world, or explicit exclusion), #6 (skip-ledger semantics with immutable change hashes vs unrecord/re-apply), plus INVENTORY rows for history audit/resurrected/weave detectors in a pijul repo. Human decisions required; record them here before implementation.
+Pijul gaps from `.tmp/research/pijul/`: OPEN-QUESTIONS #6, #7, #14 plus INVENTORY history-audit/resurrected/weave detectors in a pijul repo.
 
-**Context:**
+**Decisions (2026-11-18, user-approved):**
 
-(fill in before starting: why this change, constraints, alternatives considered.)
+- Ticket substrate is **unsupported in pijul mode**: git-issue has no pijul equivalent, so giwt explicitly refuses with documentation — no side git repo and no silent `.plan`-only ticket sync.
+- Hot backups **exclude `.pijul/pristine` with a loud warning**: it is an mmap'd Sanakirja DB with no consistent hot-backup dump; no quiesce/stop-the-world machinery — document the exclusion instead.
+- The skip ledger **dissolves** for immutable pijul change hashes (intrinsic patch ids); re-apply/unrecord needs no skip entry.
+- History-audit, resurrected and weave detectors must work against change-hash history, not git patch-ids.
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [ ] Ticket/issue commands in pijul mode refuse with an actionable message and docs; a test asserts no side git repo is created and no git-issue call runs.
+- [ ] Hot-backup config explicitly excludes `.pijul/pristine` and emits a loud warning naming the unbacked-up pristine store; a test asserts both.
+- [ ] Define and test skip-ledger behavior on immutable change hashes (no skip entry needed on re-apply/unrecord).
+- [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo.
+- [ ] `bun run check` passes; docs updated; SPDX headers on new files.
+
+**Not in this ticket:** pijul native command integration, git-interop bridge.
