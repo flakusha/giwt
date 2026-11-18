@@ -11,6 +11,7 @@ import { makeGitRepo } from "../testkit/capture";
 import { gitSync } from "../utils/git";
 import { DEFAULT_SETTINGS } from "../utils/settings";
 import { resolveVcsBackend } from "./registry";
+import { vcsBackendRefusal } from "./types";
 
 describe("VCS backend registry", () => {
   test("git backend delegates to the existing helpers", async () => {
@@ -64,14 +65,17 @@ describe("VCS backend registry", () => {
     expect(backend.name).toBe("jj");
   });
 
-  test("registered-but-unimplemented backends refuse instead of falling back", () => {
-    for (const backend of ["pijul"] as const) {
-      expect(() =>
-        resolveVcsBackend({
-          ...DEFAULT_SETTINGS,
-          vcs: { backend },
-        })
-      ).toThrow(new RegExp(`vcs backend '${backend}' is not implemented yet`));
-    }
+  test("pijul resolves to the native backend", () => {
+    const backend = resolveVcsBackend({ ...DEFAULT_SETTINGS, vcs: { backend: "pijul" } });
+    expect(backend.name).toBe("pijul");
+  });
+
+  test("unknown backend values refuse instead of falling back to git", () => {
+    expect(() =>
+      resolveVcsBackend({
+        ...DEFAULT_SETTINGS,
+        vcs: { backend: "hg" as typeof DEFAULT_SETTINGS.vcs.backend },
+      })
+    ).toThrow(vcsBackendRefusal("hg"));
   });
 });

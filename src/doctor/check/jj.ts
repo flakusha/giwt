@@ -11,9 +11,9 @@
 import {
   meetsVersionFloor,
   parsePijulVersion,
-  PIJUL_VERSION_FLOOR,
   type PijulVersion,
 } from "../../intercom/backend-pijul.ts";
+import { PIJUL_PINNED_VERSION } from "../../vcs/pijul.ts";
 import type { VcsBackendName } from "../../vcs/types.ts";
 import type { SpawnFn } from "./spawn.ts";
 import type { CheckFinding, CheckResult } from "./types.ts";
@@ -106,16 +106,15 @@ export async function runVcsCheck(
     }
   } else {
     const version = parsePijulVersion(versionOut);
-    const floor = parsePijulVersion(`pijul ${PIJUL_VERSION_FLOOR}`)!;
-    notes.push(`pijul version floor >= ${PIJUL_VERSION_FLOOR}`);
+    notes.push(`pijul version pinned to ${PIJUL_PINNED_VERSION}`);
     if (version === null) {
       findings.push(
         finding("pijul-version", `cannot parse 'pijul --version' output: ${versionOut.trim()}`),
       );
-    } else if (!meetsVersionFloor(version, floor)) {
+    } else if (show(version) !== PIJUL_PINNED_VERSION) {
       findings.push(finding(
         "pijul-version",
-        `pijul ${show(version)} is too old — need >= ${PIJUL_VERSION_FLOOR}`,
+        `pijul ${show(version)} is unsupported — need exactly ${PIJUL_PINNED_VERSION}`,
       ));
     }
   }

@@ -120,20 +120,12 @@ describe("loadSettings", () => {
     }
   });
 
-  test("[vcs] unimplemented backends refuse at load before any command work", () => {
+  test("[vcs] pijul loads with the native backend", () => {
     const fx = makeFixture();
     try {
-      for (const backend of ["pijul"] as const) {
-        writeFileSync(fx.localPath, `[vcs]\nbackend = "${backend}"\n`);
-        const load = () =>
-          loadSettings(fx.root, {
-            globalPath: fx.globalPath,
-            localPath: fx.localPath,
-          });
-        expect(load).toThrow(/\[vcs\] backend = "git"/);
-        expect(load).toThrow(new RegExp(`vcs backend '${backend}' is not implemented yet`));
-        expect(load).toThrow(/\.plan\/tickets\/FEAT-feat-/);
-      }
+      writeFileSync(fx.localPath, `[vcs]\nbackend = "pijul"\n`);
+      expect(loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }).vcs)
+        .toEqual({ backend: "pijul" });
     } finally {
       fx.cleanup();
     }

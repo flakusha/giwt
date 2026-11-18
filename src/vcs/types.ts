@@ -12,7 +12,7 @@ export type VcsBackendName = (typeof VCS_BACKENDS)[number];
 
 /** Registered but not implemented yet. Settings load refuses these so no
  * legacy git call site can run behind the user's back. */
-export const VCS_UNIMPLEMENTED_BACKENDS: readonly VcsBackendName[] = ["pijul"];
+export const VCS_UNIMPLEMENTED_BACKENDS: readonly VcsBackendName[] = [];
 
 /** A branch (git) or bookmark (jj). */
 export interface VcsBranch {

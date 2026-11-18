@@ -4,7 +4,7 @@
 /** Version floor / colocation / binary-presence probes for VCS doctor checks. */
 
 import { describe, expect, test } from "bun:test";
-import { PIJUL_VERSION_FLOOR } from "../../intercom/backend-pijul.ts";
+import { PIJUL_PINNED_VERSION } from "../../vcs/pijul.ts";
 import { runDoctorChecks } from "./entry.ts";
 import { JJ_VERSION_FLOOR, parseJjVersion, runVcsCheck } from "./jj.ts";
 import type { SpawnResult } from "./spawn.ts";
@@ -14,7 +14,7 @@ const ok = (stdout: string): SpawnResult => ({ exitCode: 0, stdout, stderr: "" }
 
 const jjOk: Reply = (cmd) =>
   ok(cmd[1] === "--version" ? "jj 0.46.0\n" : "The repo is currently colocated with Git.\n");
-const pijulOk: Reply = () => ok(`pijul ${PIJUL_VERSION_FLOOR}\n`);
+const pijulOk: Reply = () => ok(`pijul ${PIJUL_PINNED_VERSION}\n`);
 
 function jjOpts(spawn: Reply, backend: "git" | "jj" | "pijul" = "jj") {
   return { root: process.cwd(), vcsBackend: backend, spawn };
@@ -71,12 +71,12 @@ describe("VCS doctor checks", () => {
     expect(result.findings[0]?.rule).toBe("jj-binary");
   });
 
-  test("pijul uses the shared intercom version floor", async () => {
+  test("pijul pins the exact beta", async () => {
     const good = await runVcsCheck("pijul", jjOpts(pijulOk, "pijul"));
     expect(good.ok).toBe(true);
-    const bad = await runVcsCheck("pijul", jjOpts(() => ok("pijul 0.9.0\n"), "pijul"));
+    const bad = await runVcsCheck("pijul", jjOpts(() => ok("pijul 1.0.0-beta.26\n"), "pijul"));
     expect(bad.ok).toBe(false);
-    expect(bad.findings[0]?.message).toContain("pijul");
+    expect(bad.findings[0]?.message).toContain("need exactly");
   });
 
   test("entry dispatch runs the configured backend and skips the other", async () => {
