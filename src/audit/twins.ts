@@ -17,7 +17,7 @@
  * prefilter and a comparison cap so huge directories stay cheap.
  */
 
-import { type BlobCache, blobText } from "./git-blobs";
+import { type BlobCache, blobText, type BlobTextOptions } from "./git-blobs";
 import { compareTwins } from "./normalize";
 import type { AuditEvidenceToken, AuditFinding } from "./types";
 
@@ -26,6 +26,10 @@ export interface TrackedBlob {
   sha: string;
   path: string;
 }
+
+/** Content source for a blob sha — git cat-file by default, pijul file reads
+ * when the resurrected scan runs under the pijul backend. */
+export type BlobTextProvider = (opts: BlobTextOptions) => string | null;
 
 /** Blobs further apart in size than this are never twins — cheap prefilter
  * that skips cat-file content reads entirely. */
@@ -39,6 +43,8 @@ export interface TwinScanOptions {
   /** Max tolerant comparisons per directory (default 4000) — the walk stays
    * linear-ish even on adversarial same-size directories. */
   maxComparisons?: number;
+  /** Override blob reads (default: git cat-file via ./git-blobs). */
+  readBlobText?: BlobTextProvider;
 }
 
 export function scanContentTwins({
@@ -46,10 +52,11 @@ export function scanContentTwins({
   files,
   maxBlobBytes = 200_000,
   maxComparisons = 4000,
+  readBlobText = blobText,
 }: TwinScanOptions): AuditFinding[] {
   const cache: BlobCache = new Map();
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
-  const ctx: TwinPassContext = { repoRoot, maxBlobBytes, cache };
+  const ctx: TwinPassContext = { repoRoot, maxBlobBytes, cache, readBlobText };
   return [
     ...byteIdenticalTwins(sorted, ctx),
     ...driftedTwins(sorted, ctx, maxComparisons),
@@ -61,12 +68,13 @@ interface TwinPassContext {
   repoRoot: string;
   maxBlobBytes: number;
   cache: BlobCache;
+  readBlobText: BlobTextProvider;
 }
 
 /** Same blob sha under ≥2 paths — but never the empty blob (`.gitkeep`s). */
 function byteIdenticalTwins(
   files: readonly TrackedBlob[],
-  { repoRoot, maxBlobBytes, cache }: TwinPassContext,
+  { repoRoot, maxBlobBytes, cache, readBlobText }: TwinPassContext,
 ): AuditFinding[] {
   const bySha = new Map<string, TrackedBlob[]>();
   for (const file of files) {
@@ -77,7 +85,7 @@ function byteIdenticalTwins(
   const findings: AuditFinding[] = [];
   for (const [sha, group] of bySha) {
     if (group.length < 2) continue;
-    const text = blobText({ repoRoot, sha, maxBytes: maxBlobBytes, cache });
+    const text = readBlobText({ repoRoot, sha, maxBytes: maxBlobBytes, cache });
     if (text === null || text.length === 0) continue;
     const paths = group.map((f) => f.path);
     findings.push({
@@ -103,7 +111,7 @@ function byteIdenticalTwins(
  * drifted tokens. */
 function driftedTwins(
   files: readonly TrackedBlob[],
-  { repoRoot, maxBlobBytes, cache }: TwinPassContext,
+  { repoRoot, maxBlobBytes, cache, readBlobText }: TwinPassContext,
   maxComparisons: number,
 ): AuditFinding[] {
   const findings: AuditFinding[] = [];
@@ -111,13 +119,13 @@ function driftedTwins(
   for (let i = 0; i < files.length && comparisons < maxComparisons; i++) {
     const a = files[i];
     if (a === undefined) break;
-    const textA = blobText({ repoRoot, sha: a.sha, maxBytes: maxBlobBytes, cache });
+    const textA = readBlobText({ repoRoot, sha: a.sha, maxBytes: maxBlobBytes, cache });
     if (textA === null || textA.length === 0) continue;
     for (let j = i + 1; j < files.length && comparisons < maxComparisons; j++) {
       const b = files[j];
       if (b === undefined) continue;
       comparisons++;
-      const textB = blobText({ repoRoot, sha: b.sha, maxBytes: maxBlobBytes, cache });
+      const textB = readBlobText({ repoRoot, sha: b.sha, maxBytes: maxBlobBytes, cache });
       if (textB === null || textB.length === 0) continue;
       if (Math.abs(textA.length - textB.length) > TWIN_MAX_SIZE_DELTA) continue;
       const verdict = compareTwins({ textA, pathA: a.path, textB, pathB: b.path });

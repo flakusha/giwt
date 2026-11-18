@@ -9,8 +9,8 @@
  * nothing objects at commit time. In numbered-migration directories the
  * failure is catastrophic and silent until runtime.
  *
- * Two checks over a directory's tracked files (git ls-files, so committed
- * state is what gets audited):
+ * Two checks over a directory's tracked files (git ls-files by default,
+ * pijul list under backend=pijul — VCS state is what gets audited):
  *   1. number collisions — two files claiming the same leading integer is
  *      a defect REGARDLESS of content (the ordering contract is broken);
  *   2. content twins — via ./twins: byte-identical blobs under two paths,
@@ -21,13 +21,21 @@
 
 import { basename, posix } from "node:path";
 import { gitSync } from "../utils/git";
-import { scanContentTwins, type TrackedBlob } from "./twins";
+import { blobText as gitBlobText } from "./git-blobs";
+import { type BlobTextProvider, scanContentTwins, type TrackedBlob } from "./twins";
 import type { AuditFinding } from "./types";
 
 const LEADING_NUMBER_RE = /^(\d+)/;
 
 /** One `100644 <sha> <stage> TAB <path>` line from ls-files -s. */
 const LS_FILES_LINE_RE = /^\d+ ([0-9a-f]+) \d+\t(.+)$/;
+
+/** Tracked-path source for one directory (default: git ls-files). */
+export type TrackedBlobProvider = (args: {
+  repoRoot: string;
+  dir: string;
+  maxFiles: number;
+}) => TrackedBlob[];
 
 export interface ResurrectedScanOptions {
   repoRoot: string;
@@ -37,6 +45,10 @@ export interface ResurrectedScanOptions {
   maxFilesPerDir?: number;
   /** Max blob bytes compared for twins (default 200_000). */
   maxBlobBytes?: number;
+  /** Override the tracked-path source (pijul provider under backend=pijul). */
+  trackedBlobs?: TrackedBlobProvider;
+  /** Override blob reads (default: git cat-file via ./git-blobs). */
+  blobText?: BlobTextProvider;
 }
 
 /** Tracked files under one directory, filename-ordered, as blob records. */
@@ -112,13 +124,15 @@ export function scanResurrectedFiles({
   dirs,
   maxFilesPerDir = 500,
   maxBlobBytes = 200_000,
+  trackedBlobs = trackedBlobsUnder,
+  blobText = gitBlobText,
 }: ResurrectedScanOptions): AuditFinding[] {
   const findings: AuditFinding[] = [];
   for (const dir of dirs) {
-    const files = trackedBlobsUnder({ repoRoot, dir, maxFiles: maxFilesPerDir });
+    const files = trackedBlobs({ repoRoot, dir, maxFiles: maxFilesPerDir });
     findings.push(
       ...numberCollisionFindings({ files, dir }),
-      ...scanContentTwins({ repoRoot, files, maxBlobBytes }),
+      ...scanContentTwins({ repoRoot, files, maxBlobBytes, readBlobText: blobText }),
     );
   }
   return findings.sort((a, b) => b.rank - a.rank);

@@ -12,6 +12,7 @@
 import { readFileSync } from "node:fs";
 import { scanResurrectedFiles } from "../audit/resurrected";
 import { scanWeaveDamage } from "../audit/weave";
+import { pijulResurrectedProviders } from "../history/pijul-resurrected";
 import type { WorktreeConfig } from "../utils/config";
 import { type OutFormat, renderRecords } from "../utils/emit";
 import { gitSync } from "../utils/git";
@@ -42,6 +43,13 @@ function emojiFor(severity: string): string {
   return severity === "critical" ? "🚨" : severity === "warning" ? "⚠️" : "ℹ️";
 }
 
+/** Pijul swaps both blob providers; every other backend keeps git defaults. */
+export function resurrectedScanOptions(config: WorktreeConfig, dirs: readonly string[]) {
+  const repoRoot = config.repoRoot;
+  if (config.settings.vcs.backend !== "pijul") return { repoRoot, dirs };
+  return { repoRoot, dirs, ...pijulResurrectedProviders({ root: repoRoot }) };
+}
+
 export async function runResurrected(
   rest: string[],
   config: WorktreeConfig,
@@ -57,7 +65,7 @@ export async function runResurrected(
     }
   }
   if (dirs.length === 0) usageError("resurrected requires at least one directory");
-  const findings = scanResurrectedFiles({ repoRoot: config.repoRoot, dirs });
+  const findings = scanResurrectedFiles(resurrectedScanOptions(config, dirs));
   if (format !== "human") {
     raw(renderRecords(findings, format, {
       emoji: (rec) => {
