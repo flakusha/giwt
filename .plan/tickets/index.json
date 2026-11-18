@@ -1514,7 +1514,7 @@
       "jj"
     ],
     "source": ".plan/tickets/FEAT-feat-jj-jujutsu-vcs-support.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-FEAT-PIJUL-VCS-SUPPORT": {
     "hash": "f229639",
@@ -1531,7 +1531,7 @@
       "pijul"
     ],
     "source": ".plan/tickets/FEAT-feat-pijul-vcs-support.md",
-    "status": "open"
+    "status": "done"
   },
   "FEAT-FEAT-VCS-BACKEND-SEAM-AND-BACKEND-SETTING": {
     "hash": "0a1c942",
@@ -1822,6 +1822,38 @@
     "source": ".plan/tickets/FEAT-jj-audit-backup-and-version-policy.md",
     "status": "open"
   },
+  "FEAT-JJ-COLOCATED-HISTORY-DETECTORS-ON-CHANGE-IDS-AND-EVOLOG": {
+    "hash": "aea91fb",
+    "git_issue": "aea91fb",
+    "extid": "FEAT-JJ-COLOCATED-HISTORY-DETECTORS-ON-CHANGE-IDS-AND-EVOLOG",
+    "type": "FEAT",
+    "title": "jj colocated history detectors on change ids and evolog",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj"
+    ],
+    "source": ".plan/tickets/FEAT-jj-colocated-history-detectors-on-change-ids-and-evolog.md",
+    "status": "open"
+  },
+  "FEAT-JJ-WORKSPACE-LIFECYCLE-RENAME-PINNING-AND-SIGNING-IDENTITY-M": {
+    "hash": "bffa06f",
+    "git_issue": "bffa06f",
+    "extid": "FEAT-JJ-WORKSPACE-LIFECYCLE-RENAME-PINNING-AND-SIGNING-IDENTITY-M",
+    "type": "FEAT",
+    "title": "jj workspace lifecycle rename pinning and signing identity mapping",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj"
+    ],
+    "source": ".plan/tickets/FEAT-jj-workspace-lifecycle-rename-pinning-and-signing-identity-m.md",
+    "status": "open"
+  },
   "FEAT-JJ-WORKSPACE-SIGNING-FINALIZE-INTEGRATION": {
     "hash": "47972d2",
     "git_issue": "47972d2",
@@ -1967,6 +1999,22 @@
       "pijul"
     ],
     "source": ".plan/tickets/FEAT-pijul-channel-record-conflict-integration.md",
+    "status": "done"
+  },
+  "FEAT-PIJUL-NATIVE-RESURRECTED-TRACKED-BLOB-PROVIDER": {
+    "hash": "c297907",
+    "git_issue": "c297907",
+    "extid": "FEAT-PIJUL-NATIVE-RESURRECTED-TRACKED-BLOB-PROVIDER",
+    "type": "FEAT",
+    "title": "pijul native resurrected tracked blob provider",
+    "label": "feat",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "pijul"
+    ],
+    "source": ".plan/tickets/FEAT-pijul-native-resurrected-tracked-blob-provider.md",
     "status": "open"
   },
   "FEAT-PIJUL-TICKET-SUBSTRATE-AND-BACKUP-CONSISTENCY": {
@@ -2885,6 +2933,22 @@
     ],
     "source": ".plan/tickets/TASK-consolidation-worktree-bootstrap-scanflags-stale-size-allow.md",
     "status": "done"
+  },
+  "TASK-DOCUMENT-JJ-INSTALLER-PATH-AND-VERSION-CHURN-POLICY": {
+    "hash": "eca286e",
+    "git_issue": "eca286e",
+    "extid": "TASK-DOCUMENT-JJ-INSTALLER-PATH-AND-VERSION-CHURN-POLICY",
+    "type": "TASK",
+    "title": "document jj installer path and version churn policy",
+    "label": "task",
+    "priority": "low",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "jj"
+    ],
+    "source": ".plan/tickets/TASK-document-jj-installer-path-and-version-churn-policy.md",
+    "status": "open"
   },
   "TASK-EXPOSE-FILE-SIZE-CHECK-VIA-PUBLIC-API": {
     "hash": "ac01204",

@@ -3,7 +3,7 @@
 
 # FEAT: pijul VCS support
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** feat, pijul
@@ -22,7 +22,7 @@ Implement the `pijul` backend behind the landed VCS seam (`src/vcs/{types,regist
 - Pijul-specific primitives are mandatory: clone-dir-per-agent for `createWorkspace`, `pijul record` instead of commit, ahead/behind recomputed from change-hash sets, commutation instead of rebase, conflicts as first-class changes, inherent sshsig signing (no GPG).
 - Version policy: pin the installed beta exactly and hard-refuse mismatches (protocol/signature format broke between betas); doctor reports the resolved version. Deployment expects a user-provisioned SSH identity/agent with a remedy on failure.
 
-**Landed 2026-11-18:** `src/vcs/pijul.ts` + stubbed argv tests, settings/registry wiring, exact-beta doctor pin, and the ticket-substrate guard. Remaining commutation/finalize, conflict resolution, skip ledger, and history-detector work stays in the two pijul follow-up tickets.
+**Landed 2026-11-18:** `src/vcs/pijul.ts` + argv tests, settings/registry wiring, exact-beta doctor pin, ticket-substrate guard, conflict surfacing, commutation finalize and skip-ledger dissolution. Residual history-detector work stays in `FEAT-pijul-ticket-substrate-and-backup-consistency.md` and `FEAT-pijul-native-resurrected-tracked-blob-provider.md`.
 
 **Acceptance Criteria:**
 
@@ -30,12 +30,15 @@ Implement the `pijul` backend behind the landed VCS seam (`src/vcs/{types,regist
 - [x] Settings load accepts `backend = "pijul"`; `resolveVcsBackend` returns the pijul backend; no git fallback — a test asserts no git argv runs in pijul mode.
 - [x] The unsupported ticket substrate is an explicit refusal (`giwt ticket`/`giwt sync` guard) plus documentation; no side git repo is created.
 - [x] `status` recomputes ahead/behind from change-hash sets; `commit` maps to `pijul record`.
-- [ ] Immutable change hashes mean no rebase/skip-ledger rewrite — skip-ledger/history-detector adaptation stays in FEAT-pijul-ticket-substrate-and-backup-consistency.md.
+- [x] Immutable change hashes mean no rebase/skip-ledger rewrite — `skipLedgerApplicable` refuses/no-ops under pijul; history-detector adaptation tracked in `FEAT-pijul-ticket-substrate-and-backup-consistency.md` and `FEAT-pijul-native-resurrected-tracked-blob-provider.md`.
 - [x] Missing pijul on PATH or a version mismatch produces a clear error with the identity/agent remedy and never runs git.
 - [x] `.pijul/pristine` is excluded from hot backups with a loud warning; the doctor `pijul` check pins the exact beta.
 - [x] Identity/GPG policy stays in the command layer; inherent sshsig signing is documented as a deviation.
 - [x] `bun run check` passes; every new file carries an SPDX header.
 
 **Landed 2026-11-18 (phase 2):** `pull --json` conflict surfacing via `pijul/conflicts.ts`, commutation-based native finalize, non-overridable `hooks approve` block, skip-ledger dissolution and change-hash history audit. Full gate passes. Remaining: pijul-native resurrected detector, finalize/rebase/abort rewrite beyond the gated native path, git-interop bridge.
+
+**Context:**
+Config loading is git-bound but pijul mode must never fall back to git; the installed beta is pinned exactly because protocol/signature formats broke between betas. No git-issue substrate exists, and agents use clone dirs with sshsig identity.
 
 **Not in this ticket:** finalize/rebase/abort rewrite, `giwt pijul` passthrough table, git-interop bridge.

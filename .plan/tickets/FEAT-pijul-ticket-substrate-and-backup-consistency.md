@@ -28,7 +28,10 @@ Pijul gaps from `.tmp/research/pijul/`: OPEN-QUESTIONS #6, #7, #14 plus INVENTOR
 **Landed 2026-11-18:** ticket-substrate guard and backup exclusion. Later the same day: `skipLedgerApplicable` makes `rebase`/`history skips` explicitly refuse or no-op under pijul (immutable change hashes need no skip entry); `history/pijul-audit.ts` audits duplicate intrinsic change hashes across channels and reports git-only detectors as inapplicable. `resurrected` still needs a pijul-native tracked-blob provider; `weave` works on file paths without a git baseline ref.
 
 - [x] Define and test skip-ledger behavior on immutable change hashes (no skip entry needed on re-apply/unrecord).
-- [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo. (partial: change-hash audit and weave-on-files landed; resurrected needs a non-git tracked-blob provider)
+- [ ] Operate history-audit/resurrected/weave detectors on change-hash history and test them in a pijul repo. (partial: change-hash audit and weave-on-files landed; resurrected moved to `FEAT-pijul-native-resurrected-tracked-blob-provider.md`)
 - [x] `bun run check` passes; docs updated; SPDX headers on new files.
+
+**Context:**
+Pijul has no git-issue substrate and no consistent hot dump for `.pijul/pristine`, so both are hard exclusions with loud warnings. Immutable change hashes dissolve the skip ledger; detectors must avoid any git spawn under pijul.
 
 **Not in this ticket:** pijul native command integration, git-interop bridge.

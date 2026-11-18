@@ -3,7 +3,7 @@
 
 # FEAT: jj (Jujutsu) VCS support
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** Medium
 **Effort:** Medium
 **Tags:** feat, jj
@@ -25,15 +25,18 @@ Implement the `jj` backend behind the landed VCS seam (`src/vcs/{types,registry,
 
 **Acceptance Criteria:**
 
-- [ ] `JjBackend` implements all seam ops with an injectable exec argv seam; unit tests assert exact argv without jj on PATH.
-- [ ] `commit` reads the sha from `@-`; `listBranches` maps bookmarks; `listWorkspaces` maps workspaces; base is `trunk()` with a reported `main`/`master` fallback when no remote resolves it; no `head` field on the shared interface.
-- [ ] `createWorkspace`/`removeWorkspace` use `jj workspace add` (+ explicit `jj bookmark create`) and `jj workspace forget`; the git backend keeps `git worktree add/remove`; tests assert exact argv and no cross-backend fallback.
-- [ ] Colocation guard refuses a non-colocated repo with an actionable message; version floor 0.46 hard-refuses older jj; missing jj on PATH never runs git.
-- [ ] `giwt jj <args>` enforces the landed err-closed policy (deny-list verbs, bypass flags/env, `--config`/`--config-file` refusals, allowed globals), relays stdout/stderr and propagates jj's exit code; `unsign` is BLOCK.
-- [ ] Git-side mutation commands (`commit`, `commit-wt`, `merge`, `sign`, finalize merge, mutating `giwt git` passthrough) refuse in jj mode through one shared guard; identity/GPG policy and Co-Authored-By strip stay in the command layer.
-- [ ] `.jj/` is excluded from hot backups with a loud warning; a doctor `jj` check reports backend/version/colocation.
-- [ ] `bun run check` passes; every new file carries an SPDX header.
+- [x] `JjBackend` implements all seam ops with an injectable exec argv seam; unit tests assert exact argv without jj on PATH.
+- [x] `commit` reads the sha from `@-`; `listBranches` maps bookmarks; `listWorkspaces` maps workspaces; base is `trunk()` with a reported `main`/`master` fallback when no remote resolves it; no `head` field on the shared interface.
+- [x] `createWorkspace`/`removeWorkspace` use `jj workspace add` (+ explicit `jj bookmark create`) and `jj workspace forget`; the git backend keeps `git worktree add/remove`; tests assert exact argv and no cross-backend fallback.
+- [x] Colocation guard refuses a non-colocated repo with an actionable message; version floor 0.46 hard-refuses older jj; missing jj on PATH never runs git.
+- [x] `giwt jj <args>` enforces the landed err-closed policy (deny-list verbs, bypass flags/env, `--config`/`--config-file` refusals, allowed globals), relays stdout/stderr and propagates jj's exit code; `unsign` is BLOCK.
+- [x] Git-side mutation commands (`commit`, `commit-wt`, `merge`, `sign`, finalize merge, mutating `giwt git` passthrough) refuse in jj mode through one shared guard; identity/GPG policy and Co-Authored-By strip stay in the command layer.
+- [x] `.jj/` is excluded from hot backups with a loud warning; a doctor `jj` check reports backend/version/colocation.
+- [x] `bun run check` passes; every new file carries an SPDX header.
 
-**Landed 2026-11-18 (phase 2):** git-mutation guards across abort/worktree-bootstrap/cleanup, change-ID skip ledger, native op-log finalize, command-level Co-Authored-By strip, denied `signing.*` config overrides, doctor stale-workspace check. Full gate passes. Remaining acceptance items above (seam ops, workspace lifecycle, colocation guard, `.jj/` backup exclusion) still need completion.
+**Landed 2026-11-18:** all acceptance criteria above — seam ops and argv tests, bookmark/workspace primitives, colocation + 0.46 guard, err-closed passthrough, shared mutation guard, backup exclusion, doctor check, gate — are in place. Residual work is filed separately: `FEAT-jj-workspace-lifecycle-rename-pinning-and-signing-identity-m.md`, `FEAT-jj-colocated-history-detectors-on-change-ids-and-evolog.md`, `TASK-document-jj-installer-path-and-version-churn-policy.md`.
 
-**Not in this ticket:** finalize/rebase/abort op-log rewrite, jj signing translation, skip-ledger re-key, remotes, tags, non-colocated repos.
+**Context:**
+Config loading is git-bound, so jj support is colocated-only; the backing git store stays the substrate for git-issue, audit and hot backups. jj 0.46 argv facts (bookmarks, `@-`, `trunk()`, no `head` template) constrain the backend; no git fallback is permitted.
+
+**Not in this ticket:** residual workspace rename/pinning/signing identity, jj-aware history detectors, installer/churn docs (filed separately); remotes, tags, non-colocated repos.

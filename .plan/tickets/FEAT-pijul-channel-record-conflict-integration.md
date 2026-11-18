@@ -3,7 +3,7 @@
 
 # FEAT: pijul channel record conflict integration
 
-**Status:** In Progress
+**Status:** Done
 **Priority:** medium
 **Effort:** large
 **Tags:** pijul
@@ -32,5 +32,8 @@ Broader pijul integration after the policy gate, from `.tmp/research/pijul/OPEN-
 - [x] Surface first-class conflicts via `pull --json`/`--accept-conflict-markers` and resolve them with a resolution change; tests cover the conflict path.
 - [x] Use commutation (`apply`/`pull`) for finalize with no rebase/merge-commit/CAS path; gate hook install behind explicit approval.
 - [x] `bun run check` passes; docs updated; SPDX headers on new files.
+
+**Context:**
+pijul 1.0.0-beta protocol/signature broke between betas, so the binary is pinned exactly and identity comes from ssh-agent/sshsig. There are no git-native worktrees or merges: agents use clone dirs and finalize by commutation.
 
 **Not in this ticket:** ticket substrate and backup exclusion, skip-ledger semantics.
