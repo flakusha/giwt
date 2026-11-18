@@ -26,6 +26,7 @@ import { verifyRoot } from "../backup/verify";
 import type { WorktreeConfig } from "../utils/config";
 import { log, outcomeLine, raw } from "../utils/output";
 import { activeRun } from "../utils/runlog";
+import { VCS_BACKUP_EXCLUDES } from "../vcs/types";
 import {
   HELP,
   runAnnexSyncGate,
@@ -35,6 +36,15 @@ import {
   usageError,
 } from "./backup-gates";
 import { humanBytes } from "./clean";
+
+function warnVcsExclusions(config: WorktreeConfig): void {
+  const backend = config.settings.vcs.backend;
+  if (VCS_BACKUP_EXCLUDES[backend].length === 0) return;
+  const notice = backend === "jj"
+    ? "backend=jj: .jj/ (jj op-log) is EXCLUDED — dump covers the colocated git store only"
+    : "backend=pijul: .pijul/pristine is EXCLUDED — pristine is rebuilt on checkout";
+  log("warn", `backup: ${notice}`);
+}
 
 function backupOptions(
   config: WorktreeConfig,
@@ -51,6 +61,7 @@ function backupOptions(
     allowRootOwned: b.allowRootOwned,
     scratchRoot: join(config.worktreeRoot, config.settings.scratch.root),
     scratchRel: scratchRelOf(config),
+    excludes: VCS_BACKUP_EXCLUDES[config.settings.vcs.backend],
   };
 }
 
@@ -104,6 +115,7 @@ async function runDumpCommand(
   targets: ResolvedTarget[],
 ): Promise<void> {
   try {
+    warnVcsExclusions(config);
     const advisory = annexAdvisory({
       repoRoot: config.repoRoot,
       spawn: (cmd) => {
@@ -225,6 +237,7 @@ export async function backup(args: string[], config: WorktreeConfig): Promise<vo
   const targets = resolveTargets(config, given);
   if (subcommand === "dump") {
     if (dryRun) {
+      warnVcsExclusions(config);
       const summary = printPreview(previewDump(backupOptions(config, rootAbs, targets)));
       activeRun()?.outcome({ backup: summary });
       outcomeLine(true, summary);

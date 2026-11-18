@@ -41,6 +41,7 @@ export function buildTarPlan(
     snapshot,
     dbRefs,
     scratchRel,
+    excludes,
   }: {
     /** Uncompressed payload tar path (staging; removed after compress). */
     payloadTar: string;
@@ -57,6 +58,8 @@ export function buildTarPlan(
      *  it lies outside the repo — used to anchor the verify-scratch
      *  exclusion. */
     scratchRel: string | null;
+    /** VCS-internal members (e.g. .jj, .pijul/pristine) to omit. */
+    excludes: readonly string[];
   },
 ): TarPlan {
   const base = basename(targetAbs);
@@ -88,6 +91,12 @@ export function buildTarPlan(
       "--exclude",
       `${scratchPattern}/*`,
     );
+  }
+  // VCS backend excludes: anchor from the target like the guards above, and
+  // cover both the member itself and its children.
+  for (const rel of excludes) {
+    const pattern = member(rel);
+    payload.push("--exclude", pattern, "--exclude", `${pattern}/*`);
   }
   for (const db of dbRefs) payload.push("--exclude", member(db.rel));
   payload.push("-C", dirname(targetAbs), base);

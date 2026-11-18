@@ -14,7 +14,9 @@ export type CheckId =
   | "todo"
   | "leaks"
   | "scratchpad"
-  | "intercom";
+  | "intercom"
+  | "jj"
+  | "pijul";
 
 export const CHECK_IDS: readonly CheckId[] = [
   "lint",
@@ -26,6 +28,8 @@ export const CHECK_IDS: readonly CheckId[] = [
   "leaks",
   "scratchpad",
   "intercom",
+  "jj",
+  "pijul",
 ];
 
 export type CheckSeverity = "error" | "warning";

@@ -84,6 +84,7 @@ function dumpOptions(fx: Fixture, sqliteAvailable: boolean = HAS_SQLITE): DumpOp
     allowRootOwned: false,
     scratchRoot: fx.scratch,
     scratchRel: ".tmp",
+    excludes: [],
   };
 }
 
@@ -118,6 +119,7 @@ function fakeConfig(repo: string, targets: string[]): WorktreeConfig {
   const settings: GiwtSettings = {
     ...DEFAULT_SETTINGS,
     backup: { ...DEFAULT_SETTINGS.backup, root: "backups", targets },
+    vcs: { ...DEFAULT_SETTINGS.vcs },
   };
   return { repoRoot: repo, worktreeRoot: repo, treeDir: repo, settings };
 }
@@ -129,6 +131,33 @@ afterEach(() => {
 });
 
 describe("backup dump/verify (real tar)", () => {
+  test("jj backend excludes .jj and warns in both dump paths", async () => {
+    const fx = makeFixture("jj-exclude");
+    mkdirSync(join(fx.repo, "docs", ".jj"), { recursive: true });
+    writeFileSync(join(fx.repo, "docs", ".jj", "op-log"), "jj history");
+    const config = fakeConfig(fx.repo, ["docs"]);
+    config.settings.vcs.backend = "jj";
+    const stderr: string[] = [];
+    const errSpy = spyOn(process.stderr, "write").mockImplementation(
+      ((chunk: unknown) => {
+        stderr.push(String(chunk));
+        return true;
+      }) as never,
+    );
+    try {
+      await backup(["dump", "docs", "--dry-run"], config);
+      expect(stderr.join("")).toContain(".jj");
+      await backup(["dump", "docs"], config);
+      expect(stderr.join("")).toContain("op-log");
+      const name = archivesOf(fx.root, /^docs\.full\..*\.tar\.zst$/)[0]!;
+      const table = tarTable(join(fx.root, name));
+      expect(table).toContain("docs/a.txt");
+      expect(table.some((entry) => entry.includes(".jj"))).toBe(false);
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
   test("full dump writes archive + sha256 sidecar + snar, quiesces sqlite, verifies", async () => {
     const fx = makeFixture("full");
     const result = await runDump(dumpOptions(fx));

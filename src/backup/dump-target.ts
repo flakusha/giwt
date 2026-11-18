@@ -45,6 +45,7 @@ export async function dumpTarget(
     created,
     now,
     scratchRel,
+    excludes,
   }: {
     target: string;
     targetAbs: string;
@@ -59,6 +60,8 @@ export async function dumpTarget(
     now: number;
     /** Scratch root relative to the repo root, or null when outside it. */
     scratchRel: string | null;
+    /** VCS-internal members to exclude from the payload. */
+    excludes: readonly string[];
   },
 ): Promise<TargetStepResult> {
   const safe = safeTargetName(target);
@@ -103,6 +106,7 @@ export async function dumpTarget(
     snapshot: quiesced.snapshotDir === "" ? null : { dir: quiesced.snapshotDir, member: safe },
     dbRefs: quiesced.excluded.map((ref) => ({ rel: ref.rel })),
     scratchRel,
+    excludes,
   });
 
   // Payload (chain driver) → appends (snapshots, manifest) → compress.

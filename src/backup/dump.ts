@@ -62,6 +62,9 @@ export interface DumpOptions {
   /** Scratch root relative to the repo root (e.g. ".tmp"), or null when it
    *  lies outside the repo — anchors the verify-scratch tar exclusion. */
   scratchRel: string | null;
+  /** VCS-internal members to omit (VCS_BACKUP_EXCLUDES for this backend).
+   *  Optional so older callers without a backend keep the plain dump. */
+  excludes?: readonly string[];
 }
 
 export interface DumpRecord {
@@ -184,6 +187,7 @@ async function dumpLocked(options: DumpOptions, staging: string): Promise<DumpRu
       created,
       now,
       scratchRel: options.scratchRel,
+      excludes: options.excludes ?? [],
     });
     if (step.record !== null) dumps.push(step.record);
     if (step.staged !== null) staged.push(step.staged);

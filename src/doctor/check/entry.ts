@@ -10,8 +10,10 @@ import { join } from "node:path";
 import { DEFAULT_RETENTION } from "../../intercom/types.ts";
 import type { RunRecorder } from "../../utils/runlog.ts";
 import { DEFAULT_SCRATCH_CONFIG, DEFAULT_SCRATCHPAD_THRESHOLDS } from "../../utils/scratch.ts";
+import type { VcsBackendName } from "../../vcs/types.ts";
 import { applicableChecks } from "./applicable.ts";
 import { type IntercomCheckOptions, runIntercom } from "./intercom.ts";
+import { runVcsCheck } from "./jj.ts";
 import { runLint, runTests, runTypecheck } from "./run.ts";
 import { runLeaks, runScratchpad, type ScratchpadCheckOptions } from "./scans.ts";
 import { boundedSpawn, CHECK_TIMEOUT_DEFAULT_MS, defaultSpawn, type SpawnFn } from "./spawn.ts";
@@ -69,6 +71,8 @@ export interface DoctorCheckOptions {
    *  the jsonl backend, the default stale threshold, and `root` as the
    *  checkout whose link is inspected. */
   intercom?: IntercomCheckOptions;
+  /** Configured VCS backend; the jj/pijul checks skip unless they match. */
+  vcsBackend?: VcsBackendName;
 }
 
 /**
@@ -112,6 +116,8 @@ export async function runDoctorChecks(
   const wanted = opts.checks ?? CHECK_IDS;
   const spawn = boundedSpawn(opts.spawn ?? defaultSpawn, timeoutMs);
   const ids = wanted.filter((id): id is CheckId => (CHECK_IDS as readonly string[]).includes(id));
+  // VCS checks are applicable by configured backend, not by project files.
+  const vcsIds: readonly CheckId[] = ["jj", "pijul"];
   const checks: CheckResult[] = new Array(ids.length);
   const tasks: Array<{
     at: number;
@@ -125,7 +131,7 @@ export async function runDoctorChecks(
     findings: [],
   });
   ids.forEach((id, at) => {
-    if (!applicable.has(id)) {
+    if (!applicable.has(id) && !vcsIds.includes(id)) {
       checks[at] = skipped(id, id, "not applicable to this project");
       return;
     }
@@ -174,6 +180,13 @@ export async function runDoctorChecks(
               laneStaleDays: opts.intercom?.laneStaleDays ?? DEFAULT_RETENTION.laneStaleDays,
               worktreeRoot: opts.intercom?.worktreeRoot ?? root,
             }),
+        });
+        break;
+      case "jj":
+      case "pijul":
+        tasks.push({
+          at,
+          run: () => runVcsCheck(id, { root, vcsBackend: opts.vcsBackend ?? "git", spawn }),
         });
         break;
     }

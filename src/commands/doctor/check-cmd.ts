@@ -119,6 +119,7 @@ export async function runDoctorCheck(args: string[], config: WorktreeConfig): Pr
         laneStaleDays: config.settings.intercom.laneStaleDays,
         worktreeRoot: config.worktreeRoot,
       },
+      vcsBackend: config.settings.vcs.backend,
     },
     config.settings.commands.test,
   );
