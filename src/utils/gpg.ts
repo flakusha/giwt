@@ -47,7 +47,7 @@
 
 import { spawnSync } from "bun";
 import { credentials } from "./credentials";
-import { probeCachedPassphrase } from "./gpg-cache";
+import { probeCachedPassphrase, warmAgentCache } from "./gpg-cache";
 import { log, outcomeLine } from "./output";
 
 type GpgHint = "invalid-key" | "key-not-in-keyring" | "key-not-unlocked";
@@ -148,11 +148,18 @@ export function assertGpgUnlocked(keyId: string | undefined | null): void {
   // → silent SIG_CREATED; cold cache → "Operation cancelled" in millis.
   const probe = probeCachedPassphrase(keyId);
   if (!probe.warm) {
-    fail(
-      "key-not-unlocked",
-      `GPG agent has no usable cached passphrase for ${keyId} (cache cold).\n`
-        + `   Warm it first: giwt gpg-unlock`,
-    );
+    const warmed = warmAgentCache(keyId);
+    if (!warmed.warm) {
+      const reason = warmed.via === "none"
+        ? "no TTY and no passphrase source"
+        : `passphrase source rejected (${warmed.via})`;
+      fail(
+        "key-not-unlocked",
+        `GPG agent has no usable cached passphrase for ${keyId} (cache cold; ${reason}).\n`
+          + `   Warm it first: giwt gpg-unlock`,
+      );
+    }
+    log("info", `gpg cache warmed via ${warmed.via}`);
   }
 }
 

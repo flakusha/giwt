@@ -21,6 +21,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:f
 import { join } from "node:path";
 import { credentials } from "../utils/credentials";
 import {
+  effectiveAgentSocket,
   effectiveCacheTtl,
   probeCachedPassphrase,
   warmAgentCache,
@@ -289,13 +290,15 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
       const r = runCli();
       expect(r.code).toBe(0);
       expect(r.out).toContain("warming via loopback passphrase source");
-      expect(r.out).toContain("Passphrase cached (verified).");
+      expect(r.out).toContain("Passphrase cached (verified in this process");
+      expect(r.out).toContain(`agent ${effectiveAgentSocket()}`);
     });
 
     test("re-running on a warm cache re-arms and exits 0", () => {
       const r = runCli();
       expect(r.code).toBe(0);
-      expect(r.out).toContain("Cache is warm; TTL re-armed via real sign.");
+      expect(r.out).toContain("Cache is warm in this process; TTL re-armed via real sign");
+      expect(r.out).toContain(`agent ${effectiveAgentSocket()}`);
     });
 
     test("TTY path with a failing pinentry exits 1", () => {
@@ -320,7 +323,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
       const r = runCli();
       expect(r.code).toBe(0);
       expect(r.out).toContain("warming via loopback passphrase source");
-      expect(r.out).toContain("Passphrase cached (verified).");
+      expect(r.out).toContain("Passphrase cached (verified in this process");
     });
 
     test("unreadable ~/.gpg-passphrase falls back to the no-source refusal", () => {
@@ -382,7 +385,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
         const r = runCli();
         expect(r.code).toBe(0);
         expect(r.out).toContain("enter the key passphrase at the pinentry prompt");
-        expect(r.out).toContain("Passphrase cached (verified).");
+        expect(r.out).toContain("Passphrase cached (verified in this process");
       } finally {
         process.stdin.isTTY = false as never;
       }

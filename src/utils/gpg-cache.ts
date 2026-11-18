@@ -73,6 +73,16 @@ export function effectiveCacheTtl(): number {
   );
 }
 
+/** Agent socket selected by this process's environment (GNUPGHOME decides it). */
+export function effectiveAgentSocket(): string {
+  const proc = spawnSync(["gpgconf", "--list-dirs", "agent-socket"], {
+    stdout: "pipe",
+    stderr: "ignore",
+    env: process.env,
+  });
+  return proc.exitCode === 0 ? proc.stdout.toString("utf8").trim() : "<unknown>";
+}
+
 // ── Sign helpers ─────────────────────────────────────────────────
 
 interface SignOpts {

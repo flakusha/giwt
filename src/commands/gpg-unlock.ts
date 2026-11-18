@@ -13,6 +13,7 @@
 
 import { credentials } from "../utils/credentials";
 import {
+  effectiveAgentSocket,
   effectiveCacheTtl,
   probeCachedPassphrase,
   runSign,
@@ -40,12 +41,15 @@ function loadCredentials(): string {
 export function runGpgUnlock(): void {
   const keyId = loadCredentials();
   const ttl = effectiveCacheTtl();
-  raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s)`);
+  const socket = effectiveAgentSocket();
+  raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s, agent ${socket})`);
 
   if (probeCachedPassphrase(keyId).warm) {
     const sign = runSign(keyId, { mode: "default", timeoutMs: 5_000 });
     if (sign.exitCode === 0 && sign.sigCreated) {
-      raw("Cache is warm; TTL re-armed via real sign.");
+      raw(
+        `Cache is warm in this process; TTL re-armed via real sign (agent ${socket}, TTL ${ttl}s).`,
+      );
       process.exit(0);
     }
     log("error", "Warm-cache real sign failed; falling back to cold path.");
@@ -74,7 +78,7 @@ export function runGpgUnlock(): void {
     process.exit(1);
   }
   if (warmed.warm) {
-    raw("Passphrase cached (verified).");
+    raw(`Passphrase cached (verified in this process; agent ${socket}, TTL ${ttl}s).`);
     process.exit(0);
   }
   if (warmed.via === "passphrase-source") {

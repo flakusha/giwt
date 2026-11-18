@@ -187,6 +187,43 @@ describe.skipIf(!gpgBin || !gpgConf)("assertGpgUnlocked (real gpg, temp GNUPGHOM
     expect(r.out).toContain("Warm it first: giwt gpg-unlock");
   });
 
+  test("reports a rejected headless passphrase source honestly", () => {
+    Bun.spawnSync(["gpgconf", "--homedir", home, "--kill", "gpg-agent"], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    const prevPass = process.env.GIT_GPG_PASSPHRASE;
+    process.env.GIT_GPG_PASSPHRASE = "definitely-wrong";
+    try {
+      const r = runExpectExit(() => assertGpgUnlocked(fpr));
+      expect(r.code).toBe(1);
+      expect(r.out).toContain("hint: key-not-unlocked");
+      expect(r.out).toContain("passphrase source rejected (passphrase-source)");
+    } finally {
+      if (prevPass === undefined) delete process.env.GIT_GPG_PASSPHRASE;
+      else process.env.GIT_GPG_PASSPHRASE = prevPass;
+    }
+  });
+
+  test("self-heals a cold cache from a headless passphrase source", () => {
+    Bun.spawnSync(["gpgconf", "--homedir", home, "--kill", "gpg-agent"], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    const prevPass = process.env.GIT_GPG_PASSPHRASE;
+    process.env.GIT_GPG_PASSPHRASE = PASS;
+    const cap = capture();
+    try {
+      assertGpgUnlocked(fpr); // must not exit: warmAgentCache re-probes successfully
+    } finally {
+      cap.restore();
+      if (prevPass === undefined) delete process.env.GIT_GPG_PASSPHRASE;
+      else process.env.GIT_GPG_PASSPHRASE = prevPass;
+    }
+    expect(cap.text()).toContain("gpg cache warmed via passphrase-source");
+    expect(probeCachedPassphrase(KEY_UID).warm).toBe(true);
+  });
+
   test("passes without prompting once the cache is warm", () => {
     expect(warmCacheViaPassphrase(KEY_UID, PASS).ok).toBe(true);
     const cap = capture();
