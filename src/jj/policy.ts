@@ -5,7 +5,14 @@
  * `giwt jj` invocation classifier — the err-closed policy seam for the jj
  * passthrough. Mirrors src/git/policy.ts; verb tables live in ./policy-tables.ts.
  */
-import { JJ_BLOCK, JJ_BYPASS_TOKENS, JJ_DENY_CONFIG_KEYS, JJ_RO, JJ_RW } from "./policy-tables";
+import {
+  JJ_BLOCK,
+  JJ_BYPASS_TOKENS,
+  JJ_DENY_CONFIG_KEYS,
+  JJ_GLOBAL_OPTIONS,
+  JJ_RO,
+  JJ_RW,
+} from "./policy-tables";
 
 /** User-configurable policy lists ([jj] safe/allow/deny in giwt.toml). */
 export interface JjPolicyLists {
@@ -21,8 +28,6 @@ export interface JjVerdict {
   reason?: string;
   subcommand: string;
 }
-
-const VALUE_GLOBALS = new Set(["-R", "--repository"]);
 
 function configKey(pair: string): string {
   const eq = pair.indexOf("=");
@@ -52,6 +57,7 @@ export function classifyJjInvocation(
   if (bypass !== undefined) return block("", `${bypass} bypasses giwt jj policy`);
 
   const cmd: string[] = [];
+  let globalDone = false;
   for (let i = base; i < args.length; i++) {
     const tok = args[i];
     if (tok === undefined) break;
@@ -81,7 +87,18 @@ export function classifyJjInvocation(
     }
 
     if (tok.startsWith("-")) {
-      if (VALUE_GLOBALS.has(tok)) {
+      if (tok === "--") {
+        globalDone = true;
+        continue;
+      }
+      const eq = tok.indexOf("=");
+      const head = eq >= 0 ? tok.slice(0, eq) : tok.startsWith("--") ? tok : tok.slice(0, 2);
+      const kind = JJ_GLOBAL_OPTIONS[head];
+      if (!globalDone && cmd.length === 0 && kind === undefined) {
+        return block("", `unknown global jj option '${tok}'`);
+      }
+      // Value globals consume the next token only in the space-separated form.
+      if (eq < 0 && tok.length === head.length && kind === "value") {
         const value = args[i + 1];
         if (value !== undefined) i++;
       }

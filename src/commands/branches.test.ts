@@ -50,7 +50,9 @@ describe("giwt branches via VCS registry", () => {
   test("resolves the backend through the registry, not a direct git helper", async () => {
     const root = makeGitRepo("branches-seam-registry");
     temps.push(root);
+    // A plain git fixture is not a colocated jj repo: the native backend must
+    // refuse on its own guards, never by falling back to git.
     await expect(execute([], config(root, "jj")))
-      .rejects.toThrow(/vcs backend 'jj' is not implemented yet/);
+      .rejects.toThrow(/jj (--version|git colocation)/);
   });
 });

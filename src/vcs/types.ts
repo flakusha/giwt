@@ -12,7 +12,7 @@ export type VcsBackendName = (typeof VCS_BACKENDS)[number];
 
 /** Registered but not implemented yet. Settings load refuses these so no
  * legacy git call site can run behind the user's back. */
-export const VCS_UNIMPLEMENTED_BACKENDS: readonly VcsBackendName[] = ["jj", "pijul"];
+export const VCS_UNIMPLEMENTED_BACKENDS: readonly VcsBackendName[] = ["pijul"];
 
 /** A branch (git) or bookmark (jj). */
 export interface VcsBranch {
@@ -44,6 +44,20 @@ export interface VcsCommitResult {
   sha: string;
 }
 
+export interface VcsCreateWorkspaceOptions {
+  root: string;
+  path: string;
+  /** git branch, jj bookmark, or pijul channel name. */
+  branch: string;
+  /** Optional base ref/bookmark/channel; backend default when omitted. */
+  base?: string;
+}
+
+export interface VcsRemoveWorkspaceOptions {
+  root: string;
+  path: string;
+}
+
 /** The surface every VCS backend implements. No `head`: jj cannot fill it. */
 export interface VcsBackend {
   readonly name: VcsBackendName;
@@ -53,16 +67,29 @@ export interface VcsBackend {
   /** Changed paths in the working tree vs. `ref` (not branch vs. base). */
   diff(root: string, branch: string): Promise<string[]>;
   commit(options: VcsCommitOptions): Promise<VcsCommitResult>;
+  createWorkspace(options: VcsCreateWorkspaceOptions): Promise<void>;
+  removeWorkspace(options: VcsRemoveWorkspaceOptions): Promise<void>;
 }
+
+/** VCS-internal state that must never enter a hot backup archive. */
+export const VCS_BACKUP_EXCLUDES: Record<VcsBackendName, readonly string[]> = {
+  git: [],
+  jj: [".jj"],
+  pijul: [".pijul/pristine"],
+};
 
 const BACKEND_TICKETS: Record<string, string> = {
   jj: "FEAT-feat-jj-jujutsu-vcs-support.md",
   pijul: "FEAT-feat-pijul-vcs-support.md",
 };
 
+/** Remedy appended to backend errors after the backend has landed. */
+export function vcsBackendRemedy(name: string): string {
+  const ticket = BACKEND_TICKETS[name] ?? "FEAT-feat-vcs-backend-seam-and-backend-setting.md";
+  return `see .plan/tickets/${ticket} (set [vcs] backend = "git" in giwt.toml)`;
+}
+
 /** Shared refusal for a registered but unimplemented backend. */
 export function vcsBackendRefusal(name: string): string {
-  const ticket = BACKEND_TICKETS[name] ?? "FEAT-feat-vcs-backend-seam-and-backend-setting.md";
-  return `vcs backend '${name}' is not implemented yet - see .plan/tickets/${ticket} `
-    + `(set [vcs] backend = "git" in giwt.toml)`;
+  return `vcs backend '${name}' is not implemented yet - ${vcsBackendRemedy(name)}`;
 }

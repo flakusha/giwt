@@ -85,4 +85,37 @@ describe("classifyJjInvocation", () => {
     expect(v(["--config", "colors=never"])).toBe("block");
     expect(classifyJj({ args: ["status"] }).verdict).toBe("pass");
   });
+
+  test("unsign, fix and workspace forget are always blocked", () => {
+    for (const a of [["unsign"], ["fix"], ["workspace", "forget"]]) {
+      expect(v(a), a.join(" ")).toBe("block");
+      expect(
+        classifyJjInvocation(a, { safe: [], allow: [a.join(" ")], deny: [] }).verdict,
+        a.join(" "),
+      ).toBe("block");
+    }
+  });
+
+  test("unknown global options are blocked; known globals and bypass guards stand", () => {
+    for (
+      const a of [
+        ["--no-pager", "status"],
+        ["--color", "never", "status"],
+        ["--color=never", "status"],
+        ["--ignore-working-copy", "status"],
+        ["--quiet", "status"],
+        ["--debug", "status"],
+        ["--repository=/tmp/repo", "status"],
+        ["-R/tmp/repo", "status"],
+      ]
+    ) {
+      expect(v(a), a.join(" ")).toBe("pass");
+    }
+    for (const a of [["--bogus", "status"], ["-Z", "status"], ["--paginate", "status"]]) {
+      expect(v(a), a.join(" ")).toBe("block");
+    }
+    // Subcommand flags are not globals: only the pre-subcommand block is policed.
+    expect(v(["log", "--bogus"])).toBe("pass");
+    for (const t of JJ_BYPASS_TOKENS) expect(v([t, "status"]), t).toBe("block");
+  });
 });

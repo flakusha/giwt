@@ -60,7 +60,6 @@ export const JJ_RW: Record<string, true> = {
   abandon: true,
   parallelize: true,
   sign: true,
-  unsign: true,
   edit: true,
   next: true,
   prev: true,
@@ -91,10 +90,8 @@ export const JJ_RW: Record<string, true> = {
   "file track": true,
   "file untrack": true,
   "workspace add": true,
-  "workspace forget": true,
   "workspace rename": true,
   "workspace update-stale": true,
-  fix: true,
   run: true,
   "simplify-parents": true,
   converge: true,
@@ -125,6 +122,9 @@ export const JJ_BLOCK: Record<string, true> = {
   gerrit: true,
   "util backend": true,
   "util exec": true,
+  unsign: true,
+  fix: true,
+  "workspace forget": true,
 };
 
 /** Global flags that bypass giwt policy — refused anywhere in argv. */
@@ -135,6 +135,24 @@ export const JJ_BYPASS_TOKENS: readonly string[] = [
   "--at-operation",
   "--ignore-changes",
 ];
+
+/** Known jj global options (0.46 `jj --help`), keyed by option head: `value`
+ * means the option consumes the next token. Bypass/config globals are refused
+ * by dedicated guards in policy.ts, not by this table. Unknown globals are
+ * refused before the subcommand (parity with git's parseGlobalArgs). */
+export const JJ_GLOBAL_OPTIONS: Readonly<Record<string, "value" | "bool">> = {
+  "-R": "value",
+  "--repository": "value",
+  "--color": "value",
+  "--ignore-working-copy": "bool",
+  "--debug": "bool",
+  "--quiet": "bool",
+  "--no-pager": "bool",
+  "-h": "bool",
+  "--help": "bool",
+  "-V": "bool",
+  "--version": "bool",
+};
 
 /** `--config` key prefixes refused regardless of value (JJ-2 / JJ-3). */
 export const JJ_DENY_CONFIG_KEYS: readonly string[] = [

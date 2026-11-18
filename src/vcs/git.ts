@@ -35,4 +35,13 @@ export const gitBackend: VcsBackend = {
     gitSync(cwd, "commit", "-m", message);
     return { sha: gitSync(cwd, "rev-parse", "HEAD").trim() };
   },
+
+  async createWorkspace({ root, path, branch, base }) {
+    if (base === undefined) gitSync(root, "worktree", "add", path, branch);
+    else gitSync(root, "worktree", "add", "-b", branch, path, base);
+  },
+
+  async removeWorkspace({ root, path }) {
+    gitSync(root, "worktree", "remove", path);
+  },
 };

@@ -5,7 +5,7 @@
 // scratchRoot() and is removed in finally; no shared paths or cwd changes.
 
 import { describe, expect, test } from "bun:test";
-import { rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { makeGitRepo } from "../testkit/capture";
 import { gitSync } from "../utils/git";
@@ -45,8 +45,27 @@ describe("VCS backend registry", () => {
     }
   });
 
+  test("git workspace primitives add and remove a worktree", async () => {
+    const root = makeGitRepo("vcs-workspace", { branches: ["feature"] });
+    const wt = mkdtempSync(join(root, "vcs-wt-"));
+    try {
+      const backend = resolveVcsBackend(DEFAULT_SETTINGS);
+      await backend.createWorkspace({ root, path: wt, branch: "feature" });
+      expect(existsSync(join(wt, ".git"))).toBe(true);
+      await backend.removeWorkspace({ root, path: wt });
+      expect(existsSync(join(wt, ".git"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("jj resolves to the native backend", () => {
+    const backend = resolveVcsBackend({ ...DEFAULT_SETTINGS, vcs: { backend: "jj" } });
+    expect(backend.name).toBe("jj");
+  });
+
   test("registered-but-unimplemented backends refuse instead of falling back", () => {
-    for (const backend of ["jj", "pijul"] as const) {
+    for (const backend of ["pijul"] as const) {
       expect(() =>
         resolveVcsBackend({
           ...DEFAULT_SETTINGS,

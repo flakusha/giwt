@@ -109,10 +109,21 @@ describe("loadSettings", () => {
     }
   });
 
+  test("[vcs] jj loads with the native backend", () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.localPath, `[vcs]\nbackend = "jj"\n`);
+      expect(loadSettings(fx.root, { globalPath: fx.globalPath, localPath: fx.localPath }).vcs)
+        .toEqual({ backend: "jj" });
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("[vcs] unimplemented backends refuse at load before any command work", () => {
     const fx = makeFixture();
     try {
-      for (const backend of ["jj", "pijul"] as const) {
+      for (const backend of ["pijul"] as const) {
         writeFileSync(fx.localPath, `[vcs]\nbackend = "${backend}"\n`);
         const load = () =>
           loadSettings(fx.root, {
