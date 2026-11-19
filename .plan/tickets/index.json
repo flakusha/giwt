@@ -2454,6 +2454,24 @@
     "source": ".plan/tickets/FEAT-size-the-gate-fan-out-by-available-memory-not-only-by-core-c.md",
     "status": "done"
   },
+  "FEAT-SUPPORT-SHARDED-TICKET-INDEX-FOR-SYNC-AND-PLAN-GATES": {
+    "hash": "e5772b8",
+    "git_issue": "e5772b8",
+    "extid": "FEAT-SUPPORT-SHARDED-TICKET-INDEX-FOR-SYNC-AND-PLAN-GATES",
+    "type": "FEAT",
+    "title": "support sharded ticket index for sync and plan gates",
+    "label": "feat",
+    "priority": "high",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "tickets",
+      "sync",
+      "plan"
+    ],
+    "source": ".plan/tickets/FEAT-support-sharded-ticket-index-for-sync-and-plan-gates.md",
+    "status": "open"
+  },
   "FEAT-SYNC-RE-READS-TAGS-EPIC-RELATED-FOR-ENTRIES-ALREADY-IN-THE-I": {
     "hash": "10d664b",
     "git_issue": "10d664b",
