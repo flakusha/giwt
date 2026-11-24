@@ -26,6 +26,12 @@
  *   - The cancel-mode probe does NOT re-arm the TTL. Only a real sign that
  *     consumes the cached passphrase re-arms default-cache-ttl (capped by
  *     max-cache-ttl), so the warm path performs a real sign to prolong.
+ *   - `default-cache-ttl` is re-armable; `max-cache-ttl` is absolute: it is
+ *     counted from the original cache insertion and no amount of re-signing
+ *     extends past it. `effectiveCacheTtl()` returns min(default, max) — the
+ *     cap after a real sign, not a renewable lease. Once it elapses, warmth
+ *     needs a fresh passphrase source or a manual unlock; a keepalive daemon
+ *     cannot help (verified 2026-11-24, gpg 2.5.24).
  *
  * Usage:
  *   import { probeCachedPassphrase, warmAgentCache } from "../utils/gpg-cache";

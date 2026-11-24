@@ -42,13 +42,20 @@ export function runGpgUnlock(): void {
   const keyId = loadCredentials();
   const ttl = effectiveCacheTtl();
   const socket = effectiveAgentSocket();
-  raw(`GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s, agent ${socket})`);
+  const gnupgHome = process.env.GNUPGHOME ?? "<unset>";
+  const expiryNote = `Warm for at most ${ttl}s after this sign. After expiry, headless re-warm`
+    + ` needs GIT_GPG_PASSPHRASE or ~/.gpg-passphrase; otherwise unlock manually.`;
+  raw(
+    `GPG key: ${keyId.slice(0, 8)}... (effective cache TTL ${ttl}s, agent ${socket},`
+      + ` GNUPGHOME=${gnupgHome})`,
+  );
 
   if (probeCachedPassphrase(keyId).warm) {
     const sign = runSign(keyId, { mode: "default", timeoutMs: 5_000 });
     if (sign.exitCode === 0 && sign.sigCreated) {
       raw(
-        `Cache is warm in this process; TTL re-armed via real sign (agent ${socket}, TTL ${ttl}s).`,
+        `Cache is warm in this process; TTL re-armed via real sign`
+          + ` (agent ${socket}, GNUPGHOME=${gnupgHome}, TTL ${ttl}s). ${expiryNote}`,
       );
       process.exit(0);
     }
@@ -78,7 +85,10 @@ export function runGpgUnlock(): void {
     process.exit(1);
   }
   if (warmed.warm) {
-    raw(`Passphrase cached (verified in this process; agent ${socket}, TTL ${ttl}s).`);
+    raw(
+      `Passphrase cached (verified in this process; agent ${socket},`
+        + ` GNUPGHOME=${gnupgHome}, TTL ${ttl}s). ${expiryNote}`,
+    );
     process.exit(0);
   }
   if (warmed.via === "passphrase-source") {

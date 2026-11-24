@@ -97,7 +97,9 @@ Commit-msg hook: `.githooks/commit-msg` (same `core.hooksPath` install) strips L
 
 ## GPG cache scope
 
-`giwt gpg-unlock` only verifies and re-arms the passphrase cache of the **current process's** gpg-agent; its success line names the agent socket and TTL. `assertGpgUnlocked()` self-heals a cold cache from `GIT_GPG_PASSPHRASE`/`~/.gpg-passphrase` (or a TTY pinentry) but never prompts headlessly. A different `GNUPGHOME` selects a different gpg-agent socket, so no giwt process can warm another agent's cache — align the environment instead. Never log or persist the passphrase.
+`giwt gpg-unlock` only verifies and re-arms the passphrase cache of the **current process's** gpg-agent; its success line names the agent socket, `GNUPGHOME`, and TTL. `assertGpgUnlocked()` self-heals a cold cache from `GIT_GPG_PASSPHRASE`/`~/.gpg-passphrase` (or a TTY pinentry) but never prompts headlessly. A different `GNUPGHOME` selects a different gpg-agent socket, so no giwt process can warm another agent's cache — align the environment instead.
+
+The TTL is a cap, not a renewable lease: a real sign re-arms `default-cache-ttl`, but `max-cache-ttl` is absolute from the original cache insertion, so no keepalive can extend it. For durable headless signing, set `GIT_GPG_PASSPHRASE` in agent processes or a 0600 `~/.gpg-passphrase` so every cold preflight self-heals; otherwise raise both TTLs in `gpg-agent.conf` to cover the session and expect a manual unlock after expiry. Never log or persist the passphrase.
 
 ## Runtime/Tooling Preferences
 

@@ -265,6 +265,7 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
       const r = runCli();
       expect(r.code).toBe(1);
       expect(r.out).toContain("GPG key: gpg-unlo...");
+      expect(r.out).toContain(`GNUPGHOME=${home}`);
       expect(r.out).toContain("no TTY and no passphrase source");
       expect(r.out).toContain("Run `giwt gpg-unlock` in your terminal to warm it.");
     });
@@ -292,6 +293,8 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
       expect(r.out).toContain("warming via loopback passphrase source");
       expect(r.out).toContain("Passphrase cached (verified in this process");
       expect(r.out).toContain(`agent ${effectiveAgentSocket()}`);
+      expect(r.out).toContain(`GNUPGHOME=${home}`);
+      expect(r.out).toContain("After expiry, headless re-warm");
     });
 
     test("re-running on a warm cache re-arms and exits 0", () => {
@@ -299,6 +302,8 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
       expect(r.code).toBe(0);
       expect(r.out).toContain("Cache is warm in this process; TTL re-armed via real sign");
       expect(r.out).toContain(`agent ${effectiveAgentSocket()}`);
+      expect(r.out).toContain(`GNUPGHOME=${home}`);
+      expect(r.out).toContain("After expiry, headless re-warm");
     });
 
     test("TTY path with a failing pinentry exits 1", () => {
@@ -390,6 +395,116 @@ describe.skipIf(!gpgBin || !gpgConnectAgent)(
         process.stdin.isTTY = false as never;
       }
     });
+  },
+);
+
+describe.skipIf(!gpgBin || !gpgConnectAgent)(
+  "gpg-agent max-cache-ttl cap (real agent, per-test scratch)",
+  () => {
+    test("real signs cannot extend the cache past max-cache-ttl", async () => {
+      // Resource contract: this test alone owns its GNUPGHOME/HOME, key uid,
+      // and gpg-agent; no shared globals, fixed paths, or ordering dependence.
+      const home = mkdtempSync(join(scratchRoot(), "gpg-max-ttl-"));
+      const uid = "gpg-max-ttl@example";
+      const pw = "maxttl";
+      const prevGnupg = process.env.GNUPGHOME;
+      const prevHome = process.env.HOME;
+      const prevUserProfile = process.env.USERPROFILE;
+      const prevGitPass = process.env.GIT_GPG_PASSPHRASE;
+      try {
+        writeFileSync(
+          join(home, "gpg-agent.conf"),
+          "default-cache-ttl 2\nmax-cache-ttl 6\npinentry-program /bin/false\n",
+        );
+        process.env.GNUPGHOME = home;
+        process.env.HOME = home;
+        delete process.env.USERPROFILE;
+        delete process.env.GIT_GPG_PASSPHRASE;
+        const gen = runEnv([
+          "gpg",
+          "--batch",
+          "--yes",
+          "--pinentry-mode",
+          "loopback",
+          "--passphrase",
+          pw,
+          "--quick-generate-key",
+          uid,
+          "ed25519",
+          "sign",
+          "0",
+        ]);
+        if (gen.exitCode !== 0) throw new Error(gen.stderr.toString());
+
+        // Key generation does not cache the passphrase; an explicit loopback
+        // sign starts the max-cache-ttl clock at a known point.
+        const warm = runEnv([
+          "gpg",
+          "--batch",
+          "--yes",
+          "--pinentry-mode",
+          "loopback",
+          "--passphrase",
+          pw,
+          "--status-fd",
+          "1",
+          "--local-user",
+          uid,
+          "--clearsign",
+          "--output",
+          "/dev/null",
+        ]);
+        if (warm.exitCode !== 0 || !/SIG_CREATED/.test(warm.stdout.toString())) {
+          throw new Error(warm.stderr.toString());
+        }
+
+        const sign = (cancel: boolean) => {
+          const args = [
+            "gpg",
+            "--status-fd",
+            "1",
+            "--local-user",
+            uid,
+            "--clearsign",
+            "--output",
+            "/dev/null",
+            "--yes",
+          ];
+          if (cancel) args.push("--pinentry-mode", "cancel");
+          const r = runEnv(args);
+          return r.exitCode === 0 && /SIG_CREATED/.test(r.stdout.toString());
+        };
+
+        // Each real sign re-arms default-cache-ttl, but max-cache-ttl is
+        // absolute: signs inside the window succeed, the one past it fails.
+        const inside: boolean[] = [];
+        for (let i = 0; i < 4; i++) {
+          await Bun.sleep(1_200);
+          inside.push(sign(false));
+        }
+        expect(inside).toEqual([true, true, true, true]);
+        // Wait for the absolute cap rather than assuming a fixed wall-clock
+        // boundary: under parallel load the agent clock can lag the test's
+        // sleeps. Cancel-mode probes never re-arm the cache.
+        const deadline = Date.now() + 10_000;
+        while (probeCachedPassphrase(uid).warm && Date.now() < deadline) {
+          await Bun.sleep(250);
+        }
+        expect(probeCachedPassphrase(uid).warm).toBe(false);
+        expect(sign(false)).toBe(false);
+      } finally {
+        runEnv(["gpgconf", "--homedir", home, "--kill", "gpg-agent"]);
+        if (prevGnupg === undefined) delete process.env.GNUPGHOME;
+        else process.env.GNUPGHOME = prevGnupg;
+        if (prevHome === undefined) delete process.env.HOME;
+        else process.env.HOME = prevHome;
+        if (prevUserProfile === undefined) delete process.env.USERPROFILE;
+        else process.env.USERPROFILE = prevUserProfile;
+        if (prevGitPass === undefined) delete process.env.GIT_GPG_PASSPHRASE;
+        else process.env.GIT_GPG_PASSPHRASE = prevGitPass;
+        rmSync(home, { recursive: true, force: true });
+      }
+    }, 20_000);
   },
 );
 

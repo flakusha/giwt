@@ -626,6 +626,22 @@
     "source": ".plan/tickets/BUG-gpg-unlock-warmup-success-is-not-verifiable-across-agents.md",
     "status": "done"
   },
+  "BUG-GPG-WARMUP-CANNOT-OUTLIVE-MAX-CACHE-TTL": {
+    "hash": "cf36a47",
+    "extid": "BUG-GPG-WARMUP-CANNOT-OUTLIVE-MAX-CACHE-TTL",
+    "type": "BUG",
+    "title": "gpg warmup cannot outlive max-cache-ttl despite success report",
+    "label": "bug",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "gpg"
+    ],
+    "source": ".plan/tickets/BUG-gpg-warmup-cannot-outlive-max-cache-ttl.md",
+    "status": "done",
+    "git_issue": "cf36a47"
+  },
   "BUG-ISSUES-ALL-STILL-HIDES-CLOSED-ISSUES-AND-HAS-NO-MACHINE-FORM": {
     "hash": "d98f5da",
     "git_issue": "d98f5da",
