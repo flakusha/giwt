@@ -86,6 +86,7 @@ export interface TmpScanOptions {
 export const DEFAULT_TMP_OPTIONS: TmpScanOptions = {
   prefixes: [
     "giwt",
+    "loop-lore",
     "wt-modules-",
     "pkgjson-",
     "sync-ticket-",
