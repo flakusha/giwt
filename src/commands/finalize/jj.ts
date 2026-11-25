@@ -59,6 +59,7 @@ export async function finalizeWithJjOpLog({
       throw new Error(
         `gates failed and jj op revert --op ${opId} also failed (exit ${revert.exitCode}): `
           + `${revert.stderr.trim()}; original failure: ${String(gateError)}`,
+        { cause: gateError },
       );
     }
     throw gateError;

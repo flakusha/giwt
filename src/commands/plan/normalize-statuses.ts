@@ -72,10 +72,10 @@ function normalizeEpics(check: boolean, epicsDir: string, aliases: Record<string
   return tally;
 }
 
-function matrixTargetFor(raw: string, aliases: Record<string, string>): string | null {
-  const { value, action } = resolveStatus(raw, aliases);
+function matrixTargetFor(value: string, aliases: Record<string, string>): string | null {
+  const { value: resolved, action } = resolveStatus(value, aliases);
   if (action === "invalid") return null;
-  const core = value.replace(/\s*\([^)]*\)\s*$/s, "").trim();
+  const core = resolved.replace(/\s*\([^)]*\)\s*$/s, "").trim();
   return PLAN_TO_MATRIX[core] ?? bucketOf(value);
 }
 

@@ -19,7 +19,7 @@ import { fieldLines } from "./metadata-fields";
 import { resolveFromRoot } from "./validate";
 
 /** Split a multi-epic value into candidates, in author order. */
-export function splitEpicCandidates(raw: string): string[] {
+export function splitEpicCandidates(value: string): string[] {
   const chunks: string[] = [];
   let depth = 0;
   let current = "";
@@ -35,7 +35,7 @@ export function splitEpicCandidates(raw: string): string[] {
     if (token) chunks.push(token);
     current = "";
   };
-  for (const char of raw) {
+  for (const char of value) {
     if (char === "(") depth++;
     if (char === ")" && depth > 0) depth--;
     const plusJoins = char === "+" && depth === 0 && /\([^)]*\)\s*$/.test(current);
@@ -49,14 +49,14 @@ export function splitEpicCandidates(raw: string): string[] {
 
 /** The owning epic for a raw **Epic:** value, or null when nothing resolves. */
 export function pickEpicOwner(
-  raw: string,
+  value: string,
   slugs: ReadonlySet<string>,
   titles: Readonly<Record<string, string>>,
 ): string | null {
-  const whole = raw.trim();
+  const whole = value.trim();
   const wholeTitled = titles[whole];
   if (wholeTitled && slugs.has(wholeTitled)) return wholeTitled;
-  for (const candidate of splitEpicCandidates(raw)) {
+  for (const candidate of splitEpicCandidates(value)) {
     if (slugs.has(candidate)) return candidate;
     const titled = titles[candidate];
     if (titled && slugs.has(titled)) return titled;

@@ -44,11 +44,7 @@ export interface TaskFlags {
   vocab: boolean;
 }
 
-export class TaskArgError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class TaskArgError extends Error {}
 
 /** Required value for a value-taking flag; missing value is a parse
  * error naming the flag (unlike --tickets/--follow/--careful/--docs,
