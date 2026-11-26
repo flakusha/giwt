@@ -133,6 +133,31 @@ describe("field anchoring — negative space", () => {
   });
 });
 
+describe("Status parsing — fenced code blocks", () => {
+  test("a fenced Status-looking line never wins over the real header Status", () => {
+    const md = [
+      "# TASK-FENCE: Fenced status",
+      "",
+      "```md",
+      "**Status:** Done",
+      "**Status**: Done",
+      "```",
+      "**Status:** In Progress",
+      "**Priority:** high",
+    ].join("\n");
+    const tf = parseTicketText(md, "TASK-FENCE.md");
+    expect(tf!.status).toBe("in_progress");
+    expect(tf!.statusValues).toEqual(["In Progress"]);
+  });
+
+  test("a Status only inside a fence leaves the ticket undefined", () => {
+    const md = ["# TASK-ONLYFENCE: x", "", "~~~md", "**Status:** Done", "~~~"].join("\n");
+    const tf = parseTicketText(md, "TASK-ONLYFENCE.md");
+    expect(tf!.status).toBe("undefined");
+    expect(tf!.statusValues).toEqual([]);
+  });
+});
+
 describe("shared field parsers (parseTagsField / parseEpicField)", () => {
   test("bracket/quote adornments are stripped from tag tokens", () => {
     expect(parseTagsField("**Tags:** [check, \"inference\", `worktree`]")).toEqual([

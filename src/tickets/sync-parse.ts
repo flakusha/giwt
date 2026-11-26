@@ -5,7 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import { resolveStatus } from "../plan/status-vocab";
+import { linesOutsideFences, resolveStatus } from "../plan/status-vocab";
 import { normalizeStatus } from "./sync-normalize";
 import type { TicketFile } from "./sync-ticket-types";
 
@@ -89,8 +89,8 @@ export function parseTicketText(
     // `**Status**: duplicate-of-…`); ANY done-class line closes the ticket.
     // When none is done-class the FIRST line wins, preserving
     // in_progress/draft detection from the primary Status.
-    const statusValues = lines
-      .map((l) => STATUS_LINE_RE.exec(l)?.[1]?.trim() ?? "")
+    const statusValues = linesOutsideFences(lines)
+      .map(({ text }) => STATUS_LINE_RE.exec(text)?.[1]?.trim() ?? "")
       .filter((v) => v.length > 0);
     const rawStatus = statusValues[0] ?? "undefined";
     const status = statusValues.some((v) => normalizeStatus(v) === "done")

@@ -3,7 +3,7 @@
 
 # BUG: ticket Status parses inside fenced code blocks
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** high
 **Effort:** Small
 **Tags:** parser, status
@@ -19,6 +19,7 @@ The ticket-markdown parser is fence-blind: src/tickets/sync-parse.ts line-scans 
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-26T12:50:21.809Z

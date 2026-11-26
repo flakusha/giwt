@@ -1303,7 +1303,7 @@
       "status"
     ],
     "source": ".plan/tickets/BUG-ticket-status-parses-inside-fenced-code-blocks.md",
-    "status": "open"
+    "status": "done"
   },
   "BUG-TICKET-TEMPLATE-EMITS-EMPTY-CONTEXT-ACCEPTANCE-PLACEHOLDERS-": {
     "hash": "3ef9ae8",
@@ -3166,7 +3166,7 @@
       "epic"
     ],
     "source": ".plan/tickets/TASK-normalize-epic-field-spelling-variants-in-linkage.md",
-    "status": "open"
+    "status": "done"
   },
   "TASK-OBJECT-TO-MD-SERIALIZER-FOR-LOSSLESS-TICKET-REGENERATION": {
     "hash": "b510d55",

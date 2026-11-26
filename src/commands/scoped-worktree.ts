@@ -13,6 +13,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { linesOutsideFences } from "../plan/status-vocab";
 import { STATUS_LINE_RE } from "../tickets/sync-index";
 import { assertGitAuthorIdentity } from "../utils/author-guard";
 import { type WorktreeConfig } from "../utils/config";
@@ -151,9 +152,10 @@ export function resolveScopedTickets(config: WorktreeConfig, ids: string[]): Sco
  * shape as sync-index's fix writers so bold-colon variants survive. */
 function rewriteStatuses(text: string, target: string): string {
   const lines = text.split("\n");
-  for (let i = 0; i < Math.min(lines.length, 30); i++) {
-    if (STATUS_LINE_RE.test(lines[i]!)) {
-      lines[i] = lines[i]!.replace(
+  for (const { line } of linesOutsideFences(lines)) {
+    if (line >= 30) break;
+    if (STATUS_LINE_RE.test(lines[line] ?? "")) {
+      lines[line] = lines[line]!.replace(
         /^((?:\*\*)?\s*status\s*(?:\*\*)?\s*[:=]\s*(?:\*\*)?\s*).*$/i,
         `$1${target}`,
       );
@@ -181,8 +183,10 @@ export function applyScopedTickets(
     text = rewriteStatuses(text, "In Progress");
     if (scope !== undefined && !/\*\*Scope:\*\*/i.test(text)) {
       const lines = text.split("\n");
-      const statusIdx = lines.findIndex((l, i) => i < 30 && STATUS_LINE_RE.test(l));
-      lines.splice(statusIdx >= 0 ? statusIdx + 1 : 0, 0, `**Scope:** ${scope}`);
+      const status = linesOutsideFences(lines).find(
+        ({ line, text }) => line < 30 && STATUS_LINE_RE.test(text),
+      );
+      lines.splice(status !== undefined ? status.line + 1 : 0, 0, `**Scope:** ${scope}`);
       text = lines.join("\n");
     }
     writeFileSync(join(ticketsDir, basename(t.path)), text);

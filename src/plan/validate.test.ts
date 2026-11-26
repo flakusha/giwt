@@ -192,6 +192,38 @@ describe("validate / format gate", () => {
     }
   });
 
+  test("fails when the only Status is inside a fenced code block", () => {
+    const fx = makeFixture();
+    try {
+      writeTicket(fx, "TASK-FENCED.md", ["Priority"]);
+      writeFileSync(
+        join(fx.ticketsDir, "TASK-FENCED.md"),
+        "# TASK-FENCED\n\n```md\n**Status:** Done\n```\n**Priority:** high\n",
+      );
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["format"],
+        runSync: () => 0,
+      });
+      const formatResult = result.results.find((r) => r.gate === "format");
+      expect(formatResult!.pass).toBe(false);
+      expect(formatResult!.findings.some((f) => f.message.includes("**Status:**"))).toBe(true);
+    } finally {
+      fx.cleanup();
+    }
+  });
+
   test("warns when tickets dir missing", () => {
     const fx = makeFixture();
     try {
@@ -311,6 +343,38 @@ describe("validate / linkage gate", () => {
       expect(warn).toBeDefined();
       expect(warn!.message).toContain("1 ticket(s) not bound to an epic");
       expect(warn!.message).toContain("TASK-unbound.md");
+    } finally {
+      fx.cleanup();
+    }
+  });
+
+  test("binds both epic spelling variants without a phantom-unbound warning", () => {
+    const fx = makeFixture();
+    try {
+      writeEpic(fx, "epic-real.md");
+      writeFileSync(
+        join(fx.ticketsDir, "TASK-EPIC-OUTSIDE.md"),
+        "# TASK-EPIC-OUTSIDE\n\n**Status:** open\n**Epic**: epic-real.md\n",
+      );
+      const result = runValidate({
+        projectRoot: fx.root,
+        worktreeRoot: fx.root,
+        ticketsDir: fx.ticketsDir,
+        epicsDir: fx.epicsDir,
+        backlogDir: fx.backlogDir,
+        planDir: fx.planDir,
+        srcDir: "src",
+        codeMapPath: fx.codeMapPath,
+        epicsIndexPath: fx.epicsIndexPath,
+        mapSources: [],
+        linkScanDirs: [],
+        backlogIndexFiles: [],
+        gates: ["linkage"],
+        runSync: () => 0,
+      });
+      const linkageResult = result.results.find((r) => r.gate === "linkage");
+      expect(linkageResult!.pass).toBe(true);
+      expect(linkageResult!.findings.some((f) => f.message.includes("not bound"))).toBe(false);
     } finally {
       fx.cleanup();
     }

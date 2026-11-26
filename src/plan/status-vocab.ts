@@ -167,27 +167,45 @@ export interface StatusLineRewrite {
   canonical: string;
 }
 
+/** One source line outside a fenced code block, with its 0-based index. */
+export interface SourceLine {
+  line: number;
+  text: string;
+}
+
 /**
- * Scan a ticket file's header region (first 30 lines) for Status lines,
- * skipping fenced code blocks — a `**Status:**` inside a ```md reproduction
- * example is documentation, not metadata. Returns 0-based line indices with
- * the line text and the extracted raw value span.
+ * Source lines with fenced (``` / ~~~) code blocks removed, indices intact so
+ * callers can rewrite exact lines. Shared by every Status reader — a
+ * `**Status:**` in a fenced reproduction example is documentation, never
+ * metadata.
  */
-export function scanHeaderStatusLines(
-  path: string,
-): Array<{ line: number; text: string; value: string; }> {
-  const lines = readFileSync(path, "utf8").split("\n").slice(0, 30);
-  const out: Array<{ line: number; text: string; value: string; }> = [];
+export function linesOutsideFences(lines: string[]): SourceLine[] {
+  const out: SourceLine[] = [];
   let fenced = false;
-  for (let i = 0; i < lines.length; i++) {
-    const text = lines[i] ?? "";
+  for (const [line, text] of lines.entries()) {
     if (/^\s*(```|~~~)/.test(text)) {
       fenced = !fenced;
       continue;
     }
-    if (fenced) continue;
+    if (!fenced) out.push({ line, text });
+  }
+  return out;
+}
+
+/**
+ * Scan a ticket file's header region (first 30 lines) for Status lines,
+ * skipping fenced code blocks. Returns 0-based line indices with the line
+ * text and the extracted raw value span.
+ */
+export function scanHeaderStatusLines(
+  path: string,
+): Array<{ line: number; text: string; value: string; }> {
+  const lines = linesOutsideFences(readFileSync(path, "utf8").split("\n"));
+  const out: Array<{ line: number; text: string; value: string; }> = [];
+  for (const { line, text } of lines) {
+    if (line >= 30) break;
     const m = STATUS_LINE_PARTS_RE.exec(text);
-    if (m) out.push({ line: i, text, value: m[2] ?? "" });
+    if (m) out.push({ line, text, value: m[2] ?? "" });
   }
   return out;
 }

@@ -3,7 +3,7 @@
 
 # TASK: normalize Epic field spelling variants in linkage
 
-**Status:** Not Started
+**Status:** Done
 **Priority:** medium
 **Effort:** Small
 **Tags:** linkage, epic
@@ -19,6 +19,7 @@ The linkage gate only recognizes the **Epic:** spelling, so the **Epic**: varian
 
 **Acceptance Criteria:**
 
-- [ ] Implementation complete
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Implementation complete
+- [x] Tests passing
+- [x] Documentation updated
+**Resolved:** 2026-11-26T12:50:21.809Z

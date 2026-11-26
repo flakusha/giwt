@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { warnMissingPlanArtifacts } from "../../plan/artifact-init";
 import { BACKLOG_INDEX_FILES, reconcile } from "../../plan/backlog-sync";
 import { readMap } from "../../plan/code-map";
-import { resolveStatus } from "../../plan/status-vocab";
+import { linesOutsideFences, resolveStatus } from "../../plan/status-vocab";
 import { resolveFromRoot } from "../../plan/validate";
 import { STATUS_LINE_RE } from "../../tickets/sync-index";
 import type { WorktreeConfig } from "../../utils/config";
@@ -46,10 +46,9 @@ function collectTicketStatuses(ticketsDir: string): TicketStatusRecord[] {
     } catch {
       continue; // vanished mid-scan — a report command must not crash on it
     }
-    const status = text
-      .split("\n")
-      .slice(0, 30)
-      .map((l) => STATUS_LINE_RE.exec(l)?.[1]?.trim() ?? "")
+    const status = linesOutsideFences(text.split("\n"))
+      .filter(({ line }) => line < 30)
+      .map(({ text }) => STATUS_LINE_RE.exec(text)?.[1]?.trim() ?? "")
       .find((v) => v.length > 0) ?? "undefined";
     const unticked = (text.match(/- \[ \]/g) ?? []).length;
     records.push({ name, status, unticked, path });

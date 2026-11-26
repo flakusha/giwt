@@ -10,7 +10,14 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CAVEATS_REQUIRED_TYPES, guessType, parseCaveatsField } from "../../tickets/sync-parse";
+import { linesOutsideFences } from "../../plan/status-vocab";
+import {
+  CAVEATS_REQUIRED_TYPES,
+  guessType,
+  parseCaveatsField,
+  parseEpicField,
+  STATUS_LINE_RE,
+} from "../../tickets/sync-parse";
 import type { Finding } from "./types";
 
 /** Required metadata markers for ticket files (format gate contract). */
@@ -46,9 +53,13 @@ export function checkTicketFormat(ticketsDir: string, include?: (f: string) => b
     if (!f.endsWith(".md")) continue;
     if (include && !include(f)) continue;
     const raw = readFileSync(join(ticketsDir, f), "utf8");
+    const statusLines = linesOutsideFences(raw.split("\n")).map(({ text }) => text);
     for (const section of TICKET_REQUIRED_SECTIONS) {
       const re = new RegExp(`\\*\\*${section}:\\*\\*`, "i");
-      if (!re.test(raw)) {
+      const present = section === "Status"
+        ? statusLines.some((line) => STATUS_LINE_RE.test(line))
+        : re.test(raw);
+      if (!present) {
         findings.push({
           gate: "format",
           level: "error",
@@ -139,19 +150,19 @@ export function checkLinkage(
     ),
   );
 
-  // Check ticket → epic linkage. Also collects tickets with no **Epic:**
-  // binding at all — reported below as ONE aggregated advisory finding.
+  // Check ticket → epic linkage with the shared parser, so both `**Epic:**`
+  // and `**Epic**:` bind. Tickets with no binding are collected below as ONE
+  // aggregated advisory finding.
   const unbound: string[] = [];
   for (const f of readdirSync(ticketsDir)) {
     if (!f.endsWith(".md")) continue;
     if (includeTicket && !includeTicket(f)) continue;
     const raw = readFileSync(join(ticketsDir, f), "utf8");
-    const epicMatch = raw.match(/\*\*Epic:\*\*\s*(.+)/);
-    if (!epicMatch) {
+    const epicRef = parseEpicField(raw);
+    if (!epicRef) {
       unbound.push(f);
       continue;
     }
-    const epicRef = epicMatch[1]!.trim();
     // Epic ref can be a filename like "epic-auth-flow.md" or a title
     const isFilename = epicRef.endsWith(".md");
     if (isFilename && !epicFiles.has(epicRef)) {
