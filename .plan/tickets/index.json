@@ -1288,6 +1288,23 @@
     "source": ".plan/tickets/BUG-ticket-id-inputs-accept-hash-extid-slug-everywhere.md",
     "status": "done"
   },
+  "BUG-TICKET-STATUS-PARSES-INSIDE-FENCED-CODE-BLOCKS": {
+    "hash": "aaaf9bc",
+    "git_issue": "aaaf9bc",
+    "extid": "BUG-TICKET-STATUS-PARSES-INSIDE-FENCED-CODE-BLOCKS",
+    "type": "BUG",
+    "title": "ticket Status parses inside fenced code blocks",
+    "label": "bug",
+    "priority": "high",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "parser",
+      "status"
+    ],
+    "source": ".plan/tickets/BUG-ticket-status-parses-inside-fenced-code-blocks.md",
+    "status": "open"
+  },
   "BUG-TICKET-TEMPLATE-EMITS-EMPTY-CONTEXT-ACCEPTANCE-PLACEHOLDERS-": {
     "hash": "3ef9ae8",
     "git_issue": "3ef9ae8",
@@ -3133,6 +3150,40 @@
     "tags": [],
     "source": ".plan/tickets/TASK-migrate-plan-backlog-sync-to-a-top-level-backlog-command.md",
     "status": "done"
+  },
+  "TASK-NORMALIZE-EPIC-FIELD-SPELLING-VARIANTS-IN-LINKAGE": {
+    "hash": "1d99f41",
+    "git_issue": "1d99f41",
+    "extid": "TASK-NORMALIZE-EPIC-FIELD-SPELLING-VARIANTS-IN-LINKAGE",
+    "type": "TASK",
+    "title": "normalize Epic field spelling variants in linkage",
+    "label": "task",
+    "priority": "medium",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "linkage",
+      "epic"
+    ],
+    "source": ".plan/tickets/TASK-normalize-epic-field-spelling-variants-in-linkage.md",
+    "status": "open"
+  },
+  "TASK-OBJECT-TO-MD-SERIALIZER-FOR-LOSSLESS-TICKET-REGENERATION": {
+    "hash": "b510d55",
+    "git_issue": "b510d55",
+    "extid": "TASK-OBJECT-TO-MD-SERIALIZER-FOR-LOSSLESS-TICKET-REGENERATION",
+    "type": "TASK",
+    "title": "object-to-md serializer for lossless ticket regeneration",
+    "label": "task",
+    "priority": "high",
+    "epic": "",
+    "project": "",
+    "tags": [
+      "serializer",
+      "roundtrip"
+    ],
+    "source": ".plan/tickets/TASK-object-to-md-serializer-for-lossless-ticket-regeneration.md",
+    "status": "open"
   },
   "TASK-PLAN-VALIDATE-REJECT-CASE-INSENSITIVE-TICKET-FILENAME-COLLIS": {
     "hash": "6093563",
